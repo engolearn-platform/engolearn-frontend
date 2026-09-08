@@ -127,14 +127,14 @@ import FullLayout from "@/core/layouts/FullLayout";
 
 ```bash
 # Clone the repo
-git clone https://github.com/naserrasoulii/feature-based-react
+git clone https://github.com/engolearn-platform/engolearn-frontend.git
 
 # Install dependencies
-cd feature-based-react
-yarn
+cd engolearn-frontend
+npm install
 
 # Start dev server
-yarn dev
+npm run dev
 ```
 
 ---
