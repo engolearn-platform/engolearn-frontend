@@ -23,16 +23,6 @@ export default function Header() {
             Posts
           </Link>
         </li>
-        <li>
-          <a
-            href="https://github.com/naserrasoulii/feature-based-react"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-600"
-          >
-            GitHub
-          </a>
-        </li>
       </ul>
     </nav>
   );

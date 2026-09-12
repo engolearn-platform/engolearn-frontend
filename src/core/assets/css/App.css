@@ -118,3 +118,75 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* EngoLearn Narrative design tokens (docs/design-system/tokens.yaml).
+   New color names extend the shadcn base theme without renaming it. */
+@theme {
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  --color-surface: #f7f9fb;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-dim: #d8dadc;
+  --color-surface-variant: #e0e3e5;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-tint: #006a6a;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #3e4949;
+  --color-outline: #6e7979;
+  --color-outline-variant: #bdc9c8;
+  --color-primary-container: #008080;
+  --color-on-primary-container: #e3fffe;
+  --color-primary-fixed: #93f2f2;
+  --color-primary-fixed-dim: #76d6d5;
+  --color-on-primary-fixed: #002020;
+  --color-on-primary-fixed-variant: #004f4f;
+  --color-secondary-container: #fcd400;
+  --color-on-secondary-container: #6e5c00;
+  --color-secondary-fixed: #ffe16d;
+  --color-tertiary: #4d5a74;
+  --color-tertiary-fixed: #d6e3ff;
+  --color-tertiary-container: #65738d;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #f9f9ff;
+  --color-on-tertiary-fixed: #0d1c32;
+  --color-on-tertiary-fixed-variant: #39475f;
+
+  --text-headline-lg: 1.75rem;
+  --text-headline-lg--line-height: 2.25rem;
+  --text-headline-md: 1.375rem;
+  --text-headline-md--line-height: 1.75rem;
+  --text-headline-sm: 1.125rem;
+  --text-headline-sm--line-height: 1.5rem;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body-md: 1rem;
+  --text-body-md--line-height: 1.5rem;
+  --text-label-lg: 0.875rem;
+  --text-label-lg--line-height: 1.25rem;
+  --text-label-lg--letter-spacing: 0.02em;
+  --text-label-sm: 0.75rem;
+  --text-label-sm--line-height: 1rem;
+}
+
+:root {
+  --background: #f7f9fb;
+  --primary: #006565;
+  --primary-foreground: #ffffff;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .pb-safe {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+}
