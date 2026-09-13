@@ -16,7 +16,7 @@ export interface AppNavItem {
 
 export const APP_NAV_ITEMS: AppNavItem[] = [
   { label: "Trang chủ", to: ROUTES.HOME, icon: Home },
-  { label: "Chủ đề", to: "/topics", icon: LayoutGrid },
+  { label: "Chủ đề", to: ROUTES.TOPICS, icon: LayoutGrid },
   { label: "Ngữ pháp", to: ROUTES.GRAMMAR, icon: BookOpenText },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
 ];

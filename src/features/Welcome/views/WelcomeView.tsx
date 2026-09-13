@@ -28,6 +28,12 @@ export default function WelcomeView() {
         >
           Grammar
         </Link>
+        <Link
+          className="border px-6 py-2 rounded border-white text-white hover:bg-white hover:text-gray-800 transition-colors"
+          to={ROUTES.TOPICS}
+        >
+          Topic
+        </Link>
       </div>
     </div>
   );
