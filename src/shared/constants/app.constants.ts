@@ -5,4 +5,5 @@ export const ROUTES = {
   POSTS: "/posts",
   PRODUCTS: "/products",
   GRAMMAR: "/grammar",
+  TOPICS: "/topics",
 } as const;
