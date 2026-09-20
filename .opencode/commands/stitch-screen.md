@@ -10,15 +10,16 @@ Thực hiện đúng 4 phase theo thứ tự. **Dừng lại xin xác nhận c�
 
 ## Phase 0 — Inspect Stitch + codebase (không viết code)
 
-1. Load skill `frontend-ui` trước khi làm việc UI.
-2. Tìm screen qua Stitch MCP:
+1. Nếu Stitch MCP báo lỗi connect/auth (401, `Incompatible auth server`, dynamic client registration, needs authentication) thì load skill `stitch-health` và fix xong mới tiếp tục.
+2. Load skill `frontend-ui` trước khi làm việc UI.
+3. Tìm screen qua Stitch MCP:
    - `stitch_list_projects` → xác định project EngoLearn đúng.
    - `stitch_list_screens` với `projectId` → tìm screen khớp tên trong $ARGUMENTS.
    - `stitch_get_screen` + `stitch_get_project` lấy metadata và design tokens (`designMd`).
    - Dùng `webfetch` tải `htmlCode.downloadUrl` để đọc cấu trúc HTML/CSS chính xác của screen.
-3. Phân tích và báo cáo: page structure, layout hierarchy, typography, colors, spacing, responsive behavior (`md:`/`sm:`/`lg:` breakpoints), components, reusable UI patterns, assets (ảnh, icon), interactions.
-4. Soi codebase hiện tại: `src/router.tsx` + pattern `src/features/*/routes.ts`, component đã có (`src/core/components/shadcn/`, `src/shared/components/`), `useFetch` (`src/shared/hooks`), design tokens (`docs/design-system/tokens.yaml`, `principles.md`, `components.md`, `patterns.md`), constants (`ROUTES`), aliases (`@/`, `@features/`, `@shared/`).
-5. Trả về **implementation plan only**, kèm câu hỏi: feature home đặt ở `src/features/<tên>/` nào.
+4. Phân tích và báo cáo: page structure, layout hierarchy, typography, colors, spacing, responsive behavior (`md:`/`sm:`/`lg:` breakpoints), components, reusable UI patterns, assets (ảnh, icon), interactions.
+5. Soi codebase hiện tại: `src/router.tsx` + pattern `src/features/*/routes.ts`, component đã có (`src/core/components/shadcn/`, `src/shared/components/`), `useFetch` (`src/shared/hooks`), design tokens (`docs/design-system/tokens.yaml`, `principles.md`, `components.md`, `patterns.md`), constants (`ROUTES`), aliases (`@/`, `@features/`, `@shared/`).
+6. Trả về **implementation plan only**, kèm câu hỏi: feature home đặt ở `src/features/<tên>/` nào.
 
 ## Phase 1 — Plan chi tiết từng component (không viết code)
 
