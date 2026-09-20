@@ -1,6 +1,6 @@
 import { Flame } from "lucide-react";
 
-interface AppTopBarProps {
+interface LearningTopBarProps {
   userName: string;
   streakDays: number;
   avatarUrl?: string;
@@ -15,11 +15,11 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-export default function AppTopBar({
+export default function LearningTopBar({
   userName,
   streakDays,
   avatarUrl,
-}: AppTopBarProps) {
+}: LearningTopBarProps) {
   return (
     <header className="z-20 flex w-full items-center justify-between border-b border-outline-variant bg-surface px-5 py-4 md:hidden">
       <div className="flex items-center gap-3">

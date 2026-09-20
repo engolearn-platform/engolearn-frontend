@@ -1,12 +1,12 @@
 import type { RouteObject } from "react-router";
-import EngoAppLayout from "@/core/layouts/EngoAppLayout";
+import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import GrammarRoadmapView from "./views/GrammarRoadmapView";
 
 export const GrammarRoutes: RouteObject[] = [
   {
     path: ROUTES.GRAMMAR,
-    Component: EngoAppLayout,
+    Component: LearningLayout,
     children: [
       {
         path: "",

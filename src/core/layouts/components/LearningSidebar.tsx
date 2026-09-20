@@ -1,9 +1,9 @@
 import { cn } from "@shared/utils";
 import { BookOpenText } from "lucide-react";
 import { NavLink } from "react-router";
-import { APP_NAV_ITEMS, PROFILE_NAV_ITEM } from "./appNav";
+import { LEARNING_NAV_ITEMS, PROFILE_NAV_ITEM } from "./learningNav";
 
-export default function AppSidebar() {
+export default function LearningSidebar() {
   return (
     <aside className="z-10 hidden h-full w-64 flex-col border-r border-outline-variant bg-surface-container-low md:flex">
       <div className="flex items-center gap-2 border-b border-outline-variant p-5">
@@ -16,7 +16,7 @@ export default function AppSidebar() {
         aria-label="Điều hướng chính"
         className="flex flex-1 flex-col gap-2 overflow-y-auto px-2 py-6"
       >
-        {APP_NAV_ITEMS.map((item) => (
+        {LEARNING_NAV_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

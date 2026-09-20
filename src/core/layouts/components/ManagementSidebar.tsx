@@ -1,9 +1,9 @@
 import { cn } from "@shared/utils";
 import { Languages } from "lucide-react";
 import { NavLink } from "react-router";
-import { ADMIN_CONTENT_NAV_ITEMS, ADMIN_SYSTEM_NAV_ITEMS } from "./adminNav";
+import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS } from "./managementNav";
 
-export default function AdminSidebar() {
+export default function ManagementSidebar() {
   return (
     <aside className="z-10 hidden h-full w-72 shrink-0 flex-col justify-between bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] lg:flex">
       <div className="flex flex-col">
@@ -24,7 +24,7 @@ export default function AdminSidebar() {
           Nội dung học
         </p>
         <nav aria-label="Quản trị nội dung học" className="mt-2 flex flex-col gap-2 px-5">
-          {ADMIN_CONTENT_NAV_ITEMS.map((item) => (
+          {MANAGEMENT_CONTENT_NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -46,7 +46,7 @@ export default function AdminSidebar() {
           Hệ thống
         </p>
         <nav aria-label="Quản trị hệ thống" className="mt-2 flex flex-col gap-2 px-5">
-          {ADMIN_SYSTEM_NAV_ITEMS.map((item) => (
+          {MANAGEMENT_SYSTEM_NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

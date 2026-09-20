@@ -1,14 +1,14 @@
 import { Bell, ChevronRight, User } from "lucide-react";
 
-interface AdminTopBarProps {
+interface ManagementTopBarProps {
   userName?: string;
   userRole?: string;
 }
 
-export default function AdminTopBar({
+export default function ManagementTopBar({
   userName = "Thảo Nguyễn",
   userRole = "Lead Author",
-}: AdminTopBarProps) {
+}: ManagementTopBarProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between bg-surface-container-lowest/90 px-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">

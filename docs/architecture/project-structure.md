@@ -20,7 +20,7 @@ src/
 ├── core/                # App-wide infra (layouts, shadcn wrappers, global CSS)
 │   ├── assets/css/      # Global styles (App.css)
 │   ├── components/shadcn/ # shadcn/ui wrappers (Button, Input, Card, Dialog, Form...)
-│   └── layouts/         # EngoAppLayout, AdminLayout, FullLayout (+ layout-local components/)
+│   └── layouts/         # LearningLayout, ManagementLayout, FullLayout (+ layout-local components/)
 ├── shared/              # Cross-feature reusable code (no business domain)
 │   ├── components/      # Card, Loading, EmptyState...
 │   ├── hooks/           # useFetch, useLoading...
@@ -108,7 +108,7 @@ import { useTopics } from "../../hooks/useTopics";
 import { TopicManagementTable } from "../../components/management/TopicManagementTable";
 import { TopicCard } from "../../components/shared/TopicCard";
 import { useFetch } from "@shared/hooks";
-import EngoAppLayout from "@/core/layouts/EngoAppLayout";
+import LearningLayout from "@/core/layouts/LearningLayout";
 
 // ❌ Forbidden: cross-feature import
 import { GrammarCard } from "@features/grammar/components/shared/GrammarCard";
@@ -134,12 +134,12 @@ Rules:
 export const TopicRoutes: RouteObject[] = [
   {
     path: "/topics",
-    Component: EngoAppLayout, // learning shell
+    Component: LearningLayout, // learning shell
     children: [{ path: "", Component: LearnerTopicView }],
   },
   {
     path: "/admin/topics",
-    Component: AdminLayout, // management shell (Content Studio)
+    Component: ManagementLayout, // management shell (Content Studio)
     children: [
       { path: "", Component: TopicManagementListView },
       { path: "new", Component: TopicManagementFormView },

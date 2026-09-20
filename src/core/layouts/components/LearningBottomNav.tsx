@@ -1,10 +1,10 @@
 import { cn } from "@shared/utils";
 import { NavLink } from "react-router";
-import { APP_NAV_ITEMS, PROFILE_NAV_ITEM } from "./appNav";
+import { LEARNING_NAV_ITEMS, PROFILE_NAV_ITEM } from "./learningNav";
 
-const ITEMS = [...APP_NAV_ITEMS, PROFILE_NAV_ITEM];
+const ITEMS = [...LEARNING_NAV_ITEMS, PROFILE_NAV_ITEM];
 
-export default function AppBottomNav() {
+export default function LearningBottomNav() {
   return (
     <nav
       aria-label="Điều hướng chính"
