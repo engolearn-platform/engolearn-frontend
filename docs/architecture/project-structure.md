@@ -20,7 +20,7 @@ src/
 ├── core/                # App-wide infra (layouts, shadcn wrappers, global CSS)
 │   ├── assets/css/      # Global styles (App.css)
 │   ├── components/shadcn/ # shadcn/ui wrappers (Button, Input, Card, Dialog, Form...)
-│   └── layouts/         # EngoAppLayout, FullLayout (+ layout-local components/)
+│   └── layouts/         # EngoAppLayout, AdminLayout, FullLayout (+ layout-local components/)
 ├── shared/              # Cross-feature reusable code (no business domain)
 │   ├── components/      # Card, Loading, EmptyState...
 │   ├── hooks/           # useFetch, useLoading...
@@ -51,46 +51,46 @@ Every feature follows this shape:
 ```bash
 features/<domain>/
 ├── components/
-│   ├── shared/          # Used by both learner + admin inside this feature
-│   ├── learner/         # Learner-facing components only
-│   └── admin/           # Admin-only components only
-├── hooks/               # Feature-scoped hooks (shared by both roles)
+│   ├── shared/          # Used by both learning + management inside this feature
+│   ├── learning/        # Learning-experience components only
+│   └── management/      # Management-console components only
+├── hooks/               # Feature-scoped hooks (shared by both surfaces)
 ├── types/               # Feature-scoped types (single definition per entity)
 ├── views/
-│   ├── learner/         # Learner pages (e.g. LearnerTopicView.tsx)
-│   └── admin/           # Admin pages (e.g. AdminTopicListView.tsx)
+│   ├── learning/        # Learning pages (e.g. LearnerTopicView.tsx)
+│   └── management/      # Management pages (e.g. TopicManagementListView.tsx)
 └── routes.ts            # Exports XxxRoutes: RouteObject[]
 ```
 
 Reference implementation: `src/features/topic/routes.ts` + `src/features/Post/` (fullest legacy example with `hooks/` + `types/`).
 
-### 4.1 Role split inside the feature (not at top level)
+### 4.1 Surface split inside the feature (not at top level)
 
 - Keep **one folder per domain** (`topic`, `grammar`), never `features/user/...` or `features/admin/...`.
 - Splitting by role at the top level duplicates `types/` + `hooks/` + `services/` for the same entity and forces cross-feature imports — the exact problem feature-based architecture exists to avoid.
-- Inside the feature, split only `components/` and `views/` by role:
-  - `shared/` — reused by both roles (e.g. `TopicCard`, `FilterBar`).
-  - `learner/` — learning experience (cards, practice, wizard steps).
-  - `admin/` — CRUD / review / publish UI following `docs/design-system/patterns.md` (`Admin Page`, `List Page`, `Form Pattern`).
-- `hooks/` and `types/` stay flat and role-agnostic: one `Topic` type, one `useTopics()` hook.
-- `learner/` and `admin/` must never import from each other. Both may import from `../shared/`, `../../hooks/`, `../../types/`, `@shared/*`, `@/core/*`.
-- Use `learner/` (not `user/`) because every admin is also a user — `learner` vs `admin` is unambiguous for Engo Learn.
-- Keep it flat while small: if a feature has ≤5 components or only one role, skip the `shared/learner/admin` subfolders and split when it grows.
+- Inside the feature, split only `components/` and `views/` by **experience surface** (what the UI is for, never who may access it):
+  - `shared/` — reused by both surfaces (e.g. `TopicCard`, `FilterBar`).
+  - `learning/` — learning experience (cards, practice, wizard steps).
+  - `management/` — management console UI following `docs/design-system/patterns.md` (`Admin Page`, `List Page`, `Form Pattern`). Accessible by any role holding the required permission — enforced by route guards (§7), never by folder placement.
+- `hooks/` and `types/` stay flat and surface-agnostic: one `Topic` type, one `useTopics()` hook.
+- `learning/` and `management/` must never import from each other. Both may import from `../shared/`, `../../hooks/`, `../../types/`, `@shared/*`, `@/core/*`.
+- Name management symbols by capability (`TopicManagementTable`, `useTopicManagement`), never by role (`AdminTopicTable`); roles change, capabilities don't.
+- Keep it flat while small: if a feature has ≤5 components or only one surface, skip the `shared/learning/management` subfolders and split when it grows.
 
 ### 4.2 When to break the rule
 
-Create a separate `features/<domain>-admin/` feature only when **all three** hold:
+Create a separate `features/<domain>-management/` feature only when **all three** hold:
 
 1. Admin lifecycle is fully independent (review, publish, audit, permissions),
 2. Admin API + layout + guards differ entirely from learner,
 3. A different owner/team maintains it and sharing a folder causes constant conflicts.
 
-Even then, split as `<domain>-admin` (still by domain), never as one giant `features/admin/`.
+Even then, split as `<domain>-management` (still by domain), never as one giant `features/admin/`.
 
 ## 5. Naming, aliases & TypeScript strictness
 
 - Folder names: **lowercase singular domain** for all new Engo Learn work (`topic`, `grammar`, `vocabulary`). Legacy `Post/`, `Product/`, `Welcome/` keep their casing for history — do not copy that casing for new features.
-- Files: `PascalCase.tsx` for components/views (`TopicCard.tsx`, `AdminTopicListView.tsx`), `camelCase.ts` for hooks/utils (`useTopics.ts`), `*.types.ts` for types (`topic.types.ts`).
+- Files: `PascalCase.tsx` for components/views (`TopicCard.tsx`, `TopicManagementListView.tsx`), `camelCase.ts` for hooks/utils (`useTopics.ts`), `*.types.ts` for types (`topic.types.ts`).
 - Route export: `<Domain>Routes` (e.g. `TopicRoutes`, `GrammarRoutes`).
 - Aliases (defined in `vite.config.ts` + `tsconfig.app.json`):
   - `@/` → `src/`, `@features/` → `src/features/`, `@shared/` → `src/shared/`.
@@ -102,10 +102,10 @@ Even then, split as `<domain>-admin` (still by domain), never as one giant `feat
 ## 6. Boundaries & imports
 
 ```tsx
-// ✅ Allowed inside features/topic/views/admin/AdminTopicListView.tsx
+// ✅ Allowed inside features/topic/views/management/TopicManagementListView.tsx
 import type { Topic } from "../../types/topic.types";
 import { useTopics } from "../../hooks/useTopics";
-import { TopicTable } from "../../components/admin/TopicTable";
+import { TopicManagementTable } from "../../components/management/TopicManagementTable";
 import { TopicCard } from "../../components/shared/TopicCard";
 import { useFetch } from "@shared/hooks";
 import EngoAppLayout from "@/core/layouts/EngoAppLayout";
@@ -127,28 +127,28 @@ Rules:
 - Each feature exports `RouteObject[]` from `routes.ts` (see `src/features/topic/routes.ts`, `src/features/Post/routes.ts`).
 - `src/router.tsx` only aggregates: `export const appRoutes = [...TopicRoutes, ...GrammarRoutes, ...]`. No route definitions live in `router.tsx`.
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `AppRouter` calls `useRoutes(appRoutes)`.
-- Role pattern inside one `routes.ts`:
+- Surface pattern inside one `routes.ts`:
 
 ```tsx
 // features/topic/routes.ts
 export const TopicRoutes: RouteObject[] = [
   {
     path: "/topics",
-    Component: EngoAppLayout, // learner shell
+    Component: EngoAppLayout, // learning shell
     children: [{ path: "", Component: LearnerTopicView }],
   },
   {
     path: "/admin/topics",
-    Component: EngoAppLayout, // swap to AdminLayout when it exists
+    Component: AdminLayout, // management shell (Content Studio)
     children: [
-      { path: "", Component: AdminTopicListView },
-      { path: "new", Component: AdminTopicFormView },
+      { path: "", Component: TopicManagementListView },
+      { path: "new", Component: TopicManagementFormView },
     ],
   },
 ];
 ```
 
-Guards (auth/role) wrap the route element or layout — never duplicate the feature folder to enforce permissions.
+Guards (auth/permission) wrap the route element or layout — never duplicate the feature folder to enforce permissions.
 
 ## 8. Data fetching
 
@@ -176,8 +176,9 @@ Feature components live in `src/features/<domain>/components/` — never in glob
 ## 10. Anti-patterns
 
 - `features/admin/*`, `features/user/*`, or `features/common/*` buckets.
-- One entity defined twice (`user/Topic` vs `admin/Topic` types or hooks).
-- `learner/` importing from `admin/` (or vice versa).
+- One entity defined twice (`learning/Topic` vs `management/Topic` types or hooks).
+- `learning/` importing from `management/` (or vice versa).
+- Naming management symbols by role (`AdminTopicTable`) instead of capability (`TopicManagementTable`).
 - Feature-specific components in `src/shared/components/` or `src/core/components/`.
 - New Button/Input/Card/Dialog instead of reusing shadcn/shared.
 - Arbitrary colors, fonts, spacing, radius outside `tokens.yaml`.
@@ -189,7 +190,7 @@ Feature components live in `src/features/<domain>/components/` — never in glob
 1. Create `src/features/<domain>/` with `components/ hooks/ types/ views/ routes.ts`.
 2. Define types in `types/<domain>.types.ts` (`import type` everywhere).
 3. Add hooks with `useFetch`; no direct `fetch` in views.
-4. Add `views/learner/` page first; add `views/admin/` + `components/admin/` only when the admin UI is real.
+4. Add `views/learning/` page first; add `views/management/` + `components/management/` only when the management UI is real.
 5. Export `<Domain>Routes` and register it in `src/router.tsx`'s `appRoutes`.
 6. Reuse shadcn/shared UI; follow `docs/design-system/patterns.md` page shape.
 7. Verify: `npm run build` (tsc + vite) and `npm run lint` — no test runner/CI configured.
