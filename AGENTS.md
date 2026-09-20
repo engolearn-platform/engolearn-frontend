@@ -1,5 +1,7 @@
 # AGENTS.md — engolearn-frontend
 
+> Detailed structure rules: `docs/architecture/project-structure.md` — it wins on conflicts.
+
 React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york/stone). Template is a feature-based boilerplate (see `README.md` Post/Product examples); current goal is the **Engo Learn** English-learning UI.
 
 ## Commands

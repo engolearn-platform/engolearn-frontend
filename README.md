@@ -23,6 +23,8 @@ src/
 └── main.tsx             # App entry point
 ```
 
+> Detailed structure rules: `docs/architecture/project-structure.md` — it wins on conflicts.
+
 ---
 
 ## 🏗️ Architecture Entities
