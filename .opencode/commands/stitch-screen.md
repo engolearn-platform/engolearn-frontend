@@ -1,16 +1,16 @@
 ---
-description: Triển khai end-to-end 1 màn hình từ Stitch MCP cho EngoLearn frontend — inspect, lập plan, implement, so sánh visual và lặp đến khi khớp thiết kế.
+description: Triển khai end-to-end 1 màn hình từ Stitch MCP cho EngoLearn frontend — inspect, lập plan, implement đúng thiết kế.
 ---
 
 # Triển khai màn hình mới từ Stitch (`/stitch-screen`)
 
 Màn hình mục tiêu: **$ARGUMENTS** (tên screen trong Stitch, ví dụ `Web — Lộ trình ngữ pháp`).
 
-Thực hiện đúng 4 phase theo thứ tự. **Dừng lại xin xác nhận của user sau Phase 0 và Phase 1.** Không viết code trước khi plan được duyệt.
+Thực hiện đúng 3 phase theo thứ tự. **Dừng lại xin xác nhận của user sau Phase 0 và Phase 1.** Không viết code trước khi plan được duyệt.
 
 ## Phase 0 — Inspect Stitch + codebase (không viết code)
 
-1. Nếu Stitch MCP báo lỗi connect/auth (401, `Incompatible auth server`, dynamic client registration, needs authentication) thì load skill `stitch-health` và fix xong mới tiếp tục.
+1. Nếu Stitch MCP báo lỗi connect/auth (401, `Incompatible auth server`, dynamic client registration, needs authentication) thì load skill `stitch-health` và fix xong mới tiếp tục. Lưu ý: key tốt + server tốt vẫn có thể fail ở tầng MCP bridge của session (header rỗng) — khi đó **dừng mọi thử MCP**, xin user cung cấp `projectId` / `screenId` / `htmlCode.downloadUrl` hoặc HTML/screenshot thay thế (xem `docs/handout/stitch-admin-topic-handoff.md` §4).
 2. Load skill `frontend-ui` trước khi làm việc UI.
 3. Tìm screen qua Stitch MCP:
    - `stitch_list_projects` → xác định project EngoLearn đúng.
@@ -42,17 +42,11 @@ Chờ user duyệt plan rồi mới sang Phase 2.
 - Token EngoLearn đã map trong `src/core/assets/css/App.css` (`@theme`): chỉ dùng màu/spacing/radius/typography của design system — `rounded-2xl` cho Learning Card, `rounded-xl` cho button, `rounded-full` cho pill/chip. Không màu/spacing/radius tùy tiện.
 - Giữ nguyên chức năng hiện có, không sửa file không liên quan, không để dead code (`noUnusedLocals`/`noUnusedParameters` làm fail build).
 - Xong thì chạy `npm run lint` (0 errors) và `npm run build` (`tsc -b && vite build`).
-
-## Phase 3 — Chạy app và so sánh visual (lặp đến khi khớp)
-
-1. Chạy dev server nền (`npm run dev`, port 3000, log ra file temp).
-2. Chụp màn hình đã implement ở **desktop 1440×900** và **mobile 390×844** bằng headless Chromium (dùng Playwright: kiểm tra tooling sẵn có trong thư mục temp, nếu chưa có thì `npm init -y && npm install playwright && npx playwright install --only-shell chromium`), đọc ảnh PNG bằng tool Read.
-3. Đối chiếu từng hạng mục với HTML Stitch: overall layout, spacing, typography, colors, component dimensions, alignment, responsive behavior, missing elements, incorrect assets.
-4. Fix khác biệt trong code, chụp lại, so lại — **không dừng sau vòng đầu**, lặp đến khi implementation khớp chặt thiết kế.
-5. Chạy lại `npm run lint` + `npm run build`, tắt dev server, báo cáo tổng hợp các khác biệt đã fix.
+- Ghi tài liệu workflow của màn vừa làm vào `docs/features/<domain>/NN-<ten-man-hinh>.md` (Stitch source, bản đồ component, state/validation, điểm UI-only, khác biệt có chủ ý vs Stitch, responsive, checklist refactor) để sau này update/refactor/gắn dữ liệu thật có cơ sở. Đặt tên file đánh số thứ tự trong domain (`01-...`, `02-...`).
 
 ## Definition of done
 
 - Route mới hiển thị đúng nội dung Stitch trên cả desktop và mobile.
 - `npm run lint` 0 errors, `npm run build` thành công.
+- Tài liệu màn hình đã ghi vào `docs/features/<domain>/`.
 - Không file thừa, không TODO, không secret, không commit/push khi chưa được yêu cầu.

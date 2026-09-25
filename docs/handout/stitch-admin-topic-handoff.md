@@ -13,9 +13,8 @@ Triển khai 2 màn hình Stitch vào app:
 
 Thực chất đây là **một route với 2 trạng thái** (chờ xác nhận lại khi có HTML Stitch).
 
-Quy trình 4 phase (`/stitch-screen`): Phase 0 inspect → dừng xin duyệt →
-Phase 1 plan component → dừng xin duyệt → Phase 2 implement →
-Phase 3 chạy app + so sánh visual lặp đến khi khớp.
+Quy trình 3 phase (`/stitch-screen`): Phase 0 inspect → dừng xin duyệt →
+Phase 1 plan component → dừng xin duyệt → Phase 2 implement (+ lint/build).
 
 ## 2. Quyết định đã chốt với user (không đổi)
 
@@ -91,11 +90,10 @@ Dựa trên pattern List Page + Admin Page của design system:
    - `views/admin/AdminTopicListView.tsx` — render 3 trạng thái: `Loading` / `EmptyState` + CTA tạo mới (trạng thái Rỗng) / table + FilterBar (trạng thái có dữ liệu).
 3. Mở rộng `TopicRoutes` với `{ path: "/admin/topics", Component: EngoAppLayout, children: [...] }`, giữ nguyên route learner `/topics`.
 4. Phase 2: `npm run lint` (0 errors) + `npm run build` (`tsc -b && vite build`) — chú ý `import type`, không enum, không dead code (`noUnusedLocals`/`noUnusedParameters`).
-5. Phase 3: dev server port 3000, chụp Playwright desktop 1440×900 + mobile 390×844, đối chiếu HTML Stitch, lặp fix đến khi khớp, chạy lại lint + build, tắt server.
 
 ## 7. Checklist khi resume
 
 - [ ] Nhận dữ liệu Stitch theo mục 5.
 - [ ] Hoàn tất Phase 0: phân tích HTML 2 screen → trình implementation plan → **dừng xin duyệt**.
 - [ ] Phase 1: plan chi tiết từng component (name, path, responsibility, reuse/mới, props, responsive) → **dừng xin duyệt**.
-- [ ] Phase 2 + Phase 3 theo mục 6.
+- [ ] Phase 2 theo mục 6.
