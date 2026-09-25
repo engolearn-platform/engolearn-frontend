@@ -7,4 +7,5 @@ export const ROUTES = {
   GRAMMAR: "/grammar",
   TOPICS: "/topics",
   ADMIN_TOPICS: "/admin/topics",
+  ADMIN_TOPIC_CREATE: "/admin/topics/create",
 } as const;

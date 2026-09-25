@@ -3,6 +3,7 @@ import ManagementLayout from "@/core/layouts/ManagementLayout";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import TopicPage from "./views/TopicPage";
+import TopicCreateBasicInfoView from "./views/management/TopicCreateBasicInfoView";
 import TopicManagementListView from "./views/management/TopicManagementListView";
 
 export const TopicRoutes: RouteObject[] = [
@@ -23,6 +24,10 @@ export const TopicRoutes: RouteObject[] = [
       {
         path: "",
         Component: TopicManagementListView,
+      },
+      {
+        path: "create",
+        Component: TopicCreateBasicInfoView,
       },
     ],
   },
