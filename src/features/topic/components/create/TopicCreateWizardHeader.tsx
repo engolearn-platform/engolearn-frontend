@@ -1,11 +1,13 @@
 import { CheckCircle2 } from "lucide-react";
 
 interface TopicCreateWizardHeaderProps {
+  title?: string;
   draftLabel?: string;
   autosaveText?: string;
 }
 
 export default function TopicCreateWizardHeader({
+  title = "Bước 1: Thông tin cơ bản của Chủ đề",
   draftLabel = "Bản nháp (Draft)",
   autosaveText = "Tự động lưu cách đây 1 phút",
 }: TopicCreateWizardHeaderProps) {
@@ -16,7 +18,7 @@ export default function TopicCreateWizardHeader({
           Quy trình biên soạn giáo trình
         </span>
         <h1 className="mt-0.5 text-headline-md font-semibold text-on-surface">
-          Bước 1: Thông tin cơ bản của Chủ đề
+          {title}
         </h1>
       </div>
       <div className="flex flex-wrap items-center gap-3">

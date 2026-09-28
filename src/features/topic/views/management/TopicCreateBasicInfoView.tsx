@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Palette } from "lucide-react";
+import { ROUTES } from "@shared/constants";
 import { useTopicBasicInfoForm } from "../../hooks/useTopicBasicInfoForm";
 import {
   TOPIC_CREATE_CATEGORY_OPTIONS,
@@ -27,6 +28,7 @@ export default function TopicCreateBasicInfoView() {
       return;
     }
     setShowErrors(false);
+    navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
   };
 
   return (

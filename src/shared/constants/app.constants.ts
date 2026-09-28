@@ -8,4 +8,5 @@ export const ROUTES = {
   TOPICS: "/topics",
   ADMIN_TOPICS: "/admin/topics",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
+  ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
 } as const;
