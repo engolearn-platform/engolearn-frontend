@@ -3,6 +3,7 @@
 > Tài liệu workflow cho màn learner Từ vựng của 1 Topic Item, stage VOCAB của
 > luồng học (Stitch: "Web — Topic Item: 3. Từ vựng (3/3 - get dressed)").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, audio, progress).
+> Trạng thái mock ↔ API toàn package: `00-mock-api-status.md`.
 
 ## 1. Nguồn thiết kế (Stitch)
 

@@ -3,6 +3,7 @@
 > Tài liệu workflow cho màn learner Bối cảnh của 1 Topic Item, stage đầu của
 > luồng học (Stitch: "Web — Topic Item: 1. Bối cảnh (Context) & Hội thoại mẫu").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, audio).
+> Trạng thái mock ↔ API toàn package: `00-mock-api-status.md`.
 
 ## 1. Nguồn thiết kế (Stitch)
 

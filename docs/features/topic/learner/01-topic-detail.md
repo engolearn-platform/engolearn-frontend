@@ -3,6 +3,7 @@
 > Tài liệu workflow cho màn learner Chi tiết chủ đề, điểm vào của luồng học
 > 1 topic (Stitch: "Web — Chi tiết chủ đề").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, progress).
+> Trạng thái mock ↔ API toàn package: `00-mock-api-status.md`.
 
 ## 1. Nguồn thiết kế (Stitch)
 

@@ -3,6 +3,7 @@
 > Tài liệu workflow + contract cho tracking tiến trình learner
 > (`furthest_reached`, PATCH progress) dùng chung mọi màn learner.
 > **Màn part mới (mẫu câu, quiz, …) chỉ cần làm theo §6 là tương thích.**
+> Trạng thái mock ↔ API toàn package: `00-mock-api-status.md`.
 
 ## 1. Data model (mirror backend)
 

@@ -40,3 +40,29 @@ Load the `frontend-ui` skill — it points at the real sources of truth:
 - `docs/design-system/patterns.md` (Admin/List/Form/Wizard page shapes)
 
 Rules: reuse existing Button/Input/Select/Dialog/Card/Form components; no arbitrary colors, fonts, spacing, or radius; feature components live in `src/features/<feature>/components/`, never in global UI dirs. Note: `.opencode/UI_CONSTITUTION.md` still says `Inter` — for Engo Learn UI, `docs/design-system/*` (Hanken Grotesk) wins.
+
+## Working discipline — docs first (anti doc-rot)
+
+Every UI/feature change follows this 4-step loop. No skipped steps:
+
+1. **Locate** — identify the relevant docs *before* touching code:
+   - UI standards: `docs/design-system/*` (+ load the `frontend-ui` skill).
+   - Feature standards: the docs package of the feature at hand (e.g. under
+     `docs/features/`).
+   - No doc exists for the feature yet → create a minimal skeleton doc
+     (Stitch → route → component → state → UI-only → responsive → checklist)
+     first, then code.
+2. **Read** — read the docs plus the current code (related
+   component/hook/type/route) before proposing a plan. Never guess props/APIs
+   from memory.
+3. **Implement** — code exactly per the approved plan and the doc frame;
+   changing a route/prop/state beyond the doc means going back to amend the
+   plan first.
+4. **Update** — in the *same change*: update the doc matching the edited code
+   (new prop, changed route/rule, mock → real…). If the package has an extra
+   summary table/index (e.g. a mock ↔ API table), update its row too.
+
+Tie-break rule: docs are the living spec. When code and docs disagree, assume
+**the doc is wrong** unless a refactor just landed without its doc update —
+on spotting a drift, either fix the code back to the doc or update the doc
+immediately. Never leave a "fix later".
