@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { ROUTES } from "@shared/constants";
+import { ROUTES, topicItemSectionPath } from "@shared/constants";
 import { useTopicItemsOverview } from "../../hooks/useTopicItemsOverview";
 import TopicCreateFooterBar from "../../components/create/TopicCreateFooterBar";
 import TopicCreateStepper from "../../components/create/TopicCreateStepper";
@@ -14,6 +14,10 @@ export default function TopicCreateItemsView() {
     useTopicItemsOverview();
 
   const handleBack = () => navigate(ROUTES.ADMIN_TOPIC_CREATE);
+
+  const handleEditItem = (id: string) => {
+    navigate(topicItemSectionPath(id, "context"));
+  };
 
   const handleAddItem = () => {
     // UI-only: dialog tạo Topic Item sẽ gắn khi màn editor landing.
@@ -41,9 +45,9 @@ export default function TopicCreateItemsView() {
               items={items}
               selectedId={selectedId}
               onSelect={selectItem}
-              onEdit={selectItem}
+              onEdit={handleEditItem}
               onDelete={removeItem}
-              onInit={selectItem}
+              onInit={handleEditItem}
               onAdd={handleAddItem}
             />
           </div>

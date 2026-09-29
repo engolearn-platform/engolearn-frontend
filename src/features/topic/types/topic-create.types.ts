@@ -205,8 +205,7 @@ export const TOPIC_ITEMS_OVERVIEW_MOCK: TopicItemOverview[] = [
   },
 ];
 
-export const TOPIC_SCRIPT_QUALITY_MOCK: TopicScriptQuality = {
-  score: 68,
+export const TOPIC_SCRIPT_QUALITY_MOCK: TopicScriptQuality = {  score: 68,
   max: 100,
   coverageNote:
     "Cần hoàn tất Quiz cho Item 02 & dữ liệu cho Item 04 để đạt điều kiện phát hành.",
@@ -236,4 +235,80 @@ export const TOPIC_SCRIPT_QUALITY_MOCK: TopicScriptQuality = {
       passed: false,
     },
   ],
+};
+
+/**
+ * Step 2 — Editor Bối cảnh (Context) của 1 Topic Item.
+ * `TopicItemStepKey` ("context" | "vocabulary" | "expressions" | "quiz")
+ * đã có sẵn được reuse làm section key cho route editor gộp.
+ */
+export type ContextDialogueRole = "waiter" | "learner";
+
+export interface ContextDialogueTurn {
+  id: string;
+  role: ContextDialogueRole;
+  speaker: string;
+  textEn: string;
+  textVi: string;
+}
+
+export interface TopicItemContextDraft {
+  title: string;
+  prompt: string;
+  description: string;
+  turns: ContextDialogueTurn[];
+  duration: string;
+}
+
+export const TOPIC_CONTEXT_TITLE_MAX = 80;
+
+export const TOPIC_CONTEXT_DESCRIPTION_MAX = 250;
+
+export interface TopicContextDurationOption {
+  value: string;
+  label: string;
+}
+
+export const TOPIC_CONTEXT_DURATION_OPTIONS: TopicContextDurationOption[] = [
+  { value: "2", label: "2 phút" },
+  { value: "5", label: "5 phút" },
+  { value: "10", label: "10 phút" },
+  { value: "15", label: "15 phút" },
+];
+
+export const TOPIC_ITEM_SECTION_KEYS: TopicItemStepKey[] = [
+  "context",
+  "vocabulary",
+  "expressions",
+  "quiz",
+];
+
+export function isTopicItemSectionKey(value: string): value is TopicItemStepKey {
+  return (TOPIC_ITEM_SECTION_KEYS as string[]).includes(value);
+}
+
+export const TOPIC_ITEM_CONTEXT_DEFAULT_DRAFT: TopicItemContextDraft = {
+  title: "Xem thực đơn & Chọn món ăn (Choosing Your Food)",
+  prompt:
+    "Bạn thường nói gì khi muốn người phục vụ gợi ý món ngon đặc sắc của quán?",
+  description:
+    "Bạn cùng một người bạn đang ngồi tại một nhà hàng ấm cúng. Người phục vụ vừa mang thực đơn tới. Hai bạn cần trao đổi để quyết định gọi món khai vị và món chính phù hợp với khẩu vị.",
+  turns: [
+    {
+      id: "turn-waiter-1",
+      role: "waiter",
+      speaker: "Waiter",
+      textEn: "Are you ready to order, or do you need a few more minutes?",
+      textVi: "Anh chị đã sẵn sàng gọi món chưa, hay cần thêm vài phút nữa ạ?",
+    },
+    {
+      id: "turn-learner-1",
+      role: "learner",
+      speaker: "You",
+      textEn: "Could you give us a minute? Also, what do you recommend today?",
+      textVi:
+        "Cho chúng tôi xin một phút được không? Tiện thể hôm nay quán có món gì ngon đặc sắc?",
+    },
+  ],
+  duration: "2",
 };
