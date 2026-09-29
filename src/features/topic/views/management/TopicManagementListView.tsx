@@ -1,5 +1,7 @@
 import { EmptyState, Loading } from "@shared/components";
+import { ROUTES } from "@shared/constants";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import { useTopicManagement } from "../../hooks/useTopicManagement";
 import type { TopicManagementFilter, Topic } from "../../types/topic.types";
 import TopicManagementEmptyState from "../../components/management/TopicManagementEmptyState";
@@ -31,6 +33,7 @@ function matchesFilter(topic: Topic, filter: TopicManagementFilter): boolean {
 }
 
 export default function TopicManagementListView() {
+  const navigate = useNavigate();
   const { data, loading, error } = useTopicManagement();
   const [filter, setFilter] = useState<TopicManagementFilter>(DEFAULT_FILTER);
   const [unpublishing, setUnpublishing] = useState<Topic | null>(null);
@@ -48,6 +51,7 @@ export default function TopicManagementListView() {
   const patchFilter = (patch: Partial<TopicManagementFilter>) =>
     setFilter((prev) => ({ ...prev, ...patch }));
   const clearFilter = () => setFilter(DEFAULT_FILTER);
+  const goToCreate = () => navigate(ROUTES.ADMIN_TOPIC_CREATE);
 
   if (loading) {
     return (
@@ -72,7 +76,7 @@ export default function TopicManagementListView() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-      <TopicManagementPageHeader />
+      <TopicManagementPageHeader onCreate={goToCreate} />
       <TopicManagementStats stats={data.stats} />
       <TopicManagementFilterBar
         filter={filter}
@@ -86,7 +90,7 @@ export default function TopicManagementListView() {
           <TopicManagementEmptyState
             keyword={filter.search.trim()}
             onClear={clearFilter}
-            onCreate={() => undefined}
+            onCreate={goToCreate}
           />
         ) : (
           <>

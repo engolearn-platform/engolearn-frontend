@@ -3,6 +3,9 @@ import ManagementLayout from "@/core/layouts/ManagementLayout";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import TopicPage from "./views/TopicPage";
+import TopicCreateBasicInfoView from "./views/management/TopicCreateBasicInfoView";
+import TopicCreateItemsView from "./views/management/TopicCreateItemsView";
+import TopicItemEditorView from "./views/management/TopicItemEditorView";
 import TopicDetailView from "./views/learning/TopicDetailView";
 import TopicContextView from "./views/learning/TopicContextView";
 import TopicVocabView from "./views/learning/TopicVocabView";
@@ -64,6 +67,18 @@ export const TopicRoutes: RouteObject[] = [
       {
         path: "",
         Component: TopicManagementListView,
+      },
+      {
+        path: "create",
+        Component: TopicCreateBasicInfoView,
+      },
+      {
+        path: "create/items",
+        Component: TopicCreateItemsView,
+      },
+      {
+        path: "create/items/:itemId/:sectionKey",
+        Component: TopicItemEditorView,
       },
     ],
   },

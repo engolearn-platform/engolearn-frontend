@@ -20,6 +20,7 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 ## Imports & TS strictness
 
 - Aliases (defined in both `vite.config.ts` and `tsconfig.app.json`): `@/` → `src/`, `@features/` → `src/features/`, `@shared/` → `src/shared/`. Prefer `@features/` over `@/` for feature imports.
+- Dùng alias cho mọi import ra khỏi thư mục hiện tại (chỉ giữ relative `./X` cho file cùng thư mục). Relative 2+ cấp (`../../...`) bị rule `no-restricted-imports` warn trong `eslint.config.js` — thay bằng `@features/<ten-feature>/...`, `@shared/...`, `@/...` cho app shell (`@/core/...`).
 - `verbatimModuleSyntax` + `erasableSyntaxOnly` are on: use `import type { ... }` for types, no TS enums/namespaces/parameter properties.
 - `noUnusedLocals`/`noUnusedParameters` are on — `build` fails on dead code.
 

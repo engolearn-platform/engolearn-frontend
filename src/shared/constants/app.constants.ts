@@ -12,4 +12,14 @@ export const ROUTES = {
   TOPIC_CONTEXT: "/topics/:topicId/context",
   TOPIC_VOCAB: "/topics/:topicId/vocab/:vocabId",
   ADMIN_TOPICS: "/admin/topics",
+  ADMIN_TOPIC_CREATE: "/admin/topics/create",
+  ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
+  ADMIN_TOPIC_ITEM_SECTION: "/admin/topics/create/items/:itemId/:sectionKey",
 } as const;
+
+export function topicItemSectionPath(itemId: string, section: string): string {
+  return ROUTES.ADMIN_TOPIC_ITEM_SECTION.replace(":itemId", itemId).replace(
+    ":sectionKey",
+    section,
+  );
+}
