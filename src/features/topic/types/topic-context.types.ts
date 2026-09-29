@@ -2,7 +2,7 @@ export type DialogueSpeakerRole = "waiter" | "learner";
 
 export type LearningStepState = "active" | "todo";
 
-export type TopicStructureState = "active" | "locked";
+export type TopicStructureState = "active" | "locked" | "done" | "available";
 
 export type LessonObjectiveIcon = "timer" | "mic" | "badge";
 

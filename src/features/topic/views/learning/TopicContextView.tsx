@@ -2,6 +2,10 @@ import { useNavigate, useParams } from "react-router";
 import { ROUTES } from "@shared/constants";
 import { EmptyState, Loading } from "@shared/components";
 import { useTopicContext } from "../../hooks/useTopicContext";
+import {
+  buildTopicVocabPath,
+  getFirstVocabId,
+} from "../../hooks/useTopicVocab";
 import { ContextTopBar } from "../../components/learning/ContextTopBar";
 import { StageStatusCard } from "../../components/learning/StageStatusCard";
 import { ContextHeroCard } from "../../components/learning/ContextHeroCard";
@@ -22,6 +26,16 @@ export default function TopicContextView() {
   };
   const goTopics = () => {
     navigate(ROUTES.TOPICS);
+  };
+  const goVocab = () => {
+    navigate(buildTopicVocabPath(topicId ?? "", getFirstVocabId()));
+  };
+  const goStructure = (id: string) => {
+    if (id === "context") {
+      return;
+    } else if (id === "vocab") {
+      goVocab();
+    }
   };
   // Audio wiring lands with the real playback API.
   const handlePlayAll = () => {
@@ -89,7 +103,7 @@ export default function TopicContextView() {
                   title={data.readinessTitle}
                   description={data.readinessDescription}
                   actionLabel={data.readinessActionLabel}
-                  onAction={goTopics}
+                  onAction={goVocab}
                 />
               </div>
             </div>
@@ -102,6 +116,7 @@ export default function TopicContextView() {
                 <TopicStructureNav
                   heading={data.structureHeading}
                   items={data.structure}
+                  onNavigate={goStructure}
                 />
                 <MemoryTipCard
                   title={data.memoryTipTitle}
@@ -115,7 +130,7 @@ export default function TopicContextView() {
       <LearningFooterNav
         onBack={goBack}
         onSkip={goTopics}
-        onContinue={goTopics}
+        onContinue={goVocab}
       />
     </div>
   );

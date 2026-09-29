@@ -5,6 +5,7 @@ import { ROUTES } from "@shared/constants";
 import TopicPage from "./views/TopicPage";
 import TopicDetailView from "./views/learning/TopicDetailView";
 import TopicContextView from "./views/learning/TopicContextView";
+import TopicVocabView from "./views/learning/TopicVocabView";
 import TopicManagementListView from "./views/management/TopicManagementListView";
 
 export const TopicRoutes: RouteObject[] = [
@@ -41,6 +42,18 @@ export const TopicRoutes: RouteObject[] = [
       {
         path: "",
         Component: TopicContextView,
+      },
+    ],
+  },
+  {
+    // Topic Item vocabulary screen (Stitch: "Topic Item: 3. Từ vựng");
+    // vocabId drives position tracking across the vocab list.
+    path: ROUTES.TOPIC_VOCAB,
+    Component: LearningLayout,
+    children: [
+      {
+        path: "",
+        Component: TopicVocabView,
       },
     ],
   },

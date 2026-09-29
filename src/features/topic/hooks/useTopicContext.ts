@@ -71,7 +71,7 @@ const MOCK_TOPIC_CONTEXT: TopicContext = {
   structureHeading: "Cấu trúc chủ đề",
   structure: [
     { id: "context", label: "Ngữ cảnh & Hội thoại", state: "active" },
-    { id: "vocab", label: "Từ vựng cốt lõi", state: "locked" },
+    { id: "vocab", label: "Từ vựng cốt lõi", state: "available" },
     { id: "expressions", label: "Mẫu câu thực tế", state: "locked" },
     { id: "practice", label: "Luyện tập & Phản xạ", state: "locked" },
   ],
