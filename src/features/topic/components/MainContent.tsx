@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router";
+import { ROUTES } from "@shared/constants";
 import { TopicCard } from "../components/TopicCard";
 import TopicFilterChips from "../components/TopicFilterChips";
 import type { TopicCardProps } from "../components/TopicCard";
@@ -34,6 +36,11 @@ const topics: TopicCardProps[] = [
 ];
 
 export default function MainContent() {
+  const navigate = useNavigate();
+
+  const goTopicDetail = (id: string) => {
+    navigate(ROUTES.TOPIC_DETAIL.replace(":topicId", id));
+  };
   return (
     <div className="flex-1 p-margin-page lg:p-8 xl:p-10 space-y-6 md:space-y-8">
       {/* Page Heading */}
@@ -52,7 +59,7 @@ export default function MainContent() {
       {/* Topics Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3">
         {topics.map((t) => (
-          <TopicCard key={t.id} {...t} />
+          <TopicCard key={t.id} {...t} onAction={() => goTopicDetail(t.id)} />
         ))}
       </div>
     </div>

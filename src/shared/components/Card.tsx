@@ -1,14 +1,31 @@
-import type { ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { cn } from "../utils";
 
 interface CardProps {
   children: ReactNode;
   className?: string;
+  onClick?: (event: MouseEvent<HTMLDivElement>) => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  tabIndex?: number;
+  role?: string;
 }
 
-export function Card({ children, className }: CardProps) {
+export function Card({
+  children,
+  className,
+  onClick,
+  onKeyDown,
+  tabIndex,
+  role,
+}: CardProps) {
   return (
-    <div className={cn("rounded-lg border p-4 border-black/20", className)}>
+    <div
+      className={cn("rounded-lg border p-4 border-black/20", className)}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      tabIndex={tabIndex}
+      role={role}
+    >
       {children}
     </div>
   );
