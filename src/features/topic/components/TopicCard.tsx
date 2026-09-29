@@ -1,4 +1,5 @@
 import { Zap, CheckCircle2, ListChecks, Clock, Link2, Play, Lock, ArrowRight } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { Card } from "@shared/components/Card";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils/cn";
@@ -21,12 +22,31 @@ export function TopicCard({ title, imgSrc, status, vocabCount, duration, progres
   const isLocked = status === "locked";
   const isInProgress = status === "inProgress";
   const isCompleted = status === "completed";
+  const isClickable = !isLocked && onAction !== undefined;
+
+  const handleCardClick = () => {
+    if (isClickable) {
+      onAction();
+    }
+  };
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (isClickable && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      onAction();
+    }
+  };
 
   return (
     <Card
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      tabIndex={isClickable ? 0 : undefined}
+      role={isClickable ? "link" : undefined}
       className={cn(
         "overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group relative p-0 rounded-2xl border-outline-variant/40",
-        isLocked && "opacity-75 grayscale-[30%]"
+        isLocked && "opacity-75 grayscale-[30%]",
+        isClickable && "cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
       )}
     >
       {/* Image / Banner area */}
@@ -120,12 +140,27 @@ export function TopicCard({ title, imgSrc, status, vocabCount, duration, progres
             {linkLabel ?? ""}
           </span>
           {isInProgress && (
-            <Button variant="default" size="icon" onClick={onAction} className="rounded-full">
+            <Button
+              variant="default"
+              size="icon"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction?.();
+              }}
+              className="rounded-full"
+            >
               <Play className="size-4" fill="currentColor" />
             </Button>
           )}
           {isCompleted && (
-            <button className="text-primary text-label-sm font-semibold flex items-center gap-1 hover:underline">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction?.();
+              }}
+              className="text-primary text-label-sm font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+            >
               Ôn tập <ArrowRight className="size-4" />
             </button>
           )}
