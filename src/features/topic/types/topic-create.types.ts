@@ -312,3 +312,116 @@ export const TOPIC_ITEM_CONTEXT_DEFAULT_DRAFT: TopicItemContextDraft = {
   ],
   duration: "2",
 };
+
+/**
+ * Step 2 — Editor Từ vựng (Vocabulary) của 1 Topic Item.
+ * Stitch: "Admin — 4. Quản lý Từ vựng (Vocabulary Manager)".
+ * Tối đa 5 mục từ / item để tối ưu khả năng ghi nhớ (quy tắc sư phạm Stitch).
+ */
+export type VocabularyPos = "verb" | "noun" | "adjective" | "phrase";
+
+export interface TopicVocabularyExample {
+  en: string;
+  vi: string;
+}
+
+export interface TopicVocabularyItem {
+  id: string;
+  word: string;
+  pos: VocabularyPos;
+  ipa: string;
+  meaningVi: string;
+  audioFile: string;
+  audioUploaded: boolean;
+  examples: TopicVocabularyExample[];
+  collocations: string[];
+}
+
+export interface TopicVocabularyPosOption {
+  value: VocabularyPos;
+  label: string;
+}
+
+export const TOPIC_VOCAB_MAX = 5;
+
+export const TOPIC_VOCAB_POS_OPTIONS: TopicVocabularyPosOption[] = [
+  { value: "noun", label: "noun (danh từ)" },
+  { value: "verb", label: "verb (động từ)" },
+  { value: "adjective", label: "adjective (tính từ)" },
+  { value: "phrase", label: "phrase (cụm từ)" },
+];
+
+export const TOPIC_VOCABULARY_MOCK_CHOOSING_FOOD: TopicVocabularyItem[] = [
+  {
+    id: "vocab-recommend",
+    word: "recommend",
+    pos: "verb",
+    ipa: "/ˌrek.əˈmend/",
+    meaningVi: "gợi ý, tiến cử món ngon",
+    audioFile: "recommend_pronunciation_us.mp3",
+    audioUploaded: true,
+    examples: [
+      {
+        en: "What do you recommend for dinner?",
+        vi: "Bạn gợi ý món gì cho bữa tối?",
+      },
+      {
+        en: "Can you recommend a good local specialty?",
+        vi: "Bạn có thể giới thiệu một đặc sản địa phương ngon không?",
+      },
+    ],
+    collocations: ["recommend a dish", "highly recommend"],
+  },
+  {
+    id: "vocab-order",
+    word: "order",
+    pos: "verb",
+    ipa: "/ˈɔː.dər/",
+    meaningVi: "gọi món, đặt món",
+    audioFile: "order_pronunciation_us.mp3",
+    audioUploaded: true,
+    examples: [
+      {
+        en: "Are you ready to order?",
+        vi: "Quý khách đã sẵn sàng gọi món chưa?",
+      },
+      {
+        en: "I'd like to order the grilled salmon.",
+        vi: "Tôi muốn gọi món cá hồi nướng.",
+      },
+    ],
+    collocations: ["take an order", "ready to order"],
+  },
+  {
+    id: "vocab-appetizer",
+    word: "appetizer",
+    pos: "noun",
+    ipa: "/ˈæp.ə.taɪ.zər/",
+    meaningVi: "món khai vị",
+    audioFile: "appetizer_pronunciation_us.mp3",
+    audioUploaded: true,
+    examples: [
+      {
+        en: "We can start with some light appetizers.",
+        vi: "Chúng ta có thể bắt đầu với vài món khai vị nhẹ nhàng.",
+      },
+    ],
+    collocations: ["order an appetizer"],
+  },
+  {
+    id: "vocab-specialty",
+    word: "specialty",
+    pos: "noun",
+    ipa: "/ˈspeʃ.əl.ti/",
+    meaningVi: "món đặc sản, món đặc trưng của quán",
+    audioFile: "specialty_pronunciation_us.mp3",
+    audioUploaded: true,
+    examples: [
+      {
+        en: "What is the chef's specialty tonight?",
+        vi: "Món đặc sắc nhất của đầu bếp tối nay là gì?",
+      },
+    ],
+    collocations: ["house specialty", "local specialty"],
+  },
+];

@@ -2,22 +2,17 @@ import { Navigate, useNavigate, useParams } from "react-router";
 import { ROUTES, topicItemSectionPath } from "@shared/constants";
 import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
-import type { TopicItemStepKey } from "../../types/topic-create.types";
-import { isTopicItemSectionKey } from "../../types/topic-create.types";
-import TopicCreateFooterBar from "../../components/create/TopicCreateFooterBar";
-import TopicCreateStepper from "../../components/create/TopicCreateStepper";
-import TopicCreateWizardHeader from "../../components/create/TopicCreateWizardHeader";
-import TopicItemSectionTabRail from "../../components/create/editor/TopicItemSectionTabRail";
+import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
+import { isTopicItemSectionKey } from "@features/topic/types/topic-create.types";
+import TopicCreateFooterBar from "@features/topic/components/create/TopicCreateFooterBar";
+import TopicCreateStepper from "@features/topic/components/create/TopicCreateStepper";
+import TopicCreateWizardHeader from "@features/topic/components/create/TopicCreateWizardHeader";
+import TopicItemSectionTabRail from "@features/topic/components/create/editor/TopicItemSectionTabRail";
 
 const SECTION_COPY: Record<
-  Exclude<TopicItemStepKey, "context">,
+  Exclude<TopicItemStepKey, "context" | "vocabulary">,
   { title: string; description: string }
 > = {
-  vocabulary: {
-    title: "Biên soạn Từ vựng",
-    description:
-      "Màn biên soạn từ vựng đang được phát triển. Quay lại Bối cảnh để tiếp tục hoàn thiện nội dung.",
-  },
   expressions: {
     title: "Biên soạn Mẫu câu giao tiếp",
     description:
@@ -56,8 +51,8 @@ export default function TopicItemSectionPlaceholderView() {
     );
   }
 
-  if (sectionKey === "context") {
-    return <Navigate to={topicItemSectionPath(itemId, "context")} replace />;
+  if (sectionKey === "context" || sectionKey === "vocabulary") {
+    return <Navigate to={topicItemSectionPath(itemId, sectionKey)} replace />;
   }
 
   const copy = SECTION_COPY[sectionKey];

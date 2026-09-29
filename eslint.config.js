@@ -23,6 +23,21 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Bắt buộc alias cho import nhảy 2+ cấp thư mục (thay vì ../../...).
+      // Import cùng thư mục (./X) và 1 cấp (../types) vẫn cho phép.
+      // Mức warn để không phá ~100 import relative đã có — migrate dần.
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['../../**'],
+              message:
+                'Dùng alias thay cho relative 2+ cấp: @features/<ten-feature>/... cho code feature, @shared/... cho code dùng chung, @/... cho app shell (xem AGENTS.md).',
+            },
+          ],
+        },
+      ],
     },
   },
 )
