@@ -18,11 +18,11 @@
   ▼
 /topics/:topicId/vocab/:vocabId  03-topic-vocab.md — Từ vựng (VOCAB, paging theo vocabOrder)
   │ hết list → tạm về /topics (sẽ sang Expressions)
-  ▼
-(phần mẫu câu — SENTENCES, chưa có màn)
-/topics/:topicId/expressions    (planned)
-  ▼
-(phần luyện tập — EXERCISES, chưa có màn)
+▼
+/topics/:topicId/expressions    05-topic-expressions.md — Mẫu câu giao tiếp (SENTENCES)
+   │ CTA "Chuyển sang Luyện tập (Quiz)" / footer Tiếp tục (chưa có màn Practice)
+   ▼
+(plần luyện tập — EXERCISES, chưa có màn)
 /topics/:topicId/practice       (planned)
 ```
 
@@ -38,6 +38,7 @@ Tracking tiến trình xuyên suốt mọi chặng: `04-learning-progress.md`
 | 02 | `02-topic-context.md` | Bối cảnh & hội thoại — `.../context` | Đã implement (mock, audio noop) |
 | 03 | `03-topic-vocab.md` | Từ vựng — `.../vocab/:vocabId` | Đã implement (mock, audio simulation) |
 | 04 | `04-learning-progress.md` | Contract progress dùng chung | Đã implement (mock PATCH) |
+| 05 | `05-topic-expressions.md` | Mẫu câu giao tiếp — `.../expressions` | Đã implement (mock, audio simulation) |
 
 ## Quy ước của package
 

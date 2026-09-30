@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ROUTES } from "@shared/constants";
 import { EmptyState, Loading } from "@shared/components";
@@ -6,6 +7,11 @@ import {
   buildTopicVocabPath,
   getFirstVocabId,
 } from "../../hooks/useTopicVocab";
+import {
+  deriveSidebarStates,
+  useTopicProgressContext,
+} from "../../hooks/TopicProgressContext";
+import { STAGE_TO_PART } from "../../types/topic-progress.types";
 import { ContextTopBar } from "../../components/learning/ContextTopBar";
 import { StageStatusCard } from "../../components/learning/StageStatusCard";
 import { ContextHeroCard } from "../../components/learning/ContextHeroCard";
@@ -20,6 +26,13 @@ export default function TopicContextView() {
   const { topicId } = useParams();
   const navigate = useNavigate();
   const { data, loading, error } = useTopicContext(topicId ?? "");
+  const { furthest, currentStage, setCurrentStage } =
+    useTopicProgressContext();
+
+  // Mark current stage on mount.
+  useEffect(() => {
+    setCurrentStage("CONTEXT");
+  }, [setCurrentStage]);
 
   const goBack = () => {
     navigate(-1);
@@ -35,6 +48,12 @@ export default function TopicContextView() {
       return;
     } else if (id === "vocab") {
       goVocab();
+    } else if (id === "expressions") {
+      navigate(
+        ROUTES.TOPIC_EXPRESSIONS.replace(":topicId", topicId ?? ""),
+      );
+    } else if (id === "practice") {
+      navigate(ROUTES.TOPIC_PRACTICE.replace(":topicId", topicId ?? ""));
     }
   };
   // Audio wiring lands with the real playback API.
@@ -65,6 +84,13 @@ export default function TopicContextView() {
       </div>
     );
   }
+
+  const structureItems = deriveSidebarStates(
+    data.structure,
+    STAGE_TO_PART,
+    furthest,
+    currentStage,
+  );
 
   return (
     <div className="min-h-full bg-background text-on-surface">
@@ -115,7 +141,7 @@ export default function TopicContextView() {
                 />
                 <TopicStructureNav
                   heading={data.structureHeading}
-                  items={data.structure}
+                  items={structureItems}
                   onNavigate={goStructure}
                 />
                 <MemoryTipCard

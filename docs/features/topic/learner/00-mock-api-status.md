@@ -8,10 +8,10 @@
 |-----------|------------------|-----------|----------|---------|
 | Detail (`01`) | 🟡 `useTopicDetail` mock 5 units | — (không có audio) | 🟡 `progressPercent`/`stats` mock | CTA `onStartUnit` bỏ qua `unitId`, luôn vào context |
 | Context (`02`) | 🟡 `useTopicContext` mock | 🟡 handlers noop | ⬜ chưa báo CONTEXT (chờ chốt rule) | `getFirstVocabId()` đọc mock `VOCAB_ORDER` |
-| Vocab (`03`) | 🟡 `useTopicVocab` mock 3 từ (ảnh 2 từ phụ là picsum) | 🟡 simulation 900ms | 🟡 PATCH mock (log console) | Cuối list về `/topics` tạm, chờ Expressions |
+| Vocab (`03`) | 🟡 `useTopicVocab` mock 3 từ (ảnh 2 từ phụ là picsum) | 🟡 simulation 900ms | 🟡 PATCH mock (log console) | Cuối list → `.../expressions`; sidebar đủ 4 stage (shared provider) |
 | Progress (`04`) | — | — | 🟡 GET initial mock + PATCH mock | Forward-only đã verify Playwright |
-| Expressions (SENTENCES) | ⬜ | ⬜ | ⬜ làm theo recipe `04` §6 | Chưa có màn |
-| Practice (EXERCISES) | ⬜ | ⬜ | ⬜ làm theo recipe `04` §6 | Chưa có màn |
+| Expressions (`05`) | 🟡 `useTopicExpressions` mock 3 purposes (2 ví dụ + 1 sequence) | 🟡 simulation 900ms | 🟡 PATCH mock (log console, `SENTENCES` stage, theo recipe `04` §6) | Sau stage VOCAB → [.../expressions](./05-topic-expressions.md). Continue + sidebar Practice → `.../practice` (placeholder). |
+| Practice (EXERCISES) | ⬜ placeholder (`TopicPracticePlaceholderView`, EmptyState) | — | 🟡 `setCurrentStage("EXERCISES")` để sidebar highlight đúng | Chưa có UI Stitch — thay bằng view thật khi làm màn Practice |
 
 ## Thứ tự đấu nối đề xuất (khi có backend)
 
