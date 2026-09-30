@@ -7,12 +7,12 @@ import {
   buildTopicVocabPath,
   getFirstVocabId,
 } from "../../hooks/useTopicVocab";
-import { useTopicProgress } from "../../hooks/useTopicProgress";
+import { buildTopicExpressionsPath } from "../../hooks/useTopicExpressions";
 import {
-  PART_ORDER,
-  STAGE_TO_PART,
-} from "../../types/topic-progress.types";
-import type { TopicStructureState } from "../../types/topic-context.types";
+  deriveSidebarStates,
+  useTopicProgressContext,
+} from "../../hooks/TopicProgressContext";
+import { STAGE_TO_PART } from "../../types/topic-progress.types";
 import { ContextTopBar } from "../../components/learning/ContextTopBar";
 import { LessonProgressCard } from "../../components/learning/LessonProgressCard";
 import { TopicStructureNav } from "../../components/learning/TopicStructureNav";
@@ -34,7 +34,13 @@ export default function TopicVocabView() {
     resolvedTopicId,
     resolvedVocabId,
   );
-  const { furthest, reportProgress } = useTopicProgress(resolvedTopicId);
+  const { furthest, currentStage, setCurrentStage, reportProgress } =
+    useTopicProgressContext();
+
+  // Mark current stage on mount.
+  useEffect(() => {
+    setCurrentStage("VOCAB");
+  }, [setCurrentStage]);
 
   const [playingAccent, setPlayingAccent] = useState<PlayingAccent>(null);
   const [playingSentenceId, setPlayingSentenceId] = useState<string | null>(
@@ -135,7 +141,8 @@ export default function TopicVocabView() {
     if (data.nextVocabId) {
       navigate(buildTopicVocabPath(resolvedTopicId, data.nextVocabId));
     } else {
-      goTopics();
+      // End of vocab list → continue to Useful Expressions.
+      navigate(buildTopicExpressionsPath(resolvedTopicId));
     }
   };
   const goStructure = (id: string) => {
@@ -145,22 +152,21 @@ export default function TopicVocabView() {
       // Already inside the VOCAB part — jump to its entry instead of
       // dumping the learner back to the topic list.
       navigate(buildTopicVocabPath(resolvedTopicId, getFirstVocabId()));
+    } else if (id === "expressions") {
+      navigate(buildTopicExpressionsPath(resolvedTopicId));
+    } else if (id === "practice") {
+      navigate(ROUTES.TOPIC_PRACTICE.replace(":topicId", resolvedTopicId));
     }
   };
 
-  // Display-only locks: stages at/behind furthest are done/active,
-  // stages ahead stay locked. Navigation itself is never blocked.
-  const furthestOrder = PART_ORDER.indexOf(furthest.stage);
-  const structureItems = data.structure.map((item) => {
-    const part = STAGE_TO_PART[item.id];
-    if (!part) {
-      return item;
-    }
-    const order = PART_ORDER.indexOf(part);
-    const state: TopicStructureState =
-      order < furthestOrder ? "done" : order === furthestOrder ? "active" : "locked";
-    return { ...item, state };
-  });
+  // Sidebar reflects both `furthest` (tracking) and `currentStage`
+  // (where the user is now). Navigation itself is never blocked.
+  const structureItems = deriveSidebarStates(
+    data.structure,
+    STAGE_TO_PART,
+    furthest,
+    currentStage,
+  );
 
   // Audio wiring lands with the real TTS API; for now simulate the
   // 900ms playing state from the Stitch prototype.

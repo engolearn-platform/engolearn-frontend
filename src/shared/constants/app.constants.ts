@@ -11,6 +11,10 @@ export const ROUTES = {
   // see docs/handout/topic-item-context-url-note.md.
   TOPIC_CONTEXT: "/topics/:topicId/context",
   TOPIC_VOCAB: "/topics/:topicId/vocab/:vocabId",
+  TOPIC_EXPRESSIONS: "/topics/:topicId/expressions",
+  // Practice (EXERCISES) screen has no Stitch UI yet — path reserved so
+  // sidebar/footer navigation lands on a placeholder instead of blank.
+  TOPIC_PRACTICE: "/topics/:topicId/practice",
   ADMIN_TOPICS: "/admin/topics",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
   ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
