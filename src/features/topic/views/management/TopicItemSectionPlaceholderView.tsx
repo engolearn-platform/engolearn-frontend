@@ -10,14 +10,9 @@ import TopicCreateWizardHeader from "@features/topic/components/create/TopicCrea
 import TopicItemSectionTabRail from "@features/topic/components/create/editor/TopicItemSectionTabRail";
 
 const SECTION_COPY: Record<
-  Exclude<TopicItemStepKey, "context" | "vocabulary">,
+  Exclude<TopicItemStepKey, "context" | "vocabulary" | "expressions">,
   { title: string; description: string }
 > = {
-  expressions: {
-    title: "Biên soạn Mẫu câu giao tiếp",
-    description:
-      "Màn biên soạn mẫu câu đang được phát triển. Quay lại Bối cảnh để tiếp tục hoàn thiện nội dung.",
-  },
   quiz: {
     title: "Biên soạn Bài tập & Quiz",
     description:
@@ -51,7 +46,11 @@ export default function TopicItemSectionPlaceholderView() {
     );
   }
 
-  if (sectionKey === "context" || sectionKey === "vocabulary") {
+  if (
+    sectionKey === "context" ||
+    sectionKey === "vocabulary" ||
+    sectionKey === "expressions"
+  ) {
     return <Navigate to={topicItemSectionPath(itemId, sectionKey)} replace />;
   }
 

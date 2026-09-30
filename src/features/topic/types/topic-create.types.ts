@@ -425,3 +425,98 @@ export const TOPIC_VOCABULARY_MOCK_CHOOSING_FOOD: TopicVocabularyItem[] = [
     collocations: ["house specialty", "local specialty"],
   },
 ];
+
+/**
+ * Step 2 — Editor Mẫu câu giao tiếp (Expressions) của 1 Topic Item.
+ * Stitch: "Admin — 5. Biên soạn Mẫu câu giao tiếp (Expressions Editor)".
+ * JSON spec: purposes[] (local, không load global/DB) + examples[]
+ * (tối đa 3 purposes / 3 examples mỗi purpose — chốt Phase 1).
+ * `verbatimModuleSyntax` + `erasableSyntaxOnly` đang bật: union string,
+ * không dùng enum.
+ */
+export type ExpressionExampleType =
+  | "BASIC_SUGGESTION"
+  | "POLITE_INQUIRY"
+  | "SLOT_PATTERN";
+
+export interface TopicExpressionExample {
+  id: string;
+  type: ExpressionExampleType;
+  textEn: string;
+  textVi: string;
+  usageNote: string;
+  audioFile: string | null;
+  linkedVocabIds: string[];
+}
+
+export interface TopicExpressionPurpose {
+  id: string;
+  purposeEn: string;
+  purposeVi: string;
+  orderIndex: number;
+  examples: TopicExpressionExample[];
+}
+
+export interface TopicExpressionTypeOption {
+  value: ExpressionExampleType;
+  label: string;
+}
+
+export const TOPIC_EXPRESSION_MAX_PURPOSES = 3;
+
+export const TOPIC_EXPRESSION_MAX_EXAMPLES = 3;
+
+export const TOPIC_EXPRESSION_TYPE_OPTIONS: TopicExpressionTypeOption[] = [
+  { value: "BASIC_SUGGESTION", label: "Căn bản (Basic suggestion)" },
+  { value: "POLITE_INQUIRY", label: "Lịch sự (Polite inquiry)" },
+  { value: "SLOT_PATTERN", label: "Mẫu thế chỗ (Slot pattern)" },
+];
+
+export const TOPIC_EXPRESSIONS_MOCK_CHOOSING_FOOD: TopicExpressionPurpose[] = [
+  {
+    id: "purpose-recommendations",
+    purposeEn: "Asking for recommendations",
+    purposeVi: "Hỏi gợi ý món ăn",
+    orderIndex: 1,
+    examples: [
+      {
+        id: "expr-recommend-01",
+        type: "BASIC_SUGGESTION",
+        textEn: "What do you recommend?",
+        textVi: "Bạn có gợi ý món nào ngon không?",
+        usageNote:
+          "Dùng để hỏi trực tiếp bồi bàn khi mở thực đơn.",
+        audioFile: "what_do_you_recommend.mp3",
+        linkedVocabIds: ["vocab-recommend"],
+      },
+      {
+        id: "expr-recommend-02",
+        type: "POLITE_INQUIRY",
+        textEn: "Can you recommend a good dish?",
+        textVi: "Bạn có thể gợi ý một món ăn ngon được không?",
+        usageNote:
+          "Cách hỏi nhã nhặn khi lần đầu tới quán hoặc phân vân giữa nhiều lựa chọn.",
+        audioFile: null,
+        linkedVocabIds: ["vocab-recommend"],
+      },
+    ],
+  },
+  {
+    id: "purpose-ordering",
+    purposeEn: "Expressing choices & Ordering",
+    purposeVi: "Bày tỏ lựa chọn & Gọi món",
+    orderIndex: 2,
+    examples: [
+      {
+        id: "expr-order-01",
+        type: "SLOT_PATTERN",
+        textEn: "I'd like to order [món ăn], please.",
+        textVi: "Tôi muốn gọi món [món ăn], làm ơn.",
+        usageNote:
+          "Mẫu thế chỗ: [món ăn] → the grilled salmon / today's soup.",
+        audioFile: "id_like_to_order.mp3",
+        linkedVocabIds: ["vocab-order"],
+      },
+    ],
+  },
+];
