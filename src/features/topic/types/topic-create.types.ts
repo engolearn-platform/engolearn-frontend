@@ -520,3 +520,219 @@ export const TOPIC_EXPRESSIONS_MOCK_CHOOSING_FOOD: TopicExpressionPurpose[] = [
     ],
   },
 ];
+
+/**
+ * Step 2 — Editor Bài tập & Quiz của 1 Topic Item.
+ * Stitch: "Admin — 6. Quản lý Quizzes (Nhóm Quiz & Thẻ câu hỏi)".
+ * Scope hiện tại fix cứng 2 dạng quiz (2 nhóm, không CRUD nhóm):
+ * SITUATIONAL_CHOICE + FILL_BLANK (`MATCHING` / `SENTENCE_ORDER` để sau).
+ * Field đặt camelCase, map 1:1 với JSON backend (snake_case):
+ * quiz_id→id, quiz_type→quizType/kind, order_index→orderIndex,
+ * text_en→textEn, audio_url→audioUrl, is_correct→isCorrect,
+ * sentence_with_blank→sentenceWithBlank, word_bank→wordBank,
+ * correct_option→correctOption, explanation_ok→explanationOk,
+ * explanation_ng→explanationNg.
+ * `verbatimModuleSyntax` + `erasableSyntaxOnly` đang bật: union string,
+ * không dùng enum.
+ */
+export type QuizType = "SITUATIONAL_CHOICE" | "FILL_BLANK";
+
+export interface TopicQuizOption {
+  label: string;
+  textEn: string;
+  isCorrect: boolean;
+}
+
+export interface TopicSituationalQuestion {
+  id: string;
+  kind: "SITUATIONAL_CHOICE";
+  prompt: string;
+  audioUrl: string | null;
+  options: TopicQuizOption[];
+  correct: string;
+  explanationOk: string;
+  explanationNg: string;
+}
+
+export interface TopicFillBlankSentence {
+  textEn: string;
+  meaningVi: string;
+  audioUrl: string | null;
+}
+
+export interface TopicFillBlankQuestion {
+  id: string;
+  kind: "FILL_BLANK";
+  sentence: TopicFillBlankSentence;
+  sentenceWithBlank: string;
+  wordBank: string[];
+  correctOption: string;
+  explanation: string | null;
+  tips: string;
+}
+
+export type TopicQuizQuestion =
+  | TopicSituationalQuestion
+  | TopicFillBlankQuestion;
+
+export interface TopicQuizGroup {
+  id: string;
+  quizType: QuizType;
+  title: string;
+  instructions: string;
+  orderIndex: number;
+  questions: TopicQuizQuestion[];
+}
+
+export interface TopicQuizTypeOption {
+  value: QuizType;
+  label: string;
+}
+
+export const TOPIC_QUIZ_MIN_QUESTIONS = 2;
+
+export const TOPIC_QUIZ_MAX_OPTIONS = 6;
+
+export const TOPIC_QUIZ_TIPS_MAX = 250;
+
+export const TOPIC_QUIZ_TYPE_OPTIONS: TopicQuizTypeOption[] = [
+  { value: "SITUATIONAL_CHOICE", label: "Tình huống • Situational choice" },
+  { value: "FILL_BLANK", label: "Điền từ • Fill in the blank" },
+];
+
+export const TOPIC_QUIZ_MOCK_CHOOSING_FOOD: TopicQuizGroup[] = [
+  {
+    id: "quiz-situational",
+    quizType: "SITUATIONAL_CHOICE",
+    title: "Phản xạ tình huống (Situational Choice)",
+    instructions:
+      "Học viên phản xạ đối thoại ngữ cảnh tự nhiên tại bàn ăn nhà hàng.",
+    orderIndex: 1,
+    questions: [
+      {
+        id: "quiz-q-sit-01",
+        kind: "SITUATIONAL_CHOICE",
+        prompt:
+          "Bạn đang ngồi ăn sáng cùng đồng nghiệp và muốn hỏi xem đối phương thường gọi món gì hoặc muốn nhờ gợi ý món ngon.",
+        audioUrl: "https://cdn.engolearn.vn/audio/quiz_sit_01.mp3",
+        options: [
+          { label: "A", textEn: "What do you recommend?", isCorrect: true },
+          { label: "B", textEn: "I want food now.", isCorrect: false },
+          { label: "C", textEn: "Bring menu quickly.", isCorrect: false },
+          { label: "D", textEn: "Where is the receipt?", isCorrect: false },
+        ],
+        correct: "A",
+        explanationOk:
+          "Chính xác! “What do you recommend?” là cách hỏi gợi ý lịch sự nhất trong ngữ cảnh này.",
+        explanationNg:
+          "Chưa chính xác. Cụm “What do you recommend?” mới là cách hỏi gợi ý lịch sự nhất.",
+      },
+      {
+        id: "quiz-q-sit-02",
+        kind: "SITUATIONAL_CHOICE",
+        prompt:
+          "Người phục vụ mang nhầm món salad mà bạn không ăn cay được. Bạn phản hồi như thế nào lịch sự nhất?",
+        audioUrl: null,
+        options: [
+          {
+            label: "A",
+            textEn: "Could you check this dish please?",
+            isCorrect: true,
+          },
+          {
+            label: "B",
+            textEn: "Take this back instantly.",
+            isCorrect: false,
+          },
+        ],
+        correct: "A",
+        explanationOk:
+          "Chính xác! “Could you check this dish please?” vừa lịch sự vừa nêu rõ vấn đề.",
+        explanationNg:
+          "Chưa chính xác. Câu mệnh lệnh “Take this back instantly.” quá thô lỗ với nhân viên phục vụ.",
+      },
+      {
+        id: "quiz-q-sit-03",
+        kind: "SITUATIONAL_CHOICE",
+        prompt:
+          "Bạn muốn xin thêm vài phút để đọc menu trước khi bồi bàn ghi món.",
+        audioUrl: null,
+        options: [
+          {
+            label: "A",
+            textEn: "Could we have a few more minutes to decide?",
+            isCorrect: true,
+          },
+          { label: "B", textEn: "Give us the bill now.", isCorrect: false },
+          {
+            label: "C",
+            textEn: "We don't need the menu.",
+            isCorrect: false,
+          },
+        ],
+        correct: "A",
+        explanationOk:
+          "Chính xác! Đây là mẫu câu xin thêm thời gian chuẩn mực trong nhà hàng.",
+        explanationNg:
+          "Chưa chính xác. Chỉ có “Could we have a few more minutes to decide?” diễn đạt đúng ý xin thêm thời gian.",
+      },
+    ],
+  },
+  {
+    id: "quiz-fill-blank",
+    quizType: "FILL_BLANK",
+    title: "Điền từ vào chỗ trống & Ngân hàng từ (Fill-in-the-Blank)",
+    instructions:
+      "Ôn tập từ vựng trọng tâm: món gợi ý, gọi món, hoá đơn qua Word Bank.",
+    orderIndex: 2,
+    questions: [
+      {
+        id: "quiz-q-fib-01",
+        kind: "FILL_BLANK",
+        sentence: {
+          textEn: "Can you recommend a good local specialty?",
+          meaningVi:
+            "Bạn có thể gợi ý một món đặc sản địa phương ngon không?",
+          audioUrl: null,
+        },
+        sentenceWithBlank: "Can you ___ a good local specialty?",
+        wordBank: ["order", "recommend", "bill", "starter"],
+        correctOption: "recommend",
+        explanation:
+          "Đáp án đúng là “recommend” (gợi ý) — động từ đi với tân ngữ chỉ món ăn khi nhờ tư vấn.",
+        tips: "“Recommend” dùng khi nhờ gợi ý; đừng nhầm với “order” (gọi món).",
+      },
+      {
+        id: "quiz-q-fib-02",
+        kind: "FILL_BLANK",
+        sentence: {
+          textEn: "Are you ready to order or do you need a minute?",
+          meaningVi:
+            "Quý khách đã sẵn sàng gọi món chưa, hay cần thêm một phút?",
+          audioUrl: null,
+        },
+        sentenceWithBlank: "Are you ready to ___ or do you need a minute?",
+        wordBank: ["order", "recommend", "bill"],
+        correctOption: "order",
+        explanation:
+          "Đáp án đúng là “order” — cấu trúc “be ready to order” (sẵn sàng gọi món).",
+        tips: "Sau “ready to” luôn là động từ nguyên mẫu chỉ hành động tiếp theo.",
+      },
+      {
+        id: "quiz-q-fib-03",
+        kind: "FILL_BLANK",
+        sentence: {
+          textEn: "What is today's chef's specialty?",
+          meaningVi: "Món đặc sắc nhất của đầu bếp hôm nay là gì?",
+          audioUrl: null,
+        },
+        sentenceWithBlank: "What is today's chef's ___?",
+        wordBank: ["specialty", "menu", "bill"],
+        correctOption: "specialty",
+        explanation:
+          "Đáp án đúng là “specialty” (món đặc sắc) — cụm “chef's specialty” chỉ món tủ của đầu bếp.",
+        tips: "“Specialty” là danh từ; “special” là tính từ — đừng nhầm hai từ này.",
+      },
+    ],
+  },
+];
