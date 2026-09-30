@@ -29,7 +29,8 @@ nhật mốc mới nhất; mọi nội dung trước mốc luôn mở khóa.
 |----|--------|------|---------|
 | T0 | types | `types/topic-progress.types.ts` | `TopicItemPart` (union string, không enum — `verbatimModuleSyntax`), `TopicProgressStatus`, `FurthestReached`, `TopicProgress`, `UpdateProgressPayload`, `PART_ORDER` (thứ tự chuẩn), `STAGE_TO_PART` (sidebar id → part: context→CONTEXT, vocab→VOCAB, expressions→SENTENCES, practice→EXERCISES), `isAhead` (so strictly-ahead), `isUnlocked` (at-or-behind). |
 | S0 | `updateTopicProgress` | `services/topic-progress.service.ts` | **Mock** `PATCH /api/topic-items/:id/progress`: `console.info("[topic-progress] PATCH", {...})` + resolve progress mới. Khi API xong thay ruột bằng `httpService.patch` (giữ signature). |
-| H1 | `useTopicProgress` | `hooks/useTopicProgress.ts` | State `progress` (mock khởi tạo `furthest {VOCAB, 1}`) + `reportProgress(part, itemIndex): Promise<boolean>` — check `isAhead` qua `progressRef` (StrictMode-safe), advance + gọi S0, trả `true` khi advance. Export `{ progress, furthest, saving, reportProgress }`. |
+| H1 | `TopicProgressProvider` + `useTopicProgressContext` | `hooks/TopicProgressContext.tsx` | **Shared provider** (mount 1 lần trong `TopicLearningLayout`, bọc mọi learner stage). State `progress` (mock khởi tạo `furthest {VOCAB, 1}`) + `currentStage` (trang user đang đứng — set khi view mount) + `reportProgress(part, itemIndex)` (check `isAhead`, advance + gọi S0). `furthest` persist ở module-level (`persistedFurthest`) nên sống sót qua remount; re-sync progress (không đụng `currentStage` — view tự set khi mount, vì child effect chạy trước parent effect) khi `topicItemId` đổi. Hook `useTopicProgress.ts` cũ đã xóa để tránh nhầm file mock. |
+| H2 | `deriveSidebarStates` | `hooks/TopicProgressContext.tsx` | Derive states từ **cả** `furthest` (tracking xa nhất) + `currentStage` (đang ở đâu): `order === current` → `active`; `order > furthest` → `locked`; `order < furthest` → `done`; còn lại (`== furthest` nhưng user đã đi chỗ khác) → `available`. Generic `<T extends TopicStructureItem>` nên giữ nguyên field thừa (`to`). |
 | C0 | quiz notify | `VocabQuickCheckCard onCorrectAnswer?` | Pattern chuẩn cho interaction "điều kiện hoàn thành": component con gọi callback khi user làm đúng (optional prop, không vỡ callsite cũ). Màn part mới có quiz riêng thì copy pattern này. |
 | V0 | completion wiring | `TopicVocabView.tsx` (mẫu tham chiếu) | Sentinel `div.h-px` cuối nội dung + `IntersectionObserver(threshold 0.5)` → `reachedEnd`; `answeredCorrectly` từ C0; effect khi cả hai đủ + `reportedRef !== data.id` → `reportProgress("VOCAB", currentIndex)` 1 lần. Reset `answeredCorrectly/reachedEnd/reportedRef` khi đổi item. **Lưu ý đã fix:** effect observer phải dep theo `data.id` (chạy lúc loading thì sentinel chưa mount). |
 
@@ -45,8 +46,12 @@ nhật mốc mới nhất; mọi nội dung trước mốc luôn mở khóa.
 | `locked` | `Lock` outline | "Chưa mở" | part sau `future` — `disabled`, không `onNavigate` |
 
 `TopicStructureNav` nhận thêm `onNavigate?(id)` (non-breaking — Context view
-là nơi đầu tiên truyền). Derive states từ `furthest` bằng
-`PART_ORDER` + `STAGE_TO_PART` (mẫu trong Vocab view).
+là nơi đầu tiên truyền). Derive states bằng `deriveSidebarStates`
+(`furthest` + `currentStage`, xem H2) — mỗi learner view gọi
+`setCurrentStage(<PART>)` khi mount (CONTEXT / VOCAB / SENTENCES).
+Routes learner (`detail/context/vocab/expressions`) gom dưới **một**
+`TopicLearningLayout` cha (pathless) trong `routes.ts` để provider mount
+đúng 1 lần; `useParams` ở layout vẫn thấy `topicId` của child match.
 
 ## 4. Hành vi đã verify (Playwright, console thật)
 
