@@ -71,7 +71,7 @@ Reference implementation: `src/features/topic/routes.ts` + `src/features/Post/` 
 - Inside the feature, split only `components/` and `views/` by **experience surface** (what the UI is for, never who may access it):
   - `shared/` — reused by both surfaces (e.g. `TopicCard`, `FilterBar`).
   - `learning/` — learning experience (cards, practice, wizard steps).
-  - `management/` — management console UI following `docs/design-system/patterns.md` (`Admin Page`, `List Page`, `Form Pattern`). Accessible by any role holding the required permission — enforced by route guards (§7), never by folder placement.
+  - `management/` — management console UI following `docs/design-system/patterns.md` (`Admin Page`, `List Page`, `Form Pattern`). Accessible by any role holding the required permission — enforced by route guards (§7), never by folder placement. When it grows, group by **screen slice** inside `management/` (e.g. `management/list/`, `management/upsert/`).
 - `hooks/` and `types/` stay flat and surface-agnostic: one `Topic` type, one `useTopics()` hook.
 - `learning/` and `management/` must never import from each other. Both may import from `../shared/`, `../../hooks/`, `../../types/`, `@shared/*`, `@/core/*`.
 - Name management symbols by capability (`TopicManagementTable`, `useTopicManagement`), never by role (`AdminTopicTable`); roles change, capabilities don't.
@@ -105,7 +105,7 @@ Even then, split as `<domain>-management` (still by domain), never as one giant 
 // ✅ Allowed inside features/topic/views/management/TopicManagementListView.tsx
 import type { Topic } from "../../types/topic.types";
 import { useTopics } from "../../hooks/useTopics";
-import { TopicManagementTable } from "../../components/management/TopicManagementTable";
+import { TopicManagementTable } from "../../components/management/list/TopicManagementTable";
 import { TopicCard } from "../../components/shared/TopicCard";
 import { useFetch } from "@shared/hooks";
 import LearningLayout from "@/core/layouts/LearningLayout";

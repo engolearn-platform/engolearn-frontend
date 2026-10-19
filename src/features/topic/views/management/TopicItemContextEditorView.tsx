@@ -3,13 +3,13 @@ import { useNavigate, useParams } from "react-router";
 import { ROUTES, topicItemSectionPath } from "@shared/constants";
 import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
-import { useTopicItemContextForm } from "../../hooks/useTopicItemContextForm";
-import type { TopicItemStepKey } from "../../types/topic-create.types";
-import TopicCreateFooterBar from "../../components/create/TopicCreateFooterBar";
-import TopicCreateStepper from "../../components/create/TopicCreateStepper";
-import TopicCreateWizardHeader from "../../components/create/TopicCreateWizardHeader";
-import TopicItemSectionTabRail from "../../components/create/editor/TopicItemSectionTabRail";
-import TopicContextFormCard from "../../components/create/editor/TopicContextFormCard";
+import { useTopicItemContextForm } from "@features/topic/hooks/useTopicItemContextForm";
+import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
+import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
+import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
+import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
+import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
+import TopicContextFormCard from "@features/topic/components/management/upsert/editor/context/TopicContextFormCard";
 
 function stepDetail(
   steps: { key: string; detail: string }[],
@@ -78,10 +78,10 @@ export default function TopicItemContextEditorView() {
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
         <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicCreateWizardHeader
+          <TopicUpsertWizardHeader
             title={`Bước 2: Biên soạn Bối cảnh — ${item.titleEn}`}
           />
-          <TopicCreateStepper activeStep={1} />
+          <TopicUpsertStepper activeStep={1} />
         </div>
 
         {/* <TopicItemEditorBreadcrumb
@@ -111,7 +111,7 @@ export default function TopicItemContextEditorView() {
           />
         </form>
 
-        <TopicCreateFooterBar onBack={handleBack} onContinue={handleContinue} />
+        <TopicUpsertFooterBar onBack={handleBack} onContinue={handleContinue} />
       </div>
     </div>
   );

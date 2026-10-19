@@ -39,11 +39,11 @@
 | V0 | `TopicItemEditorView` | `views/management/TopicItemEditorView.tsx` (mới, ~15 dòng) | Dispatcher duy nhất của route gộp; không chứa UI. |
 | V1 | `TopicItemContextEditorView` | `views/management/TopicItemContextEditorView.tsx` (mới) | Container editor: `useParams` lấy `itemId`, lookup mock (lạ → `EmptyState` + nút quay lại), compose C0 + C1 + C2 + C3, owns `showErrors`, điều hướng Back/Continue/Tab. |
 | V2 | `TopicItemSectionPlaceholderView` | `views/management/TopicItemSectionPlaceholderView.tsx` (mới) | Đón 3 tab chưa có màn: validate `sectionKey` (lạ → `<Navigate>` context), copy theo section, TabRail vẫn navigate được, Footer chỉ `onBack` → context. |
-| C0 | `TopicCreateWizardHeader` / `TopicCreateStepper` / `TopicCreateFooterBar` | `components/create/*` (reuse) | Header truyền `title="Bước 2: Biên soạn Bối cảnh — {titleEn}"`; stepper `activeStep={1}`; footer chỉ truyền `onBack` + `onContinue` (placeholder chỉ `onBack`). |
-| C1 | `TopicItemEditorBreadcrumb` | `components/create/editor/TopicItemEditorBreadcrumb.tsx` (mới) | Breadcrumb Stitch: nút "Chủ đề" → `onBackToList`, title truncate `max-w-[200px]`, pill `rounded-full bg-primary-fixed/40 text-primary` "Topic Item XX: …". |
-| C2 | `TopicItemSectionTabRail` | `components/create/editor/TopicItemSectionTabRail.tsx` (mới) | Rail 4 tabs: active `bg-primary` + dot `bg-secondary-container-fixed`; inactive card + count pill (quiz rỗng → `bg-error-container`); presentational (`activeSection`, notes, `onSelect`), navigate do view quyết. Icon lucide: `Drama, SpellCheck, MessagesSquare, ListChecks`. |
-| C3 | `TopicContextFormCard` | `components/create/editor/TopicContextFormCard.tsx` (mới) | 1 Learning Card chứa toàn bộ form theo khung `TopicGeneralInfoCard`: `FIELD_CLASS`, `RequiredMark`, `showErrors` + `ring-error`. 5 khối: Title (counter n/80) / Prompt (chip "Gợi ý tư duy" + icon `Lightbulb`) / Description (counter n/250, 4 rows) / Dialogue (nút `PlusCircle` + container list) / Duration (select 2/5/10/15 phút, icon `Timer` + `ChevronDown`, theo pattern select Category, optional). |
-| C4 | `ContextDialogueTurnRow` | `components/create/editor/ContextDialogueTurnRow.tsx` (mới) | 1 dòng thoại: badge **tên người nói edit được** (input `maxLength={16}`, giữ màu theo role: learner `bg-primary` / còn lại xám; highlight row learner `bg-primary-fixed/20`), input EN (+`font-medium` khi learner) + VI italic, xóa `Trash2 hover:text-error`. |
+| C0 | `TopicUpsertWizardHeader` / `TopicUpsertStepper` / `TopicUpsertFooterBar` | `components/management/upsert/basic-info/*` (reuse) | Header truyền `title="Bước 2: Biên soạn Bối cảnh — {titleEn}"`; stepper `activeStep={1}`; footer chỉ truyền `onBack` + `onContinue` (placeholder chỉ `onBack`). |
+| C1 | `TopicItemEditorBreadcrumb` | `components/management/upsert/editor/TopicItemEditorBreadcrumb.tsx` (mới) | Breadcrumb Stitch: nút "Chủ đề" → `onBackToList`, title truncate `max-w-[200px]`, pill `rounded-full bg-primary-fixed/40 text-primary` "Topic Item XX: …". |
+| C2 | `TopicItemSectionTabRail` | `components/management/upsert/editor/TopicItemSectionTabRail.tsx` (mới) | Rail 4 tabs: active `bg-primary` + dot `bg-secondary-container-fixed`; inactive card + count pill (quiz rỗng → `bg-error-container`); presentational (`activeSection`, notes, `onSelect`), navigate do view quyết. Icon lucide: `Drama, SpellCheck, MessagesSquare, ListChecks`. |
+| C3 | `TopicContextFormCard` | `components/management/upsert/editor/context/TopicContextFormCard.tsx` (mới) | 1 Learning Card chứa toàn bộ form theo khung `TopicGeneralInfoCard`: `FIELD_CLASS`, `RequiredMark`, `showErrors` + `ring-error`. 5 khối: Title (counter n/80) / Prompt (chip "Gợi ý tư duy" + icon `Lightbulb`) / Description (counter n/250, 4 rows) / Dialogue (nút `PlusCircle` + container list) / Duration (select 2/5/10/15 phút, icon `Timer` + `ChevronDown`, theo pattern select Category, optional). |
+| C4 | `ContextDialogueTurnRow` | `components/management/upsert/editor/context/ContextDialogueTurnRow.tsx` (mới) | 1 dòng thoại: badge **tên người nói edit được** (input `maxLength={16}`, giữ màu theo role: learner `bg-primary` / còn lại xám; highlight row learner `bg-primary-fixed/20`), input EN (+`font-medium` khi learner) + VI italic, xóa `Trash2 hover:text-error`. |
 | H1 | `useTopicItemContextForm` | `hooks/useTopicItemContextForm.ts` (mới) | Mirror `useTopicBasicInfoForm`: `patch`, `updateTurn`, `addTurn` (role xen kẽ waiter/learner, giữ tối thiểu 1 turn khi xóa), `titleCount/descriptionCount`, `isValid`. |
 | T0 | types & consts | `types/topic-create.types.ts` (append) | `ContextDialogueRole` (`"waiter" \| "learner"`, union string — neo styling, tên hiển thị nằm ở `speaker` edit được), `ContextDialogueTurn` (+`speaker: string`), `TopicItemContextDraft`, `TOPIC_CONTEXT_TITLE_MAX = 80`, `TOPIC_CONTEXT_DESCRIPTION_MAX = 250`, `TOPIC_ITEM_SECTION_KEYS` + guard `isTopicItemSectionKey`, mock `TOPIC_ITEM_CONTEXT_DEFAULT_DRAFT` (giá trị Stitch của item choosing-food). Reuse `TopicItemStepKey` làm section key, không tạo union mới. |
 
@@ -63,7 +63,7 @@
 1. **Dữ liệu:** mock trong types + lookup `TOPIC_ITEMS_OVERVIEW_MOCK` theo `itemId`.
    Khi có API: service trong `src/shared/services/` + `useFetch` với callback
    `(signal: AbortSignal) => Promise<T>`, `loading` → `Loading`, `error` → `EmptyState`.
-2. **Lưu nháp:** `TopicCreateFooterBar` có nút "Lưu nháp" nhưng view chưa truyền
+2. **Lưu nháp:** `TopicUpsertFooterBar` có nút "Lưu nháp" nhưng view chưa truyền
    `onSaveDraft` (chờ endpoint, giống view 02).
 3. **Thêm/xóa dòng thoại:** state local, chưa persist; xóa giữ tối thiểu 1 turn.
 4. **3 editor còn lại:** V2 placeholder; khi màn thật landing, thêm nhánh trong V0
@@ -75,7 +75,7 @@
 
 - Shell dùng lại `ManagementLayout`; không clone header/sidebar `fixed` + `pl-72`
   của Stitch (sidebar đó không responsive).
-- Không dựng step-bar tròn (check/2/3) của Stitch — dùng `TopicCreateStepper`
+- Không dựng step-bar tròn (check/2/3) của Stitch — dùng `TopicUpsertStepper`
   đồng nhất view 01/02.
 - **Bỏ Live Preview** (theo chốt Phase 0): form 1 cột `max-w-[940px]` như view 01,
   không bento 7/5. JS sync input→preview của Stitch không còn đối tượng.

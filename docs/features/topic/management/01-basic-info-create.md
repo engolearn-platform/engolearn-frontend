@@ -1,6 +1,6 @@
-# Topic — Bước 1: Thông tin cơ bản (Basic Info Create)
+# Topic — Bước 1: Thông tin cơ bản (Basic Info Upsert)
 
-> Tài liệu workflow cho màn tạo topic mới (Stitch: "Admin — 1. Thông tin chủ đề").
+> Tài liệu workflow cho bước 1 của wizard upsert topic (tạo mới & cập nhật; Stitch: "Admin — 1. Thông tin chủ đề").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, upload ảnh, step 2-3).
 
 ## 1. Nguồn thiết kế (Stitch)
@@ -20,19 +20,21 @@
 - Trigger: nút "Tạo topic mới" (`TopicManagementPageHeader`) và nút tạo trong
   `TopicManagementEmptyState` → `navigate(ROUTES.ADMIN_TOPIC_CREATE)`
   (xem `TopicManagementListView.tsx` — `goToCreate`).
+- Component layer đã sẵn sàng cho mode cập nhật (xem README §4.2); route edit +
+  nạp draft theo `topicId` sẽ thêm trong change riêng — hiện route vẫn là `create`.
 
 ## 3. Bản đồ component
 
 | ID | Component | File | Ghi chú |
 |----|-----------|------|---------|
-| C1 | `TopicCreateWizardHeader` | `components/create/TopicCreateWizardHeader.tsx` | Eyebrow + H1 + pill Draft + autosave (static). Props optional có default. |
-| C2 | `TopicCreateStepper` | `components/create/TopicCreateStepper.tsx` | Stepper 3 bước, `activeStep = 0`. Reuse được cho step 2-3 qua prop `steps`/`activeStep`. |
-| C3 | `TopicGeneralInfoCard` | `components/create/TopicGeneralInfoCard.tsx` | Card form chính: EN/VI + CEFR + category + duration + description + counter. Controlled hoàn toàn qua `draft`/`onPatch`. |
-| C4 | `CefrLevelSelector` | `components/create/CefrLevelSelector.tsx` | 4 pill A1–B2, single-select, `role="radiogroup"`, icon `Check` của `lucide-react`. |
-| C5 | `TopicCoverCard` | `components/create/TopicCoverCard.tsx` | Cover 16:9 **placeholder local** (xem §5) + nút "Thay đổi ảnh"/"Xóa" (UI-only). Dùng lại shadcn `Button`. |
-| C6 | `TopicTagsInput` | `components/create/TopicTagsInput.tsx` | Tag pill closable + input Enter-để-thêm, chuẩn hóa (trim, bỏ `#` đầu, chống trùng/rỗng). |
-| C7 | `TopicCreateTipsCallout` | `components/create/TopicCreateTipsCallout.tsx` | Callout mẹo, presentational, props có default. |
-| C8 | `TopicCreateFooterBar` | `components/create/TopicCreateFooterBar.tsx` | "Quay lại" (`navigate(-1)`) / "Lưu nháp" / "Tiếp tục". Sticky trong content (xem §6). |
+| C1 | `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` | Eyebrow + H1 + pill Draft + autosave (static). Props optional có default. |
+| C2 | `TopicUpsertStepper` | `components/management/upsert/basic-info/TopicUpsertStepper.tsx` | Stepper 3 bước, `activeStep = 0`. Reuse được cho step 2-3 qua prop `steps`/`activeStep`. |
+| C3 | `TopicGeneralInfoCard` | `components/management/upsert/basic-info/TopicGeneralInfoCard.tsx` | Card form chính: EN/VI + CEFR + category + duration + description + counter. Controlled hoàn toàn qua `draft`/`onPatch`. |
+| C4 | `CefrLevelSelector` | `components/management/upsert/basic-info/CefrLevelSelector.tsx` | 4 pill A1–B2, single-select, `role="radiogroup"`, icon `Check` của `lucide-react`. |
+| C5 | `TopicCoverCard` | `components/management/upsert/basic-info/TopicCoverCard.tsx` | Cover 16:9 **placeholder local** (xem §5) + nút "Thay đổi ảnh"/"Xóa" (UI-only). Dùng lại shadcn `Button`. |
+| C6 | `TopicTagsInput` | `components/management/upsert/basic-info/TopicTagsInput.tsx` | Tag pill closable + input Enter-để-thêm, chuẩn hóa (trim, bỏ `#` đầu, chống trùng/rỗng). |
+| C7 | `TopicUpsertTipsCallout` | `components/management/upsert/basic-info/TopicUpsertTipsCallout.tsx` | Callout mẹo, presentational, props có default. |
+| C8 | `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | "Quay lại" (`navigate(-1)`) / "Lưu nháp" / "Tiếp tục". Sticky trong content (xem §6). Mode update truyền `backLabel`/`saveLabel`/`continueLabel`. |
 | — | `TopicCreateBasicInfoView` | `views/management/TopicCreateBasicInfoView.tsx` | Container duy nhất: composition + `useTopicBasicInfoForm` + validate "Tiếp tục". Không fetch. |
 | — | `useTopicBasicInfoForm` | `hooks/useTopicBasicInfoForm.ts` | State `draft`, `patch`, `setCefr`, `addTag`, `removeTag`, `descriptionCount`, `isValid`. |
 | — | types & consts | `types/topic-create.types.ts` | `TopicBasicInfoDraft`, option lists, `TOPIC_CREATE_STEPS`, `TOPIC_CREATE_MAX_DESCRIPTION = 250`, default draft Stitch. |
@@ -52,9 +54,10 @@
    ảnh thật, chưa gọi API. Khi làm thật: thêm `<input type="file" accept="image/*">`,
    validate 16:9 / ≤2MB, preview object URL, lưu vào `draft.cover*` hoặc upload sớm.
 2. **Lưu nháp / Tiếp tục:** chưa persist (chưa có endpoint, chưa dùng `useFetch`).
-   Khi có API: tạo `topicCreateService` trong `src/shared/services/` (hoặc hook
-   `useTopicCreate`) với callback `(signal: AbortSignal) => Promise<T>`.
-3. **Step 2-3:** `TopicCreateStepper` đã hỗ trợ `activeStep`; chỉ cần thêm view step 2
+   Khi có API: tạo `topicUpsertService` trong `src/shared/services/` (hoặc hook
+   `useTopicUpsert`) với callback `(signal: AbortSignal) => Promise<T>`; dùng
+   POST cho tạo mới, PATCH cho cập nhật.
+3. **Step 2-3:** `TopicUpsertStepper` đã hỗ trợ `activeStep`; chỉ cần thêm view step 2
    (`Danh sách Topic Items`) + step 3 (`Kiểm tra & Xuất bản`) và nâng state draft lên
    route cha hoặc store khi triển khai wizard đa bước.
 
@@ -82,8 +85,10 @@
 ## 8. Checklist refactor (khi gắn dữ liệu thật)
 
 - [ ] Thay default draft bằng draft rỗng khi tạo mới thật (giữ const default cho demo/test).
-- [ ] Thêm service + `useFetch` cho create/save-draft; xử lý `loading` (`Loading`) và
+- [ ] Thêm service + `useFetch` cho upsert (create/update)/save-draft; xử lý `loading` (`Loading`) và
       `error` (`EmptyState`) theo pattern `TopicManagementListView`.
+- [ ] Mode cập nhật: nạp draft theo `topicId`, truyền `saveLabel`/`continueLabel` cho footer,
+      dùng PATCH thay POST.
 - [ ] Upload cover thật (§5.1); tag gợi ý/autocomplete nếu backend hỗ trợ.
 - [ ] Wizard đa bước: state chung + route `create/items`, `create/review`.
 - [ ] Chạy `npm run lint` (0 errors) + `npm run build` sau mỗi thay đổi.

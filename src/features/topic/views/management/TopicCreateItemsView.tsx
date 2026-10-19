@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router";
 import { ROUTES, topicItemSectionPath } from "@shared/constants";
-import { useTopicItemsOverview } from "../../hooks/useTopicItemsOverview";
-import TopicCreateFooterBar from "../../components/create/TopicCreateFooterBar";
-import TopicCreateStepper from "../../components/create/TopicCreateStepper";
-import TopicCreateWizardHeader from "../../components/create/TopicCreateWizardHeader";
-import TopicItemsHeader from "../../components/create/items/TopicItemsHeader";
-import TopicItemsList from "../../components/create/items/TopicItemsList";
-import TopicScriptQualityCard from "../../components/create/items/TopicScriptQualityCard";
+import { useTopicItemsOverview } from "@features/topic/hooks/useTopicItemsOverview";
+import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
+import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
+import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
+import TopicItemsHeader from "@features/topic/components/management/upsert/items/TopicItemsHeader";
+import TopicItemsList from "@features/topic/components/management/upsert/items/TopicItemsList";
+import TopicScriptQualityCard from "@features/topic/components/management/upsert/items/TopicScriptQualityCard";
 
 export default function TopicCreateItemsView() {
   const navigate = useNavigate();
@@ -27,8 +27,8 @@ export default function TopicCreateItemsView() {
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <div className="flex w-full flex-col gap-6 pt-6 pb-12 lg:pt-8">
         <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicCreateWizardHeader title="Bước 2: Danh sách Topic Items" />
-          <TopicCreateStepper activeStep={1} />
+          <TopicUpsertWizardHeader title="Bước 2: Danh sách Topic Items" />
+          <TopicUpsertStepper activeStep={1} />
         </div>
 
         <TopicItemsHeader
@@ -56,7 +56,7 @@ export default function TopicCreateItemsView() {
           </div>
         </div>
 
-        <TopicCreateFooterBar onBack={handleBack} />
+        <TopicUpsertFooterBar onBack={handleBack} />
       </div>
     </div>
   );

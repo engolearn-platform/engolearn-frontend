@@ -12,13 +12,13 @@ import type {
   QuizType,
   TopicItemStepKey,
 } from "@features/topic/types/topic-create.types";
-import TopicCreateFooterBar from "@features/topic/components/create/TopicCreateFooterBar";
-import TopicCreateStepper from "@features/topic/components/create/TopicCreateStepper";
-import TopicCreateWizardHeader from "@features/topic/components/create/TopicCreateWizardHeader";
-import TopicItemSectionTabRail from "@features/topic/components/create/editor/TopicItemSectionTabRail";
-import QuizGroupSection from "@features/topic/components/create/editor/quiz/QuizGroupSection";
-import QuizHeaderCard from "@features/topic/components/create/editor/quiz/QuizHeaderCard";
-import QuestionUpsertDialog from "@features/topic/components/create/editor/quiz/QuestionUpsertDialog";
+import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
+import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
+import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
+import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
+import QuizGroupSection from "@features/topic/components/management/upsert/editor/quiz/QuizGroupSection";
+import QuizHeaderCard from "@features/topic/components/management/upsert/editor/quiz/QuizHeaderCard";
+import QuestionUpsertDialog from "@features/topic/components/management/upsert/editor/quiz/QuestionUpsertDialog";
 
 function stepDetail(
   steps: { key: string; detail: string }[],
@@ -139,10 +139,10 @@ export default function TopicItemQuizEditorView() {
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
         <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicCreateWizardHeader
+          <TopicUpsertWizardHeader
             title={`Bước 2: Biên soạn Bài tập & Quiz — ${item.titleEn}`}
           />
-          <TopicCreateStepper activeStep={1} />
+          <TopicUpsertStepper activeStep={1} />
         </div>
 
         <TopicItemSectionTabRail
@@ -194,7 +194,7 @@ export default function TopicItemQuizEditorView() {
           onSubmit={handleSubmitDialog}
         />
 
-        <TopicCreateFooterBar onBack={handleBack} onContinue={handleContinue} />
+        <TopicUpsertFooterBar onBack={handleBack} onContinue={handleContinue} />
       </div>
     </div>
   );

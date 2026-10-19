@@ -29,7 +29,7 @@
   Context view; `"vocabulary"` → Vocabulary view (mới); còn lại → placeholder;
   key lạ → `<Navigate>` về context.
 - Trigger: tab `2. Từ vựng` trên `TopicItemSectionTabRail`
-  (`src/features/topic/components/create/editor/TopicItemSectionTabRail.tsx`,
+  (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `SpellCheck`, note `(4 từ)`) gọi `onSelect("vocabulary")` →
   `navigate(topicItemSectionPath(itemId, "vocabulary"))`.
 - Back của editor → section `context` cùng item (explicit, an toàn deep-link).
@@ -42,14 +42,14 @@
 | V0 | `TopicItemEditorView` | `views/management/TopicItemEditorView.tsx` (sửa, +1 nhánh) | Thêm `sectionKey === "vocabulary"` → view mới; giữ nhánh context + fallback placeholder. |
 | V1 | `TopicItemVocabularyEditorView` | `views/management/TopicItemVocabularyEditorView.tsx` (mới) | Container editor: `useParams` lấy `itemId`, lookup mock (lạ → `EmptyState` + nút quay lại), compose C0 + C1..C7 + footer, owns `showErrors` + `dialogOpen/dialogMode/editingId`, điều hướng Back/Continue/Tab, submit dialog (add → `addItem`, edit → `patchItem`). |
 | V2 | `TopicItemSectionPlaceholderView` | `views/management/TopicItemSectionPlaceholderView.tsx` (sửa, thu hẹp) | Xóa key `vocabulary` khỏi `SECTION_COPY` (chỉ giữ `expressions/quiz`); thêm guard redirect `vocabulary` về editor thật để deep-link cũ không kẹt placeholder. |
-| C0 | `TopicCreateWizardHeader` / `TopicCreateStepper` / `TopicCreateFooterBar` / `TopicItemSectionTabRail` | `components/create/*` (reuse) | Header `title="Bước 2: Biên soạn Từ vựng — {titleEn}"`; stepper `activeStep={1}`; rail `activeSection="vocabulary"` + notes từ `item.steps`; footer `onBack` → context, `onContinue` → expressions khi `isValid`. |
-| C1 | `VocabularyHeaderCard` | `components/create/editor/vocabulary/VocabularyHeaderCard.tsx` (mới) | Header section Stitch: icon `SpellCheck` + H1 + mô tả quy tắc 5 từ + metric `{count}/{max}` (`hidden sm:flex`) + shadcn `Button` "Thêm từ vựng mới". Card `rounded-2xl`. |
-| C2 | `VocabularyCard` | `components/create/editor/vocabulary/VocabularyCard.tsx` (mới) | 1 Learning Card `rounded-2xl p-5 hover:shadow-md`: handle `GripVertical` (visual) + headline (word `headline-md bold` + POS pill + IPA chip + VI italic) + C3 + actions Sửa (`Pencil`) / Xóa (`Trash2 text-error`) + detail grid (`lg:ml-10`, `xl:grid-cols-12`: C4 span-8 + C5 span-4). POS: verb → `bg-secondary-fixed/40`, noun → `bg-tertiary-fixed`. |
-| C3 | `VocabularyAudioChip` | `components/create/editor/vocabulary/VocabularyAudioChip.tsx` (mới) | Chip audio: nút tròn `Volume2` + filename truncate + `BadgeCheck` khi uploaded + "Đã tải lên". Preview chỉ UI feedback (`animate-pulse` 1.2s), không phát audio thật. |
-| C4 | `VocabularyExamplesBlock` | `components/create/editor/vocabulary/VocabularyExamplesBlock.tsx` (mới) | List ví dụ: icon `Quote`, EN `font-medium` với `<mark class="bg-secondary-fixed/50">` highlight từ (case-insensitive), VI `block sm:inline` — đúng Stitch + EN > VI hierarchy. |
-| C5 | `VocabularyCollocationsBox` | `components/create/editor/vocabulary/VocabularyCollocationsBox.tsx` (mới) | Box collocations `rounded-lg shadow-sm`, chips `rounded-md bg-surface-container`. Trả `null` khi rỗng. |
-| C6 | `VocabularyQuickAddSlot` | `components/create/editor/vocabulary/VocabularyQuickAddSlot.tsx` (mới) | Slot thứ N: button full `py-6 rounded-2xl` ("+ Thêm từ vựng thứ {nextIndex} (Tối đa {max} từ...)"), ẩn khi `!canAdd`. Trả `null` khi đầy. |
-| C7 | `VocabularyUpsertDialog` | `components/create/editor/vocabulary/VocabularyUpsertDialog.tsx` (mới) | Modal thêm/sửa dùng shadcn `Dialog` (`max-w-2xl`, body dùng shared `ThinScroll`
+| C0 | `TopicUpsertWizardHeader` / `TopicUpsertStepper` / `TopicUpsertFooterBar` / `TopicItemSectionTabRail` | `components/management/upsert/basic-info/*` + `components/management/upsert/editor/TopicItemSectionTabRail.tsx` (reuse) | Header `title="Bước 2: Biên soạn Từ vựng — {titleEn}"`; stepper `activeStep={1}`; rail `activeSection="vocabulary"` + notes từ `item.steps`; footer `onBack` → context, `onContinue` → expressions khi `isValid`. |
+| C1 | `VocabularyHeaderCard` | `components/management/upsert/editor/vocabulary/VocabularyHeaderCard.tsx` (mới) | Header section Stitch: icon `SpellCheck` + H1 + mô tả quy tắc 5 từ + metric `{count}/{max}` (`hidden sm:flex`) + shadcn `Button` "Thêm từ vựng mới". Card `rounded-2xl`. |
+| C2 | `VocabularyCard` | `components/management/upsert/editor/vocabulary/VocabularyCard.tsx` (mới) | 1 Learning Card `rounded-2xl p-5 hover:shadow-md`: handle `GripVertical` (visual) + headline (word `headline-md bold` + POS pill + IPA chip + VI italic) + C3 + actions Sửa (`Pencil`) / Xóa (`Trash2 text-error`) + detail grid (`lg:ml-10`, `xl:grid-cols-12`: C4 span-8 + C5 span-4). POS: verb → `bg-secondary-fixed/40`, noun → `bg-tertiary-fixed`. |
+| C3 | `VocabularyAudioChip` | `components/management/upsert/editor/vocabulary/VocabularyAudioChip.tsx` (mới) | Chip audio: nút tròn `Volume2` + filename truncate + `BadgeCheck` khi uploaded + "Đã tải lên". Preview chỉ UI feedback (`animate-pulse` 1.2s), không phát audio thật. |
+| C4 | `VocabularyExamplesBlock` | `components/management/upsert/editor/vocabulary/VocabularyExamplesBlock.tsx` (mới) | List ví dụ: icon `Quote`, EN `font-medium` với `<mark class="bg-secondary-fixed/50">` highlight từ (case-insensitive), VI `block sm:inline` — đúng Stitch + EN > VI hierarchy. |
+| C5 | `VocabularyCollocationsBox` | `components/management/upsert/editor/vocabulary/VocabularyCollocationsBox.tsx` (mới) | Box collocations `rounded-lg shadow-sm`, chips `rounded-md bg-surface-container`. Trả `null` khi rỗng. |
+| C6 | `VocabularyQuickAddSlot` | `components/management/upsert/editor/vocabulary/VocabularyQuickAddSlot.tsx` (mới) | Slot thứ N: button full `py-6 rounded-2xl` ("+ Thêm từ vựng thứ {nextIndex} (Tối đa {max} từ...)"), ẩn khi `!canAdd`. Trả `null` khi đầy. |
+| C7 | `VocabularyUpsertDialog` | `components/management/upsert/editor/vocabulary/VocabularyUpsertDialog.tsx` (mới) | Modal thêm/sửa dùng shadcn `Dialog` (`max-w-2xl`, body dùng shared `ThinScroll`
 (`src/shared/components/ThinScroll.tsx`, class `scroll-thin` trong `App.css` —
 thanh 6px, track trong suốt, thumb `outline` 35% → hover 55%) + footer sticky): 4 section dọc — (1) Thông tin cơ bản: grid word(span-2)+POS select, IPA+VI (`*`); (2) Audio: file input (`accept="audio/*"`, hiện tên file + nút xóa) + note auto-TTS US; (3) Ví dụ: dynamic list (tối đa 3, tối thiểu giữ 1 row, mỗi row EN textarea + VI input + nút xóa) + nút "Thêm ví dụ"; (4) Collocations: chips pill + input Enter-to-add (tối đa 5, chặn trùng case-insensitive). Validate word+VI+≥1 example EN (`ring-error` + msg, pattern Context form); `audioFile` = file đã chọn hoặc suy từ word (`*_pronunciation_us.mp3`). |
 | H1 | `useTopicItemVocabularyForm` | `hooks/useTopicItemVocabularyForm.ts` (mới) | Mirror `useTopicItemContextForm`: lookup `TOPIC_ITEMS_OVERVIEW_MOCK`, state `items` từ mock choosing-food, `patchItem/addItem` (chặn `>= MAX`, `audioUploaded: true`) /`removeItem`/`moveItem` (để sẵn, chưa đấu UI), `count/max/canAdd`, `isValid` (1..MAX items, mọi item có word + meaningVi + ≥1 example EN). |
@@ -93,7 +93,7 @@ thanh 6px, track trong suốt, thumb `outline` 35% → hover 55%) + footer stick
   không clone header/sidebar `fixed` + `pl-72` + bottom-bar `left-72` của Stitch
   (sidebar đó không responsive, app đã có shell riêng).
 - Không dựng step-bar tròn (1-check/2-active/3/4) của Stitch — dùng
-  `TopicCreateStepper` + `TopicItemSectionTabRail` đồng nhất view 02/03.
+  `TopicUpsertStepper` + `TopicItemSectionTabRail` đồng nhất view 02/03.
 - Radius chuẩn hoá theo repo: card `rounded-2xl` (thay `rounded-xl` trong config
   Stitch), button/input `rounded-xl`/`rounded-lg`, pill/chip `rounded-full`/
   `rounded-md` — đúng AGENTS.md + `components.md` (Learning Card 16px/padding 20px).

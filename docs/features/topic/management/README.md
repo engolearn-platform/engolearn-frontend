@@ -1,13 +1,15 @@
 # Topic Management — Bản đồ luồng (README)
 
-> Index điều hướng cho toàn bộ luồng quản lý topic (wizard tạo topic + editor từng Topic Item).
+> Index điều hướng cho toàn bộ luồng quản lý topic (wizard upsert topic — tạo mới & cập nhật — + editor từng Topic Item).
+> Component layer dùng chung nằm dưới `components/management/upsert/`; route/view hiện vẫn giữ tên `create`
+> (ngoài phạm vi rename lần này — xem §4.2).
 > Khi cần sửa / debug / gắn API thật: đọc README này trước, rồi nhảy đúng file con + component.
 
 ## 1. Sơ đồ luồng
 
 ```
 TopicManagementListView ("Tạo topic mới")
-  └─► [01] Basic Info Create ──Tiếp tục (valid)──► [02] Items Overview
+  └─► [01] Basic Info Upsert ──Tiếp tục (valid)──► [02] Items Overview
         /admin/topics/create                           /admin/topics/create/items
                                                        │  ┌─ Quay lại → [01]
                                                        │  ├─ Sửa / Khởi tạo nội dung ─► Editor gộp
@@ -28,7 +30,7 @@ Quiz là tab cuối — footer "Tiếp tục" ở [06] quay về [02] (overview)
 
 | # | File | Màn (Stitch) | Route | Đọc khi nào |
 |---|------|--------------|-------|--------------|
-| 01 | [`01-basic-info-create.md`](./01-basic-info-create.md) | Admin — 1. Thông tin chủ đề | `/admin/topics/create` | Sửa form EN/VI, CEFR, cover, tags, validate "Tiếp tục", stepper `activeStep=0` |
+| 01 | [`01-basic-info-create.md`](./01-basic-info-create.md) | Admin — 1. Thông tin chủ đề | `/admin/topics/create` | Bước 1 của upsert (tạo mới & cập nhật): form EN/VI, CEFR, cover, tags, validate "Tiếp tục", stepper `activeStep=0` |
 | 02 | [`02-topic-items-overview.md`](./02-topic-items-overview.md) | Admin — 2. Danh sách Topic Items | `/admin/topics/create/items` | Sửa list item, status pill, step pills, quality sidebar, reorder, xóa, stepper `activeStep=1` |
 | 03 | [`03-topic-item-context-editor.md`](./03-topic-item-context-editor.md) | Admin — 3. Biên soạn Bối cảnh | `/admin/topics/create/items/:itemId/:sectionKey` (`context`) | Sửa form bối cảnh, dialogue turns, tab rail, dispatcher `TopicItemEditorView` |
 | 04 | [`04-vocabulary-manager.md`](./04-vocabulary-manager.md) | Admin — 4. Quản lý Từ vựng | `.../:itemId/vocabulary` | Sửa vocab cards, dialog thêm/sửa, audio chip, examples/collocations, validate 1..5 từ |
@@ -55,15 +57,61 @@ Mỗi file con giữ cấu trúc 8 mục giống nhau: Stitch → Route → Bả
 
 | Component | File | Dùng ở |
 |-----------|------|--------|
-| `TopicCreateWizardHeader` | `components/create/TopicCreateWizardHeader.tsx` | [01] default title B1; [02]/[03]/[04] truyền `title` override |
-| `TopicCreateStepper` | `components/create/TopicCreateStepper.tsx` | [01] `activeStep=0`; [02]/[03]/[04] `activeStep=1`; dùng chung `TOPIC_CREATE_STEPS` |
-| `TopicCreateFooterBar` | `components/create/TopicCreateFooterBar.tsx` | Mọi màn; `onSaveDraft` hiện **chưa truyền ở đâu** (chờ endpoint) |
-| `TopicItemSectionTabRail` | `components/create/editor/TopicItemSectionTabRail.tsx` | [03]/[04]/[05]/[06]; 4 tabs `context/vocabulary/expressions/quiz` |
-| `TopicItemEditorBreadcrumb` | `components/create/editor/TopicItemEditorBreadcrumb.tsx` | [03]/[04] |
-| `ExpressionAudioChip` | `components/create/editor/expressions/ExpressionAudioChip.tsx` | [05] + [06] (quiz reuse cross-folder, chỉ render khi có audio) |
+| `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` | [01] default title B1; [02]/[03]/[04] truyền `title` override; mode update truyền `title`/`draftLabel` |
+| `TopicUpsertStepper` | `components/management/upsert/basic-info/TopicUpsertStepper.tsx` | [01] `activeStep=0`; [02]/[03]/[04] `activeStep=1`; dùng chung `TOPIC_CREATE_STEPS` |
+| `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | Mọi màn; `onSaveDraft` hiện **chưa truyền ở đâu** (chờ endpoint); mode update truyền `saveLabel`/`continueLabel` |
+| `TopicItemSectionTabRail` | `components/management/upsert/editor/TopicItemSectionTabRail.tsx` | [03]/[04]/[05]/[06]; 4 tabs `context/vocabulary/expressions/quiz` |
+| `TopicItemEditorBreadcrumb` | `components/management/upsert/editor/TopicItemEditorBreadcrumb.tsx` | [03]/[04] |
+| `ExpressionAudioChip` | `components/management/upsert/editor/expressions/ExpressionAudioChip.tsx` | [05] + [06] (quiz reuse cross-folder, chỉ render khi có audio) |
 | `EmptyState` / `Loading` (shared) | `src/shared/components/` | Lookup `itemId` lạ + pattern `useFetch` khi gắn API |
 
 Quy ước đã chốt: shell dùng `ManagementLayout` (không clone header/sidebar Stitch); nút `rounded-xl`; icon `lucide-react` (bảng map Material Symbols → lucide nằm ở §6 mỗi file).
+
+### 4.1. Cây thư mục canonical của management surface
+
+Toàn bộ component management nằm dưới `components/management/`, chia 2 slice theo màn: `list/` (danh sách topic) và `upsert/` (wizard tạo mới & cập nhật + editor) — khớp `docs/architecture/project-structure.md` §4.1. Thư mục `create/` cũ trong `management/` đã đổi tên thành `upsert/`; thư mục `components/create/` (nằm thẳng dưới `components/`) **đã bị xóa**. Mọi import dùng alias `@features/topic/components/management/<slice>/...`:
+
+```
+components/management/
+├── list/                (7 file: TopicManagementEmptyState, TopicManagementFilterBar,
+│                         TopicManagementPageHeader, TopicManagementPagination,
+│                         TopicManagementStats, TopicManagementTable, UnpublishTopicDialog)
+└── upsert/
+    ├── basic-info/      (8 file: CefrLevelSelector, TopicCoverCard, TopicUpsertFooterBar,
+    │                     TopicUpsertStepper, TopicUpsertTipsCallout, TopicUpsertWizardHeader,
+    │                     TopicGeneralInfoCard, TopicTagsInput)
+    ├── items/           (6 file: TopicItemCard, TopicItemsHeader, TopicItemsList,
+    │                     TopicItemStatusPill, TopicItemStepPills, TopicScriptQualityCard)
+    └── editor/
+        ├── TopicItemEditorBreadcrumb.tsx
+        ├── TopicItemSectionTabRail.tsx
+        ├── context/     (2 file: TopicContextFormCard, ContextDialogueTurnRow)
+        ├── vocabulary/  (7 file: VocabularyAudioChip, VocabularyCard, VocabularyCollocationsBox,
+        │                 VocabularyExamplesBlock, VocabularyHeaderCard, VocabularyQuickAddSlot,
+        │                 VocabularyUpsertDialog)
+        ├── expressions/ (6 file: ExpressionAudioChip, ExpressionCard, ExpressionsHeaderCard,
+        │                 ExpressionsQuickAddSlot, ExpressionUpsertDialog, PurposeGroupSection)
+        └── quiz/        (5 file: FillBlankQuestionCard, QuestionUpsertDialog, QuizGroupSection,
+                          QuizHeaderCard, SituationalQuestionCard)
+```
+
+Tổng 43 file (7 `list/` + 36 `upsert/`) — lần này chỉ dời chỗ/đổi tên; props/logic giữ nguyên (ngoại lệ: `TopicUpsertFooterBar` thêm `backLabel`/`saveLabel`/`continueLabel`, backward-compatible). Quiz vẫn `import ExpressionAudioChip` qua alias (`@features/.../editor/expressions/ExpressionAudioChip`) — không nhân bản component.
+
+### 4.2. Khả năng tái sử dụng cho upsert (tạo mới & cập nhật)
+
+Kết luận: **toàn bộ 36 component dùng chung được** cho 2 mode; không cần nhân bản frame hiển thị.
+Chỉ 4 component từng mang tên `*Create*` được đổi sang `*Upsert*` và thư mục `create/` → `upsert/`.
+
+| Nhóm | Component | Dùng chung? | Cách dùng cho mode cập nhật |
+|------|-----------|-------------|------------------------------|
+| Shell wizard | `TopicUpsertWizardHeader`, `TopicUpsertStepper`, `TopicUpsertFooterBar`, `TopicUpsertTipsCallout` | Có | Truyền `title`/`draftLabel`/`autosaveText`, `steps`/`activeStep`, `saveLabel`/`continueLabel`, `title`/`description`; default giữ copy tạo mới. |
+| Basic info | `TopicGeneralInfoCard`, `CefrLevelSelector`, `TopicCoverCard`, `TopicTagsInput` | Có | Controlled qua `draft`/`onPatch`; mode update chỉ cần nạp draft theo `topicId`. |
+| Items overview | `TopicItemsHeader`, `TopicItemsList`, `TopicItemCard`, `TopicItemStatusPill`, `TopicItemStepPills`, `TopicScriptQualityCard` | Có | Dữ liệu thay mock bằng API; action Sửa/Khởi tạo/Xóa giữ nguyên. |
+| Editor | `TopicItemEditorBreadcrumb`, `TopicItemSectionTabRail`, `TopicContextFormCard`, `Vocabulary*`, `Expressions*`, `Quiz*` | Có | Đều presentational/controlled; các dialog `*UpsertDialog` đã hỗ trợ add/edit. |
+
+Ngoài phạm vi lần này (giữ nguyên tên `Create`): views `TopicCreateBasicInfoView`/`TopicCreateItemsView`,
+route `ROUTES.ADMIN_TOPIC_CREATE*`, URL `/admin/topics/create...`, file types `topic-create.types.ts` +
+const `TOPIC_CREATE_*`. Khi làm màn edit thật, nâng cấp các tên này trong một change riêng.
 
 ## 5. Mô hình state (3 tầng rời nhau — chưa nâng lên store)
 
@@ -105,7 +153,7 @@ Lưu ý quan trọng:
 | Triệu chứng | Đọc file | Xem component/hook |
 |-------------|----------|--------------------|
 | Nút "Tiếp tục" không sang trang | [01] §4 / [03] §4 / [04] §4 / [05] §4 / [06] §4 | `isValid` + `showErrors` trong `useTopicBasicInfoForm` / `useTopicItemContextForm` / `useTopicItemVocabularyForm` / `useTopicItemExpressionsForm` / `useTopicItemQuizForm` |
-| Stepper/header sai tiêu đề bước | [02] §3-C0 / [03] §3-C0 | props `title` / `activeStep` truyền vào `TopicCreateWizardHeader` + `TopicCreateStepper` |
+| Stepper/header sai tiêu đề bước | [02] §3-C0 / [03] §3-C0 | props `title` / `activeStep` truyền vào `TopicUpsertWizardHeader` + `TopicUpsertStepper` |
 | Pill trạng thái item hiển thị sai | [02] §4 | `resolveVisual` trong `TopicItemStatusPill.tsx`, không sửa union `publicationStatus` |
 | Click card "Sửa" không vào editor | [02] §5.3 → [03] §2 | `onEdit`/`onInit` trong `TopicCreateItemsView` phải `navigate(topicItemSectionPath(...))`, dispatcher `TopicItemEditorView` |
 | Deep-link `/items/:id/:section` trắng trang | Dispatcher + [03] §3-V1 | guard `isTopicItemSectionKey` trong `TopicItemEditorView` (key lạ → context) + lookup `TOPIC_ITEMS_OVERVIEW_MOCK` → `EmptyState` |

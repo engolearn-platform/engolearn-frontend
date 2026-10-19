@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Palette } from "lucide-react";
 import { ROUTES } from "@shared/constants";
-import { useTopicBasicInfoForm } from "../../hooks/useTopicBasicInfoForm";
+import { useTopicBasicInfoForm } from "@features/topic/hooks/useTopicBasicInfoForm";
 import {
   TOPIC_CREATE_CATEGORY_OPTIONS,
   TOPIC_CREATE_MAX_DESCRIPTION,
-} from "../../types/topic-create.types";
-import TopicCoverCard from "../../components/create/TopicCoverCard";
-import TopicCreateFooterBar from "../../components/create/TopicCreateFooterBar";
-import TopicCreateStepper from "../../components/create/TopicCreateStepper";
-import TopicCreateTipsCallout from "../../components/create/TopicCreateTipsCallout";
-import TopicCreateWizardHeader from "../../components/create/TopicCreateWizardHeader";
-import TopicGeneralInfoCard from "../../components/create/TopicGeneralInfoCard";
-import TopicTagsInput from "../../components/create/TopicTagsInput";
+} from "@features/topic/types/topic-create.types";
+import TopicCoverCard from "@features/topic/components/management/upsert/basic-info/TopicCoverCard";
+import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
+import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
+import TopicUpsertTipsCallout from "@features/topic/components/management/upsert/basic-info/TopicUpsertTipsCallout";
+import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
+import TopicGeneralInfoCard from "@features/topic/components/management/upsert/basic-info/TopicGeneralInfoCard";
+import TopicTagsInput from "@features/topic/components/management/upsert/basic-info/TopicTagsInput";
 
 export default function TopicCreateBasicInfoView() {
   const navigate = useNavigate();
@@ -35,8 +35,8 @@ export default function TopicCreateBasicInfoView() {
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 pb-12 lg:pt-8">
         <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicCreateWizardHeader />
-          <TopicCreateStepper />
+          <TopicUpsertWizardHeader />
+          <TopicUpsertStepper />
         </div>
 
         <form className="flex flex-col gap-6" onSubmit={(event) => event.preventDefault()}>
@@ -60,10 +60,10 @@ export default function TopicCreateBasicInfoView() {
             <TopicTagsInput tags={draft.tags} onAdd={addTag} onRemove={removeTag} />
           </section>
 
-          <TopicCreateTipsCallout />
+          <TopicUpsertTipsCallout />
         </form>
 
-        <TopicCreateFooterBar onBack={handleBack} onContinue={handleContinue} />
+        <TopicUpsertFooterBar onBack={handleBack} onContinue={handleContinue} />
       </div>
     </div>
   );

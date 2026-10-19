@@ -2,15 +2,15 @@ import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useTopicManagement } from "../../hooks/useTopicManagement";
-import type { TopicManagementFilter, Topic } from "../../types/topic.types";
-import TopicManagementEmptyState from "../../components/management/TopicManagementEmptyState";
-import TopicManagementFilterBar from "../../components/management/TopicManagementFilterBar";
-import TopicManagementPageHeader from "../../components/management/TopicManagementPageHeader";
-import TopicManagementPagination from "../../components/management/TopicManagementPagination";
-import TopicManagementStats from "../../components/management/TopicManagementStats";
-import TopicManagementTable from "../../components/management/TopicManagementTable";
-import UnpublishTopicDialog from "../../components/management/UnpublishTopicDialog";
+import { useTopicManagement } from "@features/topic/hooks/useTopicManagement";
+import type { TopicManagementFilter, Topic } from "@features/topic/types/topic.types";
+import TopicManagementEmptyState from "@features/topic/components/management/list/TopicManagementEmptyState";
+import TopicManagementFilterBar from "@features/topic/components/management/list/TopicManagementFilterBar";
+import TopicManagementPageHeader from "@features/topic/components/management/list/TopicManagementPageHeader";
+import TopicManagementPagination from "@features/topic/components/management/list/TopicManagementPagination";
+import TopicManagementStats from "@features/topic/components/management/list/TopicManagementStats";
+import TopicManagementTable from "@features/topic/components/management/list/TopicManagementTable";
+import UnpublishTopicDialog from "@features/topic/components/management/list/UnpublishTopicDialog";
 
 const DEFAULT_FILTER: TopicManagementFilter = {
   search: "",

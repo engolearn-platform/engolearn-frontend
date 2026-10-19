@@ -26,15 +26,15 @@
 
 | ID | Component | File | Ghi chú |
 |----|-----------|------|---------|
-| C0 | `TopicCreateWizardHeader` | `components/create/TopicCreateWizardHeader.tsx` (reuse, mở rộng `title?`) | Màn này truyền `title="Bước 2: Danh sách Topic Items"`. Default giữ chuỗi Bước 1 nên view 01 không đổi. |
-| C0 | `TopicCreateStepper` | `components/create/TopicCreateStepper.tsx` (reuse) | `activeStep={1}`, dùng chung `TOPIC_CREATE_STEPS`. |
-| C0 | `TopicCreateFooterBar` | `components/create/TopicCreateFooterBar.tsx` (reuse nguyên bản) | Chỉ truyền `onBack`; `onSaveDraft`/`onContinue` để trống (UI-only, xem §5). |
-| C1 | `TopicItemsHeader` | `components/create/items/TopicItemsHeader.tsx` | Badges CEFR/Bản nháp/count + H1 + CTA "Thêm Topic Item mới" (shadcn `Button`). |
-| C2 | `TopicItemStatusPill` | `components/create/items/TopicItemStatusPill.tsx` | Pill trạng thái duy nhất mỗi item, map từ 2 trạng thái gốc (§4). `rounded-full`, icon `lucide-react`. |
-| C3 | `TopicItemStepPills` | `components/create/items/TopicItemStepPills.tsx` | 4 pill Bối cảnh/Từ vựng/Mẫu câu/Luyện tập, icon theo `done/partial/empty`. Presentational thuần. |
-| C4 | `TopicItemCard` | `components/create/items/TopicItemCard.tsx` | Learning Card 1 item: rail drag + badge order, H2 EN + VI phụ, C2 + C3, action row. Compose C2 + C3, nút shadcn `ghost`. |
-| C5 | `TopicItemsList` | `components/create/items/TopicItemsList.tsx` | Cột list + dashed Add card; rỗng → reuse shared `EmptyState`. Pass-through props xuống C4. |
-| C6 | `TopicScriptQualityCard` | `components/create/items/TopicScriptQualityCard.tsx` | Sidebar "Chất lượng kịch bản": ring SVG + coverage note + checklist CEFR. Không thêm chart lib. |
+| C0 | `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` (reuse, mở rộng `title?`) | Màn này truyền `title="Bước 2: Danh sách Topic Items"`. Default giữ chuỗi Bước 1 nên view 01 không đổi. |
+| C0 | `TopicUpsertStepper` | `components/management/upsert/basic-info/TopicUpsertStepper.tsx` (reuse) | `activeStep={1}`, dùng chung `TOPIC_CREATE_STEPS`. |
+| C0 | `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` (reuse nguyên bản) | Chỉ truyền `onBack`; `onSaveDraft`/`onContinue` để trống (UI-only, xem §5). |
+| C1 | `TopicItemsHeader` | `components/management/upsert/items/TopicItemsHeader.tsx` | Badges CEFR/Bản nháp/count + H1 + CTA "Thêm Topic Item mới" (shadcn `Button`). |
+| C2 | `TopicItemStatusPill` | `components/management/upsert/items/TopicItemStatusPill.tsx` | Pill trạng thái duy nhất mỗi item, map từ 2 trạng thái gốc (§4). `rounded-full`, icon `lucide-react`. |
+| C3 | `TopicItemStepPills` | `components/management/upsert/items/TopicItemStepPills.tsx` | 4 pill Bối cảnh/Từ vựng/Mẫu câu/Luyện tập, icon theo `done/partial/empty`. Presentational thuần. |
+| C4 | `TopicItemCard` | `components/management/upsert/items/TopicItemCard.tsx` | Learning Card 1 item: rail drag + badge order, H2 EN + VI phụ, C2 + C3, action row. Compose C2 + C3, nút shadcn `ghost`. |
+| C5 | `TopicItemsList` | `components/management/upsert/items/TopicItemsList.tsx` | Cột list + dashed Add card; rỗng → reuse shared `EmptyState`. Pass-through props xuống C4. |
+| C6 | `TopicScriptQualityCard` | `components/management/upsert/items/TopicScriptQualityCard.tsx` | Sidebar "Chất lượng kịch bản": ring SVG + coverage note + checklist CEFR. Không thêm chart lib. |
 | V1 | `TopicCreateItemsView` | `views/management/TopicCreateItemsView.tsx` | Container duy nhất: composition + `useTopicItemsOverview` + navigate. Không fetch. |
 | H1 | `useTopicItemsOverview` | `hooks/useTopicItemsOverview.ts` | State `items` (từ mock), `selectedId` (mặc định `"choosing-food"` như Stitch), `quality`, `selectItem`, `removeItem`. |
 | T0 | types & consts | `types/topic-create.types.ts` (append) | `TopicItemPublicationStatus`, `TopicItemStepKey/State/Summary`, `TopicItemCompleteness` + `getTopicItemCompleteness`, `TopicItemOverview`, `TopicScriptQuality`, mock Stitch. |
@@ -79,7 +79,7 @@
 - Shell (header/sidebar/topbar + bottom bar `fixed`) dùng lại `ManagementLayout`;
   không dựng header/sidebar/footer `fixed left-72` của Stitch.
 - **Bỏ cả 2 footer Stitch** (in-content context bar + fixed bottom bar); chỉ dùng
-  lại `TopicCreateFooterBar` (Quay lại / Lưu nháp / Tiếp tục) theo chốt Phase 1.
+  lại `TopicUpsertFooterBar` (Quay lại / Lưu nháp / Tiếp tục) theo chốt Phase 1.
   Các action "Xem trước toàn bộ" / "Chỉnh sửa Item 02:…" chưa dựng.
 - Page gutter theo repo (`max-w-7xl px-5 lg:px-8` như view 01) thay vì
   `max-w-[1240px] px-6` của Stitch; inner **full-width** (không cap `940px` như
