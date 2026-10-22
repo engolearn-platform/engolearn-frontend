@@ -8,7 +8,7 @@ export default function LearningLayout() {
     <div className="flex h-screen overflow-hidden bg-background text-on-surface">
       <LearningSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <LearningTopBar userName="User" streakDays={7} />
+        <LearningTopBar userName="Đức" streakDays={7} />
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet />
         </main>
