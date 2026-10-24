@@ -1,5 +1,6 @@
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
+import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import type { LearningPathListItem } from "@features/learning-path/types/learning-path.types";
 
@@ -54,7 +55,7 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
 
       <div className="mt-3 lg:mt-4">
         <h2 className="text-base font-bold text-on-surface lg:text-[20px] lg:leading-[30px] lg:tracking-[-0.5px]">
-          Lộ trình ngày {path.createdDate}
+          Lộ trình ngày {formatLearningPathDate(path.createdDate)}
         </h2>
         <p className="mt-0.5 text-xs text-on-surface-variant lg:mt-1 lg:text-[13px] lg:leading-[19.5px]">
           Level {path.level} · {path.k} micro-skill · Kế hoạch 3 tuần
@@ -77,10 +78,10 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
       <div className="mt-2.5 flex flex-wrap gap-1 lg:mt-4 lg:gap-2 lg:pt-1">
         {path.microSkills.map((microSkill) => (
           <span
-            key={microSkill.microSkill}
+            key={microSkill}
             className="rounded-md border border-outline-variant/50 bg-surface px-1.5 py-0.5 text-xs text-on-surface-variant transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 hover:text-primary lg:rounded-[8px] lg:px-[11px] lg:py-[4px] lg:text-[12.5px] lg:leading-[18.75px]"
           >
-            {microSkill.microSkill}
+            {microSkill}
           </span>
         ))}
       </div>

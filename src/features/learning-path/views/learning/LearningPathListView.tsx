@@ -1,35 +1,67 @@
 import { EmptyState, Loading } from "@shared/components";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LearningPathCard from "@features/learning-path/components/learning/LearningPathCard";
 import LearningPathSection from "@features/learning-path/components/learning/LearningPathSection";
 import { useLearningPaths } from "@features/learning-path/hooks/useLearningPaths";
+import type { LearningPathListItem } from "@features/learning-path/types/learning-path.types";
+import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
+
+const EMPTY_PATHS: LearningPathListItem[] = [];
+
+function filterPaths(paths: LearningPathListItem[], query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase("vi");
+
+  if (!normalizedQuery) {
+    return paths;
+  }
+
+  return paths.filter((path) => {
+    const dates = `${path.createdDate} ${formatLearningPathDate(path.createdDate)}`;
+    return (
+      dates.toLocaleLowerCase("vi").includes(normalizedQuery) ||
+      path.microSkills.some((microSkill) =>
+        microSkill.toLocaleLowerCase("vi").includes(normalizedQuery),
+      )
+    );
+  });
+}
 
 export default function LearningPathListView() {
-  const { data: paths, loading, error } = useLearningPaths();
+  const active = useLearningPaths("ACTIVE");
+  const completed = useLearningPaths("COMPLETED", false);
+  const cancelled = useLearningPaths("CANCELLED", false);
 
   const [query, setQuery] = useState("");
   const [completedExpanded, setCompletedExpanded] = useState(false);
   const [cancelledExpanded, setCancelledExpanded] = useState(false);
 
-  const filteredPaths = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("vi");
+  const activePaths = active.data?.data.items ?? EMPTY_PATHS;
+  const completedPaths = completed.data?.data.items ?? EMPTY_PATHS;
+  const cancelledPaths = cancelled.data?.data.items ?? [];
+  const counts = active.data?.data.counts;
 
-    if (!paths || !normalizedQuery) {
-      return paths ?? [];
+  const filteredActivePaths = useMemo(
+    () => filterPaths(activePaths, query),
+    [activePaths, query],
+  );
+  const filteredCompletedPaths = useMemo(
+    () => filterPaths(completedPaths, query),
+    [completedPaths, query],
+  );
+
+  const completedData = completed.data;
+  const completedLoading = completed.loading;
+  const completedError = completed.error;
+  const refetchCompleted = completed.refetch;
+
+  useEffect(() => {
+    if (query.trim() && !completedData && !completedLoading && !completedError) {
+      refetchCompleted();
     }
+  }, [completedData, completedError, completedLoading, query, refetchCompleted]);
 
-    return paths.filter(
-      (path) =>
-        path.status !== "CANCELLED" &&
-        (path.createdDate.toLocaleLowerCase("vi").includes(normalizedQuery) ||
-          path.microSkills.some((skill) =>
-            skill.microSkill.toLocaleLowerCase("vi").includes(normalizedQuery),
-          )),
-    );
-  }, [paths, query]);
-
-  if (loading) {
+  if (active.loading) {
     return (
       <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
         <Loading size="lg" />
@@ -37,26 +69,32 @@ export default function LearningPathListView() {
     );
   }
 
-  if (error || !paths) {
+  if (active.error || !active.data) {
     return (
       <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
         <EmptyState
           title="Không tải được lộ trình"
-          description={error?.message ?? "Đã xảy ra lỗi khi tải Learning Path."}
+          description={active.error?.message ?? "Đã xảy ra lỗi khi tải Learning Path."}
         />
       </div>
     );
   }
 
-  const activePaths = filteredPaths.filter(
-    (path) => path.status === "NOT_STARTED" || path.status === "IN_PROGRESS",
-  );
+  const toggleCompleted = () => {
+    const expanding = !completedExpanded;
+    setCompletedExpanded(expanding);
+    if (expanding && !completed.data && !completed.loading) {
+      completed.refetch();
+    }
+  };
 
-  const completedPaths = filteredPaths.filter(
-    (path) => path.status === "COMPLETED",
-  );
-
-  const cancelledPaths = paths.filter((path) => path.status === "CANCELLED");
+  const toggleCancelled = () => {
+    const expanding = !cancelledExpanded;
+    setCancelledExpanded(expanding);
+    if (expanding && !cancelled.data && !cancelled.loading) {
+      cancelled.refetch();
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-4 lg:px-10 lg:py-8">
@@ -91,56 +129,70 @@ export default function LearningPathListView() {
       <div className="mt-4 space-y-3 lg:mt-6 lg:space-y-7">
         <LearningPathSection
           title="Lộ trình đang hoạt động"
-          count={activePaths.length}
+          count={counts?.active ?? activePaths.length}
           icon="active"
         >
-          {activePaths.length > 0 ? (
+          {filteredActivePaths.length > 0 ? (
             <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
-              {activePaths.map((path) => (
+              {filteredActivePaths.map((path) => (
                 <LearningPathCard key={path.id} path={path} />
               ))}
             </div>
           ) : (
             <EmptyState
-              title="Chưa có lộ trình đang hoạt động"
-              description="Hãy hoàn thành bài kiểm tra định kì để nhận đề xuất luyện tập."
+              title={query.trim() ? "Không tìm thấy lộ trình phù hợp" : "Chưa có lộ trình đang hoạt động"}
+              description={query.trim() ? "Thử tìm theo micro-skill hoặc ngày tạo." : "Hãy hoàn thành bài kiểm tra định kì để nhận đề xuất luyện tập."}
             />
           )}
         </LearningPathSection>
 
         <LearningPathSection
           title="Lộ trình đã hoàn thành"
-          count={completedPaths.length}
+          count={counts?.completed ?? 0}
           icon="completed"
           collapsible
           expanded={completedExpanded}
-          onToggle={() => setCompletedExpanded((current) => !current)}
+          onToggle={toggleCompleted}
         >
           {completedExpanded &&
-            (completedPaths.length > 0 ? (
+            (completed.loading ? (
+              <Loading size="sm" />
+            ) : completed.error ? (
+              <EmptyState
+                title="Không tải được lộ trình đã hoàn thành"
+                description={completed.error.message}
+              />
+            ) : filteredCompletedPaths.length > 0 ? (
               <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
-                {completedPaths.map((path) => (
+                {filteredCompletedPaths.map((path) => (
                   <LearningPathCard key={path.id} path={path} />
                 ))}
               </div>
             ) : (
               <EmptyState
-                title="Chưa có lộ trình đã hoàn thành"
-                description="Các lộ trình hoàn thành sẽ xuất hiện tại đây."
+                title={query.trim() ? "Không tìm thấy lộ trình phù hợp" : "Chưa có lộ trình đã hoàn thành"}
+                description={query.trim() ? "Thử tìm theo micro-skill hoặc ngày tạo." : "Các lộ trình hoàn thành sẽ xuất hiện tại đây."}
               />
             ))}
         </LearningPathSection>
 
         <LearningPathSection
           title="Lộ trình đã hủy"
-          count={cancelledPaths.length}
+          count={counts?.cancelled ?? 0}
           icon="cancelled"
           collapsible
           expanded={cancelledExpanded}
-          onToggle={() => setCancelledExpanded((current) => !current)}
+          onToggle={toggleCancelled}
         >
           {cancelledExpanded &&
-            (cancelledPaths.length > 0 ? (
+            (cancelled.loading ? (
+              <Loading size="sm" />
+            ) : cancelled.error ? (
+              <EmptyState
+                title="Không tải được lộ trình đã hủy"
+                description={cancelled.error.message}
+              />
+            ) : cancelledPaths.length > 0 ? (
               <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
                 {cancelledPaths.map((path) => (
                   <LearningPathCard key={path.id} path={path} />

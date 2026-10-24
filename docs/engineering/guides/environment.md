@@ -16,25 +16,29 @@
 |---|---|---|
 | `.env.example` | documents exactly one variable: `STITCH_API_KEY` (Stitch MCP key for `.opencode/opencode.json`) | repo-root `.env.example` (1 variable) |
 | `.env` | same single variable; gitignored | `.gitignore:27` (`.env`) |
-| `VITE_*` client env vars | **0 usages** — no `import.meta.env` / `VITE_` anywhere in `src/` | verified search, `src/**` |
+| `VITE_LEARNING_PATH_USER_ID` | Read by the Learning Path list service as the current local test user's Mongo ObjectId; set it in ignored `.env.local` | `src/features/learning-path/services/learningPath.service.ts` |
 | Secrets in `src/` | none found (no key material in source) | verified search; keep it that way (`C-15`) |
 | Stitch key file | `.opencode/.stitch-key` exists and is gitignored | `.gitignore:28` |
-| Base URL config | none — a key reason `HttpService` is NOT USABLE | [api-integration.md](api-integration.md) §3 |
+| API routing | Vite dev proxy forwards `/api` to `http://localhost:8080`; production routing remains deployment-specific | `vite.config.ts`; [api-integration.md](api-integration.md) §6 |
+| Shared HTTP base URL | none — a key reason `HttpService` is NOT USABLE | [api-integration.md](api-integration.md) §3 |
 
 ## 2. Rules (`C-15`)
 
 - **MUST NOT** put keys, tokens, or passwords in `src/`, tracked config, or any doc. Key material
   is never reproduced in `docs/engineering/` (including this file).
-- Config that the client bundle reads must be Vite-prefixed (`VITE_*`) — **but no such scheme is
-  adopted yet** (`D10` context; introducing one is a decision, not a default).
-- New env vars: add to `.env.example` with a placeholder, gitignore real `.env`, and document here
-  in the same change.
+- Config that the client bundle reads must be Vite-prefixed (`VITE_*`). `VITE_LEARNING_PATH_USER_ID`
+  is a local integration setting, not a secret; set it in the ignored root `.env.local` file. Do
+  not put credentials or tokens in a `VITE_*` variable because Vite exposes it to browser code.
+- The repository's `.env.example` currently does not include `VITE_LEARNING_PATH_USER_ID`; its
+  attempted update was rejected during this task. Add the variable there only after explicit
+  authorization, then keep this guide synchronized.
 
 ## 3. When a real API base URL arrives
 
-Blocking chain for backend integration: base-URL mechanism (env scheme, undecided) → `HttpService`
-wiring (`DEV-07`) → frozen contract (**UNKNOWN**). See
-[api-integration.md](api-integration.md) §3 — nothing may be invented ahead of those inputs.
+The Learning Path list currently relies on Vite's development proxy and a local test user ID.
+Production API routing and a frontend authentication/session source still need to be supplied.
+The shared `HttpService` remains unwired and other feature contracts remain **UNKNOWN**. See
+[api-integration.md](api-integration.md) §3 and §6.
 
 ## 4. UNKNOWN — MCP header delivery: file vs env (pending `D10`)
 
