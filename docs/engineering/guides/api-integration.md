@@ -127,9 +127,11 @@ the backend envelope `{ data: { items, counts }, timestamp }`. The card DTO cont
 `currentWeekNo`, and `progress { assigned, answered }`.
 
 The request callback lives in `features/learning-path/hooks/useLearningPaths.ts`, passes its
-`AbortSignal` to `learningPathService`, and the view keeps search client-side for active and
-completed paths only. A local `VITE_LEARNING_PATH_USER_ID` supplies the test user's ObjectId until
-the frontend has an authentication/session source.
+`AbortSignal` to `learningPathService`. Search uses `GET /api/learning-paths/search` with
+`userId` and `keyword`; it matches an exact creation date in `DD/MM/YYYY` format or a partial,
+case-insensitive micro-skill name. Only active and completed paths are searched; cancelled paths
+are excluded. Search requests are debounced in the view. A local `VITE_LEARNING_PATH_USER_ID`
+supplies the test user's ObjectId until the frontend has an authentication/session source.
 
 ## 5. Anti-patterns
 

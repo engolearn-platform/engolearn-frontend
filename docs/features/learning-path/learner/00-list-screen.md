@@ -5,8 +5,13 @@ Route: `/learning-paths`
 - Loads active paths from `GET /api/learning-paths?userId=…&status=ACTIVE` on
   entry. The response counts populate all three status sections.
 - Loads `COMPLETED` or `CANCELLED` paths only when the corresponding section is
-  expanded. Search remains client-side and matches creation date or micro-skill
-  for active/completed paths; cancelled paths are excluded.
+  expanded. Search calls `GET /api/learning-paths/search?userId=…&keyword=…`
+  and matches creation date (`DD/MM/YYYY`) or micro-skill across active and
+  completed paths; cancelled paths are excluded. The completed section opens
+  while search results are shown.
+- Search requests are debounced by 300 ms and keep the same list response shape,
+  including the unfiltered section counts. While searching, section badges show
+  the number of matching items in each visible status section.
 - The local Vite server proxies `/api` to the backend at `http://localhost:8080`.
   `VITE_LEARNING_PATH_USER_ID` supplies the current local test user's Mongo
   ObjectId until frontend authentication is connected.
