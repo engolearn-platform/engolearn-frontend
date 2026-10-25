@@ -1,9 +1,10 @@
 # Guide — API integration
 
-> **Purpose:** How data enters the UI today: the `useFetch` pattern, the services layer, why
-> `HttpService` is NOT USABLE, and the recipe for swapping mock → real.
-> **Scope:** All data fetching in `src/`. No backend contract is described here — DTOs/endpoints are
-> **UNKNOWN** until a frozen contract is supplied (never improvised: [../README.md](../README.md) precedence).
+> **Purpose:** How data enters the UI: the `useFetch` pattern, the services layer, why
+> `HttpService` is not wired, and the recipe for swapping mock → real.
+> **Scope:** All data fetching in `src/`. The Learning Path list contract is recorded in §6;
+> other backend contracts remain **UNKNOWN** until supplied (never improvised:
+> [../README.md](../README.md) precedence).
 > **Owner:** Frontend engineering docs — update when a mock flips to real (`C-11`).
 > **Status:** PROPOSED (guide). All code facts are EXISTING and cited.
 > **Relationships:** [../architecture/project-structure.md](../../architecture/project-structure.md) §6, §8 ·
@@ -85,19 +86,18 @@ EXISTING FACTS (verified):
 - **0 call sites**: nothing in `src/` invokes `httpService.get/post/…` (only a doc-comment mention
   in `topic-progress.service.ts:11`).
 - With `baseUrl = ""`, `buildUrl` calls `new URL(endpoint, "")` (`:16`) — an empty base is invalid,
-  so relative endpoints throw `TypeError`. There is no configured base URL anywhere
-  (no `import.meta.env` / `VITE_*` usage in `src/`, 0 hits — see [environment.md](environment.md)).
+  so relative endpoints throw `TypeError`. It remains unused. The Learning Path list uses a
+  feature service with a relative `/api` URL; Vite's development proxy forwards it to the backend.
 
-**What a usable real layer needs** (all pending inputs — none may be invented):
+**What a reusable shared HTTP layer still needs** (pending for future integrations):
 
-1. Base-URL configuration mechanism (env scheme → open decision `D10` context; PROPOSED, undecided).
-2. A frozen backend contract: endpoints, DTOs, error envelope, status-code mapping — **UNKNOWN**.
-3. Error normalization into `useFetch`'s `NormalizedError` (`{ message }`).
-4. Auth header/session handling — blocked on `D6` / [auth.md](auth.md) (**NOT IMPLEMENTED**).
-5. A wiring decision on `HttpService` vs plain `fetch` in services (related: `DEV-07`).
+1. A reusable base-URL/configuration strategy for production.
+2. Frozen backend contracts for the other features.
+3. Auth header/session handling — blocked on `D6` / [auth.md](auth.md) (**NOT IMPLEMENTED**).
+4. A decision on whether to wire `HttpService` or keep feature-owned requests (`DEV-07`).
 
-Until 1–4 exist, any "real integration" claim fails validation
-([../code-validation.md](../code-validation.md) step 4, outcome BLOCKED).
+The Learning Path list has its own known endpoint and DTO; it does not make the shared
+`HttpService` usable for other features.
 
 ## 4. Mock → real recipe (from the learner matrix)
 
@@ -114,8 +114,22 @@ Reference table: [../../features/topic/learner/00-mock-api-status.md](../../feat
 4. **Contract check**: field names/shapes must match the provided contract exactly; mismatch →
    stop and report (orchestrator), do not adapt the backend (rule in
    [../README.md](../README.md) scope).
-5. **Update in the same change** (`C-11`): flip the matrix row 🟡→✅ **and** the screen doc
-   (`docs/features/topic/<surface>/…`), then run [../code-validation.md](../code-validation.md).
+5. **Update in the same change** (`C-11`): flip the relevant mock-status row 🟡→✅ **and** the
+   screen doc. Then run [../code-validation.md](../code-validation.md).
+
+## 6. Learning Path list API (REAL)
+
+The learner list uses `GET /api/learning-paths?userId=<ObjectId>&status=<status>` through the
+Vite development proxy (`/api` → `http://localhost:8080`). `status` is `ACTIVE` by default;
+`COMPLETED` and `CANCELLED` are requested when their collapsed sections open. Every response has
+the backend envelope `{ data: { items, counts }, timestamp }`. The card DTO contains
+`id`, `sourceAttemptId`, `createdDate`, `level`, `k`, `microSkills: string[]`, `status`,
+`currentWeekNo`, and `progress { assigned, answered }`.
+
+The request callback lives in `features/learning-path/hooks/useLearningPaths.ts`, passes its
+`AbortSignal` to `learningPathService`, and the view keeps search client-side for active and
+completed paths only. A local `VITE_LEARNING_PATH_USER_ID` supplies the test user's ObjectId until
+the frontend has an authentication/session source.
 
 ## 5. Anti-patterns
 
