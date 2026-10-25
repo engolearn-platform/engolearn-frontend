@@ -4,8 +4,8 @@ import LearningLayout from "@/core/layouts/LearningLayout";
 import TopicLearningLayout from "@/core/layouts/TopicLearningLayout";
 import { ROUTES } from "@shared/constants";
 import TopicPage from "./views/TopicPage";
-import TopicCreateBasicInfoView from "./views/management/TopicCreateBasicInfoView";
-import TopicCreateItemsView from "./views/management/TopicCreateItemsView";
+import TopicUpsertBasicInfoView from "./views/management/TopicUpsertBasicInfoView";
+import TopicUpsertItemsView from "./views/management/TopicUpsertItemsView";
 import TopicItemEditorView from "./views/management/TopicItemEditorView";
 import TopicDetailView from "./views/learning/TopicDetailView";
 import TopicContextView from "./views/learning/TopicContextView";
@@ -90,14 +90,26 @@ export const TopicRoutes: RouteObject[] = [
       },
       {
         path: "create",
-        Component: TopicCreateBasicInfoView,
+        Component: TopicUpsertBasicInfoView,
       },
       {
         path: "create/items",
-        Component: TopicCreateItemsView,
+        Component: TopicUpsertItemsView,
       },
       {
         path: "create/items/:itemId/:sectionKey",
+        Component: TopicItemEditorView,
+      },
+      {
+        path: ":topicId/edit",
+        Component: TopicUpsertBasicInfoView,
+      },
+      {
+        path: ":topicId/edit/items",
+        Component: TopicUpsertItemsView,
+      },
+      {
+        path: ":topicId/edit/items/:itemId/:sectionKey",
         Component: TopicItemEditorView,
       },
     ],

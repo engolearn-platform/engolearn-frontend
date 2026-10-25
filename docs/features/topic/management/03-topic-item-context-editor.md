@@ -17,20 +17,23 @@
 
 ## 2. Route & trigger point
 
-- Route gộp duy nhất: `/admin/topics/create/items/:itemId/:sectionKey`
+- Route gộp dùng chung 2 mode: `/admin/topics/create/items/:itemId/:sectionKey`
+  (tạo mới) và `/admin/topics/:topicId/edit/items/:itemId/:sectionKey` (cập nhật)
   (`ROUTES.ADMIN_TOPIC_ITEM_SECTION` + helper
-  `topicItemSectionPath(itemId, section)` trong
+  `topicItemSectionPath(itemId, section, topicId?)` trong
   `src/shared/constants/app.constants.ts`), khai báo trong
-  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"`)
-  dưới `ManagementLayout`. `context` cũng là 1 `sectionKey` nên 4 tab
-  (Bối cảnh / Từ vựng / Mẫu câu / Quiz) chung 1 route.
+  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"` +
+  `path: ":topicId/edit/items/:itemId/:sectionKey"`) dưới `ManagementLayout`.
+  `context` cũng là 1 `sectionKey` nên 4 tab (Bối cảnh / Từ vựng / Mẫu câu / Quiz)
+  chung 1 route.
 - Dispatcher `TopicItemEditorView` rẽ nhánh theo `sectionKey`: `"context"` →
-  editor thật; 3 key còn lại → placeholder; key lạ → `<Navigate>` về context.
+  Context view; `"vocabulary"`/`"expressions"`/`"quiz"` → view tương ứng;
+  key lạ → `<Navigate>` về context.
 - Trigger: nút "Sửa nội dung" / "Khởi tạo nội dung" trên `TopicItemCard`
-  (`onEdit`/`onInit`) giờ `navigate(topicItemSectionPath(id, "context"))`
-  thay vì `selectItem` như trước (sửa trong `TopicCreateItemsView`).
-- Back của editor → `ROUTES.ADMIN_TOPIC_CREATE_ITEMS` (explicit, an toàn deep-link).
-  Continue (hợp lệ) → placeholder tab kế (`vocabulary`).
+  (`onEdit`/`onInit`) `navigate(topicItemSectionPath(id, "context", topicId))`
+  (truyền `topicId` để giữ mode update; sửa trong `TopicUpsertItemsView`).
+- Back của editor → `adminTopicItemsPath(topicId)` (explicit, an toàn deep-link).
+  Continue (hợp lệ) → tab kế (`vocabulary`) cùng mode.
 
 ## 3. Bản đồ component
 

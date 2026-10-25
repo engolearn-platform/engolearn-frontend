@@ -36,7 +36,7 @@ return { draft, patch, setCefr, addTag, removeTag, descriptionCount, isValid };
 ```
 
 Grounded example — view owns `showErrors`
-([`src/features/topic/views/management/TopicCreateBasicInfoView.tsx:21`](../../../src/features/topic/views/management/TopicCreateBasicInfoView.tsx)):
+([`src/features/topic/views/management/TopicUpsertBasicInfoView.tsx:27`](../../../src/features/topic/views/management/TopicUpsertBasicInfoView.tsx)):
 
 ```ts
 const [showErrors, setShowErrors] = useState(false);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ROUTES, topicItemSectionPath } from "@shared/constants";
+import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
 import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
 import {
@@ -30,7 +30,7 @@ function stepDetail(
 
 export default function TopicItemQuizEditorView() {
   const navigate = useNavigate();
-  const { itemId } = useParams();
+  const { itemId, topicId } = useParams();
   const {
     item,
     groups,
@@ -48,7 +48,7 @@ export default function TopicItemQuizEditorView() {
     useState<QuizType>("SITUATIONAL_CHOICE");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleBackToList = () => navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
+  const handleBackToList = () => navigate(adminTopicItemsPath(topicId));
 
   if (!item) {
     return (
@@ -73,11 +73,11 @@ export default function TopicItemQuizEditorView() {
 
   const handleSelectSection = (section: TopicItemStepKey) => {
     if (section === "quiz" || !itemId) return;
-    navigate(topicItemSectionPath(itemId, section));
+    navigate(topicItemSectionPath(itemId, section, topicId));
   };
 
   const handleBack = () =>
-    navigate(topicItemSectionPath(itemId ?? "", "expressions"));
+    navigate(topicItemSectionPath(itemId ?? "", "expressions", topicId));
 
   const handleContinue = () => {
     if (!isValid || !itemId) {
@@ -85,7 +85,7 @@ export default function TopicItemQuizEditorView() {
       return;
     }
     setShowErrors(false);
-    navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
+    navigate(adminTopicItemsPath(topicId));
   };
 
   const handleQuickAdd = () => {

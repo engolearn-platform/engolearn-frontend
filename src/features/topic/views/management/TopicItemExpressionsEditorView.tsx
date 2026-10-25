@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ROUTES, topicItemSectionPath } from "@shared/constants";
+import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
 import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
 import {
@@ -29,7 +29,7 @@ function stepDetail(
 
 export default function TopicItemExpressionsEditorView() {
   const navigate = useNavigate();
-  const { itemId } = useParams();
+  const { itemId, topicId } = useParams();
   const {
     item,
     purposes,
@@ -53,7 +53,7 @@ export default function TopicItemExpressionsEditorView() {
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleBackToList = () => navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
+  const handleBackToList = () => navigate(adminTopicItemsPath(topicId));
 
   const hasFreeSlot =
     canAddPurpose ||
@@ -82,10 +82,11 @@ export default function TopicItemExpressionsEditorView() {
 
   const handleSelectSection = (section: TopicItemStepKey) => {
     if (section === "expressions" || !itemId) return;
-    navigate(topicItemSectionPath(itemId, section));
+    navigate(topicItemSectionPath(itemId, section, topicId));
   };
 
-  const handleBack = () => navigate(topicItemSectionPath(itemId ?? "", "vocabulary"));
+  const handleBack = () =>
+    navigate(topicItemSectionPath(itemId ?? "", "vocabulary", topicId));
 
   const handleContinue = () => {
     if (!isValid || !itemId) {
@@ -93,7 +94,7 @@ export default function TopicItemExpressionsEditorView() {
       return;
     }
     setShowErrors(false);
-    navigate(topicItemSectionPath(itemId, "quiz"));
+    navigate(topicItemSectionPath(itemId, "quiz", topicId));
   };
 
   const handleAdd = () => {

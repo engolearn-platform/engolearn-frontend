@@ -28,12 +28,14 @@
 
 ## 2. Route & trigger point
 
-- Reuse route gộp duy nhất: `/admin/topics/create/items/:itemId/:sectionKey`
+- Reuse route gộp dùng chung 2 mode: `/admin/topics/create/items/:itemId/:sectionKey`
+  (tạo mới) và `/admin/topics/:topicId/edit/items/:itemId/:sectionKey` (cập nhật)
   (`ROUTES.ADMIN_TOPIC_ITEM_SECTION` + helper
-  `topicItemSectionPath(itemId, section)` trong
+  `topicItemSectionPath(itemId, section, topicId?)` trong
   `src/shared/constants/app.constants.ts`), khai báo trong
-  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"`)
-  dưới `ManagementLayout`. Không thêm route, không sửa `ROUTES`.
+  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"` +
+  `path: ":topicId/edit/items/:itemId/:sectionKey"`) dưới `ManagementLayout`.
+  Không thêm route mới ngoài 2 template trên.
 - Dispatcher `TopicItemEditorView` rẽ nhánh theo `sectionKey`: `"context"` →
   Context view; `"vocabulary"` → Vocabulary view; `"expressions"` →
   Expressions view; `"quiz"` → Quiz view (mới); key lạ → `<Navigate>` về
@@ -42,9 +44,9 @@
 - Trigger: tab `4. Bài tập & Quiz` trên `TopicItemSectionTabRail`
   (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `ListChecks`) gọi `onSelect("quiz")` →
-  `navigate(topicItemSectionPath(itemId, "quiz"))`.
+  `navigate(topicItemSectionPath(itemId, "quiz", topicId))`.
 - Back của editor → section `expressions` cùng item. Continue (hợp lệ) →
-  `ROUTES.ADMIN_TOPIC_CREATE_ITEMS` (quiz là tab cuối — về overview items).
+  `adminTopicItemsPath(topicId)` (quiz là tab cuối — về overview items, giữ mode).
   Footer chưa truyền `onSaveDraft` (chờ endpoint, giống view 01/03/04/05).
 
 ## 3. Bản đồ component

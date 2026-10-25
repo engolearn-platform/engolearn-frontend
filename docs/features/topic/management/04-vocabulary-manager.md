@@ -19,21 +19,23 @@
 
 ## 2. Route & trigger point
 
-- Reuse route gộp duy nhất: `/admin/topics/create/items/:itemId/:sectionKey`
+- Reuse route gộp dùng chung 2 mode: `/admin/topics/create/items/:itemId/:sectionKey`
+  (tạo mới) và `/admin/topics/:topicId/edit/items/:itemId/:sectionKey` (cập nhật)
   (`ROUTES.ADMIN_TOPIC_ITEM_SECTION` + helper
-  `topicItemSectionPath(itemId, section)` trong
+  `topicItemSectionPath(itemId, section, topicId?)` trong
   `src/shared/constants/app.constants.ts`), khai báo trong
-  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"`)
-  dưới `ManagementLayout`. Không thêm route, không sửa `ROUTES`.
+  `src/features/topic/routes.ts` (`path: "create/items/:itemId/:sectionKey"` +
+  `path: ":topicId/edit/items/:itemId/:sectionKey"`) dưới `ManagementLayout`.
+  Không thêm route mới ngoài 2 template trên.
 - Dispatcher `TopicItemEditorView` rẽ nhánh theo `sectionKey`: `"context"` →
-  Context view; `"vocabulary"` → Vocabulary view (mới); còn lại → placeholder;
-  key lạ → `<Navigate>` về context.
+  Context view; `"vocabulary"` → Vocabulary view; `"expressions"` →
+  Expressions view; `"quiz"` → Quiz view; key lạ → `<Navigate>` về context.
 - Trigger: tab `2. Từ vựng` trên `TopicItemSectionTabRail`
   (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `SpellCheck`, note `(4 từ)`) gọi `onSelect("vocabulary")` →
-  `navigate(topicItemSectionPath(itemId, "vocabulary"))`.
+  `navigate(topicItemSectionPath(itemId, "vocabulary", topicId))`.
 - Back của editor → section `context` cùng item (explicit, an toàn deep-link).
-  Continue (hợp lệ) → section `expressions` (placeholder hiện tại).
+  Continue (hợp lệ) → section `expressions` cùng mode.
 
 ## 3. Bản đồ component
 

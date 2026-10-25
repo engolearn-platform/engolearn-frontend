@@ -1,5 +1,5 @@
 import { Navigate, useParams } from "react-router";
-import { ROUTES, topicItemSectionPath } from "@shared/constants";
+import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
 import { isTopicItemSectionKey } from "@features/topic/types/topic-create.types";
 import TopicItemContextEditorView from "./TopicItemContextEditorView";
 import TopicItemQuizEditorView from "./TopicItemQuizEditorView";
@@ -7,15 +7,15 @@ import TopicItemVocabularyEditorView from "./TopicItemVocabularyEditorView";
 import TopicItemExpressionsEditorView from "./TopicItemExpressionsEditorView";
 
 export default function TopicItemEditorView() {
-  const { itemId, sectionKey } = useParams();
+  const { itemId, sectionKey, topicId } = useParams();
 
   if (!sectionKey || !isTopicItemSectionKey(sectionKey)) {
     return (
       <Navigate
         to={
           itemId
-            ? topicItemSectionPath(itemId, "context")
-            : ROUTES.ADMIN_TOPIC_CREATE_ITEMS
+            ? topicItemSectionPath(itemId, "context", topicId)
+            : adminTopicItemsPath(topicId)
         }
         replace
       />

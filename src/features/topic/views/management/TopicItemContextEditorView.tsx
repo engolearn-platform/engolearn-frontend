@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ROUTES, topicItemSectionPath } from "@shared/constants";
+import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
 import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
 import { useTopicItemContextForm } from "@features/topic/hooks/useTopicItemContextForm";
@@ -21,7 +21,7 @@ function stepDetail(
 
 export default function TopicItemContextEditorView() {
   const navigate = useNavigate();
-  const { itemId } = useParams();
+  const { itemId, topicId } = useParams();
   const {
     item,
     draft,
@@ -33,7 +33,7 @@ export default function TopicItemContextEditorView() {
   } = useTopicItemContextForm(itemId);
   const [showErrors, setShowErrors] = useState(false);
 
-  const handleBackToList = () => navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
+  const handleBackToList = () => navigate(adminTopicItemsPath(topicId));
 
   if (!item) {
     return (
@@ -58,10 +58,10 @@ export default function TopicItemContextEditorView() {
 
   const handleSelectSection = (section: TopicItemStepKey) => {
     if (section === "context" || !itemId) return;
-    navigate(topicItemSectionPath(itemId, section));
+    navigate(topicItemSectionPath(itemId, section, topicId));
   };
 
-  const handleBack = () => navigate(ROUTES.ADMIN_TOPIC_CREATE_ITEMS);
+  const handleBack = () => navigate(adminTopicItemsPath(topicId));
 
   const handleContinue = () => {
     if (!isValid || !itemId) {
@@ -69,7 +69,7 @@ export default function TopicItemContextEditorView() {
       return;
     }
     setShowErrors(false);
-    navigate(topicItemSectionPath(itemId, "vocabulary"));
+    navigate(topicItemSectionPath(itemId, "vocabulary", topicId));
   };
 
   const quizStep = item.steps.find((step) => step.key === "quiz");

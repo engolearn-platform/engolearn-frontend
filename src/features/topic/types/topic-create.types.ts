@@ -17,6 +17,13 @@ export interface TopicCreateStep {
   note: string;
 }
 
+/**
+ * Mode của wizard topic: dùng chung một bộ view/component cho cả tạo mới
+ * (`create`, route `/admin/topics/create`) và cập nhật (`update`, route
+ * `/admin/topics/:topicId/edit`).
+ */
+export type TopicUpsertMode = "create" | "update";
+
 export interface TopicBasicInfoDraft {
   titleEn: string;
   titleVi: string;
@@ -68,6 +75,27 @@ export const TOPIC_CREATE_STEPS: TopicCreateStep[] = [
   { index: 2, title: "3. Kiểm tra & Xuất bản", note: "Chờ hoàn tất nội dung" },
 ];
 
+export const TOPIC_ITEMS_RECOMMENDED_MAX = 5;
+
+/** Item mặc định được chọn ở màn overview (giữ hành vi Stitch). */
+export const TOPIC_ITEMS_DEFAULT_SELECTED_ID = "choosing-food";
+
+export function getTopicUpsertSteps(
+  mode: TopicUpsertMode,
+  itemCount: number,
+): TopicCreateStep[] {
+  if (mode === "create") return TOPIC_CREATE_STEPS;
+  return [
+    { index: 0, title: "1. Thông tin chủ đề", note: "Đang cập nhật" },
+    {
+      index: 1,
+      title: "2. Danh sách Topic Items",
+      note: `${itemCount} bài học hiện có`,
+    },
+    { index: 2, title: "3. Kiểm tra & Xuất bản", note: "Chờ hoàn tất nội dung" },
+  ];
+}
+
 export const TOPIC_CREATE_DEFAULT_TAGS: string[] = [
   "food",
   "restaurant",
@@ -75,7 +103,8 @@ export const TOPIC_CREATE_DEFAULT_TAGS: string[] = [
   "daily conversation",
 ];
 
-export const TOPIC_CREATE_DEFAULT_DRAFT: TopicBasicInfoDraft = {  titleEn: "Ordering Food at a Restaurant",
+export const TOPIC_CREATE_DEFAULT_DRAFT: TopicBasicInfoDraft = {
+  titleEn: "Ordering Food at a Restaurant",
   titleVi: "Gọi món tại nhà hàng",
   cefr: "A2",
   category: "dining-food",
@@ -236,6 +265,40 @@ export const TOPIC_SCRIPT_QUALITY_MOCK: TopicScriptQuality = {  score: 68,
     },
   ],
 };
+
+/**
+ * Snapshot dữ liệu của một topic đã tồn tại, dùng cho mode `update`.
+ * UI-only (mock): khi gắn API thật, thay `getTopicUpsertSnapshot` bằng
+ * service + `useFetch` (xem docs/features/topic/management/01-basic-info-upsert.md §5).
+ */
+export interface TopicUpsertSnapshot {
+  topicId: string;
+  basicInfo: TopicBasicInfoDraft;
+  items: TopicItemOverview[];
+  quality: TopicScriptQuality;
+  selectedItemId?: string;
+  updatedNote?: string;
+}
+
+export const TOPIC_UPSERT_MOCK_SNAPSHOTS: Record<string, TopicUpsertSnapshot> = {
+  "ordering-food": {
+    topicId: "ordering-food",
+    basicInfo: {
+      ...TOPIC_CREATE_DEFAULT_DRAFT,
+      tags: [...TOPIC_CREATE_DEFAULT_TAGS],
+    },
+    items: TOPIC_ITEMS_OVERVIEW_MOCK,
+    quality: TOPIC_SCRIPT_QUALITY_MOCK,
+    selectedItemId: "choosing-food",
+    updatedNote: "Cập nhật lần cuối: 10 phút trước",
+  },
+};
+
+export function getTopicUpsertSnapshot(
+  topicId: string,
+): TopicUpsertSnapshot | undefined {
+  return TOPIC_UPSERT_MOCK_SNAPSHOTS[topicId];
+}
 
 /**
  * Step 2 — Editor Bối cảnh (Context) của 1 Topic Item.

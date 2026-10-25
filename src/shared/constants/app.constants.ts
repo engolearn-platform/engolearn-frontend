@@ -19,11 +19,34 @@ export const ROUTES = {
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
   ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
   ADMIN_TOPIC_ITEM_SECTION: "/admin/topics/create/items/:itemId/:sectionKey",
+  ADMIN_TOPIC_EDIT: "/admin/topics/:topicId/edit",
+  ADMIN_TOPIC_EDIT_ITEMS: "/admin/topics/:topicId/edit/items",
+  ADMIN_TOPIC_EDIT_ITEM_SECTION:
+    "/admin/topics/:topicId/edit/items/:itemId/:sectionKey",
 } as const;
 
-export function topicItemSectionPath(itemId: string, section: string): string {
-  return ROUTES.ADMIN_TOPIC_ITEM_SECTION.replace(":itemId", itemId).replace(
-    ":sectionKey",
-    section,
-  );
+export function adminTopicBasicInfoPath(topicId?: string): string {
+  return topicId
+    ? ROUTES.ADMIN_TOPIC_EDIT.replace(":topicId", topicId)
+    : ROUTES.ADMIN_TOPIC_CREATE;
+}
+
+export function adminTopicItemsPath(topicId?: string): string {
+  return topicId
+    ? ROUTES.ADMIN_TOPIC_EDIT_ITEMS.replace(":topicId", topicId)
+    : ROUTES.ADMIN_TOPIC_CREATE_ITEMS;
+}
+
+export function topicItemSectionPath(
+  itemId: string,
+  section: string,
+  topicId?: string,
+): string {
+  const template = topicId
+    ? ROUTES.ADMIN_TOPIC_EDIT_ITEM_SECTION
+    : ROUTES.ADMIN_TOPIC_ITEM_SECTION;
+  return template
+    .replace(":topicId", topicId ?? "")
+    .replace(":itemId", itemId)
+    .replace(":sectionKey", section);
 }
