@@ -7,13 +7,13 @@ interface LearningPathClosedWeekProps {
 }
 
 export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekProps) {
-  const completion = percentage(week.answered, week.assigned);
-  const practice = percentage(week.correct, week.answered);
+  const completion = week.completionRate !== undefined ? week.completionRate : percentage(week.answered, week.assigned);
+  const practice = week.practiceScore !== undefined ? week.practiceScore : percentage(week.correct, week.answered);
   const metrics = [
     { label: "Câu được giao", value: String(week.assigned) },
     { label: "Đã làm", value: String(week.answered) },
     { label: "Đúng", value: String(week.correct) },
-    { label: "Sai", value: String(week.answered - week.correct) },
+    { label: "Sai", value: String(week.wrong ?? week.answered - week.correct) },
     { label: "Completion Rate", value: scoreLabel(completion) },
     { label: "Practice Score", value: scoreLabel(practice) },
   ];
@@ -58,7 +58,17 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
               </thead>
               <tbody>
                 {week.microSkillResults.map((result) => {
-                  const score = percentage(result.correct, result.answered);
+                  const score = result.practiceScore !== undefined
+                    ? result.practiceScore
+                    : percentage(result.correct ?? 0, result.answered);
+                  const completionRate = result.completionRate !== undefined
+                    ? result.completionRate
+                    : percentage(result.answered, result.assigned);
+                  const improvement = result.improvementPp !== undefined
+                    ? result.improvementPp === null
+                      ? "Không có dữ liệu"
+                      : `${result.improvementPp >= 0 ? "+" : "−"}${Math.abs(result.improvementPp)}%`
+                    : changeLabel(score, result.comparisonScore);
                   return (
                     <tr key={result.name} className="border-t border-outline-variant/40">
                       <th scope="row" className="px-3 py-3 font-medium text-on-surface">
@@ -66,12 +76,12 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
                         {result.name}
                       </th>
                       <td className="px-3 py-3 text-center">{result.answered}/{result.assigned}</td>
-                      <td className="px-3 py-3 text-center">{scoreLabel(percentage(result.answered, result.assigned))}</td>
+                      <td className="px-3 py-3 text-center">{scoreLabel(completionRate)}</td>
                       <td className="px-3 py-3 text-center font-semibold text-primary">{scoreLabel(score)}</td>
                       <td className="px-3 py-3 text-center text-on-surface-variant">{scoreLabel(result.comparisonScore)}</td>
                       <td className="px-3 py-3 text-center">
                         <span className="rounded-full bg-primary/10 px-2 py-1 font-medium text-primary">
-                          {changeLabel(score, result.comparisonScore)}
+                          {improvement}
                         </span>
                       </td>
                     </tr>

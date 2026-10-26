@@ -6,10 +6,11 @@ import LearningPathProgress from "./LearningPathProgress";
 
 interface LearningPathActiveWeekProps {
   week: LearningPathWeek;
+  questionsPerDay: number;
 }
 
-export default function LearningPathActiveWeek({ week }: LearningPathActiveWeekProps) {
-  const progress = percentage(week.answered, week.assigned) ?? 0;
+export default function LearningPathActiveWeek({ week, questionsPerDay }: LearningPathActiveWeekProps) {
+  const progress = week.completionRate ?? percentage(week.answered, week.assigned) ?? 0;
 
   return (
     <div className="space-y-5">
@@ -36,7 +37,7 @@ export default function LearningPathActiveWeek({ week }: LearningPathActiveWeekP
 
       <div className="flex gap-3 rounded-xl border border-primary/15 border-l-4 border-l-primary bg-primary/5 p-4 text-sm leading-6 text-on-surface">
         <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-        <p>Mỗi ngày gồm 10 câu. Bạn có thể làm các ngày theo thứ tự bất kỳ. Ngày đã bắt đầu sẽ tự đóng lúc 00:00 cùng ngày.</p>
+        <p>Mỗi ngày gồm {questionsPerDay} câu. Bạn có thể làm các ngày theo thứ tự bất kỳ. Ngày đã bắt đầu sẽ tự đóng lúc 00:00 cùng ngày.</p>
       </div>
 
       <section>

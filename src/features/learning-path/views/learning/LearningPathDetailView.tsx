@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
+import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
-import {
-  activeLearningPathPreview,
-  completedLearningPathPreview,
-} from "@features/learning-path/data/learningPathDetail.mock";
+import { useLearningPathDetail } from "@features/learning-path/hooks/useLearningPathDetail";
 import type {
   LearningPathDetail,
   LearningPathTab,
@@ -19,7 +17,7 @@ import LearningPathSummary from "@features/learning-path/components/learning/det
 function LearningPathDetailContent({ path }: { path: LearningPathDetail }) {
   const [overviewExpanded, setOverviewExpanded] = useState(true);
   const [selectedTab, setSelectedTab] = useState<LearningPathTab>(
-    path.status === "COMPLETED" ? "summary" : (path.currentWeekNo as 1 | 2 | 3) ?? 1,
+    path.status === "COMPLETED" ? "summary" : path.currentWeekNo ?? path.weeks.find((week) => week.status === "OPEN")?.number ?? 1,
   );
   const week = selectedTab === "summary"
     ? null
@@ -49,7 +47,7 @@ function LearningPathDetailContent({ path }: { path: LearningPathDetail }) {
         {selectedTab === "summary" ? (
           <LearningPathSummary path={path} />
         ) : week?.status === "OPEN" ? (
-          <LearningPathActiveWeek week={week} />
+          <LearningPathActiveWeek week={week} questionsPerDay={path.questionsPerDay ?? week.days[0]?.assigned ?? 0} />
         ) : week?.status === "CLOSED" ? (
           <LearningPathClosedWeek week={week} />
         ) : null}
@@ -59,10 +57,20 @@ function LearningPathDetailContent({ path }: { path: LearningPathDetail }) {
 }
 
 export default function LearningPathDetailView() {
-  const { pathId } = useParams();
-  const [searchParams] = useSearchParams();
-  const completed = pathId === "demo-completed" || searchParams.get("preview") === "completed";
-  const path = completed ? completedLearningPathPreview : activeLearningPathPreview;
+  const { pathId = "" } = useParams();
+  const { data: path, loading, error } = useLearningPathDetail(pathId);
 
-  return <LearningPathDetailContent key={completed ? "completed" : "active"} path={path} />;
+  if (loading) {
+    return <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10"><Loading size="lg" /></div>;
+  }
+
+  if (error || !path) {
+    return (
+      <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10">
+        <EmptyState title="Không tải được lộ trình" description={error?.message ?? "Không tìm thấy Learning Path."} />
+      </div>
+    );
+  }
+
+  return <LearningPathDetailContent key={path.id} path={path} />;
 }

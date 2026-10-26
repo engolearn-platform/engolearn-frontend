@@ -21,5 +21,5 @@ as the Learning Path detail screen.
 - The periodic-test result action remains disabled until its result route is
   available. The list API now provides `sourceAttemptId`.
 - Active and completed cards open `/learning-paths/:pathId`. The detail screen
-  currently uses local preview data; completed cards pass `preview=completed`.
-  Cancelled cards remain non-interactive.
+  fetches that path by ID through the backend detail API. Cancelled cards remain
+  non-interactive.

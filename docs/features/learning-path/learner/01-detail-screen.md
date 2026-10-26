@@ -23,9 +23,13 @@ The three references are content states of one detail screen. Its navigation has
 - **Closed week:** date range, six metrics (assigned, answered, correct, wrong, Completion Rate, Practice Score), results per micro-skill, and read-only day cards with result actions.
 - **Summary:** path date range, overall Completion Rate, progress per week, and one result card per micro-skill showing Final Practice Score, initial score, answered count, and signed improvement.
 
-## UI-only state
+## Data source and states
 
-This screen currently uses typed local sample data. The `preview=completed` query parameter selects the completed sample; other URLs show the in-progress sample. Existing active and completed list cards link to the corresponding preview. Day cards open the UI-only practice or daily result screens described in `02-daily-practice-screen.md` and `03-daily-result-screen.md`.
+The screen loads `GET /api/learning-paths/:pathId?userId=…` through `useLearningPathDetail` and the Learning Path service. The `pathId` from the route selects the actual active or completed path; `VITE_LEARNING_PATH_USER_ID` supplies the local test user. Loading and request errors use the shared `Loading` and `EmptyState` components. The previous `preview=completed` detail switch is removed.
 
-Sample dates, scores, counts, and names are illustration data. All derived progress labels and bars use the same counts. The layout stacks cards on narrow screens, allows the tab row and weekly table to scroll horizontally, and uses the existing learner shell.
+The response supplies path configuration and progress, baseline scores, week/day statuses, closed-week statistics, and the completed summary. Available backend Completion Rate, Practice Score, and improvement values are used directly and rounded for display; open progress is derived from answered/assigned counts. Date/time values are displayed in the Vietnam time zone. Locked weeks and the Summary tab stay unavailable until the backend status permits them.
+
+Day cards still open the UI-only practice or daily result screens described in `02-daily-practice-screen.md` and `03-daily-result-screen.md`. Those screens do not yet fetch questions or answers from the backend, so their content is illustrative even when reached from a real path.
+
+The layout stacks cards on narrow screens, allows the tab row and weekly table to scroll horizontally, and uses the existing learner shell.
 The detail content fills the learner workspace up to 1300px, with responsive side padding that balances card width and surrounding space.

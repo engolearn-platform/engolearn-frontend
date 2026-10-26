@@ -23,7 +23,7 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
   const isActive =
     path.status === "IN_PROGRESS" || path.status === "NOT_STARTED";
   const isCompleted = path.status === "COMPLETED";
-  const detailUrl = `${ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(path.id))}${isCompleted ? "?preview=completed" : ""}`;
+  const detailUrl = ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(path.id));
 
   const statusLabel =
     path.status === "NOT_STARTED"

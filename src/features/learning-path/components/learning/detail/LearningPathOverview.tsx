@@ -1,7 +1,7 @@
 import { BookOpen, ChevronDown, ChevronUp, Ear, AudioLines } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
-import { percentage } from "@features/learning-path/utils/learningPathMetrics";
+import { percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
 import type { LearningPathDetail } from "@features/learning-path/types/learning-path-detail.types";
 import LearningPathProgress from "./LearningPathProgress";
 
@@ -16,12 +16,14 @@ export default function LearningPathOverview({
   expanded,
   onToggle,
 }: LearningPathOverviewProps) {
-  const progress = percentage(path.answered, path.assigned) ?? 0;
+  const progress = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
+  const durationWeeks = path.durationWeeks ?? path.weeks.length;
+  const questionsPerWeek = path.questionsPerWeek ?? path.weeks[0]?.assigned ?? 0;
   const status = path.status === "COMPLETED"
     ? "Đã hoàn thành"
     : path.status === "NOT_STARTED"
       ? "Chưa bắt đầu"
-      : `Đang học · Tuần ${path.currentWeekNo ?? 1}/3`;
+      : `Đang học · Tuần ${path.currentWeekNo ?? 1}/${durationWeeks}`;
 
   return (
     <section className="rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-5 shadow-sm lg:p-6">
@@ -37,7 +39,7 @@ export default function LearningPathOverview({
             </span>
           </div>
           <p className="mt-1 text-sm text-on-surface-variant">
-            Level {path.level} · {path.microSkills.length} micro-skill · 3 tuần · {path.microSkills.length * 10} câu mỗi tuần
+            Level {path.level} · {path.microSkills.length} micro-skill · {durationWeeks} tuần · {questionsPerWeek} câu mỗi tuần
           </p>
         </div>
         <Button
@@ -71,7 +73,7 @@ export default function LearningPathOverview({
                       <span className="text-xs leading-4 text-on-surface">{microSkill.name}</span>
                       <Icon className="size-4 shrink-0 text-on-surface-variant" aria-hidden="true" />
                     </div>
-                    <p className="mt-1 text-lg font-bold text-primary">{microSkill.initialScore}%</p>
+                    <p className="mt-1 text-lg font-bold text-primary">{scoreLabel(microSkill.initialScore)}</p>
                   </div>
                 );
               })}

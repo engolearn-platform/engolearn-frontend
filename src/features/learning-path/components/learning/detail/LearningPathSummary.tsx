@@ -9,7 +9,8 @@ interface LearningPathSummaryProps {
 }
 
 export default function LearningPathSummary({ path }: LearningPathSummaryProps) {
-  const completion = percentage(path.answered, path.assigned) ?? 0;
+  const completion = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
+  const durationWeeks = path.durationWeeks ?? path.weeks.length;
 
   return (
     <div className="space-y-5">
@@ -17,7 +18,7 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
         <div>
           <h2 className="text-xl font-semibold text-on-surface">Tổng kết lộ trình</h2>
           <p className="mt-1 text-sm text-on-surface-variant">
-            {formatLearningPathDate(path.createdDate)} – {path.completedDate ? formatLearningPathDate(path.completedDate) : ""} · 3 tuần
+            {formatLearningPathDate(path.createdDate)} – {path.completedDate ? formatLearningPathDate(path.completedDate) : ""} · {durationWeeks} tuần
           </p>
         </div>
         <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">Đã kết thúc</span>
@@ -26,7 +27,7 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
       <section className="rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-5 shadow-sm">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-semibold text-on-surface">Mức độ hoàn thành</h2>
-          <span className="text-xs text-on-surface-variant">{path.assigned} câu được giao trong 3 tuần</span>
+          <span className="text-xs text-on-surface-variant">{path.assigned} câu được giao trong {durationWeeks} tuần</span>
         </div>
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
           <div className="flex flex-col items-center justify-center rounded-xl border border-primary/15 bg-primary/5 p-5 text-center">
@@ -36,7 +37,7 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
           </div>
           <div className="space-y-4 lg:border-l lg:border-outline-variant/40 lg:pl-5">
             {path.weeks.map((week) => {
-              const progress = percentage(week.answered, week.assigned) ?? 0;
+              const progress = week.completionRate ?? percentage(week.answered, week.assigned) ?? 0;
               return (
                 <div key={week.number}>
                   <div className="flex justify-between gap-2 text-sm">
@@ -60,7 +61,14 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
           {path.finalResults.map((result, index) => {
             const microSkill = path.microSkills.find((item) => item.name === result.name);
             const initialScore = microSkill?.initialScore ?? null;
-            const finalScore = percentage(result.correct, result.answered);
+            const finalScore = result.finalPracticeScore !== undefined
+              ? result.finalPracticeScore
+              : percentage(result.correct, result.answered);
+            const improvement = result.improvementPp !== undefined
+              ? result.improvementPp === null
+                ? "Không có dữ liệu"
+                : `${result.improvementPp >= 0 ? "+" : "−"}${Math.abs(result.improvementPp)}%`
+              : changeLabel(finalScore, initialScore);
             const Icon = microSkill?.skill === "READING" ? BookOpen : index === 0 ? Ear : AudioLines;
 
             return (
@@ -83,7 +91,7 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
                 </div>
                 <div className="mt-5 flex items-center justify-between gap-2 border-t border-outline-variant/40 pt-3 text-xs">
                   <span className="text-on-surface-variant">{result.answered}/{result.assigned} câu đã làm</span>
-                  <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold text-primary">{changeLabel(finalScore, initialScore)}</span>
+                  <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold text-primary">{improvement}</span>
                 </div>
               </article>
             );
