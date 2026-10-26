@@ -6,6 +6,7 @@ export const ROUTES = {
   PRODUCTS: "/products",
   GRAMMAR: "/grammar",
   LEARNING_PATHS: "/learning-paths",
+  LEARNING_PATH_DETAIL: "/learning-paths/:pathId",
   TOPICS: "/topics",
   TOPIC_DETAIL: "/topics/:topicId",
   // TEMP URL for testing the Topic Item context screen — final URL TBD,
