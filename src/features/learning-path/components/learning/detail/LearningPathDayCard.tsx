@@ -1,5 +1,7 @@
 import { ArrowRight, Play } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import { Link, useParams, useSearchParams } from "react-router";
+import { learningPathDayPath } from "@shared/constants";
 import { cn } from "@shared/utils";
 import { percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
 import type { LearningPathDay } from "@features/learning-path/types/learning-path-detail.types";
@@ -7,17 +9,27 @@ import LearningPathProgress from "./LearningPathProgress";
 
 interface LearningPathDayCardProps {
   day: LearningPathDay;
+  weekNo: number;
   closedWeek: boolean;
 }
 
-export default function LearningPathDayCard({ day, closedWeek }: LearningPathDayCardProps) {
+export default function LearningPathDayCard({ day, weekNo, closedWeek }: LearningPathDayCardProps) {
+  const { pathId = "demo-active" } = useParams();
+  const [searchParams] = useSearchParams();
   const progress = percentage(day.answered, day.assigned) ?? 0;
   const practiceScore = day.correct === null ? null : percentage(day.correct, day.answered);
   const statusLabel = day.status === "COMPLETED" ? "Hoàn thành" :
     day.status === "CLOSED" ? "Đã đóng · chưa hoàn thành" :
       day.status === "IN_PROGRESS" ? "Đang làm dở" : "Chưa bắt đầu";
   const active = day.status === "IN_PROGRESS";
-  const actionLabel = closedWeek ? "Xem kết quả" : active ? "Tiếp tục luyện tập" : "Bắt đầu luyện tập";
+  const showResult = closedWeek || day.status === "COMPLETED" || day.status === "CLOSED";
+  const actionLabel = showResult ? "Xem kết quả" : active ? "Tiếp tục luyện tập" : "Bắt đầu luyện tập";
+  const practicePage = Math.min(4, Math.floor(day.answered / 3) + 1);
+  const query = new URLSearchParams();
+  if (searchParams.get("preview") === "completed") query.set("preview", "completed");
+  if (!showResult && practicePage > 1) query.set("page", String(practicePage));
+  const destination = learningPathDayPath(pathId, weekNo, day.number, showResult ? "result" : "practice");
+  const href = `${destination}${query.size > 0 ? `?${query}` : ""}`;
 
   return (
     <article className={cn(
@@ -58,18 +70,18 @@ export default function LearningPathDayCard({ day, closedWeek }: LearningPathDay
       )}
 
       <Button
-        type="button"
-        variant={closedWeek || !active ? "outline" : "default"}
-        disabled
-        title={closedWeek ? "Màn kết quả ngày chưa được dựng." : "Màn làm bài chưa được dựng."}
+        asChild
+        variant={showResult || !active ? "outline" : "default"}
         className={cn(
-          "mt-5 h-11 w-full rounded-xl font-semibold disabled:cursor-not-allowed disabled:opacity-100",
-          (closedWeek || !active) && "border-primary text-primary disabled:bg-white disabled:text-primary",
+          "mt-5 h-11 w-full rounded-xl font-semibold",
+          (showResult || !active) && "border-primary bg-white text-primary hover:bg-primary/5 hover:text-primary",
         )}
       >
-        {!closedWeek && !active && <Play className="size-3.5" />}
-        {actionLabel}
-        {(closedWeek || active) && <ArrowRight className="size-4" />}
+        <Link to={href}>
+          {!showResult && !active && <Play className="size-3.5" />}
+          {actionLabel}
+          {(showResult || active) && <ArrowRight className="size-4" />}
+        </Link>
       </Button>
     </article>
   );

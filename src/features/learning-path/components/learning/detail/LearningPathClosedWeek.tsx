@@ -89,7 +89,7 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
           <span className="text-xs text-on-surface-variant">{week.days.length} ngày luyện tập trong tuần</span>
         </div>
         <div className="grid gap-4 md:grid-cols-3 lg:gap-6">
-          {week.days.map((day) => <LearningPathDayCard key={day.number} day={day} closedWeek />)}
+          {week.days.map((day) => <LearningPathDayCard key={day.number} day={day} weekNo={week.number} closedWeek />)}
         </div>
       </section>
     </div>

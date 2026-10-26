@@ -42,7 +42,7 @@ export default function LearningPathActiveWeek({ week }: LearningPathActiveWeekP
       <section>
         <h2 className="mb-4 text-lg font-semibold text-on-surface">Lịch luyện tập</h2>
         <div className="grid gap-4 md:grid-cols-3 lg:gap-6">
-          {week.days.map((day) => <LearningPathDayCard key={day.number} day={day} closedWeek={false} />)}
+          {week.days.map((day) => <LearningPathDayCard key={day.number} day={day} weekNo={week.number} closedWeek={false} />)}
         </div>
       </section>
     </div>

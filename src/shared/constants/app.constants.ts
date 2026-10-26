@@ -7,6 +7,8 @@ export const ROUTES = {
   GRAMMAR: "/grammar",
   LEARNING_PATHS: "/learning-paths",
   LEARNING_PATH_DETAIL: "/learning-paths/:pathId",
+  LEARNING_PATH_DAY_PRACTICE: "/learning-paths/:pathId/weeks/:weekNo/days/:dayNo/practice",
+  LEARNING_PATH_DAY_RESULT: "/learning-paths/:pathId/weeks/:weekNo/days/:dayNo/result",
   TOPICS: "/topics",
   TOPIC_DETAIL: "/topics/:topicId",
   // TEMP URL for testing the Topic Item context screen — final URL TBD,
@@ -26,6 +28,22 @@ export const ROUTES = {
   ADMIN_TOPIC_EDIT_ITEM_SECTION:
     "/admin/topics/:topicId/edit/items/:itemId/:sectionKey",
 } as const;
+
+export function learningPathDayPath(
+  pathId: string,
+  weekNo: number,
+  dayNo: number,
+  screen: "practice" | "result",
+): string {
+  const template = screen === "practice"
+    ? ROUTES.LEARNING_PATH_DAY_PRACTICE
+    : ROUTES.LEARNING_PATH_DAY_RESULT;
+
+  return template
+    .replace(":pathId", encodeURIComponent(pathId))
+    .replace(":weekNo", String(weekNo))
+    .replace(":dayNo", String(dayNo));
+}
 
 export function adminTopicBasicInfoPath(topicId?: string): string {
   return topicId

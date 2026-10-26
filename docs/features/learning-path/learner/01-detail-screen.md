@@ -25,7 +25,7 @@ The three references are content states of one detail screen. Its navigation has
 
 ## UI-only state
 
-This screen currently uses typed local sample data. The `preview=completed` query parameter selects the completed sample; other URLs show the in-progress sample. Existing active and completed list cards link to the corresponding preview. The page does not request detail data or submit practice answers. Practice and day-result actions are displayed but disabled until their screens exist.
+This screen currently uses typed local sample data. The `preview=completed` query parameter selects the completed sample; other URLs show the in-progress sample. Existing active and completed list cards link to the corresponding preview. Day cards open the UI-only practice or daily result screens described in `02-daily-practice-screen.md` and `03-daily-result-screen.md`.
 
 Sample dates, scores, counts, and names are illustration data. All derived progress labels and bars use the same counts. The layout stacks cards on narrow screens, allows the tab row and weekly table to scroll horizontally, and uses the existing learner shell.
 The detail content fills the learner workspace up to 1300px, with responsive side padding that balances card width and surrounding space.
