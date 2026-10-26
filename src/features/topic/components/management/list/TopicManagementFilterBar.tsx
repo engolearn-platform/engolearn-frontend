@@ -1,16 +1,31 @@
 import { ChevronDown, FilterX, Search } from "lucide-react";
 import type { TopicManagementFilter } from "@features/topic/types/topic.types";
+import type { TopicCategory } from "@features/topic/types/topic-management.types";
+
+interface CategoryOption {
+  value: "ALL" | TopicCategory;
+  label: string;
+}
 
 interface TopicManagementFilterBarProps {
   filter: TopicManagementFilter;
-  categories: string[];
+  categoryOptions: CategoryOption[];
   onChange: (patch: Partial<TopicManagementFilter>) => void;
   onClear: () => void;
 }
 
+const DEFAULT_CATEGORY_OPTIONS: CategoryOption[] = [
+  { value: "ALL", label: "Tất cả danh mục" },
+  { value: "DINING", label: "Ẩm thực & Nhà hàng (Dining & Food)" },
+  { value: "TRAVEL", label: "Du lịch & Khách sạn (Travel & Hospitality)" },
+  { value: "BUSINESS", label: "Công sở & Kinh doanh (Business & Work)" },
+  { value: "DAILY", label: "Đời sống xã hội (Daily Social Life)" },
+  { value: "HEALTH", label: "Khám bệnh & Y tế (Health & Emergency)" },
+];
+
 export default function TopicManagementFilterBar({
   filter,
-  categories,
+  categoryOptions = DEFAULT_CATEGORY_OPTIONS,
   onChange,
   onClear,
 }: TopicManagementFilterBarProps) {
@@ -25,7 +40,7 @@ export default function TopicManagementFilterBar({
           type="text"
           value={filter.search}
           onChange={(event) => onChange({ search: event.target.value })}
-          placeholder="Tìm kiếm topic (Tiếng Anh, Tiếng Việt, mã chủ đề)..."
+          placeholder="Tìm kiếm topic (Tiếng Anh, Tiếng Việt)..."
           className="w-full rounded-xl bg-surface-container-low py-2 pr-4 pl-10 text-body-md text-on-surface transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 focus:outline-none"
         />
       </div>
@@ -54,13 +69,12 @@ export default function TopicManagementFilterBar({
           <span className="sr-only">Lọc theo danh mục</span>
           <select
             value={filter.category}
-            onChange={(event) => onChange({ category: event.target.value })}
+            onChange={(event) => onChange({ category: event.target.value as TopicManagementFilter["category"] })}
             className="cursor-pointer appearance-none rounded-xl bg-surface-container-low py-2 pr-8 pl-3 text-label-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:outline-none"
           >
-            <option value="ALL">Tất cả danh mục</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
+            {categoryOptions.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
               </option>
             ))}
           </select>

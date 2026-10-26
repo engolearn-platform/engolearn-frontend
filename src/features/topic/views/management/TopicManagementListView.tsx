@@ -1,9 +1,10 @@
 import { EmptyState, Loading } from "@shared/components";
-import { ROUTES } from "@shared/constants";
-import { useMemo, useState } from "react";
+import { ROUTES, adminTopicBasicInfoPath } from "@shared/constants";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useTopicManagement } from "@features/topic/hooks/useTopicManagement";
-import type { TopicManagementFilter, Topic } from "@features/topic/types/topic.types";
+import { useTopicList } from "@features/topic/hooks/useTopicList";
+import type { TopicManagementFilter } from "@features/topic/types/topic.types";
+import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
 import TopicManagementEmptyState from "@features/topic/components/management/list/TopicManagementEmptyState";
 import TopicManagementFilterBar from "@features/topic/components/management/list/TopicManagementFilterBar";
 import TopicManagementPageHeader from "@features/topic/components/management/list/TopicManagementPageHeader";
@@ -19,41 +20,28 @@ const DEFAULT_FILTER: TopicManagementFilter = {
   status: "ALL",
 };
 
-function matchesFilter(topic: Topic, filter: TopicManagementFilter): boolean {
-  const keyword = filter.search.trim().toLowerCase();
-  if (keyword) {
-    const haystack =
-      `${topic.titleEn} ${topic.titleVi} ${topic.code}`.toLowerCase();
-    if (!haystack.includes(keyword)) return false;
-  }
-  if (filter.cefr !== "ALL" && topic.cefr !== filter.cefr) return false;
-  if (filter.category !== "ALL" && topic.category !== filter.category) return false;
-  if (filter.status !== "ALL" && topic.status !== filter.status) return false;
-  return true;
-}
-
 export default function TopicManagementListView() {
   const navigate = useNavigate();
-  const { data, loading, error } = useTopicManagement();
-  const [filter, setFilter] = useState<TopicManagementFilter>(DEFAULT_FILTER);
-  const [unpublishing, setUnpublishing] = useState<Topic | null>(null);
+  const { data, loading, error, params, setFilter, setPage } = useTopicList();
+  const [unpublishing, setUnpublishing] = useState<TopicManagementListItem | null>(null);
 
-  const categories = useMemo(() => {
-    if (!data) return [];
-    return Array.from(new Set(data.topics.map((topic) => topic.category)));
-  }, [data]);
+  const filter: TopicManagementFilter = {
+    search: params.search ?? "",
+    cefr: (params.cefr as TopicManagementFilter["cefr"]) ?? "ALL",
+    category: (params.category as TopicManagementFilter["category"]) ?? "ALL",
+    status: (params.status as TopicManagementFilter["status"]) ?? "ALL",
+  };
 
-  const filteredTopics = useMemo(() => {
-    if (!data) return [];
-    return data.topics.filter((topic) => matchesFilter(topic, filter));
-  }, [data, filter]);
-
-  const patchFilter = (patch: Partial<TopicManagementFilter>) =>
-    setFilter((prev) => ({ ...prev, ...patch }));
-  const clearFilter = () => setFilter(DEFAULT_FILTER);
+  const patchFilter = (patch: Partial<TopicManagementFilter>) => {
+    setFilter(patch as Partial<typeof params>);
+  };
+  const clearFilter = () => setFilter(DEFAULT_FILTER as Partial<typeof params>);
   const goToCreate = () => navigate(ROUTES.ADMIN_TOPIC_CREATE);
+  const handleEdit = (topic: TopicManagementListItem) => {
+    navigate(adminTopicBasicInfoPath(topic.id));
+  };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="mx-auto max-w-7xl p-5 lg:p-8">
         <Loading size="lg" />
@@ -61,7 +49,7 @@ export default function TopicManagementListView() {
     );
   }
 
-  if (error || !data) {
+  if (error && !data) {
     return (
       <div className="mx-auto max-w-7xl p-5 lg:p-8">
         <EmptyState
@@ -72,15 +60,29 @@ export default function TopicManagementListView() {
     );
   }
 
-  const isEmpty = filteredTopics.length === 0;
+  const items = data?.items ?? [];
+  const counters = data?.counters ?? { total: 0, published: 0, draft: 0 };
+  const totalPages = data?.totalPages ?? 0;
+  const totalElements = data?.totalElements ?? 0;
+  const currentPage = data?.page ?? params.page ?? 0;
+
+  const isEmpty = items.length === 0;
+  const hasAny = counters.total > 0;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <TopicManagementPageHeader onCreate={goToCreate} />
-      <TopicManagementStats stats={data.stats} />
+      <TopicManagementStats stats={counters} />
       <TopicManagementFilterBar
         filter={filter}
-        categories={categories}
+        categoryOptions={[
+          { value: "ALL", label: "Tất cả danh mục" },
+          { value: "DINING", label: "Ẩm thực & Nhà hàng (Dining & Food)" },
+          { value: "TRAVEL", label: "Du lịch & Khách sạn (Travel & Hospitality)" },
+          { value: "BUSINESS", label: "Công sở & Kinh doanh (Business & Work)" },
+          { value: "DAILY", label: "Đời sống xã hội (Daily Social Life)" },
+          { value: "HEALTH", label: "Khám bệnh & Y tế (Health & Emergency)" },
+        ]}
         onChange={patchFilter}
         onClear={clearFilter}
       />
@@ -91,11 +93,22 @@ export default function TopicManagementListView() {
             keyword={filter.search.trim()}
             onClear={clearFilter}
             onCreate={goToCreate}
+            title={hasAny ? "Không khớp bộ lọc" : "Chưa có topic nào"}
+            description={
+              hasAny
+                ? "Không tìm thấy chủ đề nào phù hợp với bộ lọc hiện tại."
+                : "Hãy tạo topic đầu tiên để bắt đầu quản lý nội dung."
+            }
           />
         ) : (
           <>
-            <TopicManagementTable topics={filteredTopics} onUnpublish={setUnpublishing} />
-            <TopicManagementPagination total={data.stats.total} />
+            <TopicManagementTable topics={items} onUnpublish={setUnpublishing} onEdit={handleEdit} />
+            <TopicManagementPagination
+              page={currentPage}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

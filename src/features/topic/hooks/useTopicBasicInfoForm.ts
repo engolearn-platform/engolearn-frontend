@@ -33,11 +33,7 @@ export function useTopicBasicInfoForm(initial?: Partial<TopicBasicInfoDraft>) {
   const descriptionCount = draft.description.length;
 
   const isValid =
-    draft.titleEn.trim().length > 0 &&
-    draft.titleVi.trim().length > 0 &&
-    draft.category.trim().length > 0 &&
-    draft.duration.trim().length > 0 &&
-    draft.description.trim().length > 0;
+    draft.titleEn.trim().length > 0 && draft.titleVi.trim().length > 0;
 
   return { draft, patch, setCefr, addTag, removeTag, descriptionCount, isValid };
 }
