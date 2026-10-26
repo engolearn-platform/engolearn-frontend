@@ -52,7 +52,7 @@ export default function LearningPathListView() {
 
   if (active.loading) {
     return (
-      <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
+      <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10">
         <Loading size="lg" />
       </div>
     );
@@ -60,7 +60,7 @@ export default function LearningPathListView() {
 
   if (active.error || !active.data) {
     return (
-      <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
+      <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10">
         <EmptyState
           title="Không tải được lộ trình"
           description={active.error?.message ?? "Đã xảy ra lỗi khi tải Learning Path."}
@@ -86,7 +86,7 @@ export default function LearningPathListView() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-5 py-4 lg:px-10 lg:py-8">
+    <div className="mx-auto w-full max-w-[1300px] px-5 py-4 lg:px-8 lg:py-8 xl:px-10">
       <header>
         <h1 className="text-xl font-bold tracking-tight text-on-surface lg:text-[28px] lg:leading-[42px] lg:tracking-[-0.7px]">
           Luyện tập micro-skill

@@ -2,6 +2,9 @@
 
 Route: `/learning-paths`
 
+The list content uses the same 1300px maximum width and responsive side padding
+as the Learning Path detail screen.
+
 - Loads active paths from `GET /api/learning-paths?userId=…&status=ACTIVE` on
   entry. The response counts populate all three status sections.
 - Loads `COMPLETED` or `CANCELLED` paths only when the corresponding section is
