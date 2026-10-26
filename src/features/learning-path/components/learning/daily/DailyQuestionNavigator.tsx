@@ -1,4 +1,3 @@
-import { LockKeyhole } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
@@ -43,16 +42,13 @@ export default function DailyQuestionNavigator({
           const pageQuestions = questions.slice((page - 1) * 3, page * 3);
           const start = pageQuestions[0]?.number;
           const end = pageQuestions[pageQuestions.length - 1]?.number;
-          const saved = !review && pageQuestions.every((question) => answers[question.number] !== undefined);
           const group = (
             <>
               {!review && (
                 <div className="flex items-center justify-between gap-1 text-xs font-semibold uppercase tracking-wide">
                   <span className="inline-flex items-center gap-1">
-                    {saved && <LockKeyhole className="size-3" aria-hidden="true" />}
                     Câu {start}{end !== start ? `–${end}` : ""}
                   </span>
-                  {saved && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] normal-case text-primary">Đã lưu</span>}
                 </div>
               )}
               <div className={cn("flex flex-wrap gap-2", !review && "mt-2")}>
@@ -61,7 +57,6 @@ export default function DailyQuestionNavigator({
                   const draftAnswer = draftAnswers[question.number];
                   const isCorrect = savedAnswer === question.correctIndex;
                   const isWrong = savedAnswer !== undefined && !isCorrect;
-                  const isSaved = !review && savedAnswer !== undefined;
                   const isSelected = !review && draftAnswer !== undefined;
                   const reviewColor = savedAnswer === undefined ? styles.unanswered : isCorrect ? styles.correct : styles.wrong;
 
@@ -71,13 +66,12 @@ export default function DailyQuestionNavigator({
                       className={cn(
                         "relative inline-flex size-8 items-center justify-center rounded-full border text-xs font-semibold",
                         review ? cn(reviewColor, styles.number) : "border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant",
-                        isSaved && "border-primary/10 bg-primary/10 text-primary",
                         isSelected && "border-primary bg-primary text-on-primary",
-                        !review && !isSaved && !isSelected && page === currentPage && "border-primary text-primary",
+                        !review && !isSelected && page === currentPage && "border-primary text-primary",
                       )}
                       aria-label={review
                         ? `Câu ${question.number}: ${savedAnswer === undefined ? "chưa làm" : isCorrect ? "đúng" : "sai"}`
-                        : `Câu ${question.number}: ${isSaved ? "đã lưu" : isSelected ? "đã trả lời" : page === currentPage ? "cần trả lời" : "chưa mở"}`}
+                        : `Câu ${question.number}: ${isSelected ? "đã trả lời" : "chưa trả lời"}`}
                     >
                       {question.number}
                       {review && (
@@ -95,15 +89,13 @@ export default function DailyQuestionNavigator({
           const groupClass = cn(
             "block w-full rounded-xl border border-outline-variant/50 bg-surface-container-low p-3 text-left text-on-surface-variant",
             currentPage === page && "border-primary bg-primary/5 text-primary",
-            review && "cursor-pointer transition-colors hover:border-primary/50",
+            "cursor-pointer transition-colors hover:border-primary/50",
           );
 
-          return review ? (
+          return (
             <button key={page} type="button" className={groupClass} onClick={() => onSelectPage?.(page)} aria-current={currentPage === page ? "step" : undefined}>
               {group}
             </button>
-          ) : (
-            <div key={page} className={groupClass}>{group}</div>
           );
         })}
       </div>
@@ -127,11 +119,9 @@ export default function DailyQuestionNavigator({
           <>
             <div className="grid grid-cols-2 gap-2">
               <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-primary" />Đã trả lời</span>
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-primary" />Cần trả lời</span>
-              <span className="inline-flex items-center gap-1"><LockKeyhole className="size-3 text-primary" />Đã lưu (đã khóa)</span>
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-outline-variant" />Chưa mở</span>
+              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-primary" />Chưa trả lời</span>
             </div>
-            <p className="mt-4 leading-5">Câu trả lời được lưu khi bạn bấm “Tiếp tục” và không thể sửa lại.</p>
+            <p className="mt-4 leading-5">Bạn có thể chuyển trang và sửa đáp án trước khi bấm “Nộp bài”.</p>
           </>
         )}
       </div>

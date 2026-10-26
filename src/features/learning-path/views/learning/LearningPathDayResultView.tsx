@@ -4,10 +4,23 @@ import { ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { dailyQuestions, sampleAnswersForDay } from "@features/learning-path/data/learningPathDay.mock";
-import type { DailyResultRouteState } from "@features/learning-path/types/learning-path-day.types";
+import type { DailyAnswers, DailyResultRouteState } from "@features/learning-path/types/learning-path-day.types";
 import DailyQuestionCard from "@features/learning-path/components/learning/daily/DailyQuestionCard";
 import DailyQuestionNavigator from "@features/learning-path/components/learning/daily/DailyQuestionNavigator";
 import DailyResultSummary from "@features/learning-path/components/learning/daily/DailyResultSummary";
+
+function submittedPreviewAnswers(pathId: string, weekNo: string, dayNo: string): DailyAnswers | null {
+  const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim() || "preview";
+  const storageKey = `engolearn:learning-path:practice:${userId}:${pathId}:${weekNo}:${dayNo}`;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as { answers?: DailyAnswers; submitted?: boolean };
+    return stored.submitted && stored.answers ? stored.answers : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function LearningPathDayResultView() {
   const { pathId = "demo-active", weekNo = "1", dayNo = "3" } = useParams();
@@ -17,9 +30,10 @@ export default function LearningPathDayResultView() {
   const routeState = location.state as DailyResultRouteState | null;
   const submittedFromPractice = routeState?.submittedFromPractice === true;
   const completedPreview = pathId === "demo-completed" || searchParams.get("preview") === "completed";
+  const storedAnswers = submittedPreviewAnswers(pathId, weekNo, dayNo);
   const answers = submittedFromPractice
     ? routeState.answers
-    : sampleAnswersForDay(Number(weekNo), Number(dayNo), completedPreview);
+    : storedAnswers ?? sampleAnswersForDay(Number(weekNo), Number(dayNo), completedPreview);
   const pageQuestions = dailyQuestions.slice((page - 1) * 3, page * 3);
   const detailUrl = `${ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(pathId))}${searchParams.get("preview") === "completed" ? "?preview=completed" : ""}`;
 

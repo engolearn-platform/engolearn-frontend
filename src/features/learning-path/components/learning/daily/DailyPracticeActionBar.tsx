@@ -18,7 +18,6 @@ export default function DailyPracticeActionBar({
   answeredCount,
   onContinue,
 }: DailyPracticeActionBarProps) {
-  const complete = answeredCount === questionCount;
   const finalPage = page === 4;
 
   return (
@@ -28,16 +27,13 @@ export default function DailyPracticeActionBar({
           Trang {page}/4 · Câu {firstQuestion}{lastQuestion !== firstQuestion ? `–${lastQuestion}` : ""} trên 10
         </p>
         <p className="mt-1 text-xs leading-5 text-on-surface-variant">
-          {finalPage && complete
-            ? "Bạn đã trả lời đủ 10 câu. Bấm “Nộp bài” để xem kết quả ngày."
-            : complete
-              ? "Câu trả lời sẽ được lưu khi bạn bấm “Tiếp tục”."
-              : `Trả lời ${questionCount === 1 ? "câu hỏi" : `cả ${questionCount} câu`} để tiếp tục`}
+          {finalPage
+            ? "Bấm “Nộp bài” để kết thúc. Câu bỏ trống sẽ được tính là chưa làm."
+            : `Đã chọn ${answeredCount}/${questionCount} câu. Bạn có thể quay lại sửa trước khi nộp bài.`}
         </p>
       </div>
       <Button
         type="button"
-        disabled={!complete}
         onClick={onContinue}
         className="h-11 min-w-32 rounded-xl px-5 font-semibold"
       >
