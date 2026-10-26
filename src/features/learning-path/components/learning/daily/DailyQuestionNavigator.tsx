@@ -1,8 +1,9 @@
-import { Check, LockKeyhole, X } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import type { DailyAnswers, DailyQuestion } from "@features/learning-path/types/learning-path-day.types";
+import styles from "./dailyResult.module.css";
 
 interface DailyQuestionNavigatorProps {
   mode: "practice" | "review";
@@ -45,14 +46,16 @@ export default function DailyQuestionNavigator({
           const saved = !review && pageQuestions.every((question) => answers[question.number] !== undefined);
           const group = (
             <>
-              <div className="flex items-center justify-between gap-1 text-xs font-semibold uppercase tracking-wide">
-                <span className="inline-flex items-center gap-1">
-                  {!review && saved && <LockKeyhole className="size-3" aria-hidden="true" />}
-                  Câu {start}{end !== start ? `–${end}` : ""}
-                </span>
-                {saved && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] normal-case text-primary">Đã lưu</span>}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              {!review && (
+                <div className="flex items-center justify-between gap-1 text-xs font-semibold uppercase tracking-wide">
+                  <span className="inline-flex items-center gap-1">
+                    {saved && <LockKeyhole className="size-3" aria-hidden="true" />}
+                    Câu {start}{end !== start ? `–${end}` : ""}
+                  </span>
+                  {saved && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] normal-case text-primary">Đã lưu</span>}
+                </div>
+              )}
+              <div className={cn("flex flex-wrap gap-2", !review && "mt-2")}>
                 {pageQuestions.map((question) => {
                   const savedAnswer = answers[question.number];
                   const draftAnswer = draftAnswers[question.number];
@@ -60,25 +63,28 @@ export default function DailyQuestionNavigator({
                   const isWrong = savedAnswer !== undefined && !isCorrect;
                   const isSaved = !review && savedAnswer !== undefined;
                   const isSelected = !review && draftAnswer !== undefined;
+                  const reviewColor = savedAnswer === undefined ? styles.unanswered : isCorrect ? styles.correct : styles.wrong;
 
                   return (
                     <span
                       key={question.number}
                       className={cn(
-                        "inline-flex size-8 items-center justify-center gap-0.5 rounded-full border border-outline-variant/60 bg-surface-container-lowest text-xs font-semibold text-on-surface-variant",
+                        "relative inline-flex size-8 items-center justify-center rounded-full border text-xs font-semibold",
+                        review ? cn(reviewColor, styles.number) : "border-outline-variant/60 bg-surface-container-lowest text-on-surface-variant",
                         isSaved && "border-primary/10 bg-primary/10 text-primary",
                         isSelected && "border-primary bg-primary text-on-primary",
                         !review && !isSaved && !isSelected && page === currentPage && "border-primary text-primary",
-                        review && isCorrect && "border-primary/20 bg-primary/10 text-primary",
-                        review && isWrong && "border-error/20 bg-error-container text-error",
                       )}
                       aria-label={review
                         ? `Câu ${question.number}: ${savedAnswer === undefined ? "chưa làm" : isCorrect ? "đúng" : "sai"}`
                         : `Câu ${question.number}: ${isSaved ? "đã lưu" : isSelected ? "đã trả lời" : page === currentPage ? "cần trả lời" : "chưa mở"}`}
                     >
                       {question.number}
-                      {review && isCorrect && <Check className="size-2.5" aria-hidden="true" />}
-                      {review && isWrong && <X className="size-2.5" aria-hidden="true" />}
+                      {review && (
+                        <span className={cn("absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full text-[9px] font-bold leading-none", styles.badge)} aria-hidden="true">
+                          {savedAnswer === undefined ? "–" : isWrong ? "✕" : "✓"}
+                        </span>
+                      )}
                     </span>
                   );
                 })}
@@ -106,9 +112,9 @@ export default function DailyQuestionNavigator({
         {review ? (
           <>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-primary" />Đúng</span>
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-error" />Sai</span>
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-outline-variant" />Chưa làm</span>
+              <span className="inline-flex items-center gap-1"><span className={cn("size-2 rounded-full", styles.correct, styles.legendDot)} />Đúng</span>
+              <span className="inline-flex items-center gap-1"><span className={cn("size-2 rounded-full", styles.wrong, styles.legendDot)} />Sai</span>
+              <span className="inline-flex items-center gap-1"><span className={cn("size-2 rounded-full", styles.unanswered, styles.unansweredLegend)} />Chưa làm</span>
             </div>
             <p className="mt-3 rounded-lg bg-surface-container-low px-3 py-2 text-center text-on-surface">{correct} đúng · {wrong} sai · {unanswered} chưa làm</p>
             {returnTo && (

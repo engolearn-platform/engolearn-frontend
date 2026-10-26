@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { dailyQuestions, sampleAnswersForDay } from "@features/learning-path/data/learningPathDay.mock";
-import { activeLearningPathPreview, completedLearningPathPreview } from "@features/learning-path/data/learningPathDetail.mock";
 import type { DailyResultRouteState } from "@features/learning-path/types/learning-path-day.types";
 import DailyQuestionCard from "@features/learning-path/components/learning/daily/DailyQuestionCard";
 import DailyQuestionNavigator from "@features/learning-path/components/learning/daily/DailyQuestionNavigator";
@@ -18,17 +17,11 @@ export default function LearningPathDayResultView() {
   const routeState = location.state as DailyResultRouteState | null;
   const submittedFromPractice = routeState?.submittedFromPractice === true;
   const completedPreview = pathId === "demo-completed" || searchParams.get("preview") === "completed";
-  const previewPath = completedPreview ? completedLearningPathPreview : activeLearningPathPreview;
-  const previewDay = previewPath.weeks.find((week) => week.number === Number(weekNo))?.days.find((day) => day.number === Number(dayNo));
   const answers = submittedFromPractice
     ? routeState.answers
     : sampleAnswersForDay(Number(weekNo), Number(dayNo), completedPreview);
-  const answeredCount = dailyQuestions.filter((question) => answers[question.number] !== undefined).length;
   const pageQuestions = dailyQuestions.slice((page - 1) * 3, page * 3);
   const detailUrl = `${ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(pathId))}${searchParams.get("preview") === "completed" ? "?preview=completed" : ""}`;
-  const dayStatus = submittedFromPractice && answeredCount === dailyQuestions.length
-    ? "Hoàn thành"
-    : previewDay?.status === "COMPLETED" ? "Hoàn thành" : "Đã đóng · chưa hoàn thành";
 
   return (
     <div className="mx-auto w-full max-w-[1300px] px-5 py-5 pb-24 lg:px-8 lg:py-8 xl:px-10">
@@ -37,12 +30,9 @@ export default function LearningPathDayResultView() {
         Trở về Lộ trình học tập
       </Link>
 
-      <header className="mt-5 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface">Kết quả Ngày {dayNo}</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Lộ trình ngày 09/10/2026 · Tuần {weekNo} · Level A1</p>
-        </div>
-        <span className="rounded-full border border-outline-variant/60 bg-surface-container-low px-3 py-1.5 text-xs font-medium text-on-surface-variant">{dayStatus}</span>
+      <header className="mt-5">
+        <h1 className="text-2xl font-bold text-on-surface">Kết quả Ngày {dayNo}</h1>
+        <p className="mt-1 text-sm text-on-surface-variant">Lộ trình ngày 09/10/2026 · Tuần {weekNo} · Level A1</p>
       </header>
 
       <div className="mt-5">

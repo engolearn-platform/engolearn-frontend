@@ -1,0 +1,58 @@
+.correct {
+  --result-color: #1e8e5a;
+  --result-surface: #e8f6ee;
+}
+
+.wrong {
+  --result-color: #d64545;
+  --result-surface: #fdecec;
+}
+
+.caution {
+  --result-color: #705d00;
+  --result-surface: #fff4cc;
+}
+
+.unanswered {
+  --result-color: #cbd5e1;
+  --result-surface: #ffffff;
+}
+
+.option {
+  border: 2px solid var(--result-color);
+  background-color: var(--result-surface);
+  color: var(--result-color);
+}
+
+.letter,
+.badge,
+.legendDot {
+  background-color: var(--result-color);
+  color: #ffffff;
+}
+
+.status,
+.number {
+  border-color: var(--result-color);
+  background-color: var(--result-surface);
+  color: var(--result-color);
+}
+
+.unanswered.number {
+  border-style: dashed;
+  color: #64748b;
+}
+
+.unansweredLegend {
+  border: 1px dashed var(--result-color);
+  background-color: var(--result-surface);
+}
+
+.metricTile {
+  border-color: var(--result-color);
+  background-color: var(--result-surface);
+}
+
+.metricValue {
+  color: var(--result-color);
+}
