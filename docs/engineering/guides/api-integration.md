@@ -2,7 +2,7 @@
 
 > **Purpose:** How data enters the UI: the `useFetch` pattern, the services layer, why
 > `HttpService` is not wired, and the recipe for swapping mock → real.
-> **Scope:** All data fetching in `src/`. The Learning Path list contract is recorded in §6;
+> **Scope:** All data fetching in `src/`. The Learning Path list and detail contracts are recorded in §6–7;
 > other backend contracts remain **UNKNOWN** until supplied (never improvised:
 > [../README.md](../README.md) precedence).
 > **Owner:** Frontend engineering docs — update when a mock flips to real (`C-11`).
@@ -127,11 +127,27 @@ the backend envelope `{ data: { items, counts }, timestamp }`. The card DTO cont
 `currentWeekNo`, and `progress { assigned, answered }`.
 
 The request callback lives in `features/learning-path/hooks/useLearningPaths.ts`, passes its
-`AbortSignal` to `learningPathService`, and the view keeps search client-side for active and
-completed paths only. A local `VITE_LEARNING_PATH_USER_ID` supplies the test user's ObjectId until
-the frontend has an authentication/session source.
+`AbortSignal` to `learningPathService`. Search uses `GET /api/learning-paths/search` with
+`userId` and `keyword`; it matches an exact creation date in `DD/MM/YYYY` format or a partial,
+case-insensitive micro-skill name. Only active and completed paths are searched; cancelled paths
+are excluded. Search requests are debounced in the view. A local `VITE_LEARNING_PATH_USER_ID`
+supplies the test user's ObjectId until the frontend has an authentication/session source.
 
-## 5. Anti-patterns
+## 7. Learning Path detail API (REAL)
+
+The four-tab learner detail screen requests `GET /api/learning-paths/{pathId}?userId=<ObjectId>`.
+Its response uses the same `{ data, timestamp }` envelope as the list. The detail DTO
+contains `config`, `microSkills`, `progress`, `weeks` with day states and closed-week
+`stats`, plus `summary` when the path is completed. Locked weeks have no day details;
+week statistics are available after closure. Cancelled paths cannot be opened.
+
+`useLearningPathDetail` calls `learningPathService.detail` with an abort signal.
+`learningPathDetail.mapper.ts` converts backend fields and timestamps into the view
+model, using the Vietnam time zone for dates. Closed-week and summary tabs display
+backend rates, scores, and improvements; open progress uses answered/assigned counts. The
+daily practice and result routes remain UI-only until their backend APIs exist.
+
+## 8. Anti-patterns
 
 - `fetch` inside views/components (`C-06`).
 - Claiming `httpService` is wired while `baseUrl` is `""` (`DEV-07`).

@@ -1,31 +1,13 @@
 import { EmptyState, Loading } from "@shared/components";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import LearningPathCard from "@features/learning-path/components/learning/LearningPathCard";
 import LearningPathSection from "@features/learning-path/components/learning/LearningPathSection";
 import { useLearningPaths } from "@features/learning-path/hooks/useLearningPaths";
+import { useSearchLearningPaths } from "@features/learning-path/hooks/useSearchLearningPaths";
 import type { LearningPathListItem } from "@features/learning-path/types/learning-path.types";
-import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
 
 const EMPTY_PATHS: LearningPathListItem[] = [];
-
-function filterPaths(paths: LearningPathListItem[], query: string) {
-  const normalizedQuery = query.trim().toLocaleLowerCase("vi");
-
-  if (!normalizedQuery) {
-    return paths;
-  }
-
-  return paths.filter((path) => {
-    const dates = `${path.createdDate} ${formatLearningPathDate(path.createdDate)}`;
-    return (
-      dates.toLocaleLowerCase("vi").includes(normalizedQuery) ||
-      path.microSkills.some((microSkill) =>
-        microSkill.toLocaleLowerCase("vi").includes(normalizedQuery),
-      )
-    );
-  });
-}
 
 export default function LearningPathListView() {
   const active = useLearningPaths("ACTIVE");
@@ -33,37 +15,44 @@ export default function LearningPathListView() {
   const cancelled = useLearningPaths("CANCELLED", false);
 
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [completedExpanded, setCompletedExpanded] = useState(false);
   const [cancelledExpanded, setCancelledExpanded] = useState(false);
+  const search = useSearchLearningPaths(debouncedQuery);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(
+      () => setDebouncedQuery(query.trim()),
+      300,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [query]);
 
   const activePaths = active.data?.data.items ?? EMPTY_PATHS;
   const completedPaths = completed.data?.data.items ?? EMPTY_PATHS;
   const cancelledPaths = cancelled.data?.data.items ?? [];
   const counts = active.data?.data.counts;
 
-  const filteredActivePaths = useMemo(
-    () => filterPaths(activePaths, query),
-    [activePaths, query],
-  );
-  const filteredCompletedPaths = useMemo(
-    () => filterPaths(completedPaths, query),
-    [completedPaths, query],
-  );
-
-  const completedData = completed.data;
-  const completedLoading = completed.loading;
-  const completedError = completed.error;
-  const refetchCompleted = completed.refetch;
-
-  useEffect(() => {
-    if (query.trim() && !completedData && !completedLoading && !completedError) {
-      refetchCompleted();
-    }
-  }, [completedData, completedError, completedLoading, query, refetchCompleted]);
+  const isSearching = query.trim().length > 0;
+  const searchPending = isSearching &&
+    (query.trim() !== debouncedQuery || search.loading);
+  const searchItems = search.data?.data.items ?? EMPTY_PATHS;
+  const visibleActivePaths = isSearching
+    ? searchItems.filter((path) => path.status === "NOT_STARTED" || path.status === "IN_PROGRESS")
+    : activePaths;
+  const visibleCompletedPaths = isSearching
+    ? searchItems.filter((path) => path.status === "COMPLETED")
+    : completedPaths;
+  const activeCount = isSearching
+    ? visibleActivePaths.length
+    : counts?.active ?? activePaths.length;
+  const completedCount = isSearching
+    ? visibleCompletedPaths.length
+    : counts?.completed ?? 0;
 
   if (active.loading) {
     return (
-      <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
+      <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10">
         <Loading size="lg" />
       </div>
     );
@@ -71,7 +60,7 @@ export default function LearningPathListView() {
 
   if (active.error || !active.data) {
     return (
-      <div className="mx-auto w-full max-w-[1160px] px-5 py-5 lg:px-10 lg:py-8">
+      <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10">
         <EmptyState
           title="Không tải được lộ trình"
           description={active.error?.message ?? "Đã xảy ra lỗi khi tải Learning Path."}
@@ -97,7 +86,7 @@ export default function LearningPathListView() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-5 py-4 lg:px-10 lg:py-8">
+    <div className="mx-auto w-full max-w-[1300px] px-5 py-4 lg:px-8 lg:py-8 xl:px-10">
       <header>
         <h1 className="text-xl font-bold tracking-tight text-on-surface lg:text-[28px] lg:leading-[42px] lg:tracking-[-0.7px]">
           Luyện tập micro-skill
@@ -121,7 +110,7 @@ export default function LearningPathListView() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-lowest pl-9 pr-3 text-xs text-on-surface outline-none transition-shadow placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-4 focus:ring-primary/10 lg:h-[54px] lg:rounded-2xl lg:pl-[49px] lg:pr-[17px] lg:text-[14.5px]"
-          placeholder="Tìm kiếm lộ trình theo micro-skill hoặc ngày tạo..."
+          placeholder="Tìm theo micro-skill hoặc ngày tạo (DD/MM/YYYY)..."
           type="search"
         />
       </label>
@@ -129,54 +118,81 @@ export default function LearningPathListView() {
       <div className="mt-4 space-y-3 lg:mt-6 lg:space-y-7">
         <LearningPathSection
           title="Lộ trình đang hoạt động"
-          count={counts?.active ?? activePaths.length}
+          count={activeCount}
           icon="active"
         >
-          {filteredActivePaths.length > 0 ? (
+          {isSearching && searchPending ? (
+            <Loading size="sm" />
+          ) : isSearching && search.error ? (
+            <EmptyState
+              title="Không tìm kiếm được lộ trình"
+              description={search.error.message}
+            />
+          ) : visibleActivePaths.length > 0 ? (
             <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
-              {filteredActivePaths.map((path) => (
+              {visibleActivePaths.map((path) => (
                 <LearningPathCard key={path.id} path={path} />
               ))}
             </div>
           ) : (
             <EmptyState
-              title={query.trim() ? "Không tìm thấy lộ trình phù hợp" : "Chưa có lộ trình đang hoạt động"}
-              description={query.trim() ? "Thử tìm theo micro-skill hoặc ngày tạo." : "Hãy hoàn thành bài kiểm tra định kì để nhận đề xuất luyện tập."}
+              title={isSearching ? "Không tìm thấy lộ trình đang hoạt động phù hợp" : "Chưa có lộ trình đang hoạt động"}
+              description={isSearching ? "Thử tìm theo micro-skill hoặc ngày tạo dạng DD/MM/YYYY." : "Hãy hoàn thành bài kiểm tra định kì để nhận đề xuất luyện tập."}
             />
           )}
         </LearningPathSection>
 
         <LearningPathSection
           title="Lộ trình đã hoàn thành"
-          count={counts?.completed ?? 0}
+          count={completedCount}
           icon="completed"
-          collapsible
-          expanded={completedExpanded}
-          onToggle={toggleCompleted}
+          collapsible={!isSearching}
+          expanded={isSearching || completedExpanded}
+          onToggle={isSearching ? undefined : toggleCompleted}
         >
-          {completedExpanded &&
-            (completed.loading ? (
+          {(isSearching || completedExpanded) &&
+            (isSearching ? (
+              searchPending ? (
+                <Loading size="sm" />
+              ) : search.error ? (
+                <EmptyState
+                  title="Không tìm kiếm được lộ trình"
+                  description={search.error.message}
+                />
+              ) : visibleCompletedPaths.length > 0 ? (
+                <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
+                  {visibleCompletedPaths.map((path) => (
+                    <LearningPathCard key={path.id} path={path} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Không tìm thấy lộ trình đã hoàn thành phù hợp"
+                  description="Thử tìm theo micro-skill hoặc ngày tạo dạng DD/MM/YYYY."
+                />
+              )
+            ) : completed.loading ? (
               <Loading size="sm" />
             ) : completed.error ? (
               <EmptyState
                 title="Không tải được lộ trình đã hoàn thành"
                 description={completed.error.message}
               />
-            ) : filteredCompletedPaths.length > 0 ? (
+            ) : visibleCompletedPaths.length > 0 ? (
               <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
-                {filteredCompletedPaths.map((path) => (
+                {visibleCompletedPaths.map((path) => (
                   <LearningPathCard key={path.id} path={path} />
                 ))}
               </div>
             ) : (
               <EmptyState
-                title={query.trim() ? "Không tìm thấy lộ trình phù hợp" : "Chưa có lộ trình đã hoàn thành"}
-                description={query.trim() ? "Thử tìm theo micro-skill hoặc ngày tạo." : "Các lộ trình hoàn thành sẽ xuất hiện tại đây."}
+                title="Chưa có lộ trình đã hoàn thành"
+                description="Các lộ trình hoàn thành sẽ xuất hiện tại đây."
               />
             ))}
         </LearningPathSection>
 
-        <LearningPathSection
+        {!isSearching && <LearningPathSection
           title="Lộ trình đã hủy"
           count={counts?.cancelled ?? 0}
           icon="cancelled"
@@ -204,7 +220,7 @@ export default function LearningPathListView() {
                 description="Các lộ trình bị hủy sẽ xuất hiện tại đây."
               />
             ))}
-        </LearningPathSection>
+        </LearningPathSection>}
       </div>
 
       <div className="h-20 lg:hidden" aria-hidden="true" />

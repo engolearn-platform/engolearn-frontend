@@ -2,6 +2,8 @@ import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
 import { ArrowRight, ExternalLink } from "lucide-react";
+import { Link } from "react-router";
+import { ROUTES } from "@shared/constants";
 import type { LearningPathListItem } from "@features/learning-path/types/learning-path.types";
 
 interface LearningPathCardProps {
@@ -20,6 +22,8 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
   const progress = getProgress(path);
   const isActive =
     path.status === "IN_PROGRESS" || path.status === "NOT_STARTED";
+  const isCompleted = path.status === "COMPLETED";
+  const detailUrl = ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(path.id));
 
   const statusLabel =
     path.status === "NOT_STARTED"
@@ -111,18 +115,17 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
           làm
         </p>
 
-        {isActive && (
+        {(isActive || isCompleted) && (
           <div className="mt-2.5 border-t border-outline-variant/40 pt-2.5 text-right lg:mt-auto lg:pt-[21px]">
-            <span className="group inline-flex w-fit cursor-not-allowed rounded-xl transition-all duration-150 hover:-translate-y-0.5 hover:brightness-90 hover:shadow-lg hover:ring-2 hover:ring-primary/30">
-              <Button
-                disabled
-                title="Màn hình chi tiết Learning Path sẽ được triển khai ở bước tiếp theo."
-                className="h-8 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors duration-150 disabled:bg-primary disabled:text-on-primary disabled:opacity-100 lg:h-auto lg:rounded-[12px] lg:px-5 lg:has-[>svg]:px-5 lg:py-[10px] lg:text-[14px] lg:leading-[21px]"
-              >
-                Tiếp tục luyện tập
+            <Button
+              asChild
+              className="h-8 rounded-lg px-3 py-1.5 text-xs font-semibold lg:h-auto lg:rounded-xl lg:px-5 lg:has-[>svg]:px-5 lg:py-2.5 lg:text-sm"
+            >
+              <Link to={detailUrl}>
+                {isCompleted ? "Xem lộ trình" : "Tiếp tục luyện tập"}
                 <ArrowRight className="size-3.5 lg:size-3" aria-hidden="true" />
-              </Button>
-            </span>
+              </Link>
+            </Button>
           </div>
         )}
       </div>
