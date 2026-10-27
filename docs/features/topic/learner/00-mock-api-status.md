@@ -1,3 +1,5 @@
+> Live integration: user cấm dùng mock/fixture. Launcher và fixture server đã gỡ. Các bằng chứng fixture bên dưới là lịch sử, không phải trạng thái tích hợp hiện tại. Xem [09-live-integration.md](09-live-integration.md).
+
 # Learner — trạng thái nguồn dữ liệu
 
 Ngày2026-10-27, sau chặng3 FE. “Client thật” nghĩa là code gọi endpoint thật; không đồng nghĩa BE target đã chạy thành công.

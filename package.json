@@ -11,8 +11,7 @@
     "topic:types": "node scripts/generate-topic-api-types.mjs",
     "topic:types:check": "node scripts/generate-topic-api-types.mjs --check",
     "test:topic-api": "npm run topic:types:check && node --test tests/topic-api.test.mjs",
-    "test:topic": "npm run topic:types:check && node --test tests/topic-api.test.mjs tests/topic-catalog.test.mjs tests/topic-lesson.test.mjs",
-    "dev:topic-fixtures": "node scripts/dev-topic-fixtures.mjs"
+    "test:topic": "npm run topic:types:check && node --test tests/topic-api.test.mjs tests/topic-catalog.test.mjs tests/topic-lesson.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

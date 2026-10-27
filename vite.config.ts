@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     server: {
       port: 3000,
+      strictPort: true,
       // Proxy API calls from FE dev origin (:3000) to BE (:8080) to avoid CORS during development
       proxy: {
         "/api": {
