@@ -6,8 +6,7 @@
 > live in business docs outside this folder — link, never restate.
 > **Owner:** Whoever proposes the decision; the register itself is maintained with the change that
 > settles the decision (docs-first loop, [AGENTS.md](../../../AGENTS.md)).
-> **Status:** PROPOSED — this ADR process is a proposal; **all twelve decisions below are PROPOSED
-> stubs. None is accepted**; no "accepted" status appears anywhere in this register.
+> **Status:** D1–D12 remain PROPOSED stubs. D13 records the accepted task-scoped API-test tooling choice (2026-10-27); the general ADR process remains proposed.
 > **Relationships:** [../README.md](../README.md) (precedence) ·
 > [../implementation-constraints.md](../implementation-constraints.md) (rules derived from decisions) ·
 > [../technical-design.md](../technical-design.md) · [../traceability/deviations.md](../traceability/deviations.md) ·
@@ -34,7 +33,7 @@ One file per settled-or-open decision: `docs/engineering/decisions/d<N>-<slug>.m
 date. Until then every doc MUST keep it PROPOSED; guides/constraints may reference a stub as "open
 decision `Dn`", never as "per decision Dn".
 
-## Open decisions — register (all PROPOSED)
+## Decision register
 
 | ID | Title | Status | Context evidence (link) | Open question |
 |---|---|---|---|---|
@@ -50,6 +49,7 @@ decision `Dn`", never as "per decision Dn".
 | **D10** | MCP Stitch key delivery: file vs env vs literal | PROPOSED | `engolearn-frontend/.opencode/opencode.json` references `{file:.stitch-key}`; repo-root `.opencode/opencode.json` carries a literal header value (EXISTING — key material deliberately not reproduced here); `.env.example` declares `STITCH_API_KEY` ([../guides/environment.md](../guides/environment.md)) | Which mechanism is authoritative for the MCP `X-Goog-Api-Key` header? (**UNKNOWN** pending owner.) |
 | **D11** | Permission for FE docs/agents to read repo business docs | PROPOSED | Business docs sit outside `engolearn-frontend` (repo-root `docs/`); frontend role currently codes against AGENTS.md/design-system/feature docs | Is reading repo-root business docs granted/required for the FE role? (**UNKNOWN** pending owner/orchestrator.) |
 | **D12** | Confirm Hanken Grotesk as the typeface (and retire the `Inter` line) | PROPOSED | `index.html:9-12` loads Hanken Grotesk; [tokens.yaml](../../design-system/tokens.yaml) + [principles.md](../../design-system/principles.md) specify it; `.opencode/UI_CONSTITUTION.md` still says `Inter`; AGENTS.md/project-structure declare design-system wins | Formally accept the design-system choice and update the stale constitution entry? |
+| **D13** | Native topic API tests and generated wire DTOs | accepted (2026-10-27) | [testing guide](../guides/testing.md), approved staged API work | Use existing Node runner/injected fetch and dependency-free generation; no new libraries or React/browser tooling. |
 
 ## Rules for this register
 

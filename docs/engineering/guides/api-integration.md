@@ -147,6 +147,13 @@ model, using the Vietnam time zone for dates. Closed-week and summary tabs displ
 backend rates, scores, and improvements; open progress uses answered/assigned counts. The
 daily practice and result routes remain UI-only until their backend APIs exist.
 
+## Topic learning — target contract (2026-10-27)
+
+[Target OpenAPI](../../handout/topic-learning/api.openapi.yaml) và [handoff](../../handout/topic-learning/backend-handoff.md) ghi contract cần BE bổ sung, không phải mô tả BE đã đáp ứng.
+`createTopicApi` trong feature topic dùng `/api/v1` cùng origin và fetch được tiêm trong test, không qua shared `HttpService` cũ. Có xử lý envelope, ProblemDetail/status/code, AbortSignal và Idempotency-Key bắt buộc cho POST; không tự retry và không fallback mock.
+Wire DTO được sinh bằng `npm run topic:types`, kiểm tra drift bằng `npm run topic:types:check`. Chặng1 chưa đổi các hook/view cũ.
+Native API tests: `npm run test:topic-api`; phạm vi và giới hạn ở [testing.md](testing.md). Auth module/token/session vẫn chưa triển khai.
+
 ## 8. Anti-patterns
 
 - `fetch` inside views/components (`C-06`).

@@ -13,6 +13,11 @@
 | Expressions (`05`) | 🟡 `useTopicExpressions` mock 3 purposes (2 ví dụ + 1 sequence) | 🟡 simulation 900ms | 🟡 PATCH mock (log console, `SENTENCES` stage, theo recipe `04` §6) | Sau stage VOCAB → [.../expressions](./05-topic-expressions.md). Continue + sidebar Practice → `.../practice` (placeholder). |
 | Practice (EXERCISES) | ⬜ placeholder (`TopicPracticePlaceholderView`, EmptyState) | — | 🟡 `setCurrentStage("EXERCISES")` để sidebar highlight đúng | Chưa có UI Stitch — thay bằng view thật khi làm màn Practice |
 
+## Foundation mới — chặng 1 (2026-10-27)
+
+Contract và client mới nằm ở [06-api-foundation.md](06-api-foundation.md); bộ bàn giao ở [backend-handoff.md](../../../handout/topic-learning/backend-handoff.md).
+Chặng này chưa chuyển view/hook nào sang client mới: các hàng mock phía trên vẫn giữ nguyên. Có client không đồng nghĩa đã nối API thật. BE target đang chờ triển khai; test identity chỉ mock trong test FE.
+
 ## Thứ tự đấu nối đề xuất (khi có backend)
 
 1. GET nội dung 3 màn hiện có (giữ khung `Loading`/`EmptyState` đã có sẵn).

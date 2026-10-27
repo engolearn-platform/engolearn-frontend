@@ -11,7 +11,7 @@
 > [../features/topic/learner/00-mock-api-status.md](../features/topic/learner/00-mock-api-status.md) ·
 > [traceability/README.md](traceability/README.md) · [traceability/deviations.md](traceability/deviations.md)
 
-**Tooling status:** test runner **NOT AVAILABLE** · CI **NOT AVAILABLE** · pre-commit **NOT AVAILABLE** ·
+**Tooling status:** native topic API runner **AVAILABLE** (`npm run test:topic-api`, Node22.18+); React/browser suite **NOT IMPLEMENTED** · CI **NOT AVAILABLE** · pre-commit **NOT AVAILABLE** ·
 automated auth/security checks **NOT AVAILABLE** · a11y linter **NOT AVAILABLE**.
 Validation = the steps below, nothing else (EXISTING rule in AGENTS.md: verify with build + lint).
 
@@ -107,5 +107,4 @@ if a rule shifts, [implementation-constraints.md](implementation-constraints.md)
 | **FAIL** | Build or lint errors, new lint warnings, contract mismatch, missing same-change doc update. Fix and re-run all steps. |
 | **BLOCKED** | A needed input does not exist: frozen API contract, decision (`D1`–`D12` all PROPOSED), guard implementation, or tooling marked NOT AVAILABLE. Report to the orchestrator with the missing input named — do not improvise. |
 
-> No test-suite outcome may ever be claimed: a test runner, CI pipeline, and Playwright config are
-> **NOT AVAILABLE / UNKNOWN** in this repo (see [guides/testing.md](guides/testing.md)).
+> Topic API checks are now available: run `npm run topic:types:check` and `npm run test:topic-api` for contract/client edits. Report their actual results separately from build/lint. React/browser suites, CI and Playwright remain unimplemented; mock transport tests do not establish real BE or UI behavior (see [guides/testing.md](guides/testing.md)).

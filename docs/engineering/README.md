@@ -28,7 +28,7 @@ Every statement in this folder carries one label. Labels are not interchangeable
 | **DEVIATION** | Existing code/docs that knowingly break a rule; registered in [traceability/deviations.md](traceability/deviations.md). |
 | **UNKNOWN** | Cannot be determined from available evidence/tooling. Never guessed. |
 
-Tooling that does not exist in this repo is marked **NOT AVAILABLE** (e.g. test runner, CI,
+Tooling that does not exist in this repo is marked **NOT AVAILABLE** (e.g. React/browser test runner, CI,
 pre-commit, automated boundary/a11y lint) — see [guides/testing.md](guides/testing.md).
 
 ## Doc index — responsibility & authority
@@ -85,4 +85,4 @@ pre-commit, automated boundary/a11y lint) — see [guides/testing.md](guides/tes
 - **No refactoring** of the registered deviations (`DEV-01`…`DEV-11` stay in code by design).
 - **No approval** of any decision: `D1`–`D12` are PROPOSED stubs only.
 - **No backend contracts/BR/UC IDs/test results invented** — anything unverifiable is UNKNOWN.
-- **No tooling added**: test runner, CI, pre-commit are **NOT AVAILABLE** and stay that way.
+- **Audit scope:** the original docs audit added no tooling. Since2026-10-27, topic API boundary tests use native Node (D13); React/browser suites, CI and pre-commit remain unavailable.

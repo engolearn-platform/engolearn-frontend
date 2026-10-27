@@ -1,0 +1,3687 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "EngoLearn Topic Learning — FE target contract",
+    "version": "2.0.0-stage1",
+    "description": "Target contract for review (2026-10-27), not a claim of BE implementation. This file uses JSON syntax, a valid YAML 1.2 subset, for dependency-free parsing and code generation. backend-handoff.md defines cross-request invariants. Legacy item-content/position endpoints are retained by BE but are not used by the new FE client."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/topic-learning/viewer": {
+      "get": {
+        "operationId": "getViewer",
+        "summary": "Resolve the server-side viewer",
+        "description": "No userId/header/token invented by FE. Before auth BE may keep its fixed provider. Guest is 200 GUEST; network failure is never interpreted as guest.",
+        "x-backend-status": "new",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ViewerDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "guest": {
+                    "value": {
+                      "data": {
+                        "kind": "GUEST",
+                        "learnerId": null,
+                        "displayName": null,
+                        "cefrLevel": null
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  },
+                  "developmentLearner": {
+                    "value": {
+                      "data": {
+                        "kind": "LEARNER",
+                        "learnerId": "user-mock-001",
+                        "displayName": "Học viên",
+                        "cefrLevel": "C2"
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics": {
+      "get": {
+        "operationId": "browseTopics",
+        "summary": "Discover published topics never started by this learner",
+        "description": "Guest sees all published topics. Scope/filter/sort/count apply BEFORE pagination. recommended is level-aware (BR-01.4); duration ties use recommended. total is exact for full matching scope. Ever-started topics never reappear here.",
+        "x-backend-status": "extend",
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CefrLevelDto"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "duration"
+              ],
+              "default": "recommended"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque; bound to viewer, scope, filters and sort."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TopicPageDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/mine": {
+      "get": {
+        "operationId": "getMyTopics",
+        "summary": "List started topics in one status tab",
+        "description": "Published topics only; lastAccessedAt descending then topicId ascending. counts covers both tabs; total covers selected tab. Unfinished retries retain official COMPLETED state; newly added visible items can move topic to IN_PROGRESS.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN_PROGRESS",
+                "COMPLETED"
+              ],
+              "default": "IN_PROGRESS"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque; bound to viewer, scope, filters and sort."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MyTopicPageDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/{topicId}": {
+      "get": {
+        "operationId": "getTopicDetail",
+        "summary": "Read latest visible outline and action availability",
+        "description": "GET never starts/pins learning. Counts/duration sum latest visible items. Guest personal state is null and personal actions are false. BE computes eligibility; FE displays stable reasons.",
+        "x-backend-status": "extend",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TopicDetailDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/{topicId}/progress": {
+      "get": {
+        "operationId": "getTopicProgress",
+        "summary": "Read official topic progress and content metrics",
+        "description": "Visible items only. percent=round(100*completed/total), zero for empty topic. Metrics use effective running-LEARN/completed versions; unfinished retries do not replace old results. GET never creates progress.",
+        "x-backend-status": "extend",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TopicProgressDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-items/{itemId}/attempts": {
+      "post": {
+        "operationId": "startAttempt",
+        "summary": "Start or resume learning/retry of one item",
+        "description": "LEARN checks level/order, atomically pins release+item version and saves IN_PROGRESS at CONTEXT/0 before response. Existing running LEARN returns same attempt. RETRY requires completed item; creates ITEM retry session on latest version, unless resuming next pending item of an existing TOPIC retry session (use frozen version). Replacement of another running retry requires its observed ID; otherwise409 RETRY_CONFIRMATION_REQUIRED. LEARN sends replaceRetrySessionId:null. To continue a frozen TOPIC retry sequence, send its retrySessionId explicitly; otherwise null. LEARN sends both session fields null. Stale/mismatched session IDs are409 RETRY_SESSION_CHANGED; never abandon a different retry implicitly.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartAttemptRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AttemptDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "startedAtContext": {
+                    "value": {
+                      "data": {
+                        "attemptId": "attempt-001",
+                        "topicId": "66f1a2b3c4d5e6f708091a01",
+                        "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                        "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                        "version": 1,
+                        "mode": "LEARN",
+                        "status": "IN_PROGRESS",
+                        "revision": 0,
+                        "position": {
+                          "stage": "CONTEXT",
+                          "itemIndex": 0
+                        },
+                        "progress": {
+                          "completedStepCount": 0,
+                          "totalStepCount": 11,
+                          "percent": 0,
+                          "learnedVocabularyCount": 0,
+                          "learnedExpressionCount": 0,
+                          "completedQuizCount": 0,
+                          "totalQuizCount": 6
+                        },
+                        "retrySessionId": null,
+                        "startedAt": "2026-10-27T10:00:00Z",
+                        "lastAccessedAt": "2026-10-27T10:00:00Z",
+                        "completedAt": null
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}": {
+      "get": {
+        "operationId": "getAttempt",
+        "summary": "Read an owned attempt and saved frontier",
+        "description": "Enforce ownership. Owned running attempts remain accessible to finish even if item is hidden or topic unpublished; hidden content does not reappear in topic lists.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AttemptDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/content": {
+      "get": {
+        "operationId": "getAttemptContent",
+        "summary": "Read pinned content of a running attempt",
+        "description": "IN_PROGRESS only; completed attempts use review. Serve pinned version with MINOR fixes in place. No formal quiz answers; optional quickCheck is local and may include answer. GET is read-only.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/LessonContentDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/advance": {
+      "post": {
+        "operationId": "advanceContent",
+        "summary": "Complete current content unit and advance once",
+        "description": "Require exact revision+source position. CONTEXT/0->VOCAB/0; one word per advance; EXPRESSIONS indexes ordered purposes flattened in array order, then orderIndex, one purpose per advance; last purpose->FILL_BLANK/0. Never require scrolling/audio/quick-check correctness. Reject skipping and quiz-stage advancement.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceContentRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AttemptDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "contextCompleted": {
+                    "value": {
+                      "data": {
+                        "attemptId": "attempt-001",
+                        "topicId": "66f1a2b3c4d5e6f708091a01",
+                        "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                        "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                        "version": 1,
+                        "mode": "LEARN",
+                        "status": "IN_PROGRESS",
+                        "revision": 1,
+                        "position": {
+                          "stage": "VOCAB",
+                          "itemIndex": 0
+                        },
+                        "progress": {
+                          "completedStepCount": 1,
+                          "totalStepCount": 11,
+                          "percent": 9,
+                          "learnedVocabularyCount": 0,
+                          "learnedExpressionCount": 0,
+                          "completedQuizCount": 0,
+                          "totalQuizCount": 6
+                        },
+                        "retrySessionId": null,
+                        "startedAt": "2026-10-27T10:00:00Z",
+                        "lastAccessedAt": "2026-10-27T10:00:00Z",
+                        "completedAt": null
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/quiz": {
+      "get": {
+        "operationId": "getCurrentQuiz",
+        "summary": "Read only first unanswered quiz",
+        "description": "FILL_BLANK then SITUATIONAL_CHOICE. Reject before quiz frontier. COMPLETED returns quiz:null. Never include answers, explanation or first-try flags before correctness. Stable option IDs despite display reordering.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CurrentQuizDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "firstQuiz": {
+                    "value": {
+                      "data": {
+                        "attempt": {
+                          "attemptId": "attempt-001",
+                          "topicId": "66f1a2b3c4d5e6f708091a01",
+                          "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                          "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                          "version": 1,
+                          "mode": "LEARN",
+                          "status": "IN_PROGRESS",
+                          "revision": 5,
+                          "position": {
+                            "stage": "FILL_BLANK",
+                            "itemIndex": 0
+                          },
+                          "progress": {
+                            "completedStepCount": 5,
+                            "totalStepCount": 11,
+                            "percent": 45,
+                            "learnedVocabularyCount": 3,
+                            "learnedExpressionCount": 3,
+                            "completedQuizCount": 0,
+                            "totalQuizCount": 6
+                          },
+                          "retrySessionId": null,
+                          "startedAt": "2026-10-27T10:00:00Z",
+                          "lastAccessedAt": "2026-10-27T10:00:00Z",
+                          "completedAt": null
+                        },
+                        "quiz": {
+                          "quizId": "quiz-001",
+                          "title": "Hỏi gợi ý món ăn",
+                          "index": 0,
+                          "totalInType": 3,
+                          "situationVi": "Bạn muốn nhờ người phục vụ gợi ý món đặc sản.",
+                          "imageUrl": null,
+                          "tips": null,
+                          "promptAudioUrl": null,
+                          "type": "FILL_BLANK",
+                          "sentenceBefore": "Can you ",
+                          "sentenceAfter": " a good local specialty?",
+                          "options": [
+                            {
+                              "optionId": "option-1",
+                              "text": "order"
+                            },
+                            {
+                              "optionId": "option-2",
+                              "text": "recommend"
+                            },
+                            {
+                              "optionId": "option-3",
+                              "text": "bill"
+                            },
+                            {
+                              "optionId": "option-4",
+                              "text": "starter"
+                            }
+                          ]
+                        }
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/quizzes/{quizId}/answers": {
+      "post": {
+        "operationId": "answerQuiz",
+        "summary": "Grade and persist a selection immediately",
+        "description": "Require revision/current quiz/optionId. Wrong: persist first-try failure, increment revision, keep frontier, feedback:null. Correct: atomically persist and advance frontier before responding; feedback belongs to answered quiz. Final correct answer completes attempt and commits result atomically. No client correctness/score/completion fields. Replay matching Idempotency-Key BEFORE revision check. Reuse with different payload->409 IDEMPOTENCY_KEY_REUSED.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "quizId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerQuizRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuizAnswerDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "incorrect": {
+                    "value": {
+                      "data": {
+                        "quizId": "quiz-001",
+                        "isCorrect": false,
+                        "feedback": null,
+                        "attempt": {
+                          "attemptId": "attempt-001",
+                          "topicId": "66f1a2b3c4d5e6f708091a01",
+                          "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                          "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                          "version": 1,
+                          "mode": "LEARN",
+                          "status": "IN_PROGRESS",
+                          "revision": 6,
+                          "position": {
+                            "stage": "FILL_BLANK",
+                            "itemIndex": 0
+                          },
+                          "progress": {
+                            "completedStepCount": 5,
+                            "totalStepCount": 11,
+                            "percent": 45,
+                            "learnedVocabularyCount": 3,
+                            "learnedExpressionCount": 3,
+                            "completedQuizCount": 0,
+                            "totalQuizCount": 6
+                          },
+                          "retrySessionId": null,
+                          "startedAt": "2026-10-27T10:00:00Z",
+                          "lastAccessedAt": "2026-10-27T10:00:00Z",
+                          "completedAt": null
+                        }
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  },
+                  "correctAfterAnIncorrectSelection": {
+                    "value": {
+                      "data": {
+                        "quizId": "quiz-001",
+                        "isCorrect": true,
+                        "feedback": {
+                          "correctOptionId": "option-2",
+                          "completedSentenceEn": "Can you recommend a good local specialty?",
+                          "translationVi": "Bạn có thể gợi ý một món đặc sản địa phương ngon không?",
+                          "explanationVi": "Recommend dùng khi muốn nhờ người khác gợi ý một lựa chọn phù hợp.",
+                          "grammarNoteVi": "Can you recommend + danh từ/cụm danh từ?",
+                          "audioUrl": null
+                        },
+                        "attempt": {
+                          "attemptId": "attempt-001",
+                          "topicId": "66f1a2b3c4d5e6f708091a01",
+                          "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                          "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                          "version": 1,
+                          "mode": "LEARN",
+                          "status": "IN_PROGRESS",
+                          "revision": 7,
+                          "position": {
+                            "stage": "FILL_BLANK",
+                            "itemIndex": 1
+                          },
+                          "progress": {
+                            "completedStepCount": 6,
+                            "totalStepCount": 11,
+                            "percent": 55,
+                            "learnedVocabularyCount": 3,
+                            "learnedExpressionCount": 3,
+                            "completedQuizCount": 1,
+                            "totalQuizCount": 6
+                          },
+                          "retrySessionId": null,
+                          "startedAt": "2026-10-27T10:00:00Z",
+                          "lastAccessedAt": "2026-10-27T10:00:00Z",
+                          "completedAt": null
+                        }
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/result": {
+      "get": {
+        "operationId": "getItemResult",
+        "summary": "Read completed accuracy and next item",
+        "description": "Completed attempts only. Round firstTryCorrectCount/totalQuizCount once; no completion threshold. Next item comes from frozen active sequence, never appended items outside that retry session.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ItemResultDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/review": {
+      "get": {
+        "operationId": "getItemReview",
+        "summary": "Review current completed result without writes",
+        "description": "Use completedAttemptId from detail/result. Old result superseded by completed retry->409 RESULT_CHANGED. Return completed version with all quiz answers, explanation/audio and first-try flags. Never update positions/results.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ItemReviewDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/{topicId}/result": {
+      "get": {
+        "operationId": "getTopicResult",
+        "summary": "Read aggregate current visible results",
+        "description": "Completed published topics only; otherwise409 TOPIC_NOT_COMPLETED. Aggregate counts then round once; never average rounded percentages. Hidden item results excluded.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TopicResultDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/{topicId}/retry-sessions": {
+      "post": {
+        "operationId": "startTopicRetry",
+        "summary": "Confirm retry of entire completed topic",
+        "description": "Check level. Freeze ordered visible item IDs+versions; immediately create first CONTEXT/0 attempt. One retry session per topic/learner. Replacing an existing one requires exact observed retrySessionId. Results replaced item-by-item only on completion. Subsequent item attempts are explicitly started via startAttempt(mode:RETRY); GET never creates attempts.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTopicRetryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrySessionDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-retry-sessions/{retrySessionId}": {
+      "get": {
+        "operationId": "getRetrySession",
+        "summary": "Read owned frozen retry session",
+        "description": "No writes. itemIds+versions never change after confirmation. currentAttemptId is null between completed items; startAttempt RETRY for first pending item continues frozen TOPIC session, rather than creating ITEM session.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "retrySessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RetrySessionDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/access": {
+      "post": {
+        "operationId": "recordAttemptAccess",
+        "summary": "Record entry recency without changing learning state",
+        "description": "Explicit event after an owned attempt/review is loaded. Update topic/item lastAccessedAt monotonically to server time, without changing position, learning status, accuracy or attempt revision. GET stays read-only. start/advance/answer already record recency. Completed access must refer to current completed result.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccessReceiptDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CefrLevelDto": {
+        "type": "string",
+        "enum": [
+          "A1",
+          "A2",
+          "B1",
+          "B2",
+          "C1",
+          "C2"
+        ]
+      },
+      "LearningStatusDto": {
+        "type": "string",
+        "enum": [
+          "NOT_STARTED",
+          "IN_PROGRESS",
+          "COMPLETED"
+        ]
+      },
+      "LearningStageDto": {
+        "type": "string",
+        "enum": [
+          "CONTEXT",
+          "VOCAB",
+          "EXPRESSIONS",
+          "FILL_BLANK",
+          "SITUATIONAL_CHOICE"
+        ]
+      },
+      "ContentStageDto": {
+        "type": "string",
+        "enum": [
+          "CONTEXT",
+          "VOCAB",
+          "EXPRESSIONS"
+        ]
+      },
+      "BlockReasonDto": {
+        "type": "string",
+        "enum": [
+          "SIGN_IN_REQUIRED",
+          "LEVEL_TOO_LOW",
+          "PREDECESSOR_INCOMPLETE",
+          "OTHER_ITEM_IN_PROGRESS",
+          "ALREADY_COMPLETED",
+          "NOT_COMPLETED",
+          "NO_RUNNING_ATTEMPT",
+          "CONTENT_UNAVAILABLE"
+        ]
+      },
+      "ViewerDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "learnerId",
+          "displayName",
+          "cefrLevel"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "GUEST",
+              "LEARNER"
+            ]
+          },
+          "learnerId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "displayName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cefrLevel": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CefrLevelDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ActionAvailabilityDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "allowed",
+          "reason"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BlockReasonDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ItemActionsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "continue",
+          "review",
+          "retry",
+          "resumeRetry",
+          "restartRetry"
+        ],
+        "properties": {
+          "start": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "continue": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "review": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "retry": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "resumeRetry": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "restartRetry": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          }
+        }
+      },
+      "PositionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage",
+          "itemIndex"
+        ],
+        "properties": {
+          "stage": {
+            "$ref": "#/components/schemas/LearningStageDto"
+          },
+          "itemIndex": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "TopicProgressSummaryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "completedItemCount",
+          "totalItemCount",
+          "percent"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/LearningStatusDto"
+          },
+          "completedItemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalItemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "LearningMetricsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "learnedVocabularyCount",
+          "totalVocabularyCount",
+          "learnedExpressionCount",
+          "totalExpressionCount",
+          "completedQuizCount",
+          "totalQuizCount"
+        ],
+        "properties": {
+          "learnedVocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalVocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "learnedExpressionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalExpressionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedQuizCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalQuizCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AttemptProgressDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "completedStepCount",
+          "totalStepCount",
+          "percent",
+          "learnedVocabularyCount",
+          "learnedExpressionCount",
+          "completedQuizCount",
+          "totalQuizCount"
+        ],
+        "properties": {
+          "completedStepCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalStepCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "learnedVocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "learnedExpressionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedQuizCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalQuizCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AttemptDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attemptId",
+          "topicId",
+          "topicItemId",
+          "topicItemVersionId",
+          "version",
+          "mode",
+          "status",
+          "revision",
+          "position",
+          "progress",
+          "retrySessionId",
+          "startedAt",
+          "lastAccessedAt",
+          "completedAt"
+        ],
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "topicId": {
+            "type": "string"
+          },
+          "topicItemId": {
+            "type": "string"
+          },
+          "topicItemVersionId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "LEARN",
+              "RETRY"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "$ref": "#/components/schemas/AttemptProgressDto"
+          },
+          "retrySessionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastAccessedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AttemptReferenceDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attemptId",
+          "position"
+        ],
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/PositionDto"
+          }
+        }
+      },
+      "RetrySessionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "retrySessionId",
+          "topicId",
+          "scope",
+          "status",
+          "itemIds",
+          "currentAttemptId",
+          "startedAt",
+          "completedAt",
+          "completedItemIds"
+        ],
+        "properties": {
+          "retrySessionId": {
+            "type": "string"
+          },
+          "topicId": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "ITEM",
+              "TOPIC"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "currentAttemptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedItemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "TopicCardDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicId",
+          "coverUrl",
+          "titleEn",
+          "titleVi",
+          "cefrLevel",
+          "vocabularyCount",
+          "quizCount",
+          "durationMinutes",
+          "totalItemCount",
+          "progress",
+          "hasNewContent",
+          "startAvailability",
+          "lastAccessedAt"
+        ],
+        "properties": {
+          "topicId": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "titleEn": {
+            "type": "string"
+          },
+          "titleVi": {
+            "type": "string"
+          },
+          "cefrLevel": {
+            "$ref": "#/components/schemas/CefrLevelDto"
+          },
+          "vocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalItemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicProgressSummaryDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasNewContent": {
+            "type": "boolean"
+          },
+          "startAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "lastAccessedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TopicPageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total",
+          "nextCursor",
+          "hasMore"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicCardDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MyTopicCountsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "inProgress",
+          "completed"
+        ],
+        "properties": {
+          "inProgress": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MyTopicPageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total",
+          "counts",
+          "nextCursor",
+          "hasMore"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicCardDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MyTopicCountsDto"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TopicItemSummaryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicItemId",
+          "title",
+          "description",
+          "durationMinutes",
+          "vocabularyCount",
+          "expressionCount",
+          "quizCount",
+          "learningStatus",
+          "hasNewContent",
+          "actions",
+          "learningAttempt",
+          "retryAttempt",
+          "completedAttemptId"
+        ],
+        "properties": {
+          "topicItemId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expressionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "learningStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LearningStatusDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hasNewContent": {
+            "type": "boolean"
+          },
+          "actions": {
+            "$ref": "#/components/schemas/ItemActionsDto"
+          },
+          "learningAttempt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttemptReferenceDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retryAttempt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttemptReferenceDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAttemptId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TopicDetailDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicId",
+          "coverUrl",
+          "titleEn",
+          "titleVi",
+          "cefrLevel",
+          "description",
+          "durationMinutes",
+          "vocabularyCount",
+          "expressionCount",
+          "quizCount",
+          "hasNewContent",
+          "progress",
+          "items",
+          "retrySession",
+          "retryAvailability"
+        ],
+        "properties": {
+          "topicId": {
+            "type": "string"
+          },
+          "coverUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "titleEn": {
+            "type": "string"
+          },
+          "titleVi": {
+            "type": "string"
+          },
+          "cefrLevel": {
+            "$ref": "#/components/schemas/CefrLevelDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vocabularyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expressionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasNewContent": {
+            "type": "boolean"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopicProgressSummaryDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicItemSummaryDto"
+            }
+          },
+          "retrySession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrySessionDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retryAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          }
+        }
+      },
+      "TopicItemProgressDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicItemId",
+          "status",
+          "firstTryCorrectCount",
+          "totalQuizCount",
+          "completedAt"
+        ],
+        "properties": {
+          "topicItemId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LearningStatusDto"
+          },
+          "firstTryCorrectCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalQuizCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TopicProgressDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicId",
+          "status",
+          "completedItemCount",
+          "totalItemCount",
+          "percent",
+          "lastAccessedAt",
+          "metrics",
+          "hasNewContent",
+          "items"
+        ],
+        "properties": {
+          "topicId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LearningStatusDto"
+          },
+          "completedItemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalItemCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "lastAccessedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/LearningMetricsDto"
+          },
+          "hasNewContent": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicItemProgressDto"
+            }
+          }
+        }
+      },
+      "DialogueLineDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "speaker",
+          "textEn",
+          "textVi",
+          "audioUrl"
+        ],
+        "properties": {
+          "speaker": {
+            "type": "string"
+          },
+          "textEn": {
+            "type": "string"
+          },
+          "textVi": {
+            "type": "string"
+          },
+          "audioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ContextContentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenarioDescription",
+          "imageUrl",
+          "promptingQuestion",
+          "dialogue",
+          "dialogueAudioUrl",
+          "durationSec",
+          "tips"
+        ],
+        "properties": {
+          "scenarioDescription": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptingQuestion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dialogue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DialogueLineDto"
+            }
+          },
+          "dialogueAudioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "durationSec": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tips": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "WordExampleDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exampleId",
+          "textEn",
+          "textVi",
+          "audioUrl"
+        ],
+        "properties": {
+          "exampleId": {
+            "type": "string"
+          },
+          "textEn": {
+            "type": "string"
+          },
+          "textVi": {
+            "type": "string"
+          },
+          "audioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "CollocationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "textEn",
+          "meaningVi"
+        ],
+        "properties": {
+          "textEn": {
+            "type": "string"
+          },
+          "meaningVi": {
+            "type": "string"
+          }
+        }
+      },
+      "QuickCheckDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "question",
+          "options",
+          "correctAnswer"
+        ],
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "type": "string"
+          }
+        }
+      },
+      "VocabularyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vocabId",
+          "senseId",
+          "word",
+          "pronunciation",
+          "meaningVi",
+          "partOfSpeech",
+          "label",
+          "usageDescription",
+          "imageUrl",
+          "audioUrl",
+          "audioEn",
+          "audioUs",
+          "examples",
+          "collocations",
+          "quickCheck",
+          "orderIndex",
+          "tips"
+        ],
+        "properties": {
+          "vocabId": {
+            "type": "string"
+          },
+          "senseId": {
+            "type": "string"
+          },
+          "word": {
+            "type": "string"
+          },
+          "pronunciation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meaningVi": {
+            "type": "string"
+          },
+          "partOfSpeech": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "usageDescription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audioEn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audioUs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WordExampleDto"
+            }
+          },
+          "collocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollocationDto"
+            }
+          },
+          "quickCheck": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuickCheckDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "orderIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tips": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ExpressionExampleDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expressionId",
+          "type",
+          "textEn",
+          "textVi",
+          "usageNote",
+          "audioUrl"
+        ],
+        "properties": {
+          "expressionId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "BASIC_SUGGESTION",
+              "POLITE_INQUIRY",
+              "SLOT_PATTERN"
+            ]
+          },
+          "textEn": {
+            "type": "string"
+          },
+          "textVi": {
+            "type": "string"
+          },
+          "usageNote": {
+            "type": "string"
+          },
+          "audioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ExpressionPurposeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "purposeId",
+          "purposeEn",
+          "purposeVi",
+          "orderIndex",
+          "examples"
+        ],
+        "properties": {
+          "purposeId": {
+            "type": "string"
+          },
+          "purposeEn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purposeVi": {
+            "type": "string"
+          },
+          "orderIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionExampleDto"
+            }
+          }
+        }
+      },
+      "ExpressionGroupDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "groupId",
+          "purposes",
+          "tips"
+        ],
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "purposes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionPurposeDto"
+            }
+          },
+          "tips": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "LessonContentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicItemId",
+          "topicItemVersionId",
+          "version",
+          "title",
+          "description",
+          "context",
+          "vocabularies",
+          "expressions"
+        ],
+        "properties": {
+          "topicItemId": {
+            "type": "string"
+          },
+          "topicItemVersionId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "context": {
+            "$ref": "#/components/schemas/ContextContentDto"
+          },
+          "vocabularies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VocabularyDto"
+            }
+          },
+          "expressions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionGroupDto"
+            }
+          }
+        }
+      },
+      "QuizOptionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "optionId",
+          "text"
+        ],
+        "properties": {
+          "optionId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "FillBlankQuizDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quizId",
+          "title",
+          "index",
+          "totalInType",
+          "situationVi",
+          "imageUrl",
+          "tips",
+          "promptAudioUrl",
+          "type",
+          "sentenceBefore",
+          "sentenceAfter",
+          "options"
+        ],
+        "properties": {
+          "quizId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalInType": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "situationVi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tips": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptAudioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "FILL_BLANK"
+          },
+          "sentenceBefore": {
+            "type": "string"
+          },
+          "sentenceAfter": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizOptionDto"
+            },
+            "minItems": 4,
+            "maxItems": 6
+          }
+        }
+      },
+      "SituationalChoiceQuizDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quizId",
+          "title",
+          "index",
+          "totalInType",
+          "situationVi",
+          "imageUrl",
+          "tips",
+          "promptAudioUrl",
+          "type",
+          "questionVi",
+          "options"
+        ],
+        "properties": {
+          "quizId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalInType": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "situationVi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tips": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptAudioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "SITUATIONAL_CHOICE"
+          },
+          "questionVi": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizOptionDto"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        }
+      },
+      "QuizDto": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FillBlankQuizDto"
+          },
+          {
+            "$ref": "#/components/schemas/SituationalChoiceQuizDto"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "FILL_BLANK": "#/components/schemas/FillBlankQuizDto",
+            "SITUATIONAL_CHOICE": "#/components/schemas/SituationalChoiceQuizDto"
+          }
+        }
+      },
+      "CurrentQuizDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attempt",
+          "quiz"
+        ],
+        "properties": {
+          "attempt": {
+            "$ref": "#/components/schemas/AttemptDto"
+          },
+          "quiz": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "QuizFeedbackDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "correctOptionId",
+          "completedSentenceEn",
+          "translationVi",
+          "explanationVi",
+          "grammarNoteVi",
+          "audioUrl"
+        ],
+        "properties": {
+          "correctOptionId": {
+            "type": "string"
+          },
+          "completedSentenceEn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "translationVi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "explanationVi": {
+            "type": "string"
+          },
+          "grammarNoteVi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audioUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "QuizAnswerDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quizId",
+          "isCorrect",
+          "feedback",
+          "attempt"
+        ],
+        "properties": {
+          "quizId": {
+            "type": "string"
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizFeedbackDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempt": {
+            "$ref": "#/components/schemas/AttemptDto"
+          }
+        }
+      },
+      "ReviewedQuizDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "quiz",
+          "feedback",
+          "firstTryCorrect"
+        ],
+        "properties": {
+          "quiz": {
+            "$ref": "#/components/schemas/QuizDto"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/QuizFeedbackDto"
+          },
+          "firstTryCorrect": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ItemReviewDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attempt",
+          "content",
+          "quizzes"
+        ],
+        "properties": {
+          "attempt": {
+            "$ref": "#/components/schemas/AttemptDto"
+          },
+          "content": {
+            "$ref": "#/components/schemas/LessonContentDto"
+          },
+          "quizzes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewedQuizDto"
+            }
+          }
+        }
+      },
+      "ItemResultDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attemptId",
+          "topicId",
+          "topicItemId",
+          "title",
+          "firstTryCorrectCount",
+          "totalQuizCount",
+          "accuracyPercent",
+          "completedAt",
+          "nextTopicItemId",
+          "nextItemAvailability",
+          "retrySession"
+        ],
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "topicId": {
+            "type": "string"
+          },
+          "topicItemId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "firstTryCorrectCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalQuizCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "accuracyPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextTopicItemId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextItemAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "retrySession": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrySessionDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "TopicResultItemDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicItemId",
+          "title",
+          "completedAttemptId",
+          "firstTryCorrectCount",
+          "totalQuizCount",
+          "accuracyPercent",
+          "hasNewContent",
+          "actions"
+        ],
+        "properties": {
+          "topicItemId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "completedAttemptId": {
+            "type": "string"
+          },
+          "firstTryCorrectCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalQuizCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "accuracyPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "hasNewContent": {
+            "type": "boolean"
+          },
+          "actions": {
+            "$ref": "#/components/schemas/ItemActionsDto"
+          }
+        }
+      },
+      "TopicResultDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicId",
+          "titleVi",
+          "firstTryCorrectCount",
+          "totalQuizCount",
+          "accuracyPercent",
+          "items",
+          "retryAvailability"
+        ],
+        "properties": {
+          "topicId": {
+            "type": "string"
+          },
+          "titleVi": {
+            "type": "string"
+          },
+          "firstTryCorrectCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalQuizCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "accuracyPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopicResultItemDto"
+            }
+          },
+          "retryAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          }
+        }
+      },
+      "StartAttemptRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "replaceRetrySessionId",
+          "retrySessionId"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "LEARN",
+              "RETRY"
+            ]
+          },
+          "replaceRetrySessionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retrySessionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AdvanceContentRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "stage",
+          "itemIndex"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ContentStageDto"
+          },
+          "itemIndex": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AnswerQuizRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "optionId"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "optionId": {
+            "type": "string"
+          }
+        }
+      },
+      "StartTopicRetryRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "replaceRetrySessionId"
+        ],
+        "properties": {
+          "replaceRetrySessionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ProblemDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "AccessReceiptDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lastAccessedAt"
+        ],
+        "properties": {
+          "lastAccessedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Problem400": {
+        "description": "Invalid request",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Invalid request",
+              "status": 400,
+              "detail": "Invalid request",
+              "code": "INVALID_REQUEST"
+            }
+          }
+        }
+      },
+      "Problem404": {
+        "description": "Content not found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Content not found",
+              "status": 404,
+              "detail": "Content not found",
+              "code": "CONTENT_UNAVAILABLE"
+            }
+          }
+        }
+      },
+      "Problem409": {
+        "description": "Learning state changed",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Learning state changed",
+              "status": 409,
+              "detail": "Learning state changed",
+              "code": "STATE_CHANGED"
+            }
+          }
+        }
+      },
+      "Problem422": {
+        "description": "Learning precondition failed",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Learning precondition failed",
+              "status": 422,
+              "detail": "Learning precondition failed",
+              "code": "LEVEL_TOO_LOW"
+            }
+          }
+        }
+      },
+      "Problem503": {
+        "description": "Service unavailable",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Service unavailable",
+              "status": 503,
+              "detail": "Service unavailable",
+              "code": "SERVICE_UNAVAILABLE"
+            }
+          }
+        }
+      },
+      "Problem401": {
+        "description": "Sign in required",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Sign in required",
+              "status": 401,
+              "detail": "Sign in required",
+              "code": "SIGN_IN_REQUIRED"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-review-status": "STAGE_1_REVIEW_BACKEND_PENDING"
+}

@@ -38,6 +38,7 @@ Tracking tiến trình xuyên suốt mọi chặng: `04-learning-progress.md`
 | 02 | `02-topic-context.md` | Bối cảnh & hội thoại — `.../context` | Đã implement (mock, audio noop) |
 | 03 | `03-topic-vocab.md` | Từ vựng — `.../vocab/:vocabId` | Đã implement (mock, audio simulation) |
 | 04 | `04-learning-progress.md` | Contract progress dùng chung | Đã implement (mock PATCH) |
+| 06 | `06-api-foundation.md` | Target contract and typed client; no view adoption yet | Stage1, BE pending |
 | 05 | `05-topic-expressions.md` | Mẫu câu giao tiếp — `.../expressions` | Đã implement (mock, audio simulation) |
 
 ## Quy ước của package

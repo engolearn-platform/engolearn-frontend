@@ -23,7 +23,7 @@
    **new** code must obey regardless of this register.
 3. Resolving an entry = code change + this register + any linked decision, in one change, then
    build+lint evidence ([../code-validation.md](../code-validation.md)).
-4. No severity here is a test result — no test runner exists (**NOT AVAILABLE**); impact statements
+4. No severity here is a test result — native topic API tests were added on2026-10-27, but do not verify these historical deviations; impact statements
    are reasoned risk, not measured failures.
 
 ---
