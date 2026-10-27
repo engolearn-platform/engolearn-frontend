@@ -30,3 +30,8 @@ Chỉ public read slice được xác minh; My Topics/start/attempt/quiz/retry c
 - Personal catalog hiện đọc tập published để tính/filter/cursor trước phân trang; chưa tối ưu truy vấn cho catalog lớn.
 
 Cách chọn hồ sơ: POST /api/v1/topic-learning/local-profiles với displayName và cefrLevel thật, lưu learnerId trả về vào TOPIC_LOCAL_LEARNER_ID trong .env rồi restart BE. Endpoint tạo hồ sơ chỉ nhận loopback. Không commit .env.
+
+
+## Planning kế tiếp — chưa triển khai
+
+[Kế hoạch hoàn tất FE](10-completion-implementation-plan.md) mô tả consumer cho bộ OpenSpec BE `complete-topic-learning-flow` và artifact dữ liệu mẫu riêng. Các màn quiz/result/review/retry trong kế hoạch chưa được coi là đã triển khai hoặc nghiệm thu; bằng chứng hiện tại phía trên giữ nguyên phạm vi đã quan sát.
