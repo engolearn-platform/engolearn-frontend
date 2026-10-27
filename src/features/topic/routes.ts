@@ -13,8 +13,14 @@ import TopicVocabView from "./views/learning/TopicVocabView";
 import TopicExpressionsView from "./views/learning/TopicExpressionsView";
 import TopicPracticePlaceholderView from "./views/learning/TopicPracticePlaceholderView";
 import TopicManagementListView from "./views/management/TopicManagementListView";
+import SpeakingDemoView from "./views/learning/SpeakingDemoView";
 
 export const TopicRoutes: RouteObject[] = [
+  ...(import.meta.env.DEV ? [{
+    path: ROUTES.SPEAKING_DEMO,
+    Component: LearningLayout,
+    children: [{ path: "", Component: SpeakingDemoView }],
+  }] : []),
   {
     path: "/topics",
     Component: LearningLayout,

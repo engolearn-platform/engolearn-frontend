@@ -39,6 +39,7 @@ Tracking tiến trình xuyên suốt mọi chặng: `04-learning-progress.md`
 | 03 | `03-topic-vocab.md` | Từ vựng — `.../vocab/:vocabId` | Đã implement (mock, audio simulation) |
 | 04 | `04-learning-progress.md` | Contract progress dùng chung | Đã implement (mock PATCH) |
 | 05 | `05-topic-expressions.md` | Mẫu câu giao tiếp — `.../expressions` | Đã implement (mock, audio simulation) |
+| 06 | `06-speaking-demo.md` | Speaking route tạm — `/dev/speaking` | F01 dev slice, dùng API thật |
 
 ## Quy ước của package
 
