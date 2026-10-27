@@ -1,3 +1,5 @@
+> Cập nhật live: catalog/mine/detail và Context/Vocab/Expressions đã chạy với BE8080 + hồ sơ DB local thật. Route legacy đã redirect; bằng chứng hiện tại ở09-live-integration.md, bảng lịch sử phía dưới không chứng minh quiz/retry đã tích hợp.
+
 > Live integration: user cấm dùng mock/fixture. Launcher và fixture server đã gỡ. Các bằng chứng fixture bên dưới là lịch sử, không phải trạng thái tích hợp hiện tại. Xem [09-live-integration.md](09-live-integration.md).
 
 # Learner — trạng thái nguồn dữ liệu
