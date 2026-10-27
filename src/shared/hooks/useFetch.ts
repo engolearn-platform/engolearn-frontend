@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface NormalizedError {
   message: string;
+  status?: number;
+  code?: string;
 }
 
 export interface FetchState<T> {
@@ -12,7 +14,12 @@ export interface FetchState<T> {
 
 function normalizeError(error: unknown): NormalizedError {
   if (error instanceof Error) {
-    return { message: error.message };
+    const metadata = error as Error & { status?: unknown; code?: unknown };
+    return {
+      message: error.message,
+      ...(typeof metadata.status === "number" ? { status: metadata.status } : {}),
+      ...(typeof metadata.code === "string" ? { code: metadata.code } : {}),
+    };
   }
   if (typeof error === "string") {
     return { message: error };

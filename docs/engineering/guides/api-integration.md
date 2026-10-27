@@ -25,19 +25,14 @@ normalization to `{ message }`. Usage contract (`C-06`):
   `useCallback`, honoring `signal`.
 - Views consume the hook — they never call `fetch`.
 
-Grounded example — mock hook ([`src/features/topic/hooks/useTopicDetail.ts`](../../../src/features/topic/hooks/useTopicDetail.ts)):
+Grounded example — topic detail now calls the target API through a feature service (stage2):
 
 ```ts
 export function useTopicDetail(topicId: string) {
-  const fetchTopicDetail = useCallback(
-    async (signal: AbortSignal): Promise<TopicDetail> => {
-      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-      return { ...MOCK_TOPIC_DETAIL, id: topicId };   // EXISTING mock body — no network
-    },
+  return useFetch(useCallback(
+    (signal: AbortSignal) => topicCatalogService.detail(topicId, signal),
     [topicId],
-  );
-  const { data, loading, error, refetch } = useFetch<TopicDetail>(fetchTopicDetail);
-  return { data, loading, error, refetch };
+  ));
 }
 ```
 
@@ -161,3 +156,8 @@ Native API tests: `npm run test:topic-api`; phạm vi và giới hạn ở [test
 - Hardcoding guessed endpoints/DTOs before a contract exists (**UNKNOWN** → BLOCKED).
 - New mock hooks that skip `signal` handling (abort safety, §1 notes).
 - Leaving a 🟡 row 🟡 after wiring real data (doc-code drift, AGENTS.md tie-break).
+
+## Chặng2: các hook đã chuyển
+
+useTopicDetail/useTopicProgress và useTopicCatalog dùng topicCatalogService; viewer được nạp một lần ở TopicViewerLayout. shared useFetch giữ code/status bên cạnh message, không import domain error vào shared.
+Default endpoint vẫn là /api/v1 qua proxy BE. Dữ liệu thiếu contract được báo lỗi; không có chuyển ngầm sang mock. Preview riêng và giới hạn: docs/handout/topic-learning/verification.md.

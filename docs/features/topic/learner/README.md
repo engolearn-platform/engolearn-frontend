@@ -1,52 +1,32 @@
-# Learner docs — Luồng học của người học
+# Learner docs — Học theo chủ đề
 
-> Package tài liệu cho các màn **learner** (người học) của Topic.
-> Đối tác admin (soạn nội dung): `docs/features/admin/01–04`.
-> Trạng thái mock ↔ API tập trung: `00-mock-api-status.md`.
+## Catalog và chi tiết (chặng2)
 
-## Luồng học & route
+- /topics: Khám phá các topic chưa từng bắt đầu; query q/level/sort.
+- /my-topics: Đang học / Đã hoàn thành; query tab.
+- /topics/:topicId: outline + quyền thao tác + progress. Quay lại giữ nguồn/bộ lọc.
+- /topics/:topicId/attempts/:attemptId: điểm vào lượt thật, không dùng provider/mock cũ. UI học chi tiết ở chặng3–5.
 
-```text
-/topics                        TopicPage (danh sách chủ đề)
-  │ back / chọn chủ đề
-  ▼
-/topics/:topicId               01-topic-detail.md — Chi tiết chủ đề
-  │ "Tiếp tục học" (sidebar + từng unit)
-  ▼
-/topics/:topicId/context       02-topic-context.md — Bối cảnh & Hội thoại (CONTEXT)
-  │ CTA "Bắt đầu học từ vựng" / footer Tiếp tục / sidebar vocab
-  ▼
-/topics/:topicId/vocab/:vocabId  03-topic-vocab.md — Từ vựng (VOCAB, paging theo vocabOrder)
-  │ hết list → tạm về /topics (sẽ sang Expressions)
-▼
-/topics/:topicId/expressions    05-topic-expressions.md — Mẫu câu giao tiếp (SENTENCES)
-   │ CTA "Chuyển sang Luyện tập (Quiz)" / footer Tiếp tục (chưa có màn Practice)
-   ▼
-(plần luyện tập — EXERCISES, chưa có màn)
-/topics/:topicId/practice       (planned)
-```
+## Package
 
-Tracking tiến trình xuyên suốt mọi chặng: `04-learning-progress.md`
-(`furthest_reached`, PATCH mock, rule hoàn thành, sidebar states).
+| File | Nội dung | Trạng thái |
+| --- | --- | --- |
+| 00-mock-api-status.md | Bảng nguồn dữ liệu hiện tại | Cập nhật cùng code |
+| 01-topic-detail.md | Chi tiết standalone, actions, sidebar progress | Client thật, BE chưa liên thông |
+| 02-topic-context.md | Màn Context legacy | Vẫn mock, chuyển ở chặng3 |
+| 03-topic-vocab.md | Màn Vocab legacy | Vẫn mock, chuyển ở chặng3 |
+| 04-learning-progress.md | Provider tiến độ legacy | Vẫn mock; không áp dụng catalog/detail mới |
+| 05-topic-expressions.md | Màn Expressions legacy | Vẫn mock, chuyển ở chặng3 |
+| 06-api-foundation.md | Contract + typed client | Chặng1 hoàn thành |
+| 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Sẵn sàng review |
 
-## Danh sách docs
+## Luồng legacy còn tồn tại
 
-| # | File | Màn / Route | Trạng thái code |
-|---|------|-------------|-----------------|
-| 00 | `00-mock-api-status.md` | Bảng mock ↔ API toàn package | — |
-| 01 | `01-topic-detail.md` | Chi tiết chủ đề — `/topics/:topicId` | Đã implement (mock) |
-| 02 | `02-topic-context.md` | Bối cảnh & hội thoại — `.../context` | Đã implement (mock, audio noop) |
-| 03 | `03-topic-vocab.md` | Từ vựng — `.../vocab/:vocabId` | Đã implement (mock, audio simulation) |
-| 04 | `04-learning-progress.md` | Contract progress dùng chung | Đã implement (mock PATCH) |
-| 06 | `06-api-foundation.md` | Target contract and typed client; no view adoption yet | Stage1, BE pending |
-| 05 | `05-topic-expressions.md` | Mẫu câu giao tiếp — `.../expressions` | Đã implement (mock, audio simulation) |
+Các route .../context, .../vocab/:vocabId, .../expressions và .../practice giữ nguyên để tránh sửa khung học trước checkpoint3.
+Các action ở ba màn mới không dẫn vào chúng. Khung mới sẽ dùng header progress, dropdown nav lồng cấp và nút quay về frontier theo thiết kế Từ vựng đã duyệt.
+Reuse learning views cho review/retry ở chặng5, với đúng mode và version của attempt.
 
-## Quy ước của package
+## Quy ước
 
-- Mỗi doc theo khung: nguồn Stitch → route & trigger → bản đồ component →
-  state → điểm UI-only → khác biệt vs Stitch → responsive → checklist refactor.
-- Shell dùng chung (`ContextTopBar`, `LessonProgressCard`,
-  `TopicStructureNav`, `MemoryTipCard`, `LearningFooterNav`) không có doc
-  riêng — ghi trong mục reuse của từng doc.
-- Sửa view learner nào thì cập nhật doc tương ứng + bảng `00` (rule trong
-  `AGENTS.md`).
+Mỗi thay đổi cập nhật feature doc và bảng00 trong cùng commit.
+Kiểm chứng: [verification](../../../handout/topic-learning/verification.md).

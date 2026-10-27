@@ -157,9 +157,23 @@ GET old progress đang dùng422 khi không có learner cần đổi theo401 và 
 
 ## Thứ tự BE và tiêu chí bàn giao
 
-1. Viewer provider + discover/mine/detail/progress: cho chặng2 FE.
-2. LEARN attempt start/read/content/advance/access và version/recency/ownership: cho chặng3.
+1. Viewer provider + discover/mine/detail/progress, LEARN start/read/access: cho chặng2 FE (đến điểm vào attempt).
+2. LEARN content/advance và khung học; version/recency/ownership: cho chặng3.
 3. Quiz read/answer, idempotency/revision/atomic completion + result: cho chặng4.
 4. Review + ITEM/TOPIC retry/session + version mới/hidden/unpublished: cho chặng5.
 Không cần seed user collection. Dữ liệu topic/attempt/progress có thể seed cho provider cố định.
 Chạy acceptance trong [verification.md](verification.md), bổ sung kiểm thử BE về transaction/concurrency/ownership. FE mock tests không thay các kiểm thử này.
+
+
+## FE chặng2 — cách sử dụng hiện tại
+
+Ba màn mới đã dùng client thật qua topic-catalog.service.ts: viewer, browse/mine, detail và progress. Không đổi schema/endpoint của contract chặng1.
+discover gửi keyword/level CEFR/sort, limit12 và cursor; level=mine chỉ tồn tại trên URL FE, được đổi thành CEFR của viewer trước request.
+mine gửi status IN_PROGRESS hoặc COMPLETED; FE lấy counts từ cùng response, không gọi riêng hai lần.
+FE kiểm tra shape các trường cần render; thiếu total/counts/actions/metrics sẽ là CONTRACT_MISMATCH, không fallback legacy/mock.
+Mọi useFetch error giữ status/code để UI phân biệt404/401/409 với lỗi hạ tầng.
+
+Để kiểm tra nút Bắt đầu học chặng2 cần cả POST startAttempt và GET attempt/access, ngoài nhóm GET catalog.
+Start chỉ chuyển khỏi detail khi phản hồi xác nhận đúng topicId/topicItemId/attemptId; mutation identity giữ trong sessionStorage theo viewer+action+body sau lỗi mạng.
+Các action continue/review/retry đã mang đúng attempt/session IDs tới điểm vào lượt học. Khung nội dung/quiz/result đầy đủ triển khai ở các chặng tiếp theo.
+Browser QA dùng server fixture riêng trên4317 + Vite4318; đây không phải bằng chứng BE đã đáp ứng nghiệp vụ.

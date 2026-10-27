@@ -1,26 +1,19 @@
-# Learner — Bảng trạng thái mock ↔ API
+# Learner — trạng thái nguồn dữ liệu
 
-> Một bảng duy nhất để biết package learner còn bao nhiêu việc khi backend
-> xong. Cập nhật bảng này (và doc tương ứng) mỗi khi đấu nối API thật.
-> Legend: ✅ thật · 🟡 mock · ⬜ chưa có màn.
+Ngày2026-10-27, sau chặng2. “Client thật” nghĩa là code gọi endpoint thật; không đồng nghĩa BE target đã chạy thành công.
+Không fallback mock trong ứng dụng mặc định. Fixture chỉ chạy bằng lệnh npm run dev:topic-fixtures.
 
-| Màn (doc) | Dữ liệu nội dung | Audio/TTS | Progress | Ghi chú |
-|-----------|------------------|-----------|----------|---------|
-| Detail (`01`) | 🟡 `useTopicDetail` mock 5 units | — (không có audio) | 🟡 `progressPercent`/`stats` mock | CTA `onStartUnit` bỏ qua `unitId`, luôn vào context |
-| Context (`02`) | 🟡 `useTopicContext` mock | 🟡 handlers noop | ⬜ chưa báo CONTEXT (chờ chốt rule) | `getFirstVocabId()` đọc mock `VOCAB_ORDER` |
-| Vocab (`03`) | 🟡 `useTopicVocab` mock 3 từ (ảnh 2 từ phụ là picsum) | 🟡 simulation 900ms | 🟡 PATCH mock (log console) | Cuối list → `.../expressions`; sidebar đủ 4 stage (shared provider) |
-| Progress (`04`) | — | — | 🟡 GET initial mock + PATCH mock | Forward-only đã verify Playwright |
-| Expressions (`05`) | 🟡 `useTopicExpressions` mock 3 purposes (2 ví dụ + 1 sequence) | 🟡 simulation 900ms | 🟡 PATCH mock (log console, `SENTENCES` stage, theo recipe `04` §6) | Sau stage VOCAB → [.../expressions](./05-topic-expressions.md). Continue + sidebar Practice → `.../practice` (placeholder). |
-| Practice (EXERCISES) | ⬜ placeholder (`TopicPracticePlaceholderView`, EmptyState) | — | 🟡 `setCurrentStage("EXERCISES")` để sidebar highlight đúng | Chưa có UI Stitch — thay bằng view thật khi làm màn Practice |
+| Màn | Nội dung | Tiến độ/quyền | Trạng thái kiểm chứng |
+| --- | --- | --- | --- |
+| Khám phá | GET /topics qua client | Viewer + startAvailability từ BE | Browser fixture; BE chưa kết nối |
+| Chủ đề của tôi | GET /topics/mine, counts cả hai tab | Trạng thái và thứ tự server | Browser fixture; guest không gọi mine |
+| Chi tiết | GET /topics/{id}, không preview từ/mẫu câu | GET progress riêng; actions từ detail | Browser fixture; lỗi progress không giả0% |
+| Điểm vào attempt | GET attempt hoặc review theo mode | POST access cập nhật recency, không đổi vị trí | Hiển thị lượt thật; chưa có khung học đầy đủ |
+| Context legacy | Mock useTopicContext | Provider mock | Chưa chuyển, chặng3 |
+| Vocab legacy | Mock useTopicVocab; audio giả lập | Provider mock | Chưa chuyển, chặng3 |
+| Expressions legacy | Mock useTopicExpressions; audio giả lập | Provider mock | Chưa chuyển, chặng3 |
+| Quiz legacy | Placeholder | Provider mock | Thiết kế mới đã duyệt; chặng4 |
+| Result/review/retry UI đầy đủ | Chưa triển khai | Contract/client đã có | Chặng4–5 |
 
-## Foundation mới — chặng 1 (2026-10-27)
-
-Contract và client mới nằm ở [06-api-foundation.md](06-api-foundation.md); bộ bàn giao ở [backend-handoff.md](../../../handout/topic-learning/backend-handoff.md).
-Chặng này chưa chuyển view/hook nào sang client mới: các hàng mock phía trên vẫn giữ nguyên. Có client không đồng nghĩa đã nối API thật. BE target đang chờ triển khai; test identity chỉ mock trong test FE.
-
-## Thứ tự đấu nối đề xuất (khi có backend)
-
-1. GET nội dung 3 màn hiện có (giữ khung `Loading`/`EmptyState` đã có sẵn).
-2. GET initial progress + PATCH thật (`04` §6.6 — chỉ sửa 2 file, views giữ nguyên).
-3. TTS cho Context dialogue + Vocab (thay ruột handler, giữ props).
-4. Màn Expressions + Practice mới theo recipe `04` §6.
+Nguồn chuẩn: [API foundation](06-api-foundation.md), [catalog](07-topic-catalog.md), [bàn giao BE](../../../handout/topic-learning/backend-handoff.md).
+Các ghi chú “đã verify Playwright” trong tài liệu legacy không phải bằng chứng kiểm thử của repo. Chặng2 dùng browser tooling để kiểm tra fixture thủ công; không thêm Playwright dependency/config.

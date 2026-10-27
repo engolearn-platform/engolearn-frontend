@@ -61,3 +61,7 @@ PROPOSED) owns the scope questions.
   FAIL ([code-validation.md](../code-validation.md)).
 - When the first guard lands: same-change updates required to this file (§1→§3 status flip),
   `DEV-06` remediation entry, `D6` status, and affected feature docs.
+
+## Topic viewer (chặng2, 2026-10-27)
+
+TopicViewerLayout đọc GET /topic-learning/viewer và cung cấp kind/learnerId/level cho feature. Đây không phải login, session store hay auth guard. Quyền thao tác hiển thị theo BE; BE vẫn chịu trách nhiệm ownership/authorization. Chưa thêm user collection, token hoặc header giả. Guest không gọi mine/progress. Lỗi viewer là lỗi, không bị coi là guest. Đổi viewer/level remount phạm vi dữ liệu của catalog/detail.

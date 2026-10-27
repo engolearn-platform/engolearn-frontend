@@ -10,6 +10,8 @@ export const ROUTES = {
   LEARNING_PATH_DAY_PRACTICE: "/learning-paths/:pathId/weeks/:weekNo/days/:dayNo/practice",
   LEARNING_PATH_DAY_RESULT: "/learning-paths/:pathId/weeks/:weekNo/days/:dayNo/result",
   TOPICS: "/topics",
+  MY_TOPICS: "/my-topics",
+  TOPIC_ATTEMPT: "/topics/:topicId/attempts/:attemptId",
   TOPIC_DETAIL: "/topics/:topicId",
   // TEMP URL for testing the Topic Item context screen — final URL TBD,
   // see docs/handout/topic-item-context-url-note.md.

@@ -45,3 +45,8 @@ Generated-type checks validate local refs and operation metadata; no external fu
 Record actual command outcomes, existing/new warnings, UI scenarios run/skipped and BE dependencies in [verification.md](../../handout/topic-learning/verification.md).
 Only call a screen integrated when its hook/view calls the real endpoint and that has been exercised.
 The historical Playwright wording in learner docs remains unverified: this task has not added or run Playwright.
+
+## Chặng2: state và browser fixture
+
+npm run test:topic chạy cả33 API checks và12 catalog/state/mutation checks (45 tests). Native Node alias hook chỉ dùng trong test để đọc module TypeScript; không thêm dependency hoặc store.
+Browser QA dùng CUA với npm run dev:topic-fixtures (API4317, UI4318), tách khỏi npm run dev mặc định. Fixture không phải BE implementation và không chứng minh auth/transactions. Bằng chứng cụ thể và các phần chưa chạy ghi ở verification.md. Chưa có React/browser test suite được cấu hình trong repo.

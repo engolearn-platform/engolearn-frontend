@@ -1,40 +1,12 @@
-import { cn } from "@shared/utils/cn";
-import { useState } from "react";
+import { TOPIC_LEVELS } from "@features/topic/utils/topic-catalog";
+import type { CefrLevelDto } from "@features/topic/types/topic-api.types";
 
-type Level = {
-  code: string;
-  label: string;
-  selected?: boolean;
-};
-
-const levels: Level[] = [
-  { code: "A1", label: "A1 (Cơ bản)", selected: true },
-  { code: "A2", label: "A2 (Sơ trung cấp)" },
-  { code: "B1", label: "B1 (Trung cấp)" },
-  { code: "B2", label: "B2 (Cao trung cấp)" },
-];
-
-export default function TopicFilterChips() {
-  const [selected, setSelected] = useState("A1");
-
-  return (
-    <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-hide">
-      {levels.map((l) => (
-        <button
-          key={l.code}
-          className={cn(
-            "px-4 py-2 rounded-full border text-label-lg font-semibold whitespace-nowrap transition-all shadow-2xs cursor-pointer",
-            selected === l.code
-              ? "border-primary bg-primary text-white shadow-xs"
-              : "border-outline-variant/60 bg-surface text-tertiary hover:bg-surface-variant/50 hover:border-outline-variant"
-            )}
-            onClick={() => {
-              setSelected(l.code);
-            }}
-        >
-          {l.label}
-        </button>
-      ))}
-    </div>
-  );
+export default function TopicFilterChips({ selected, currentLevel, onChange }: { selected: string; currentLevel: CefrLevelDto | null; onChange: (value: string) => void }) {
+  const levels = [{ value: "all", label: "Tất cả" }, ...(currentLevel ? [{ value: "mine", label: "Đúng level của bạn (" + currentLevel + ")" }] : []), ...TOPIC_LEVELS.map(value => ({ value, label: value }))];
+  return <div role="group" aria-label="Lọc theo trình độ" className="flex flex-wrap items-center gap-2">
+    <span className="mr-1 text-label-lg text-on-surface-variant">Trình độ:</span>
+    {levels.map(level => <button type="button" key={level.value} aria-pressed={selected === level.value} onClick={() => onChange(level.value)}
+      className={"min-h-11 rounded-full px-4 py-2 text-label-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary " +
+        (selected === level.value ? "bg-primary text-on-primary" : "bg-surface-container-low text-on-surface-variant hover:bg-primary/10")}>{level.label}</button>)}
+  </div>;
 }

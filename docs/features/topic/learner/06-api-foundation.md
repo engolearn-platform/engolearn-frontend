@@ -1,6 +1,6 @@
 # Learner — API foundation (stage 1)
 
-Date: 2026-10-27. Status: client/contract implemented; views and BE integration pending review.
+Date: 2026-10-27. Historical stage1 status: client/contract implemented. Stage2 adoption is recorded in 07-topic-catalog.md; BE integration remains pending.
 Sources: [OpenAPI](../../../handout/topic-learning/api.openapi.yaml), [handoff](../../../handout/topic-learning/backend-handoff.md), [verification](../../../handout/topic-learning/verification.md).
 
 ## Routes, components and state
