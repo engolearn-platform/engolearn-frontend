@@ -13,7 +13,7 @@ UI test có server fixture riêng trong tests/support, chỉ được dùng khi 
 - /topics: Khám phá, URL q/level/sort. level=mine tương ứng level hiện tại; guest không có lựa chọn này.
 - /my-topics?tab=in-progress hoặc completed: hai nhóm, có số đếm, không tìm kiếm/lọc level.
 - /topics/:topicId?from=<catalog URL>: chi tiết standalone, quay lại đúng trang nguồn và bộ lọc. from chỉ chấp nhận hai route nội bộ trên.
-- /topics/:topicId/attempts/:attemptId?mode=learn hoặc review&from=...: điểm vào lượt học, lấy đúng attempt/position/version thật. Chặng2 chỉ hiển thị thông tin lượt đã lưu; khung học/advance/quiz hoàn thiện ở chặng3–5, không chuyển người học vào mock cũ.
+- /topics/:topicId/attempts/:attemptId?mode=learn hoặc review&from=...: điểm vào lượt học, lấy đúng attempt/position/version thật. Chặng2 chỉ hiển thị thông tin lượt đã lưu. Chặng3 đã nối khung học/advance (08-attempt-learning.md); quiz/review đầy đủ ở chặng4–5. Không chuyển người học vào mock cũ.
 
 TopicViewerLayout ở feature sở hữu provider. TopicCatalogLayout tái sử dụng sidebar/bottom-nav app shell qua props; detail không gắn mock progress provider cũ.
 Components: TopicCard (cả thẻ là Link), TopicFilterChips controlled, TopicState, TopicItemCard; không preview nội dung từ/mẫu câu trong outline.

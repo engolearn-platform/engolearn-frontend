@@ -1,3 +1,4 @@
+import TopicLessonView from "./TopicLessonView";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, BookmarkCheck } from "lucide-react";
@@ -7,7 +8,7 @@ import { topicApi } from "@features/topic/services/topic-api.service";
 import { TopicState, TopicProgressBar } from "@features/topic/components/learning/catalog/TopicState";
 import { safeTopicOrigin, topicDetailPath, topicPositionLabel, topicErrorMessage } from "@features/topic/utils/topic-catalog";
 
-export default function TopicAttemptEntryView() {
+function TopicAttemptReceiptView() {
   const { topicId = "", attemptId = "" } = useParams();
   const [parameters] = useSearchParams();
   const origin = safeTopicOrigin(parameters.get("from"));
@@ -38,4 +39,11 @@ export default function TopicAttemptEntryView() {
         </section>}
     </div>
   </main>;
+}
+
+export default function TopicAttemptEntryView() {
+  const { topicId = "", attemptId = "" } = useParams();
+  const [parameters] = useSearchParams();
+  return parameters.get("mode") === "review" ? <TopicAttemptReceiptView key={attemptId} /> :
+    <TopicLessonView key={topicId + ":" + attemptId} topicId={topicId} attemptId={attemptId} origin={safeTopicOrigin(parameters.get("from"))} />;
 }

@@ -177,3 +177,12 @@ Mọi useFetch error giữ status/code để UI phân biệt404/401/409 với l�
 Start chỉ chuyển khỏi detail khi phản hồi xác nhận đúng topicId/topicItemId/attemptId; mutation identity giữ trong sessionStorage theo viewer+action+body sau lỗi mạng.
 Các action continue/review/retry đã mang đúng attempt/session IDs tới điểm vào lượt học. Khung nội dung/quiz/result đầy đủ triển khai ở các chặng tiếp theo.
 Browser QA dùng server fixture riêng trên4317 + Vite4318; đây không phải bằng chứng BE đã đáp ứng nghiệp vụ.
+
+## FE chặng3 — khung học
+
+Contract/schema giữ nguyên. Luồng LEARN dùng GET attempt + GET content, đối chiếu topic/item/version/revision; header chỉ dùng percent BE trả.
+Tiếp tục gửi POST advance đúng source stage/index/revision và giữ Idempotency-Key qua lỗi mạng. 409 STATE_CHANGED tải lại; không tự phát mutation lần nữa.
+Vị trí đang xem lưu trong query stage/index và không ghi BE. Nav chỉ mở bước <= frontier, nút quay về frontier không gửi advance. Không có PATCH progress legacy.
+Context/Vocab/Expressions dùng nội dung snapshot, optional media/tips không được tự dựng. Quick check local không chặn học.
+FE chặng3 dừng ở cửa vào quiz; answer/result ở chặng4, review UI đầy đủ ở chặng5.
+Kiểm tra BE ngày2026-10-27: viewer vẫn404, topics200 còn payload cũ. Chưa chạy integration/browser khung học; không mở rộng fixture chặng2.

@@ -7,7 +7,7 @@ Contract chuẩn: [api.openapi.yaml](api.openapi.yaml); cách BE thực hiện: 
 
 - Contract/client: PASS chặng 1, sẵn sàng review; 17 operations, 51 schemas. Chặng 2 đã được user duyệt và triển khai.
 - Các màn hiện có chưa được chuyển sang API mới trong chặng1.
-- Chặng2 đã có FE catalog/detail; xem báo cáo chặng2 phía dưới. Chặng3–5 chưa triển khai.
+- Chặng2 catalog/detail và chặng3 khung học FE đã triển khai; xem báo cáo phía dưới. Chặng4–5 chưa triển khai.
 - BE target contract: chưa triển khai/xác minh; không sửa source BE.
 - Auth/ownership nhiều user thật: chưa kiểm chứng; BE hiện fixed learner C2.
 - User/level trong FE: chỉ mock fetch ở test, không bật user giả trong ứng dụng thật.
@@ -91,3 +91,26 @@ GET localhost:8080/api/v1/topic-learning/viewer và /topics?limit=1 không kết
 Vì vậy chưa có bằng chứng tích hợp thật, auth/ownership/server idempotency/transactions. Không sửa source BE hoặc contract để làm test qua.
 Chạy npm run dev:topic-fixtures để preview riêng ở http://127.0.0.1:4318/topics; API fixture4317. Đây là dữ liệu thử tách biệt, không user collection và không runtime fallback.
 npm run dev mặc định vẫn dùng proxy BE hiện tại. Stop preview bằng Ctrl+C.
+
+## Chặng3 — khung học và nội dung (2026-10-27)
+
+Status: FE implementation hoàn tất, chờ review và tích hợp BE. Không sửa contract/generated DTO, không sửa BE, không mở rộng fixture.
+
+- LEARN/RETRY entry dùng GET attempt + GET content theo frozen version; kiểm tra topic/item/version và frontier.
+- Header hiển thị tiến độ BE của lượt học; không còn hai progress card legacy trong luồng mới.
+- Sidebar bốn phần có dropdown, khóa bước tương lai; nút quay lại vị trí đang học. Query stage/index giữ vị trí xem riêng, không ghi tiến độ.
+- Context/Vocab/Expressions hiển thị nội dung API; mỗi purpose là một bước. Audio HTTP(S) thật, không autoplay; thiếu media/tips thì ẩn. Quick check optional/local, không chặn Tiếp tục.
+- Advance gửi revision/source + khóa idempotency giữ qua lỗi mạng. Chống click đồng thời; không update optimistic; 409 tải lại snapshot.
+- Dừng tại cửa vào Practice. Quiz/result chặng4, review đầy đủ chặng5; route legacy vẫn giữ để tránh đổi bookmark ngoài scope.
+
+### Kiểm chứng vừa đủ
+- npm run test:topic: PASS49, 0 fail/skip. Chỉ thêm4 tests critical;45 tests cũ giữ nguyên. Kiểm tra thứ tự/flatten, khóa bước tương lai, query không đổi frontier, identity/version/frontier không hợp lệ.
+- npm run build: PASS sau khi sửa Array.at không tương thích target TS hiện tại; cảnh báo bundle >500kB có sẵn.
+- npm run lint: PASS 0 errors /70 warnings, không warning mới. Kiểm tra lại riêng view sau sửa truy cập mảng: PASS.
+- Contract/type drift: PASS trong test:topic; api.openapi.yaml và generated DTO giữ nguyên.
+- BE GET viewer:404; GET topics?limit=1:200 nhưng keys vẫn items,nextCursor,hasMore. Không gửi mutation lên BE thật.
+- Không chạy browser flow, audio, reload thực, conflict/concurrency hoặc BE advance. Fixture chặng2 không được mở rộng để giả định chặng3 đã tích hợp.
+- Native tests không chứng minh authorization/ownership server hoặc hook/component/browser behavior.
+
+Chi tiết triển khai: [08-attempt-learning.md](../../features/topic/learner/08-attempt-learning.md).
+Bước tiếp theo: sau khi BE cung cấp viewer/catalog/start/read/content/advance/access, chạy một lượt tích hợp Context -> Vocab -> Expressions -> cửa vào Practice, xem lại/quay về frontier/reload. Không ghi PASS trước khi thực chạy.

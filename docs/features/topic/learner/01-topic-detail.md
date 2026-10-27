@@ -25,7 +25,7 @@ Guest chỉ xem outline, không gọi progress; sidebar mời đăng nhập, kh�
 Nút chính ưu tiên continue cho item đang học, rồi start item đến lượt. Item chưa đến lượt có nút disabled và lý do.
 Start chỉ chuyển route sau khi BE trả attempt hợp lệ đúng topic/item; hoàn thành0 item vẫn chuyển topic sang mine.
 Review dùng completedAttemptId, không tạo LEARN/RETRY. Retry thay session phải có Dialog và ID phiên được xác nhận.
-Trong chặng2, đích /topics/:topicId/attempts/:attemptId là điểm vào hiển thị attempt/position/version thực đã lưu. Chưa có content navigation/advance/quiz/review UI đầy đủ; các phần đó ở chặng3–5. Không chuyển sang màn mock cũ.
+Trong chặng2, đích /topics/:topicId/attempts/:attemptId là điểm vào hiển thị attempt/position/version thực đã lưu. Chặng3 đã thay receipt LEARN bằng content navigation/advance theo [08-attempt-learning.md](08-attempt-learning.md). Quiz/result và review đầy đủ ở chặng4–5. Không chuyển sang màn mock cũ.
 
 ## Responsive và xác minh
 
