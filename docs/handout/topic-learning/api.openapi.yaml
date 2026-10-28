@@ -1123,6 +1123,9 @@
           "409": {
             "$ref": "#/components/responses/Problem409"
           },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
+          },
           "422": {
             "$ref": "#/components/responses/Problem422"
           },
@@ -1468,6 +1471,127 @@
           },
           "409": {
             "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topic-attempts/{attemptId}/completion": {
+      "post": {
+        "operationId": "completeAttempt",
+        "summary": "Explicitly recover completion of an owned Slice A attempt whose quizzes are already correct",
+        "description": "Compatibility recovery only: require the current revision and every pinned formal quiz already recorded correct. Atomically publish COMPLETED, position:null, completedAt and immutable result counts with the receipt; never add a quiz submission, reset first-try history or repair on GET. Replay the same key and identical body after an uncertain response before revision validation. Unanswered quizzes return409 ATTEMPT_NOT_COMPLETED; stale revision409 STATE_CHANGED; hidden owned item410 ITEM_HIDDEN; foreign/nonexistent404. Original quiz answer receipts remain stable; after recovery FE re-reads authoritative attempt/result instead of repeatedly replaying the old Slice A answer.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteAttemptRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AttemptDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "contextCompleted": {
+                    "value": {
+                      "data": {
+                        "attemptId": "attempt-001",
+                        "topicId": "66f1a2b3c4d5e6f708091a01",
+                        "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                        "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                        "version": 1,
+                        "mode": "LEARN",
+                        "status": "IN_PROGRESS",
+                        "revision": 1,
+                        "position": {
+                          "stage": "VOCAB",
+                          "itemIndex": 0
+                        },
+                        "progress": {
+                          "completedStepCount": 1,
+                          "totalStepCount": 11,
+                          "percent": 9,
+                          "learnedVocabularyCount": 0,
+                          "learnedExpressionCount": 0,
+                          "completedQuizCount": 0,
+                          "totalQuizCount": 6
+                        },
+                        "retrySessionId": null,
+                        "startedAt": "2026-10-27T10:00:00Z",
+                        "lastAccessedAt": "2026-10-27T10:00:00Z",
+                        "completedAt": null
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
           },
           "422": {
             "$ref": "#/components/responses/Problem422"
@@ -3580,6 +3704,19 @@
           "lastAccessedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CompleteAttemptRequestDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       }

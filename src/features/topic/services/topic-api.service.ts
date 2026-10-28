@@ -4,6 +4,7 @@ import type {
   AnswerQuizRequestDto,
   AttemptDto,
   CefrLevelDto,
+  CompleteAttemptRequestDto,
   CurrentQuizDto,
   ItemResultDto,
   ItemReviewDto,
@@ -80,6 +81,8 @@ export function createTopicApi(options: TopicApiClientOptions = {}) {
       get<CurrentQuizDto>("/topic-attempts/" + idSegment(attemptId) + "/quiz", signal),
     answerQuiz: (attemptId: string, quizId: string, body: AnswerQuizRequestDto, mutation: TopicMutationOptions) =>
       post<QuizAnswerDto>("/topic-attempts/" + idSegment(attemptId) + "/quizzes/" + idSegment(quizId) + "/answers", body, mutation),
+    completeAttempt: (attemptId: string, body: CompleteAttemptRequestDto, mutation: TopicMutationOptions) =>
+      post<AttemptDto>("/topic-attempts/" + idSegment(attemptId) + "/completion", body, mutation),
     getItemResult: (attemptId: string, signal?: AbortSignal) =>
       get<ItemResultDto>("/topic-attempts/" + idSegment(attemptId) + "/result", signal),
     getItemReview: (attemptId: string, signal?: AbortSignal) =>

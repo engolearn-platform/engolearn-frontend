@@ -412,3 +412,7 @@ export type ProblemDto = {
 export type AccessReceiptDto = {
   "lastAccessedAt": string;
 };
+
+export type CompleteAttemptRequestDto = {
+  "revision": number;
+};
