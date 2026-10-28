@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
+import { TopicRetryDialog } from "@features/topic/components/learning/attempt/TopicRetryDialog";
 import { useTopicViewer } from "@features/topic/hooks/topic-viewer.context";
 import { useTopicDetail, useTopicProgress } from "@features/topic/hooks/useTopicDetail";
 import { useTopicLaunch } from "@features/topic/hooks/useTopicLaunch";
@@ -66,12 +66,13 @@ export default function TopicDetailView() {
                 {next && <Button type="button" disabled={launch.busy} onClick={() => launch.choose(next.actions.continue.allowed ? "continue" : "start", next)} className="min-h-14 w-full rounded-xl text-base font-semibold">{launch.busy ? "Đang mở…" : (next.actions.continue.allowed ? "Tiếp tục học" : "Bắt đầu học") + " (Bài " + (nextIndex + 1) + ")"}</Button>}
                 {!next && data.progress?.status === "COMPLETED" && <p className="text-body-md font-medium text-primary">Bạn đã hoàn thành chủ đề này.</p>}
                 {data.progress?.status === "COMPLETED" && <Button asChild className="min-h-12 w-full rounded-xl"><Link to={topicResultPath(topicId, origin)}>Xem tổng kết chủ đề</Link></Button>}
+                {data.retrySession?.status === "IN_PROGRESS" && (data.retrySession.currentAttemptId || data.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 w-full rounded-xl">Tiếp tục lượt làm lại</Button>}
                 {data.retryAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("topicRetry")} className="min-h-12 w-full rounded-xl">Làm lại toàn bộ chủ đề</Button>}
                 <p className="rounded-xl bg-surface p-4 text-label-sm leading-relaxed text-on-surface-variant">Bạn có thể xem chi tiết mọi chủ đề. Điều kiện level chỉ áp dụng khi bắt đầu lượt học hoặc lượt làm lại mới.</p>
               </section>}
           </aside>
         </div>}
     </main>
-    <Dialog open={!!launch.confirmation} onOpenChange={open => { if (!open) launch.cancel(); }}><DialogContent><DialogHeader><DialogTitle>Thay thế lượt làm lại đang dở?</DialogTitle><DialogDescription>Lượt làm lại đang dở sẽ dừng để bắt đầu lượt mới. Các kết quả đã hoàn thành vẫn được giữ.</DialogDescription></DialogHeader><DialogFooter><Button type="button" variant="outline" className="min-h-12" onClick={launch.cancel}>Giữ lượt hiện tại</Button><Button type="button" className="min-h-12" onClick={launch.confirm}>Thay thế và bắt đầu lại</Button></DialogFooter></DialogContent></Dialog>
+    <TopicRetryDialog open={!!launch.confirmation} replacing={!!launch.confirmation?.observedRetrySessionId} cancel={launch.cancel} confirm={launch.confirm} />
   </div>;
 }

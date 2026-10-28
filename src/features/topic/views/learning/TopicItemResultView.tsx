@@ -30,12 +30,14 @@ function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId
           <div className="flex flex-wrap gap-3">
             {data.item?.actions.review.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("review", data.item)} className="min-h-12 rounded-xl"><BookOpen className="size-5" aria-hidden="true" />Xem lại</Button>}
             {data.item?.actions.retry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("retry", data.item)} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại bài này</Button>}
+            {data.item?.actions.resumeRetry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("resumeRetry", data.item)} className="min-h-12 rounded-xl">Tiếp tục làm lại</Button>}
+            {data.item?.actions.restartRetry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("restartRetry", data.item)} className="min-h-12 rounded-xl">Làm lại từ đầu</Button>}
             <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={detailPath}>Về chi tiết chủ đề</Link></Button>
           </div>
         </section>
       </>}
     </div>
-    <TopicRetryDialog open={!!launch.confirmation} cancel={launch.cancel} confirm={launch.confirm} />
+    <TopicRetryDialog open={!!launch.confirmation} replacing={!!launch.confirmation?.observedRetrySessionId} cancel={launch.cancel} confirm={launch.confirm} />
   </main>;
 }
 

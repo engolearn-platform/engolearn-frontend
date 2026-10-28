@@ -43,13 +43,13 @@ export function LessonAudio({ url, label }: { url: string | null; label: string 
     {failed && <p role="status" className="mt-1 text-label-sm text-on-surface-variant">Không phát được âm thanh. Bạn vẫn có thể tiếp tục học.</p>}
   </div>;
 }
-function QuickCheck({ quiz }: { quiz: QuickCheckDto }) {
+function QuickCheck({ quiz, readOnly }: { quiz: QuickCheckDto; readOnly: boolean }) {
   const [answer, setAnswer] = useState<string | null>(null);
   return <section className={card} aria-label="Kiểm tra phản xạ nhanh">
     <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-headline-sm font-semibold">Kiểm tra phản xạ nhanh</h2><span className="text-label-sm text-on-surface-variant">Không bắt buộc</span></div>
     <p className="text-body-lg font-semibold">{quiz.question}</p>
     <div className="grid gap-3 sm:grid-cols-2">{quiz.options.map((option, index) =>
-      <Button key={index} type="button" variant="outline" aria-pressed={answer === option} onClick={() => setAnswer(option)}
+      <Button key={index} type="button" variant="outline" disabled={readOnly} aria-pressed={answer === option} onClick={() => setAnswer(option)}
         className={"min-h-12 h-auto whitespace-normal rounded-xl px-4 py-3 text-left " + (answer === option ? "border-primary bg-primary/10" : "")}>
         {String.fromCharCode(65 + index)}. {option}
       </Button>)}</div>
@@ -58,7 +58,7 @@ function QuickCheck({ quiz }: { quiz: QuickCheckDto }) {
     </p>}
   </section>;
 }
-export function TopicLessonContent({ content, position }: { content: LessonContentDto; position: PositionDto | null }) {
+export function TopicLessonContent({ content, position, readOnly = false }: { content: LessonContentDto; position: PositionDto | null; readOnly?: boolean }) {
   const { vocabulary, purposes } = lessonUnits(content);
   if (!position || position.stage === "FILL_BLANK" || position.stage === "SITUATIONAL_CHOICE") return <section className={card}>
     <BookOpen className="size-10 text-primary" aria-hidden="true" />
@@ -108,7 +108,7 @@ export function TopicLessonContent({ content, position }: { content: LessonConte
       {word.examples.length > 0 && <section className={card}><h2 className="text-headline-sm font-semibold">Mẫu câu trong ngữ cảnh</h2>{word.examples.map(example =>
         <div key={example.exampleId} className="space-y-3 rounded-xl bg-surface p-4"><p lang="en" className="text-headline-sm font-semibold">{example.textEn}</p>
           <p className="text-body-md text-on-surface-variant">{example.textVi}</p><LessonAudio url={example.audioUrl} label="Nghe câu mẫu" /></div>)}</section>}
-      {word.quickCheck && <QuickCheck quiz={word.quickCheck} />}
+      {word.quickCheck && <QuickCheck quiz={word.quickCheck} readOnly={readOnly} />}
       {word.tips && <MemoryTipCard title="Mẹo ghi nhớ Engo" text={word.tips} />}
     </div>;
   }

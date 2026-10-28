@@ -112,6 +112,7 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
         <TopicLessonNav attempt={attempt} content={content} viewing={viewing} disabled={disabled} onSelect={choose} onFrontier={() => choose(attempt.position)} />
       </aside>
       <div className="min-w-0 space-y-5 lg:col-span-8" aria-busy={disabled}>
+        {attempt.mode === "RETRY" && <p role="status" className="rounded-xl bg-primary/5 p-4 text-body-md text-primary">Lượt làm lại · Kết quả hiện tại được giữ tới khi bạn hoàn thành bài này.</p>}
         {lesson.mutationError && <p role="alert" className="rounded-xl border border-error/30 bg-error/5 p-4 text-body-md text-error">{lesson.mutationError}</p>}
         {lesson.accessError && <p role="status" className="text-label-sm text-on-surface-variant">Chưa cập nhật được lần truy cập gần nhất. Tiến độ bài học không bị ảnh hưởng.</p>}
         {showContent && !atFrontier && <p role="status" className="rounded-xl bg-primary/5 px-4 py-3 text-label-lg text-primary">Đang xem lại nội dung đã học</p>}

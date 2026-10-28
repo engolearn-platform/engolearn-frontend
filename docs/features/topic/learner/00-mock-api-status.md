@@ -6,6 +6,8 @@
 
 # Learner — trạng thái nguồn dữ liệu
 
+Slice C consumer: review reads getItemReview with no answer mutations; retry uses real start/session endpoints and frozen next-item IDs. Implemented with focused parent live state acceptance recorded; hide/unhide during sessions is excluded. See [14-review-retry-slice-c.md](14-review-retry-slice-c.md).
+
 Ngày2026-10-27, sau chặng3 FE. “Client thật” nghĩa là code gọi endpoint thật; không đồng nghĩa BE target đã chạy thành công.
 Không fallback mock trong ứng dụng mặc định. Lệnh/launcher fixture lịch sử đã gỡ; không dùng để kiểm chứng các lát hiện tại.
 

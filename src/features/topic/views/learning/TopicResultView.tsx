@@ -36,9 +36,10 @@ function TopicResult({ topicId, origin }: { topicId: string; origin: string }) {
           })}
         </section>
         {data.result.retryAvailability.allowed && data.detail.retryAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("topicRetry")} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại toàn bộ chủ đề</Button>}
+        {data.detail.retrySession?.status === "IN_PROGRESS" && (data.detail.retrySession.currentAttemptId || data.detail.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 rounded-xl">Tiếp tục lượt làm lại</Button>}
       </>}
     </div>
-    <TopicRetryDialog open={!!launch.confirmation} cancel={launch.cancel} confirm={launch.confirm} />
+    <TopicRetryDialog open={!!launch.confirmation} replacing={!!launch.confirmation?.observedRetrySessionId} cancel={launch.cancel} confirm={launch.confirm} />
   </main>;
 }
 

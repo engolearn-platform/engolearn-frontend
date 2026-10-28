@@ -66,9 +66,18 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
     } catch (failure) {
       const problem = failure as { code?: string; status?: number };
       if (!signal.aborted && problem.status === 410 && problem.code === "ITEM_HIDDEN") onHidden();
+      if (!signal.aborted && problem.status === 409 && ["RETRY_SESSION_CHANGED", "RESULT_CHANGED"].includes(problem.code ?? "")) {
+        clearTopicPendingAction(scope);
+        clearTopicPendingAction(completionScope);
+        setPending(null);
+        setCompletion(null);
+        setFeedback(null);
+        setSelected(null);
+        refreshLesson();
+      }
       throw failure;
     }
-  }, [attempt, attemptId, active, onAttempt, onHidden]);
+  }, [attempt, attemptId, active, onAttempt, onHidden, scope, completionScope, refreshLesson]);
   const result = useFetch(read, active);
   const quiz = feedback?.quiz ?? pending?.quiz ?? (active && result.data?.attempt.revision === attempt?.revision ? result.data.quiz : null);
   const needsCompletion = !!attempt && attempt.status === "IN_PROGRESS" && result.data?.attempt.revision === attempt.revision && result.data.quiz === null;

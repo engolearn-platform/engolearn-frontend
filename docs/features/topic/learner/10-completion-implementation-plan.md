@@ -54,6 +54,8 @@ Nghiệm thu: một item thật tới kết quả, reload vẫn đúng, next ite
 
 ## Lát C — xem lại, làm lại và item bị ẩn
 
+Current delivery override (2026-10-28): C includes review and ITEM/TOPIC retry/resume/restart only. Hide/unhide mid-session and all skip/block/reconciliation policy are deferred by the user; retain existing410 denial only. Older hidden bullets below describe future work, not this slice acceptance. No hide-as-MAJOR decision or UI/UX redesign. Test only complex state transitions, using one real clone scenario and applicable build/lint/type checks.
+
 - Review dùng getItemReview, cùng renderer nhưng khoá inputs; cho chọn từng quiz đã xong để đọc đáp án/giải thích/first-try label. Không hiển thị các lần chọn sai. GET review không cập nhật vị trí; access event riêng chỉ ghi recency.
 - Retry dùng cùng lesson view với mode/attempt của BE. Xác nhận trước start; khi đang có session dở, giữ ID quan sát để xác nhận thay đúng session, không tự abandon. Huỷ dialog không gọi mutation.
 - Topic retry tiếp tục theo frozen session; next item được start bằng hành động rõ ràng và retrySessionId, không tạo attempt qua GET. Kết quả cũ vẫn chính thức tới khi từng item xong lượt mới; điểm thấp hơn vẫn thay điểm cũ.

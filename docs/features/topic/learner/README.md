@@ -22,9 +22,10 @@
 | 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Hoàn thành chặng2 |
 | 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
 | 09-live-integration.md | Bằng chứng FE proxy → BE thật | Giới hạn theo từng lát đã chạy |
-| 10-completion-implementation-plan.md | Kế hoạch A/B/C | A consumer đã triển khai; B/C chưa làm |
+| 10-completion-implementation-plan.md | A/B/C plan and latest scoped exclusions | A/B/C consumers implemented within recorded scope |
 | 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | Implemented; early404 evidence is historical, remaining acceptance tracked with B |
 | 12-completion-slice-b.md | Completion recovery, item/topic result and legal next actions | FE consumer implemented; live acceptance recorded separately |
+| 14-review-retry-slice-c.md | Read-only review, confirmed retry and frozen session resume | FE implemented; focused parent live acceptance recorded |
 
 ## Luồng legacy còn tồn tại
 

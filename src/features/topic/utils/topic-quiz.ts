@@ -16,13 +16,16 @@ export function assertQuiz(quiz: QuizDto): void {
   } else mismatch();
 }
 
-export function assertQuizAttempt(value: AttemptDto, expected: Pick<AttemptDto, "attemptId" | "topicId"> & Partial<Pick<AttemptDto, "topicItemId" | "topicItemVersionId" | "version">>): void {
+export function assertQuizAttempt(value: AttemptDto, expected: Pick<AttemptDto, "attemptId" | "topicId"> & Partial<Pick<AttemptDto, "topicItemId" | "topicItemVersionId" | "version" | "mode" | "retrySessionId">>): void {
   if (!value || value.attemptId !== expected.attemptId || value.topicId !== expected.topicId ||
     typeof value.topicItemId !== "string" || !value.topicItemId || typeof value.topicItemVersionId !== "string" || !value.topicItemVersionId ||
     !Number.isInteger(value.version) || value.version < 1 || !["LEARN", "RETRY"].includes(value.mode) ||
     expected.topicItemId !== undefined && value.topicItemId !== expected.topicItemId ||
     expected.topicItemVersionId !== undefined && value.topicItemVersionId !== expected.topicItemVersionId ||
     expected.version !== undefined && value.version !== expected.version ||
+    expected.mode !== undefined && value.mode !== expected.mode ||
+    expected.retrySessionId !== undefined && value.retrySessionId !== expected.retrySessionId ||
+    (value.mode === "RETRY" ? typeof value.retrySessionId !== "string" || !value.retrySessionId : value.retrySessionId !== null) ||
     !Number.isInteger(value.revision) || value.revision < 0 || !value.progress ||
     ![value.progress.completedStepCount, value.progress.totalStepCount, value.progress.completedQuizCount, value.progress.totalQuizCount,
       value.progress.learnedVocabularyCount, value.progress.learnedExpressionCount].every(count => Number.isInteger(count) && count >= 0) ||
