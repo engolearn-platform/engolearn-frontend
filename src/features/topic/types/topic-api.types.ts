@@ -95,6 +95,8 @@ export type RetrySessionDto = {
   "startedAt": string;
   "completedAt": string | null;
   "completedItemIds": Array<string>;
+  "itemsSnapshot": Array<RetryItemSnapshotDto>;
+  "nextTopicItemId": string | null;
 };
 
 export type TopicCardDto = {
@@ -415,4 +417,10 @@ export type AccessReceiptDto = {
 
 export type CompleteAttemptRequestDto = {
   "revision": number;
+};
+
+export type RetryItemSnapshotDto = {
+  "topicItemId": string;
+  "topicItemVersionId": string;
+  "orderIndex": number;
 };

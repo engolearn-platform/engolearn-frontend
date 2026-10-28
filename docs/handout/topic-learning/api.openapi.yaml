@@ -1189,6 +1189,9 @@
           "409": {
             "$ref": "#/components/responses/Problem409"
           },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
+          },
           "422": {
             "$ref": "#/components/responses/Problem422"
           },
@@ -1349,7 +1352,7 @@
       "get": {
         "operationId": "getRetrySession",
         "summary": "Read owned frozen retry session",
-        "description": "No writes. itemIds+versions never change after confirmation. currentAttemptId is null between completed items; startAttempt RETRY for first pending item continues frozen TOPIC session, rather than creating ITEM session.",
+        "description": "Read an owned frozen retry session without writes. currentAttemptId is null between completed items; explicitly start nextTopicItemId using mode:RETRY and this retrySessionId. A replaced session returns409 RETRY_SESSION_CHANGED. itemIds/itemsSnapshot never change; completedItemIds contains only retry items completed in this session. Hide/unhide mid-session skip/block/reconciliation is outside this delivery.",
         "x-backend-status": "new",
         "parameters": [
           {
@@ -1978,7 +1981,9 @@
           "currentAttemptId",
           "startedAt",
           "completedAt",
-          "completedItemIds"
+          "completedItemIds",
+          "itemsSnapshot",
+          "nextTopicItemId"
         ],
         "properties": {
           "retrySessionId": {
@@ -2037,6 +2042,24 @@
             "items": {
               "type": "string"
             }
+          },
+          "itemsSnapshot": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetryItemSnapshotDto"
+            },
+            "description": "Frozen ordered item/version manifest captured when this session is confirmed; never derived from official completed statuses."
+          },
+          "nextTopicItemId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Next pending item in the frozen sequence; null when no pending item remains. GET never starts its attempt."
           }
         }
       },
@@ -3681,6 +3704,27 @@
         ],
         "properties": {
           "revision": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "RetryItemSnapshotDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "topicItemId",
+          "topicItemVersionId",
+          "orderIndex"
+        ],
+        "properties": {
+          "topicItemId": {
+            "type": "string"
+          },
+          "topicItemVersionId": {
+            "type": "string"
+          },
+          "orderIndex": {
             "type": "integer",
             "minimum": 0
           }
