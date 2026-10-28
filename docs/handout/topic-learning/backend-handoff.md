@@ -147,6 +147,12 @@ Kết quả cũ bị retry mới thay thế: review ID cũ trả409 RESULT_CHANG
 
 ## Error codes và envelope
 
+### Delta lát A (2026-10-28)
+
+GET quiz và POST answers từ chối owned item bị ẩn/gỡ publish bằng `410 ITEM_HIDDEN`; foreign/nonexistent attempt vẫn `404`. Đây là ngoại lệ thay thế các mô tả cũ bên trên cho phép tiếp tục pinned attempt bị ẩn. OpenAPI đã khai `Problem410` cho hai endpoint này. FE dừng audio, xoá quiz/feedback/selection và về detail để đọc lại quyền; không polling. Enforcement ở các endpoint khác và retry recovery thuộc lát sau.
+
+Contract completion giữ nguyên: câu cuối đúng hoàn thành attempt và commit result cùng một hành động nghiệp vụ. `IN_PROGRESS` với `quiz:null` không phải success completion; FE báo trạng thái BE chưa hoàn chỉnh, không tự mở tổng kết hoặc gửi advance để hoàn thành.
+
 Success luôn {data,timestamp}; lỗi ProblemDetail không bọc data.
 Các code cần hỗ trợ: INVALID_REQUEST (400), SIGN_IN_REQUIRED (401), CONTENT_UNAVAILABLE (404);
 STATE_CHANGED, IDEMPOTENCY_KEY_REUSED, RETRY_CONFIRMATION_REQUIRED, RETRY_SESSION_CHANGED, RESULT_CHANGED, TOPIC_NOT_COMPLETED, ATTEMPT_NOT_COMPLETED, INVALID_STAGE (409);

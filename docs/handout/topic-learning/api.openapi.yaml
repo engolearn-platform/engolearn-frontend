@@ -878,6 +878,9 @@
           "409": {
             "$ref": "#/components/responses/Problem409"
           },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
+          },
           "422": {
             "$ref": "#/components/responses/Problem422"
           },
@@ -1053,6 +1056,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Problem409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
           },
           "422": {
             "$ref": "#/components/responses/Problem422"
@@ -3677,6 +3683,23 @@
               "status": 401,
               "detail": "Sign in required",
               "code": "SIGN_IN_REQUIRED"
+            }
+          }
+        }
+      },
+      "Problem410": {
+        "description": "Owned item is hidden or no longer published; foreign or nonexistent attempts remain 404.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDto"
+            },
+            "example": {
+              "type": "about:blank",
+              "title": "Item unavailable",
+              "status": 410,
+              "detail": "This item is no longer available.",
+              "code": "ITEM_HIDDEN"
             }
           }
         }
