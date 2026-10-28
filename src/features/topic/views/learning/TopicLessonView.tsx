@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { useTopicLesson } from "@features/topic/hooks/useTopicLesson";
@@ -11,7 +11,7 @@ import { TopicLessonContent } from "@features/topic/components/learning/attempt/
 import { TopicQuiz } from "@features/topic/components/learning/attempt/TopicQuiz";
 import { clearTopicPendingAction } from "@features/topic/services/topic-mutation-journal";
 import { canViewPosition, contentPositions, isContentPosition, samePosition, viewingPosition } from "@features/topic/utils/topic-lesson";
-import { topicDetailPath, topicErrorMessage } from "@features/topic/utils/topic-catalog";
+import { topicDetailPath, topicErrorMessage, topicItemResultPath } from "@features/topic/utils/topic-catalog";
 import type { PositionDto } from "@features/topic/types/topic-api.types";
 
 export default function TopicLessonView({ topicId, attemptId, origin }: { topicId: string; attemptId: string; origin: string }) {
@@ -24,12 +24,21 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
   const onHidden = useCallback(() => {
     document.querySelectorAll("audio[data-topic-audio]").forEach(audio => (audio as HTMLAudioElement).pause());
     clearTopicPendingAction(JSON.stringify([viewer.learnerId, attemptId, "quiz-answer"]));
+    clearTopicPendingAction(JSON.stringify([viewer.learnerId, attemptId, "completion"]));
     void navigate(detailPath, { replace: true, state: { topicNotice: "Nội dung này không còn khả dụng. Vui lòng chọn bài học khác." } });
   }, [navigate, detailPath, viewer.learnerId, attemptId]);
   const quiz = useTopicQuiz({ attempt, learnerId: viewer.learnerId, attemptId, onAttempt: lesson.updateAttempt, onHidden, refreshLesson: lesson.refetch });
+  const continueQuiz = () => {
+    if (attempt?.status === "COMPLETED") { void navigate(topicItemResultPath(topicId, attemptId, origin), { replace: true }); return; }
+    quiz.dismissFeedback();
+    setParameters(current => { const query = new URLSearchParams(current); query.delete("stage"); query.delete("index"); return query; });
+  };
   const quizMessages = <>
     {quiz.error && <p role="alert" className="rounded-xl border border-error/30 bg-error/5 p-4 text-body-md text-error">{quiz.error}</p>}
-    {quiz.pending && <div className="space-y-3 rounded-xl border border-outline-variant bg-surface p-4">
+    {(quiz.needsCompletion || quiz.completionPending) ? <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-5">
+      <p role="status" className="text-body-md">Các câu trả lời đã được lưu. Hoàn tất bài học để mở kết quả của bạn.</p>
+      <Button type="button" disabled={quiz.busy || lesson.loading || !attempt} onClick={() => void quiz.complete()} className="min-h-12 rounded-xl">{quiz.busy ? "Đang hoàn tất…" : quiz.completionPending ? "Kiểm tra yêu cầu hoàn tất" : "Hoàn tất bài học"}</Button>
+    </div> : quiz.contractMismatch ? <Button type="button" variant="outline" disabled={quiz.busy || lesson.loading} onClick={quiz.refetch} className="min-h-12 rounded-xl">Tải lại tiến độ</Button> : quiz.pending && <div className="space-y-3 rounded-xl border border-outline-variant bg-surface p-4">
       <p role="status" className="text-body-md">Có một đáp án chưa xác định kết quả. Thử lại sẽ gửi đúng yêu cầu đã lưu, không tạo lượt trả lời mới.</p>
       <Button type="button" disabled={quiz.busy || !attempt} onClick={() => void quiz.answer()} className="min-h-12 rounded-xl">{quiz.busy ? "Đang kiểm tra…" : "Thử lại yêu cầu đã gửi"}</Button>
     </div>}
@@ -41,14 +50,14 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
         description={lesson.error ? topicErrorMessage(lesson.error) : undefined} onRetry={lesson.error ? lesson.refetch : undefined} />
     </div>
   </main>;
-  // Slice B supplies the result route. Do not fetch completed content or invent a result here.
-  if (!content || attempt.status === "COMPLETED" && !quiz.feedback && !quiz.pending) return <main className="min-h-screen bg-surface p-5 text-on-surface">
+  if (attempt.status === "COMPLETED" && !quiz.feedback) return <Navigate to={topicItemResultPath(topicId, attemptId, origin)} replace />;
+  if (!content) return <main className="min-h-screen bg-surface p-5 text-on-surface">
     <div className="mx-auto max-w-3xl space-y-5">
       <Link to={detailPath} className="inline-flex min-h-12 items-center gap-2 font-semibold text-primary"><ArrowLeft className="size-5" aria-hidden="true" />Quay lại chủ đề</Link>
       {quizMessages}
       {quiz.quiz && (quiz.pending || quiz.feedback) ? <>
         <TopicQuiz quiz={quiz.quiz} feedback={quiz.feedback} selected={quiz.selected} busy={quiz.busy} pending={quiz.pending} wrong={quiz.wrong} disabled={quiz.blocked} onAnswer={optionId => void quiz.answer(optionId)} />
-        {quiz.feedback && <Button type="button" onClick={quiz.dismissFeedback} className="min-h-12 rounded-xl">Tiếp tục</Button>}
+        {quiz.feedback && <Button type="button" onClick={continueQuiz} className="min-h-12 rounded-xl">Tiếp tục</Button>}
       </> : <TopicState title="Bài học đã hoàn thành" description="Tiến độ hoàn thành đã được lưu. Bạn có thể trở về chủ đề để xem các bài học tiếp theo." />}
     </div>
   </main>;
@@ -58,7 +67,7 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
   const previous = currentIndex > 0 ? units[currentIndex - 1] : currentIndex === -1 ? units[units.length - 1] : undefined;
   const nextViewed = units[currentIndex + 1];
   const atFrontier = attempt.status === "IN_PROGRESS" && samePosition(viewing, attempt.position);
-  const disabled = lesson.busy || lesson.loading || quiz.busy || quiz.pending || quiz.blocked;
+  const disabled = lesson.busy || lesson.loading || quiz.busy || quiz.pending || quiz.completionPending || quiz.needsCompletion || quiz.contractMismatch || quiz.blocked;
   const showContent = viewing && isContentPosition(viewing);
   const phase = viewing?.stage === "CONTEXT" ? 1 : viewing?.stage === "VOCAB" ? 2 : viewing?.stage === "EXPRESSIONS" ? 3 : 4;
   const choose = (position: PositionDto | null) => {
@@ -108,7 +117,7 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
         {showContent && !atFrontier && <p role="status" className="rounded-xl bg-primary/5 px-4 py-3 text-label-lg text-primary">Đang xem lại nội dung đã học</p>}
         {showContent ? <TopicLessonContent key={viewing.stage + ":" + viewing.itemIndex} content={content} position={viewing} /> : <>
           {quizMessages}
-          {quiz.quiz ? <TopicQuiz key={quiz.quiz.quizId} quiz={quiz.quiz} feedback={quiz.feedback} selected={quiz.selected} busy={quiz.busy} pending={quiz.pending} wrong={quiz.wrong} disabled={disabled} onAnswer={optionId => void quiz.answer(optionId)} /> :
+          {quiz.needsCompletion || quiz.completionPending ? null : quiz.quiz ? <TopicQuiz key={quiz.quiz.quizId} quiz={quiz.quiz} feedback={quiz.feedback} selected={quiz.selected} busy={quiz.busy} pending={quiz.pending} wrong={quiz.wrong} disabled={disabled} onAnswer={optionId => void quiz.answer(optionId)} /> :
             <TopicState title={quiz.blocked ? "Chưa thể tiếp tục trả lời" : quiz.readError ? "Không tải được câu hỏi" : "Đang tải câu hỏi…"} loading={quiz.loading && !quiz.blocked} error={!!quiz.readError || quiz.blocked}
               description={quiz.readError ? topicErrorMessage(quiz.readError) : undefined} onRetry={quiz.readError ? quiz.refetch : undefined} />}
         </>}
@@ -121,10 +130,7 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
         </Button>
         {showContent ? <Button type="button" disabled={disabled} onClick={() => void continueLesson()} className="min-h-12 rounded-xl px-6">
           {lesson.busy ? "Đang lưu…" : atFrontier ? "Tiếp tục" : "Xem tiếp"}<ArrowRight className="size-4" aria-hidden="true" />
-        </Button> : quiz.feedback ? <Button type="button" disabled={disabled} onClick={() => {
-          quiz.dismissFeedback();
-          setParameters(current => { const query = new URLSearchParams(current); query.delete("stage"); query.delete("index"); return query; });
-        }} className="min-h-12 rounded-xl px-6">Tiếp tục<ArrowRight className="size-4" aria-hidden="true" /></Button> : <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={detailPath}>Về chi tiết chủ đề</Link></Button>}
+        </Button> : quiz.feedback ? <Button type="button" disabled={disabled} onClick={continueQuiz} className="min-h-12 rounded-xl px-6">Tiếp tục<ArrowRight className="size-4" aria-hidden="true" /></Button> : <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={detailPath}>Về chi tiết chủ đề</Link></Button>}
       </div>
     </footer>
   </div>;

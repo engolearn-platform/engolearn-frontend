@@ -10,6 +10,8 @@ import TopicPage from "@features/topic/views/TopicPage";
 import MyTopicsView from "@features/topic/views/learning/MyTopicsView";
 import TopicDetailView from "@features/topic/views/learning/TopicDetailView";
 import TopicAttemptEntryView from "@features/topic/views/learning/TopicAttemptEntryView";
+import TopicItemResultView from "@features/topic/views/learning/TopicItemResultView";
+import TopicResultView from "@features/topic/views/learning/TopicResultView";
 import TopicManagementListView from "@features/topic/views/management/TopicManagementListView";
 import TopicUpsertBasicInfoView from "@features/topic/views/management/TopicUpsertBasicInfoView";
 import TopicUpsertItemsView from "@features/topic/views/management/TopicUpsertItemsView";
@@ -32,8 +34,10 @@ export const TopicRoutes: RouteObject[] = [
       { path: ROUTES.TOPIC_VOCAB, Component: LegacyTopicRedirect },
       { path: ROUTES.TOPIC_EXPRESSIONS, Component: LegacyTopicRedirect },
       { path: ROUTES.TOPIC_PRACTICE, Component: LegacyTopicRedirect },
-      { path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView },
+      { path: ROUTES.TOPIC_RESULT, Component: TopicResultView },
+      { path: ROUTES.TOPIC_ITEM_RESULT, Component: TopicItemResultView },
       { path: ROUTES.TOPIC_ATTEMPT, Component: TopicAttemptEntryView },
+      { path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView },
     ],
   },
   {

@@ -1,5 +1,7 @@
 # Lát 1 — public catalog dùng BE thật
 
+Slice B completion/result and recovery are now implemented and live-verified; latest outcomes and limits are in [13-slice-b-live-verification.md](13-slice-b-live-verification.md). Earlier404/IN_PROGRESS observations below are historical. The user's stuck attempt is now COMPLETED with its12 submissions preserved; C is still pending.
+
 Latest coordination status (2026-10-28): BE quiz read/answer are now available; earlier quiz404 observations below remain historical evidence. The user reports both quiz types playable. Later read-only checks found the existing attempt at revision18 with quiz:null/IN_PROGRESS and result404. A is not fully accepted; completion and recovery of that stuck attempt are B work. See `11-quiz-slice-a.md` Coordination update. No new application checks were run for this documentation sync.
 
 User yêu cầu không dùng mock/fixture nữa. Dừng preview4318, bỏ launcher fixture; dùng FE3000 proxy BE8080.

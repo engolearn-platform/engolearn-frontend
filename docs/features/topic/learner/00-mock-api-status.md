@@ -22,6 +22,7 @@ Không fallback mock trong ứng dụng mặc định. Lệnh/launcher fixture l
 | Quiz legacy | Placeholder | Provider mock | Thiết kế mới đã duyệt; chặng4 |
 | Quiz attempt (lát A) | GET current quiz + POST answers | revision/progress/feedback từ BE, pending journal theo viewer | Consumer đã triển khai; BE GET quiz thật404, chưa nghiệm thu grading |
 | Result/review/retry UI đầy đủ | Chưa triển khai | Contract/client đã có | Chặng4–5 |
+| Result/completion (Slice B) | Real item/topic result GET + explicit completion recovery POST | Server fractions/percent/actions; no local score or mock completion | Consumer implemented; live acceptance recorded in 12-completion-slice-b.md / parent report; review/retry C remains open |
 
 Nguồn chuẩn: [API foundation](06-api-foundation.md), [catalog](07-topic-catalog.md), [bàn giao BE](../../../handout/topic-learning/backend-handoff.md).
 Các ghi chú “đã verify Playwright” trong tài liệu legacy không phải bằng chứng kiểm thử của repo. Chặng2 dùng browser tooling để kiểm tra fixture thủ công; không thêm Playwright dependency/config.

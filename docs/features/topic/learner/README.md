@@ -5,7 +5,8 @@
 - /topics: Khám phá các topic chưa từng bắt đầu; query q/level/sort.
 - /my-topics: Đang học / Đã hoàn thành; query tab.
 - /topics/:topicId: outline + quyền thao tác + progress. Quay lại giữ nguồn/bộ lọc.
-- /topics/:topicId/attempts/:attemptId: điểm vào lượt thật, không dùng provider/mock cũ. Context/Vocab/Expressions đã nối BE; consumer quiz lát A đã triển khai nhưng endpoint quiz thật còn404. Result/review/retry đầy đủ ở B/C.
+- /topics/:topicId/attempts/:attemptId: live lesson/quiz entry; completed attempts redirect to item result. Legacy completion recovery is an explicit action. See slice B below for current implementation and acceptance limits.
+- /topics/:topicId/attempts/:attemptId/result and /topics/:topicId/result: server-owned item/topic scores and legal next actions. Review/retry lifecycle remains C.
 
 ## Package
 
@@ -22,7 +23,8 @@
 | 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
 | 09-live-integration.md | Bằng chứng FE proxy → BE thật | Giới hạn theo từng lát đã chạy |
 | 10-completion-implementation-plan.md | Kế hoạch A/B/C | A consumer đã triển khai; B/C chưa làm |
-| 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | FE triển khai; BE quiz còn404, chưa nghiệm thu |
+| 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | Implemented; early404 evidence is historical, remaining acceptance tracked with B |
+| 12-completion-slice-b.md | Completion recovery, item/topic result and legal next actions | FE consumer implemented; live acceptance recorded separately |
 
 ## Luồng legacy còn tồn tại
 

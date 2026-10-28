@@ -8,7 +8,7 @@ import { useTopicDetail, useTopicProgress } from "@features/topic/hooks/useTopic
 import { useTopicLaunch } from "@features/topic/hooks/useTopicLaunch";
 import { TopicState, TopicProgressBar } from "@features/topic/components/learning/catalog/TopicState";
 import { TopicItemCard } from "@features/topic/components/learning/detail/TopicItemCard";
-import { primaryTopicItem, safeTopicOrigin, topicErrorMessage, TOPIC_LEVELS } from "@features/topic/utils/topic-catalog";
+import { primaryTopicItem, safeTopicOrigin, topicErrorMessage, topicResultPath, TOPIC_LEVELS } from "@features/topic/utils/topic-catalog";
 
 export default function TopicDetailView() {
   const { topicId = "" } = useParams();
@@ -65,6 +65,7 @@ export default function TopicDetailView() {
                 </>}
                 {next && <Button type="button" disabled={launch.busy} onClick={() => launch.choose(next.actions.continue.allowed ? "continue" : "start", next)} className="min-h-14 w-full rounded-xl text-base font-semibold">{launch.busy ? "Đang mở…" : (next.actions.continue.allowed ? "Tiếp tục học" : "Bắt đầu học") + " (Bài " + (nextIndex + 1) + ")"}</Button>}
                 {!next && data.progress?.status === "COMPLETED" && <p className="text-body-md font-medium text-primary">Bạn đã hoàn thành chủ đề này.</p>}
+                {data.progress?.status === "COMPLETED" && <Button asChild className="min-h-12 w-full rounded-xl"><Link to={topicResultPath(topicId, origin)}>Xem tổng kết chủ đề</Link></Button>}
                 {data.retryAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("topicRetry")} className="min-h-12 w-full rounded-xl">Làm lại toàn bộ chủ đề</Button>}
                 <p className="rounded-xl bg-surface p-4 text-label-sm leading-relaxed text-on-surface-variant">Bạn có thể xem chi tiết mọi chủ đề. Điều kiện level chỉ áp dụng khi bắt đầu lượt học hoặc lượt làm lại mới.</p>
               </section>}

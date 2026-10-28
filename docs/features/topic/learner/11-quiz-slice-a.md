@@ -1,5 +1,7 @@
 # Lát A — quiz consumer FE
 
+Slice B now replaces the temporary completion placeholder and adds explicit recovery plus result routing. See [12-completion-slice-b.md](12-completion-slice-b.md); the A behavior and coordination notes below describe the earlier checkpoint.
+
 Ngày 2026-10-28. FE đã triển khai; integration quiz chưa nghiệm thu. Không đổi BE, seed/reset dữ liệu hoặc thêm mock/fixture. Lát B (result) và C (review/retry) chưa thuộc thay đổi này.
 
 ## Coordination update

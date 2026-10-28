@@ -1,5 +1,7 @@
 # Kế hoạch FE — hoàn tất Topic Learning thật
 
+Slice B implementation update: FE result routes, explicit legacy completion recovery and final-feedback routing are implemented in the current working change; see [12-completion-slice-b.md](12-completion-slice-b.md). Live acceptance is separate from implementation. The dated coordination paragraph below records the pre-B checkpoint, not the current code status. C remains deferred.
+
 Status: planning only (2026-10-27). Baseline FE `a5d0b4a`, BE `4b36f15`; nghiệp vụ cập nhật ở business commit `aaff29c`. Không coi các task dưới đây là code đã triển khai.
 
 Cập nhật đồng bộ 2026-10-28: consumer FE lát A ở `b841354`, quiz 410 contract ở `82d2201`. BE đã có quiz read/answer; lỗi endpoint404 trong báo cáo trước là lịch sử. Người dùng đã làm được hai dạng; nghiệm thu có ghi bằng chứng cho cả hai dạng/reload/replay vẫn chưa hoàn tất. GET quiz cuối hiện trả200 với `quiz:null`, attempt vẫn `IN_PROGRESS`, result404: completion thuộc B, không phải success completion. B/C chưa triển khai. Retry recovery hoãn sang C. Lát B phải khôi phục lượt đã lưu đáp án cuối và sửa thông báo retry vô hạn của FE, không reset dữ liệu hoặc dựng tổng kết giả. BE tiếp tục trên `feat/complete-topic-learning-flow`; không đổi kiến trúc/hạ tầng trong bước đồng bộ docs này.

@@ -12,6 +12,8 @@ export const ROUTES = {
   TOPICS: "/topics",
   MY_TOPICS: "/my-topics",
   TOPIC_ATTEMPT: "/topics/:topicId/attempts/:attemptId",
+  TOPIC_ITEM_RESULT: "/topics/:topicId/attempts/:attemptId/result",
+  TOPIC_RESULT: "/topics/:topicId/result",
   TOPIC_DETAIL: "/topics/:topicId",
   // TEMP URL for testing the Topic Item context screen — final URL TBD,
   // see docs/handout/topic-item-context-url-note.md.
