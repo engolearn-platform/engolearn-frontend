@@ -1,4 +1,5 @@
-import type { RouteObject } from "react-router";
+import { createElement } from "react";
+import { Navigate, type RouteObject } from "react-router";
 import ManagementLayout from "@/core/layouts/ManagementLayout";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import TopicLearningLayout from "@/core/layouts/TopicLearningLayout";
@@ -14,12 +15,21 @@ import TopicExpressionsView from "./views/learning/TopicExpressionsView";
 import TopicPracticePlaceholderView from "./views/learning/TopicPracticePlaceholderView";
 import TopicManagementListView from "./views/management/TopicManagementListView";
 import SpeakingDemoView from "./views/learning/SpeakingDemoView";
+import SpeakingView from "./views/learning/SpeakingView";
 
 export const TopicRoutes: RouteObject[] = [
+  { path: ROUTES.SPEAKING_HISTORY, Component: LearningLayout,
+    children: [{ path: "", Component: SpeakingView }] },
   ...(import.meta.env.DEV ? [{
     path: ROUTES.SPEAKING_DEMO,
     Component: LearningLayout,
     children: [{ path: "", Component: SpeakingDemoView }],
+  }, {
+    path: ROUTES.SPEAKING_SESSION_DEV,
+    element: createElement(Navigate, {
+      to: ROUTES.TOPIC_SPEAKING.replace(":topicId", "690000000000000000000002"),
+      replace: true,
+    }),
   }] : []),
   {
     path: "/topics",
@@ -83,6 +93,10 @@ export const TopicRoutes: RouteObject[] = [
             Component: TopicPracticePlaceholderView,
           },
         ],
+      },
+      {
+        path: ROUTES.TOPIC_SPEAKING,
+        children: [{ path: "", Component: SpeakingView }],
       },
     ],
   },

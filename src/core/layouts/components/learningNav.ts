@@ -4,6 +4,7 @@ import {
   GraduationCap,
   Home,
   LayoutGrid,
+  Mic,
   RotateCcw,
   Search,
   Target,
@@ -22,6 +23,7 @@ export interface LearningNavItem {
 export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
   { label: "Trang chủ", to: ROUTES.HOME, icon: Home },
   { label: "Chủ đề", to: ROUTES.TOPICS, icon: LayoutGrid },
+  { label: "Lịch sử luyện nói", to: ROUTES.SPEAKING_HISTORY, icon: Mic },
   { label: "Ngữ pháp", to: ROUTES.GRAMMAR, icon: BookOpenText },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
   { label: "Tra từ", icon: Search, disabled: true },

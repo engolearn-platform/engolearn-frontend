@@ -1,0 +1,44 @@
+# Speaking with AI — FE migration
+
+**Branch:** `feat/speaking-ai-migration-f01-f02`  
+**Status:** F01–F02 learner UI implemented for review; live browser/provider verification is pending.
+
+## Current evidence
+
+- `/dev/speaking` is a development route using `MediaRecorder` and multipart upload per turn. It is not the target PCM/WebSocket contract.
+- `/dev/speaking-session` is a development-only entry point to the current PCM/WebSocket `SpeakingView`. It opens BE's fixed fixture item `690000000000000000000002` without depending on the Topic learning navigation. Opening the route checks for an existing session but does not create one.
+- The existing demo view and its types are retained for comparison. Opening the route does not create a session; it asks for microphone access before create; closing the route does not send End.
+- `src/features/topic/types/speaking.types.ts` mirrors the BE snapshot, turn, assessment and configuration response.
+- `SpeakingView` is available from the item Context tab at `/topics/:topicId/speaking`; `/speaking/history` lists all of the learner's non-deleted sessions, including sessions from hidden items, and is linked from the learner sidebar. Speaking stays outside Context → Vocabulary → Expressions → Practice progress.
+- `speaking.service.ts` uses the BE REST contract. In development only it attaches the backend fixture key `X-Dev-User-Id` from session storage or `VITE_DEV_USER_ID`; production builds do not attach it. The view never submits a learner ID.
+- `useSpeakingStream` tracks connection separately from recording. It obtains a one-use socket ticket, sends 16 kHz mono PCM frames from `speaking-pcm-worklet.js`, shows interim text, and reloads the authoritative snapshot after connection or turn completion. It retries connection up to three times at roughly three-second intervals and drops uncommitted audio after disconnection. Microphone access is requested before session creation.
+- A turn shows “Đang xử lý…” only while its evaluation state is `PENDING`. When assessment fails, the view shows a retry message instead of leaving the AI reply in a processing state.
+- The view supports create/replace/resume/end, item and account history, detail, 30-day recording availability, short-lived Cloudinary playback, deleting one session and deleting all. Closing the page stops local capture without sending End.
+
+## Contract with BE
+
+REST uses `/api/v1/speaking`, the `ApiResponse<T>` envelope, and `ProblemDetail` errors. The socket is `/ws/speaking/{sessionId}?ticket=...`. It sends `START_TURN`/`END_OF_TURN`/`CANCEL_TURN` with `turnId` and `controllerEpoch`, plus binary PCM; BE emits `CONNECTED`, `INTERIM_TRANSCRIPT`, `TURN_ACCEPTED`, `TURN_RESULT`, `AI_AUDIO_READY`, and stage errors with `turnId`, epoch, and revision. The FE takes the BE snapshot as authority after reconnect.
+
+The old `/dev/speaking` route remains only as a comparison and still points at its legacy demo API. It is not the main Speaking entry point.
+
+## Direct local test
+
+1. Start MongoDB and the backend with the `dev` profile. The backend seeds the fixed Topic item and Speaking config at startup, including on an existing dev database.
+2. Set the provider keys and Cloudinary credentials in the backend's local `.env`, then start the frontend with `npm run dev`.
+3. Open `http://localhost:3000/dev/speaking-session`. The route selects the fixture item and shows the normal session UI. Use the “Bắt đầu phiên mới” button to request microphone permission and create a session.
+
+The frontend uses `X-Dev-User-Id: dev-user` by default in development. The fixture is available only with the backend `dev` profile; the route is excluded from production builds.
+
+## Remaining verification and limitations
+
+- `npm run lint`: exit 0, no errors; 74 existing warnings elsewhere in the repo. The one hook warning introduced during development was fixed.
+- `npm run build`: exit 0 after the Speaking integration; Vite reports the existing bundle-size warning.
+- Browser checks on current Chrome, Edge, and Safari, weak networks, microphone loss, two-tab handoff, and Cloudinary playback still require a running backend, MongoDB, and provider credentials. The dev fixture supplies the Topic item and Speaking configuration.
+- The acceptance target for interim text and response latency has not been measured. The AudioWorklet/VAD threshold is taken from the demo and needs device/browser tuning.
+- The FE currently uses a development fixture header inside its Speaking service because the accepted shared `AuthProvider`/`useAuth` surface is not present on this FE branch. That surface should replace the fixture selection before release.
+
+## Verification on this branch
+
+- `npx eslint src/features/topic/hooks/useSpeakingStream.ts src/features/topic/views/learning/SpeakingView.tsx src/features/topic/services/speaking.service.ts`: exit 0, no warnings after the hook fix.
+- `npm run lint`: exit 0; see warning count above.
+- `npm run build`: exit 0; see bundle-size warning above.
