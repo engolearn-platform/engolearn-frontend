@@ -9,12 +9,12 @@ import {
   DialogTitle,
 } from "@/core/components/shadcn/dialog";
 import { AlertTriangle, EyeOff, Info, Users } from "lucide-react";
-import type { Topic } from "@features/topic/types/topic.types";
+import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
 
 interface UnpublishTopicDialogProps {
-  topic: Topic | null;
+  topic: TopicManagementListItem | null;
   onClose: () => void;
-  onConfirm: (topic: Topic) => void;
+  onConfirm: (topic: TopicManagementListItem) => void;
 }
 
 export default function UnpublishTopicDialog({
@@ -50,16 +50,10 @@ export default function UnpublishTopicDialog({
                   Chủ đề chịu tác động
                 </span>
                 <span className="rounded bg-surface-container-high px-2 py-0.5 text-label-sm text-on-surface-variant">
-                  ID: {topic.code}
+                  ID: {topic.id}
                 </span>
               </div>
               <div className="mt-1 flex items-start gap-3">
-                <img
-                  src={topic.thumbnail}
-                  alt=""
-                  loading="lazy"
-                  className="size-12 shrink-0 rounded-lg object-cover"
-                />
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate text-headline-sm font-semibold text-on-surface">
                     {topic.titleEn}
@@ -70,11 +64,13 @@ export default function UnpublishTopicDialog({
                 </div>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-surface-container-high pt-2 text-label-sm text-on-surface-variant">
-                <span className="rounded bg-surface-container-lowest px-2 py-0.5 font-semibold text-on-surface">
-                  Trình độ: {topic.cefr}
-                </span>
+                {topic.cefr ? (
+                  <span className="rounded bg-surface-container-lowest px-2 py-0.5 font-semibold text-on-surface">
+                    Trình độ: {topic.cefr}
+                  </span>
+                ) : null}
                 <span className="rounded bg-surface-container-lowest px-2 py-0.5">
-                  {topic.itemsLabel}
+                  {topic.itemCount} bài học
                 </span>
               </div>
             </div>

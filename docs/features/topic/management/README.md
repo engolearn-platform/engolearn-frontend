@@ -51,7 +51,8 @@ Route editor áp dụng cho cả 2 mode: `/admin/topics/create/items/:itemId/:se
 | Chuyển hướng | From → To | Code |
 |--------------|-----------|------|
 | Tạo mới | List header / empty state → [01] | `goToCreate` trong `TopicManagementListView.tsx` → `navigate(ROUTES.ADMIN_TOPIC_CREATE)` |
-| Cập nhật | URL trực tiếp → [01] (mock `ordering-food`: `/admin/topics/ordering-food/edit`) | `useTopicUpsertContext` đọc `:topicId`; action "Mở chỉnh sửa (Bước 2)" trong `TopicManagementTable` còn UI-only |
+| Cập nhật | URL trực tiếp → [01] | `useTopicUpsertContext` đọc `:topicId`; nạp E2 `GET /api/management/topics/{id}` qua service + `useFetch` |
+| Cập nhật từ danh sách | Row click trên mục / "Mở chỉnh sửa (Bước 2)" → [01] update | `onEdit` trong `TopicManagementTable` → `navigate(adminTopicBasicInfoPath(topic.id))` (AC-17) |
 | [01] → [02] | "Tiếp tục" khi `isValid` | `handleContinue` trong `TopicUpsertBasicInfoView` → `adminTopicItemsPath(topicId)` |
 | [02] → [01] | "Quay lại" | `navigate(adminTopicBasicInfoPath(topicId))` |
 | [02] → Editor | "Sửa / Khởi tạo nội dung" | `onEdit`/`onInit` trong `TopicUpsertItemsView` → `topicItemSectionPath(id, "context", topicId)` |
@@ -126,9 +127,10 @@ Vẫn giữ tên `Create` cho const/type (`ROUTES.ADMIN_TOPIC_CREATE*`, URL `/ad
 
 | Tầng | Hook | Source hiện tại | `isValid` |
 |------|------|-----------------|-----------|
-| Upsert context | `useTopicUpsertContext` | `useParams().topicId` → `mode = create | update` + `TOPIC_UPSERT_MOCK_SNAPSHOTS` | — (chỉ resolve; `isMissing` → `EmptyState`) |
-| Topic draft | `useTopicBasicInfoForm` | `TOPIC_CREATE_DEFAULT_DRAFT` (create) / `snapshot.basicInfo` (update) | EN/VI + CEFR + … non-empty |
-| Items list | `useTopicItemsOverview` | create: `TOPIC_ITEMS_OVERVIEW_MOCK` + `TOPIC_SCRIPT_QUALITY_MOCK`; update: `snapshot.items`/`snapshot.quality` | — (chỉ `selectedId`, `removeItem` local) |
+| Upsert context | `useTopicUpsertContext` | route param → `mode = create | update`; **update nạp E2 qua `topicManagementService` + `useFetch`** (`loading`/`isMissing`/404); create = draft rỗng đồng bộ (cefr A1, category DINING) | — (chỉ resolve; `isMissing` → `EmptyState`) |
+| Topic draft | `useTopicBasicInfoForm` | create: draft rỗng (cefr A1, category DINING, các field khác trống); update: map từ wire `TopicManagementResponse` | **Chỉ `titleEn` + `titleVi`** (luật nháp, FR-01/03) |
+| Topic list | `useTopicList` (mới) | **E4 `GET /api/management/topics` server-side** (search/filter/page, `useFetch`); `counters` từ API (không theo filter) | — |
+| Items list | `useTopicItemsOverview` | create: mock + quality; update: `snapshot?.items`/`snapshot?.quality` (tùy chọn, F06 sẽ nối thật) | — (chỉ `selectedId`, `removeItem` local) |
 | Context draft | `useTopicItemContextForm` | `TOPIC_ITEM_CONTEXT_DEFAULT_DRAFT` (chung mọi item!) | title + desc + ≥1 turn có `speaker` + `textEn` |
 | Vocabulary list | `useTopicItemVocabularyForm` | `TOPIC_VOCABULARY_MOCK_CHOOSING_FOOD` (chung mọi item!) | 1..5 items, mỗi item có `word` + `meaningVi` + ≥1 example EN |
 | Expressions purposes | `useTopicItemExpressionsForm` | `TOPIC_EXPRESSIONS_MOCK_CHOOSING_FOOD` (chung mọi item!) | 1..3 purposes, mỗi purpose có EN/VI + 1..3 examples có EN/VI; audio null vẫn valid |
@@ -136,7 +138,7 @@ Vẫn giữ tên `Create` cho const/type (`ROUTES.ADMIN_TOPIC_CREATE*`, URL `/ad
 
 Lưu ý quan trọng:
 
-- Mode upsert suy ra từ route, không lưu state riêng: có `:topicId` → update, không có → create. Update mode hiện dùng snapshot mock (`ordering-food`); `topicId` lạ → `EmptyState`.
+- Mode upsert suy ra từ route, không lưu state riêng: có `:topicId` → update, không có → create. Update mode nạp E2 qua service + `useFetch` (`loading`/`isMissing`/404); `topicId` lạ (404) → `EmptyState`. Create = draft rỗng đồng bộ (cefr A1, category DINING).
 - Status item chỉ có **2 giá trị lưu trữ**: `publicationStatus: "DRAFT" | "PUBLISHED"` + completeness suy ra (`getTopicItemCompleteness`). 4 nhãn Stitch chỉ là mapping hiển thị trong `TopicItemStatusPill` — chi tiết xem [02] §4.
 - Context `speaker` là tên edit được (`maxLength=16`), `ContextDialogueRole` chỉ để neo styling — xem [03] §4.
 - Vocab dialog validate riêng (word + VI + ≥1 example EN), `audioFile` mới chỉ là **tên file** — xem [04] §4–§5.
@@ -146,20 +148,20 @@ Lưu ý quan trọng:
 
 ## 6. Nợ UI-only tổng hợp (gắn API thật thì xử lý)
 
-| Việc | Màn liên quan | Chi tiết ở |
-|------|---------------|------------|
-| Thay mock bằng service + `useFetch` | Tất cả | [01] §5.1, [02] §5.1, [03] §5.1, [04] §5.1, [06] §5.1 |
-| Gắn `onSaveDraft` cho footer | Tất cả | [01] §5.3, [02] §5.4, [03] §5.2, [04] §5.2, [06] §5.2 |
-| Upload cover thật (16:9, ≤2MB, preview) | [01] | [01] §5.2 |
-| Reorder kéo-thả + persist `order` | [02], [04] | [02] §5.2, [04] §5.4 (`moveItem` đã để sẵn, chưa đấu UI) |
-| Dialog tạo item + confirm xóa | [02], [04] | [02] §5.3/§5.5, [04] §5.5 |
-| Draft theo `itemId` (hiện 1 draft chung) | [03], [04], [06] | [03] §5.5, [04] §5.6, [06] §5.5 |
-| Audio upload + phát preview thật | [04], [05], [06] | [04] §5.3, [05] §5.3, [06] §5.3 |
-| Dựng step 3 Review (quiz đã xong ở [06]) | [02] | [02] §5.4, [01] §5.4 |
-| Nối entry "Mở chỉnh sửa (Bước 2)" từ list vào update mode | [List], [01] | [01] §2/§8 |
-| Thêm loại quiz `MATCHING` / `SENTENCE_ORDER` | [06] | [06] §5.6 |
-| Wizard đa bước: nâng state lên route cha/store | Tất cả | mục cuối checklist mỗi file |
-| Gắn API thật cho luồng upsert + list theo contract BE (F05) | [01], [List] | §9 của README này |
+| Việc | Màn liên quan | Chi tiết ở | Trạng thái |
+|------|---------------|------------|------------|
+| Thay mock bằng service + `useFetch` | List + upsert | [01] §5.1, [List] management-list-wiring.md §5 | **Đã thực hiện (F05 wiring)** |
+| Gắn `onSaveDraft` cho footer | Tất cả | [01] §5.3, [02] §5.4, [03] §5.2, [04] §5.2, [06] §5.2 | **Đã thực hiện (F05 wiring)**: "Lưu thay đổi"/"Lưu nháp" → E1/E3; "Tiếp tục" create → E1 POST → navigate items, update → E3 PATCH → navigate items |
+| Upload cover thật (16:9, ≤2MB, preview) | [01] | [01] §5.2 | Chưa làm (F08) |
+| Reorder kéo-thả + persist `order` | [02], [04] | [02] §5.2, [04] §5.4 (`moveItem` đã để sẵn, chưa đấu UI) | Chưa làm (F06) |
+| Dialog tạo item + confirm xóa | [02], [04] | [02] §5.3/§5.5, [04] §5.5 | Chưa làm (F06) |
+| Draft theo `itemId` (hiện 1 draft chung) | [03], [04], [06] | [03] §5.5, [04] §5.6, [06] §5.5 | Chưa làm (F06) |
+| Audio upload + phát preview thật | [04], [05], [06] | [04] §5.3, [05] §5.3, [06] §5.3 | Chưa làm (F06/F07) |
+| Dựng step 3 Review (quiz đã xong ở [06]) | [02] | [02] §5.4, [01] §5.4 | Chưa làm |
+| Nối entry "Mở chỉnh sửa (Bước 2)" từ list vào update mode | [List], [01] | [01] §2/§8 | **Đã thực hiện (F05 wiring)**: row click + menu item → `adminTopicBasicInfoPath(topic.id)` |
+| Thêm loại quiz `MATCHING` / `SENTENCE_ORDER` | [06] | [06] §5.6 | Chưa làm |
+| Wizard đa bước: nâng state lên route cha/store | Tất cả | mục cuối checklist mỗi file | Chưa làm |
+| Gắn API thật cho luồng upsert + list theo contract BE (F05) | [01], [List] | §9 của README này + management-list-wiring.md | **Đã thực hiện (F05 wiring)** |
 
 ## 7. Tìm vấn đề nhanh (debug map)
 
@@ -184,23 +186,25 @@ Lưu ý quan trọng:
 - [ ] Không màu/font/spacing/radius tuỳ tiện — đối chiếu `docs/design-system/*` (primary `#006565`, Hanken Grotesk, Learning Card `rounded-2xl` + padding 20px).
 - [ ] Đổi route/prop/state → cập nhật doc file con tương ứng **trong cùng change** (quy tắc docs-first trong `AGENTS.md`).
 
-## 9. Ghi chú contract BE cho feature này (F05 — đã đóng băng)
+## 9. Ghi chú contract BE cho feature này (F05 — đã đóng băng, design r7 / FRC v1.2)
 
-> Ghi ngày **2026-10-20**. Nguồn: workflow EngoLearn — FRC `FRC-topic-management-f05` v1.0 (APPROVED) + design record r5, §4 = contract đã đóng băng.
-> **Trạng thái:** phía BE đã chốt contract và đang triển khai; **phía FE chưa gắn API** (mọi màn vẫn dùng mock). Mục đích mục này: để FE biết trước phải bỏ/đổi gì khi gắn, tránh gửi field không tồn tại (BE trả 400).
+> Ghi ngày **2026-10-23**. Nguồn: `.opencode/workflow/artifacts/topic-management-f05-design.md` r7 + FRC `FRC-topic-management-f05` v1.2 (APPROVED). §4 = contract đã đóng băng.
+> **Trạng thái:** FE đang thiết kế wiring (chưa implement code — xem kế hoạch implement của FE lead). Mục đích mục này: FE biết phải bỏ/đổi gì khi gắn API, tránh gửi field không tồn tại (BE trả 400).
 > Đây là **ghi chú cross-project, không phải code FE** — task gắn API ở FE là change riêng.
 
 ### 9.1 Base path & endpoint
 
 - Base path: **`/api/management/topics`**. Prefix theo **bề mặt quản trị**, không theo vai trò — cả Admin và Content Manager đều quản trị topic nên không dùng `/admin/...`.
 - Route **UI** của FE (`/admin/topics/...`, `ROUTES.ADMIN_TOPIC_*`) **không đổi**; tầng service của FE map UI navigation → API path.
+- Mọi thành công trả về **đóng gói `ApiResponse<T>{data, timestamp}`**: HTTP body là `{"data": <payload nội dung>, "timestamp": "<ISO>"}`. FE **phải unwrap `.data`** trước khi dùng. E1 POST trả **201** + header `Location` (ngoài body) + body đóng gói. E2/E3/E4 trả **200** + body đóng gói.
+- Lỗi **không** được đóng gói: `{ "code", "message", "fieldErrors"? }` — `VALIDATION_ERROR` → 400, `RESOURCE_NOT_FOUND` → 404. `message` tiếng Anh (dành dev) → FE localize theo `code` + `field`, không dịch `message`.
 
 | Màn | Method + path | Kết quả |
 |---|---|---|
-| Tạo topic | `POST /api/management/topics` | `201` + header `Location` |
-| Mở topic để sửa | `GET /api/management/topics/{id}` | `200` |
-| Lưu thay đổi | `PATCH /api/management/topics/{id}` | `200` |
-| Danh sách topic | `GET /api/management/topics` | `200` |
+| Tạo topic | `POST /api/management/topics` | `201` + header `Location` + `ApiResponse<TopicManagementResponse>` |
+| Mở topic để sửa | `GET /api/management/topics/{id}` | `200` `ApiResponse<TopicManagementResponse>` |
+| Lưu thay đổi | `PATCH /api/management/topics/{id}` | `200` `ApiResponse<TopicManagementResponse>` |
+| Danh sách topic | `GET /api/management/topics` | `200` `ApiResponse<TopicManagementListResponse>` |
 
 ### 9.2 Field nào **không** có trong API (phải bỏ khỏi payload)
 
@@ -221,13 +225,14 @@ Lưu ý quan trọng:
 - `status`: `draft | published` (không có `BETA` trong scope này).
 - Response có thêm 2 field **tính sẵn**: `durationMinutes` (read-only) và `itemCount`.
 - `description` tối đa 250 ký tự (khớp `TOPIC_CREATE_MAX_DESCRIPTION`).
+- **Envelope thành công:** mỗi response là `{"data": <payload trên>, "timestamp": "..."}`. FE unwrap `.data` rồi mới dùng các field ở trên. `id` có trong `data` (cần thiết để `AC-17` mở edit từ list).
 
 ### 9.4 Hành vi API cần biết
 
 - **PATCH, không PUT.** Ngữ nghĩa gộp: field **vắng** = giữ nguyên · `null` = **xoá** (chỉ field optional) · `titleEn`/`titleVi` rỗng → **400** (tên luôn phải có).
 - **Field lạ trong body → 400.** Phải bỏ `tags`/`duration`/`coverMeta` trước khi gửi, nếu không request sẽ bị từ chối.
-- **Envelope lỗi**: `{ "code": string, "message": string, "fieldErrors"?: [{ "field": string, "message": string }] }` — `VALIDATION_ERROR` → 400, `RESOURCE_NOT_FOUND` → 404. `message` tiếng Anh (developer-facing) → **FE tự localize theo `code` + `field`**, không dịch `message`.
-- **List**: `?search=&cefr=&category=&status=&page=0&size=20` — `page` **0-based**, `size` 1..100, **không có param sort** (thứ tự cố định `updatedAt DESC`). Filter **AND** với nhau. `search` khớp **substring** không phân biệt hoa thường trên `titleEn` **hoặc** `titleVi`.
+- **Envelope lỗi**: `{ "code": string, "message": string, "fieldErrors"?: [{ "field": string, "message": string }] }` — `VALIDATION_ERROR` → 400, `RESOURCE_NOT_FOUND` → 404. `message` tiếng Anh (developer-facing) → **FE tự localize theo `code` + `field`**, không dịch `message`. Lỗi thành công thì **đóng gói** `{"data", "timestamp"}` (xem §9.3), lỗi thì **không**.
+- **List**: `?search=&cefr=&category=&status=&page=0&size=20` — `page` **0-based**, `size` 1..100, **không có param sort** (thứ tự cố định `updatedAt DESC`). Filter **AND** với nhau. `search` khớp **substring** không phân biệt hoa thường trên `titleEn` **hoặc** `titleVi`. Giá trị `"ALL"` của bộ lọc **bỏ qua** (không gửi param).
 - **`counters` tính trên toàn bộ topic quản trị, KHÔNG theo filter** (`total` / `published` / `draft`).
 - Item trong list: `id`, `titleEn`, `titleVi`, `cefr`, `category`, `status`, `itemCount`, `updatedAt`.
 - Rỗng vẫn trả **200** với `items: []`; phân biệt "không có kết quả" vs "chưa có topic nào" bằng `counters.total === 0`.

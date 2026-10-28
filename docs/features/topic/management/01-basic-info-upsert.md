@@ -22,9 +22,11 @@
 - Trigger tạo mới: nút "Tạo topic mới" (`TopicManagementPageHeader`) và nút tạo
   trong `TopicManagementEmptyState` → `navigate(ROUTES.ADMIN_TOPIC_CREATE)`
   (xem `TopicManagementListView.tsx` — `goToCreate`).
-- Trigger cập nhật: mở URL trực tiếp (mock hiện có: `/admin/topics/ordering-food/edit`).
-  Action "Mở chỉnh sửa (Bước 2)" trong `TopicManagementTable` vẫn UI-only, chưa nối
-  navigate — sẽ gắn ở change riêng.
+- Trigger cập nhật: (a) click vào mục trong `TopicManagementTable` (row click trên
+  tên chủ đề) và (b) action "Mở chỉnh sửa (Bước 2)" trong menu của `TopicManagementTable`,
+  cả hai → `navigate(adminTopicBasicInfoPath(topic.id))` (`AC-17`). Cùng view
+  `TopicUpsertBasicInfoView`; mode suy ra từ param `topicId` (`useTopicUpsertContext`).
+  `topicId` lạ (E2 404) → `EmptyState`.
 
 ## 3. Bản đồ component
 
@@ -38,8 +40,9 @@
 | C6 | `TopicTagsInput` | `components/management/upsert/basic-info/TopicTagsInput.tsx` | Tag pill closable + input Enter-để-thêm, chuẩn hóa (trim, bỏ `#` đầu, chống trùng/rỗng). |
 | C7 | `TopicUpsertTipsCallout` | `components/management/upsert/basic-info/TopicUpsertTipsCallout.tsx` | Callout mẹo, presentational, props có default. |
 | C8 | `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | "Quay lại" / "Lưu nháp" / "Tiếp tục". Mode update truyền `saveLabel="Lưu thay đổi"`; back create `navigate(-1)`, update về danh sách topic. |
-| — | `TopicUpsertBasicInfoView` | `views/management/TopicUpsertBasicInfoView.tsx` | Container dùng chung create/update: `useTopicUpsertContext` (mode + snapshot) + `useTopicBasicInfoForm(initial)` + validate "Tiếp tục". Không fetch. |
-| — | `useTopicUpsertContext` | `hooks/useTopicUpsertContext.ts` | Resolve `mode` (`create`/`update`), `topicId`, `snapshot`, `isMissing` từ route param. |
+| — | `TopicUpsertBasicInfoView` | `views/management/TopicUpsertBasicInfoView.tsx` | Container dùng chung create/update: `useTopicUpsertContext` (mode + snapshot) làm gate `loading` (`Loading`) / `isMissing` (`EmptyState`); khi snapshot sẵn sàng mới render `TopicBasicInfoForm` với `key={topicId ?? "create"}`. Không fetch. |
+| — | `TopicBasicInfoForm` (private, cùng file view) | `views/management/TopicUpsertBasicInfoView.tsx` | Form thật của bước 1: `useTopicBasicInfoForm(snapshot?.basicInfo)` + validate "Tiếp tục" + `POST`/`PATCH`. |
+| — | `useTopicUpsertContext` | `hooks/useTopicUpsertContext.ts` | Resolve `mode` (`create`/`update`), `topicId`, `snapshot`, `isMissing` từ route param; snapshot E2 được `useMemo` theo `data` để giữ identity ổn định giữa các render. |
 | — | `useTopicBasicInfoForm` | `hooks/useTopicBasicInfoForm.ts` | State `draft`, `patch`, `setCefr`, `addTag`, `removeTag`, `descriptionCount`, `isValid`; nhận `initial` (snapshot ở mode update). |
 | — | types & consts | `types/topic-create.types.ts` | `TopicBasicInfoDraft`, option lists, `TOPIC_CREATE_STEPS`, `TOPIC_CREATE_MAX_DESCRIPTION = 250`, default draft Stitch, `TopicUpsertMode`, `TopicUpsertSnapshot`, `TOPIC_UPSERT_MOCK_SNAPSHOTS`, `getTopicUpsertSteps`. |
 
@@ -47,13 +50,16 @@
 
 - View dùng chung cho 2 mode; `useTopicUpsertContext` đọc `topicId` từ route:
   - **create** (không có `topicId`): draft khởi tạo từ `TOPIC_CREATE_DEFAULT_DRAFT`
-    (giá trị mẫu Stitch: "Ordering Food at a Restaurant"...).
+    (rỗng: `cefr = A1`, `category = DINING`, các field khác trống).
   - **update** (`/admin/topics/:topicId/edit`): draft nạp từ
     `snapshot.basicInfo`; header đổi title "Cập nhật thông tin cơ bản của Chủ đề",
     badge "Đang cập nhật", autosave lấy `snapshot.updatedNote`; footer "Lưu thay đổi".
-  - `topicId` không có trong mock snapshot → `EmptyState` + "Quay lại danh sách".
-- Mọi field controlled từ `useTopicBasicInfoForm`, `initial` chỉ dùng ở lần mount
-  (route create/update là 2 route khác nhau nên view remount khi đổi mode).
+  - `topicId` không tồn tại (E2 `404`) → `EmptyState` + "Quay lại danh sách".
+- Mọi field controlled từ `useTopicBasicInfoForm`, `initial` chỉ được đọc ở lần mount.
+  Vì E2 là async, view **không** mount form khi `snapshot` chưa có: `TopicUpsertBasicInfoView`
+  gate theo `loading`/`isMissing` rồi render `TopicBasicInfoForm` với `key={topicId ?? "create"}`.
+  Nhờ vậy draft được nạp từ `snapshot.basicInfo` ngay sau khi fetch xong, và form remount
+  (nạp lại draft) khi mở topic khác. Không đồng bộ `initial` bằng effect trong hook.
 - Nút "Tiếp tục" validate UI tại chỗ: nếu `!isValid` → `showErrors = true`
   (hiện viền `ring-error` + câu báo lỗi dưới field trống); hợp lệ → navigate sang
   bước 2 cùng mode (`adminTopicItemsPath(topicId)`).
@@ -65,18 +71,30 @@
 
 1. **Snapshot mode update:** `getTopicUpsertSnapshot(topicId)` đọc
    `TOPIC_UPSERT_MOCK_SNAPSHOTS` (hiện có `ordering-food`). Khi có API: thay bằng
-   service + `useFetch` với callback `(signal: AbortSignal) => Promise<T>`, xử lý
-   `loading` (`Loading`) / `error` (`EmptyState`) theo pattern `TopicManagementListView`.
+   `topicManagementService.fetchTopicById` + `useFetch` với callback
+   `(signal: AbortSignal) => Promise<T>`, xử lý `loading` (`Loading`) /
+   `isMissing` (E2 404 → `EmptyState`) / `error` theo pattern `TopicManagementListView`.
+   Create mode = draft rỗng đồng bộ (cefr `A1`, category `DINING`, các field khác
+   trống) — không gọi API.
 2. **Cover:** placeholder CSS local (icon + badge "1200 x 675 px") — chưa upload/preview
    ảnh thật, chưa gọi API. Khi làm thật: thêm `<input type="file" accept="image/*">`,
    validate 16:9 / ≤2MB, preview object URL, lưu vào `draft.cover*` hoặc upload sớm.
-3. **Lưu nháp / Tiếp tục:** chưa persist (chưa có endpoint, chưa dùng `useFetch`).
-   Khi có API: `topicUpsertService` trong `src/shared/services/` (hoặc hook
-   `useTopicUpsert`) với callback `(signal: AbortSignal) => Promise<T>`; dùng
-   POST cho tạo mới, PATCH cho cập nhật. `onSaveDraft` hiện chưa truyền.
-   > **Contract BE đã đóng băng** (F05, 2026-10-20): `POST/GET/PATCH /api/management/topics[/{id}]`,
-   > field & giá trị trên wire, field phải bỏ (`tags`, `duration`, `coverMeta`), envelope lỗi, và
-   > phần validate cần nới — xem [README §9](./README.md#9-ghi-chú-contract-be-cho-feature-này-f05--đã-đóng-băng).
+   `coverName` là FE-local, không gửi lên API; map sang `coverUrl` chỉ khi có giá trị.
+3. **Lưu nháp / Tiếp tục:** chưa persist (chưa có endpoint). Khi có API:
+   `topicManagementService` trong `src/features/topic/services/` (feature service, **không**
+   dùng `httpService` vì `baseUrl` là `""` — xem `api-integration.md` §3) với `fetch`
+   trực tiếp qua Vite proxy `/api` → BE. Dùng `POST` cho tạo mới (E1), `PATCH` cho
+   cập nhật (E3). `onSaveDraft` của footer được gắn:
+   - Tạo mới: "Tiếp tục" → `isValid` → `POST` → thành công → `navigate(adminTopicItemsPath(newId))`;
+     "Lưu nháp" → `POST` → stay, thông báo thành công.
+   - Cập nhật: "Lưu thay đổi" → `PATCH` → stay, thông báo thành công; "Tiếp tục" → `PATCH`
+     thành công → `navigate(adminTopicItemsPath(topicId))`.
+   Loading/disabled khi submit; lỗi `400` map `fieldErrors` lên từng field, `404` → `EmptyState`,
+   `500` → thông báo chung.
+   > **Contract BE đã đóng băng** (F05, design r7 / FRC v1.2): `POST/GET/PATCH /api/management/topics[/{id}]`,
+   > thành công đóng gói `{"data", "timestamp"}` → FE **unwrap `.data`**; field & giá trị trên wire,
+   > field phải bỏ (`tags`, `duration`, `coverMeta`), envelope lỗi, và phần validate cần nới —
+   > xem [README §9](./README.md#9-ghi-chú-contract-be-cho-feature-này-f05--đã-đóng-băng).
 4. **Step 2-3:** `TopicUpsertStepper` đã hỗ trợ `activeStep`/`steps`; step 3
    (`Kiểm tra & Xuất bản`) chưa có view. Khi triển khai wizard đa bước: nâng state
    draft lên route cha hoặc store.
@@ -106,15 +124,17 @@
 ## 8. Checklist refactor (khi gắn dữ liệu thật)
 
 - [x] View dùng chung create/update (`TopicUpsertBasicInfoView`) + route edit.
-- [x] Mode update nạp draft từ snapshot mock theo `topicId`; thiếu snapshot → `EmptyState`.
+- [x] Mode update nạp draft từ E2 `GET /api/management/topics/{id}` qua service + `useFetch`;
+      `loading` → `Loading`, `404` → `isMissing`/`EmptyState`, `500` → thông báo chung.
 - [x] Copy mode update (header/badge/footer) + stepper note theo mode.
-- [ ] Thay default draft bằng draft rỗng khi tạo mới thật (giữ const default cho demo/test).
-- [ ] Thay `TOPIC_UPSERT_MOCK_SNAPSHOTS` bằng service + `useFetch` cho upsert (create/update)/save-draft;
+- [x] Thay default draft bằng draft rỗng khi tạo mới thật (cefr `A1`, category `DINING`, các field khác trống).
+- [x] Thay `TOPIC_UPSERT_MOCK_SNAPSHOTS` bằng service + `useFetch` cho upsert (create/update)/save-draft;
       xử lý `loading` (`Loading`) và `error` (`EmptyState`) theo pattern `TopicManagementListView`.
-- [ ] Nối entry "Mở chỉnh sửa (Bước 2)" từ `TopicManagementTable` vào `ROUTES.ADMIN_TOPIC_EDIT`.
-- [ ] Upload cover thật (§5.2); tag gợi ý/autocomplete nếu backend hỗ trợ.
+- [x] Nối entry "Mở chỉnh sửa (Bước 2)" từ `TopicManagementTable` vào `ROUTES.ADMIN_TOPIC_EDIT`
+      (row click + menu item → `adminTopicBasicInfoPath(topic.id)`, `AC-17`).
+- [ ] Upload cover thật (§5.2); tag gợi ý/autocomplete nếu backend hỗ trợ (F08).
 - [ ] Dựng step 3 (Review & Publish) + nâng state wizard lên route cha/store.
-- [ ] Gắn API theo contract BE F05 (README §9): dùng `POST`/`PATCH`/`GET /api/management/topics`,
+- [x] Gắn API theo contract BE F05 (README §9): dùng `POST`/`PATCH`/`GET /api/management/topics`,
       bỏ `tags`/`duration`/`coverMeta` khỏi payload, `coverName` → `coverUrl`, re-key `category`
       sang `DINING|TRAVEL|BUSINESS|DAILY|HEALTH`, và **nới `isValid` về chỉ `titleEn` + `titleVi`**
       (nháp không bắt buộc category/duration/description).

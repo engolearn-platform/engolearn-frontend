@@ -62,11 +62,11 @@ export const TOPIC_CREATE_CEFR_OPTIONS: TopicCreateCefrOption[] = [
 ];
 
 export const TOPIC_CREATE_CATEGORY_OPTIONS: TopicCategoryOption[] = [
-  { value: "dining-food", label: "Ẩm thực & Nhà hàng (Dining & Food)" },
-  { value: "travel-hospitality", label: "Du lịch & Khách sạn (Travel & Hospitality)" },
-  { value: "business-work", label: "Công sở & Kinh doanh (Business & Work)" },
-  { value: "daily-social", label: "Đời sống xã hội (Daily Social Life)" },
-  { value: "health-emergency", label: "Khám bệnh & Y tế (Health & Emergency)" },
+  { value: "DINING", label: "Ẩm thực & Nhà hàng (Dining & Food)" },
+  { value: "TRAVEL", label: "Du lịch & Khách sạn (Travel & Hospitality)" },
+  { value: "BUSINESS", label: "Công sở & Kinh doanh (Business & Work)" },
+  { value: "DAILY", label: "Đời sống xã hội (Daily Social Life)" },
+  { value: "HEALTH", label: "Khám bệnh & Y tế (Health & Emergency)" },
 ];
 
 export const TOPIC_CREATE_STEPS: TopicCreateStep[] = [
@@ -104,16 +104,15 @@ export const TOPIC_CREATE_DEFAULT_TAGS: string[] = [
 ];
 
 export const TOPIC_CREATE_DEFAULT_DRAFT: TopicBasicInfoDraft = {
-  titleEn: "Ordering Food at a Restaurant",
-  titleVi: "Gọi món tại nhà hàng",
-  cefr: "A2",
-  category: "dining-food",
-  duration: "Khoảng 45 phút học (4 bài học nhỏ)",
-  description:
-    "Học cách gọi món, hỏi về các món ăn trong thực đơn, diễn đạt yêu cầu đặc biệt và giao tiếp tự tin với nhân viên phục vụ.",
-  tags: TOPIC_CREATE_DEFAULT_TAGS,
-  coverName: "restaurant_cover_illustrated.webp",
-  coverMeta: "Kích thước tệp: 348 KB • Đã kiểm duyệt nội dung",
+  titleEn: "",
+  titleVi: "",
+  cefr: "A1",
+  category: "DINING",
+  duration: "",
+  description: "",
+  tags: [],
+  coverName: "",
+  coverMeta: "",
 };
 
 /**

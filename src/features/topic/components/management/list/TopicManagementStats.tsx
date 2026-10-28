@@ -1,8 +1,8 @@
 import { RefreshCw } from "lucide-react";
-import type { TopicManagementStats as Stats } from "@features/topic/types/topic.types";
+import type { TopicManagementCounters } from "@features/topic/types/topic-management.types";
 
 interface TopicManagementStatsProps {
-  stats: Stats;
+  stats: TopicManagementCounters;
 }
 
 export default function TopicManagementStats({ stats }: TopicManagementStatsProps) {
@@ -24,13 +24,6 @@ export default function TopicManagementStats({ stats }: TopicManagementStatsProp
         <span className="size-2 rounded-full bg-secondary-container" aria-hidden="true" />
         <span className="text-label-sm text-on-surface-variant">Bản nháp:</span>
         <span className="text-label-lg font-bold text-on-secondary-container">{stats.draft}</span>
-      </span>
-      <span className="flex items-center gap-2.5 rounded-full bg-surface-container-lowest px-3.5 py-1.5 shadow-sm">
-        <span className="size-2 rounded-full bg-tertiary" aria-hidden="true" />
-        <span className="text-label-sm text-on-surface-variant">
-          Đang hoàn thiện nội dung:
-        </span>
-        <span className="text-label-lg font-bold text-tertiary">{stats.inProgress}</span>
       </span>
       <span className="ml-auto hidden items-center gap-2 text-on-surface-variant sm:flex">
         <RefreshCw className="size-4" aria-hidden="true" />

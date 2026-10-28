@@ -92,7 +92,6 @@ const MOCK_STATS: TopicManagementStats = {
   total: 24,
   published: 17,
   draft: 6,
-  inProgress: 1,
 };
 
 export function useTopicManagement() {

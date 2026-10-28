@@ -6,13 +6,23 @@ interface TopicManagementEmptyStateProps {
   keyword: string;
   onClear: () => void;
   onCreate: () => void;
+  title?: string;
+  description?: string;
 }
 
 export default function TopicManagementEmptyState({
   keyword,
   onClear,
   onCreate,
+  title,
+  description,
 }: TopicManagementEmptyStateProps) {
+  const defaultTitle = title ?? "Không tìm thấy chủ đề phù hợp";
+  const defaultDescription =
+    description ??
+    (keyword
+      ? `Không có chủ đề nào khớp với từ khóa "${keyword}" cùng các tiêu chí lọc đang chọn. Hãy thử nới rộng khoảng tìm kiếm hoặc khởi tạo chủ đề mới.`
+      : "Không có chủ đề nào khớp với các tiêu chí lọc đang chọn. Hãy thử nới rộng khoảng tìm kiếm hoặc khởi tạo chủ đề mới.");
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-5 py-16 text-center">
       <div className="relative mb-4 flex items-center justify-center">
@@ -26,12 +36,8 @@ export default function TopicManagementEmptyState({
         </div>
       </div>
       <EmptyState
-        title="Không tìm thấy chủ đề phù hợp"
-        description={
-          keyword
-            ? `Không có chủ đề nào khớp với từ khóa "${keyword}" cùng các tiêu chí lọc đang chọn. Hãy thử nới rộng khoảng tìm kiếm hoặc khởi tạo chủ đề mới.`
-            : "Không có chủ đề nào khớp với các tiêu chí lọc đang chọn. Hãy thử nới rộng khoảng tìm kiếm hoặc khởi tạo chủ đề mới."
-        }
+        title={defaultTitle}
+        description={defaultDescription}
         className="p-0"
       />
       <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
