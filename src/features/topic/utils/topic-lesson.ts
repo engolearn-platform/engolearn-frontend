@@ -27,6 +27,8 @@ export function canViewPosition(candidate: PositionDto, attempt: AttemptDto, con
   const length = candidate.stage === "CONTEXT" ? 1 : candidate.stage === "VOCAB" ? vocabulary.length :
     candidate.stage === "EXPRESSIONS" ? purposes.length : attempt.progress.totalQuizCount;
   if (candidate.itemIndex >= length) return false;
+  // Running quizzes are only addressable at the current frontier, never by history URL.
+  if (!isContentPosition(candidate)) return attempt.status === "IN_PROGRESS" && samePosition(candidate, attempt.position);
   if (attempt.status === "COMPLETED") return true;
   const frontier = attempt.position;
   if (!frontier) return false;

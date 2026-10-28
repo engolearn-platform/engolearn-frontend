@@ -1,5 +1,7 @@
 # Chặng 3 — khung học theo attempt
 
+Delta 2026-10-28: cửa vào Practice đã được thay bằng consumer quiz thật theo [lát A](11-quiz-slice-a.md). Running nav/URL chỉ cho current quiz, không xem quiz đã đúng. Các đoạn nói dừng tại Practice dưới đây mô tả checkpoint chặng3; kết quả nối BE mới nhất ở09-live-integration.md.
+
 ## Thiết kế và route
 Theo thiết kế Từ vựng user cung cấp: header chứa tiến độ BE của lượt học, không còn hai progress card legacy. Sidebar bốn phần có dropdown; chỉ mở nhánh đang xem mặc định, người học có thể đóng/mở. Nút Quay lại vị trí đang học dùng attempt.position.
 Route giữ /topics/:topicId/attempts/:attemptId; query stage/index là vị trí đang xem, không phải tiến độ. from giữ đường về chi tiết. Review vẫn là receipt chặng 2, hoàn thiện ở chặng 5.

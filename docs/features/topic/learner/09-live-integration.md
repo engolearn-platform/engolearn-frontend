@@ -35,3 +35,12 @@ Cách chọn hồ sơ: POST /api/v1/topic-learning/local-profiles với displayN
 ## Planning kế tiếp — chưa triển khai
 
 [Kế hoạch hoàn tất FE](10-completion-implementation-plan.md) mô tả consumer cho bộ OpenSpec BE `complete-topic-learning-flow` và artifact dữ liệu mẫu riêng. Các màn quiz/result/review/retry trong kế hoạch chưa được coi là đã triển khai hoặc nghiệm thu; bằng chứng hiện tại phía trên giữ nguyên phạm vi đã quan sát.
+
+## Lát A — consumer quiz FE (2026-10-28)
+
+- Đã triển khai [consumer lát A](11-quiz-slice-a.md): quiz hai dạng, gửi ngay khi chọn, khoá pending, journal exact request qua reload, feedback chờ Tiếp tục, frontier-only quiz navigation và xử lý 410. Chưa triển khai result/retry/review đầy đủ ở B/C.
+- Kiểm tra cuối: `npm run build` PASS; `npm run lint -- --quiet` PASS (0 errors). Lần full lint trước đó có 0 errors/70 warnings cũ. Build còn cảnh báo chunk >500kB. `topic:types:check` PASS, 51 schemas; generator đã chạy, generated DTO không đổi vì chỉ thêm response410.
+- Dùng client thật qua http://localhost:3000/api/v1 → BE8080, không injected fetch/fixture. Viewer LEARNER `6ae04c82126ade188657302c`, đọc attempt/content thật thành công. Attempt `698a351bd05b76d98012c535` thuộc topic `6a7200000000000000000001`, revision6, FILL_BLANK/0, 50%.
+- Browser thật hiển thị lỗi quiz riêng; xem lại Context rồi Quay lại vị trí đang học giữ 50%. Đọc BE sau đó vẫn revision6/FILL_BLANK/0, chỉ access recency thay đổi. Helper nav được kiểm tra trên snapshot thật: Context/current quiz allowed; FILL_BLANK/1 và SITUATIONAL_CHOICE/0 bị chặn; query quiz tương lai trở về frontier.
+- Blocker hiện tại: GET `/topic-attempts/698a351bd05b76d98012c535/quiz` trả404; BE báo `No static resource .../quiz`. Client giữ status404/code HTTP_404 và UI không chuyển mock. Không gọi answer khi endpoint quiz còn thiếu.
+- Chưa chạy được: mỗi dạng một câu thật; sai→reload→đúng; replay/stale answer; mất response; hidden thật; audio options/feedback và completion. Không thay DB/seed completion để giả nghiệm thu. Không chạy historical mocked suites (`test:topic`, `test:topic-api`) theo yêu cầu người dùng.

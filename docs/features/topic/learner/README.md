@@ -5,7 +5,7 @@
 - /topics: Khám phá các topic chưa từng bắt đầu; query q/level/sort.
 - /my-topics: Đang học / Đã hoàn thành; query tab.
 - /topics/:topicId: outline + quyền thao tác + progress. Quay lại giữ nguồn/bộ lọc.
-- /topics/:topicId/attempts/:attemptId: điểm vào lượt thật, không dùng provider/mock cũ. Khung Context/Vocab/Expressions ở chặng3; quiz/result/review đầy đủ ở chặng4–5.
+- /topics/:topicId/attempts/:attemptId: điểm vào lượt thật, không dùng provider/mock cũ. Context/Vocab/Expressions đã nối BE; consumer quiz lát A đã triển khai nhưng endpoint quiz thật còn404. Result/review/retry đầy đủ ở B/C.
 
 ## Package
 
@@ -20,6 +20,9 @@
 | 06-api-foundation.md | Contract + typed client | Chặng1 hoàn thành |
 | 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Hoàn thành chặng2 |
 | 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
+| 09-live-integration.md | Bằng chứng FE proxy → BE thật | Giới hạn theo từng lát đã chạy |
+| 10-completion-implementation-plan.md | Kế hoạch A/B/C | A consumer đã triển khai; B/C chưa làm |
+| 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | FE triển khai; BE quiz còn404, chưa nghiệm thu |
 
 ## Luồng legacy còn tồn tại
 

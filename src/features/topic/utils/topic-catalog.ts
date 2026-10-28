@@ -63,6 +63,8 @@ export function topicErrorMessage(error: { code?: string; status?: number; messa
     NETWORK_ERROR: "Không kết nối được máy chủ. Vui lòng kiểm tra kết nối và thử lại.",
     INVALID_RESPONSE: "Dữ liệu từ máy chủ chưa hợp lệ. Vui lòng thử lại sau.",
     CONTRACT_MISMATCH: "Dữ liệu từ máy chủ chưa khớp với phiên bản hiện tại.",
+    QUIZ_COMPLETION_UNAVAILABLE: "Máy chủ chưa hoàn tất trạng thái bài học sau câu cuối. Vui lòng quay lại chủ đề hoặc thử tải lại sau.",
+    ITEM_HIDDEN: "Nội dung này không còn khả dụng. Vui lòng chọn bài học khác từ chủ đề.",
     SIGN_IN_REQUIRED: "Vui lòng đăng nhập để tiếp tục.",
     LEVEL_TOO_LOW: "Level hiện tại chưa đủ để bắt đầu lượt học này.",
     PREDECESSOR_INCOMPLETE: "Bạn cần hoàn thành bài trước để tiếp tục.",

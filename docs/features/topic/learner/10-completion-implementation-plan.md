@@ -2,6 +2,8 @@
 
 Status: planning only (2026-10-27). Baseline FE `a5d0b4a`, BE `4b36f15`; nghiệp vụ cập nhật ở business commit `aaff29c`. Không coi các task dưới đây là code đã triển khai.
 
+Cập nhật 2026-10-28: consumer FE lát A đã triển khai theo [bàn giao lát A](11-quiz-slice-a.md), chưa nghiệm thu end-to-end vì GET quiz thật còn 404. Chỉ đồng bộ delta 410 cho hai endpoint quiz; retry recovery hoãn sang C theo phạm vi người dùng chốt. B/C chưa triển khai. Completion giữ contract gốc; không chấp nhận `IN_PROGRESS + quiz:null` là hoàn thành.
+
 ## Đọc trước khi làm
 
 Nguồn hành vi: business repo `docs/usecase_spec/topic-learning/00-module.md`, F02/F03/F04, và `docs/technical/topic-learning/learner-runtime-mapping.md`. Bộ BE ở sibling `engolearn-backend/openspec/changes/complete-topic-learning-flow/`: proposal, specs, design, tasks, handoff. Artifact dữ liệu riêng: BE `docs/topic/sample-data-plan.md`.

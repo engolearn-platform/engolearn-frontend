@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, BookmarkCheck } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { useFetch } from "@shared/hooks";
 import { topicApi } from "@features/topic/services/topic-api.service";
+import { useTopicViewer } from "@features/topic/hooks/topic-viewer.context";
 import { TopicState, TopicProgressBar } from "@features/topic/components/learning/catalog/TopicState";
 import { safeTopicOrigin, topicDetailPath, topicPositionLabel, topicErrorMessage } from "@features/topic/utils/topic-catalog";
 
@@ -42,8 +43,9 @@ function TopicAttemptReceiptView() {
 }
 
 export default function TopicAttemptEntryView() {
+  const viewer = useTopicViewer();
   const { topicId = "", attemptId = "" } = useParams();
   const [parameters] = useSearchParams();
   return parameters.get("mode") === "review" ? <TopicAttemptReceiptView key={attemptId} /> :
-    <TopicLessonView key={topicId + ":" + attemptId} topicId={topicId} attemptId={attemptId} origin={safeTopicOrigin(parameters.get("from"))} />;
+    <TopicLessonView key={viewer.learnerId + ":" + topicId + ":" + attemptId} topicId={topicId} attemptId={attemptId} origin={safeTopicOrigin(parameters.get("from"))} />;
 }

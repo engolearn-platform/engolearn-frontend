@@ -6,11 +6,16 @@ import { assertLesson, isContentPosition, samePosition } from "@features/topic/u
 import { topicErrorMessage } from "@features/topic/utils/topic-catalog";
 import { useTopicViewer } from "./topic-viewer.context";
 import type { AttemptDto, PositionDto } from "@features/topic/types/topic-api.types";
+import { assertQuizAttempt } from "@features/topic/utils/topic-quiz";
 
 export function useTopicLesson(topicId: string, attemptId: string) {
   const viewer = useTopicViewer();
   const read = useCallback(async (signal: AbortSignal) => {
-    const [attempt, content] = await Promise.all([topicApi.getAttempt(attemptId, signal), topicApi.getAttemptContent(attemptId, signal)]);
+    const attempt = await topicApi.getAttempt(attemptId, signal);
+    assertQuizAttempt(attempt, { attemptId, topicId });
+    // Completed content is only available through review, which belongs to slice C.
+    if (attempt.status === "COMPLETED") return { attempt, content: null };
+    const content = await topicApi.getAttemptContent(attemptId, signal);
     assertLesson(attempt, content, topicId, attemptId);
     return { attempt, content };
   }, [topicId, attemptId]);
@@ -32,10 +37,14 @@ export function useTopicLesson(topicId: string, attemptId: string) {
   }, [result.data, attemptId, accessKey]);
   const attempt = result.data
     ? (updated && updated.revision > result.data.attempt.revision ? updated : result.data.attempt) : null;
+  const updateAttempt = useCallback((value: AttemptDto) => {
+    setUpdated(previous => !previous || value.revision > previous.revision ? value : previous);
+  }, []);
 
   const advance = async (source: PositionDto): Promise<AttemptDto | null> => {
-    if (!attempt || !result.data || locked.current || result.loading || attempt.status !== "IN_PROGRESS" ||
+    if (!attempt || !result.data?.content || locked.current || result.loading || attempt.status !== "IN_PROGRESS" ||
       !samePosition(source, attempt.position) || !isContentPosition(source)) return null;
+    const content = result.data.content;
     locked.current = true;
     setBusy(true);
     setMutationError("");
@@ -47,7 +56,7 @@ export function useTopicLesson(topicId: string, attemptId: string) {
         scope: JSON.stringify([viewer.learnerId, attemptId, "advance", body]),
         run: async idempotencyKey => {
           const value = await topicApi.advanceContent(attemptId, body, { idempotencyKey, signal: controller.signal });
-          assertLesson(value, result.data!.content, topicId, attemptId);
+          assertLesson(value, content, topicId, attemptId);
           if (value.revision <= attempt.revision) throw Object.assign(new Error("Revision did not advance"), { code: "CONTRACT_MISMATCH" });
           return value;
         },
@@ -67,5 +76,5 @@ export function useTopicLesson(topicId: string, attemptId: string) {
       if (!controller.signal.aborted) setBusy(false);
     }
   };
-  return { ...result, attempt, content: result.data?.content ?? null, busy, mutationError, accessError, advance };
+  return { ...result, attempt, content: result.data?.content ?? null, busy, mutationError, accessError, advance, updateAttempt };
 }

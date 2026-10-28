@@ -10,14 +10,14 @@ function mediaUrl(url: string | null | undefined) {
   if (!url) return undefined;
   try { const parsed = new URL(url); return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : undefined; } catch { return undefined; }
 }
-function LessonImage({ url, alt }: { url: string | null; alt: string }) {
+export function LessonImage({ url, alt }: { url: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
   const source = mediaUrl(url);
   if (!source) return null;
   return failed ? <div className="flex aspect-video items-center justify-center rounded-xl bg-surface text-on-surface-variant"><ImageOff className="size-6" aria-hidden="true" /><span className="ml-2">Không tải được ảnh</span></div> :
     <img src={source} alt={alt} onError={() => setFailed(true)} className="aspect-video w-full rounded-xl object-cover" />;
 }
-function LessonAudio({ url, label }: { url: string | null; label: string }) {
+export function LessonAudio({ url, label }: { url: string | null; label: string }) {
   const player = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);

@@ -2,10 +2,12 @@
 
 > Live integration: user cấm dùng mock/fixture. Launcher và fixture server đã gỡ. Các bằng chứng fixture bên dưới là lịch sử, không phải trạng thái tích hợp hiện tại. Xem [09-live-integration.md](09-live-integration.md).
 
+> 2026-10-28: [consumer quiz lát A](11-quiz-slice-a.md) gọi GET quiz/POST answer thật, có request recovery và feedback; GET quiz trên môi trường hiện tại trả404 nên chưa xác minh chấm/feedback với BE. Không có fallback mock.
+
 # Learner — trạng thái nguồn dữ liệu
 
 Ngày2026-10-27, sau chặng3 FE. “Client thật” nghĩa là code gọi endpoint thật; không đồng nghĩa BE target đã chạy thành công.
-Không fallback mock trong ứng dụng mặc định. Fixture chỉ chạy bằng lệnh npm run dev:topic-fixtures.
+Không fallback mock trong ứng dụng mặc định. Lệnh/launcher fixture lịch sử đã gỡ; không dùng để kiểm chứng các lát hiện tại.
 
 | Màn | Nội dung | Tiến độ/quyền | Trạng thái kiểm chứng |
 | --- | --- | --- | --- |
@@ -18,6 +20,7 @@ Không fallback mock trong ứng dụng mặc định. Fixture chỉ chạy bằ
 | Vocab legacy | Mock useTopicVocab; audio giả lập | Provider mock | Chỉ route cũ; entry mới audio URL thật |
 | Expressions legacy | Mock useTopicExpressions; audio giả lập | Provider mock | Chỉ route cũ; entry mới theo purpose từ API |
 | Quiz legacy | Placeholder | Provider mock | Thiết kế mới đã duyệt; chặng4 |
+| Quiz attempt (lát A) | GET current quiz + POST answers | revision/progress/feedback từ BE, pending journal theo viewer | Consumer đã triển khai; BE GET quiz thật404, chưa nghiệm thu grading |
 | Result/review/retry UI đầy đủ | Chưa triển khai | Contract/client đã có | Chặng4–5 |
 
 Nguồn chuẩn: [API foundation](06-api-foundation.md), [catalog](07-topic-catalog.md), [bàn giao BE](../../../handout/topic-learning/backend-handoff.md).

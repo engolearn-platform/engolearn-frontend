@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
@@ -12,6 +12,8 @@ import { primaryTopicItem, safeTopicOrigin, topicErrorMessage, TOPIC_LEVELS } fr
 
 export default function TopicDetailView() {
   const { topicId = "" } = useParams();
+  const location = useLocation();
+  const notice = (location.state as { topicNotice?: string } | null)?.topicNotice;
   const [parameters] = useSearchParams();
   const origin = safeTopicOrigin(parameters.get("from"));
   const viewer = useTopicViewer();
@@ -28,6 +30,7 @@ export default function TopicDetailView() {
       <div className="mx-auto flex min-h-20 max-w-7xl items-center px-5 md:px-8"><Link to={origin} className="flex min-h-12 items-center gap-3 rounded-xl font-semibold text-primary focus-visible:outline-2 focus-visible:outline-primary"><ArrowLeft className="size-5 shrink-0" aria-hidden="true" /><span>Chủ đề{data ? " / " + data.titleVi : ""}</span></Link></div>
     </header>
     <main className="mx-auto max-w-7xl px-5 py-6 md:px-8">
+      {notice && <p role="status" className="mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-body-md">{notice}</p>}
       {!data ? <TopicState title={detail.error ? (detail.error.status === 404 ? "Không tìm thấy chủ đề" : "Không tải được chủ đề") : "Đang tải chủ đề…"} description={detail.error ? topicErrorMessage(detail.error) : undefined} loading={!detail.error} error={!!detail.error} onRetry={detail.error ? detail.refetch : undefined} /> :
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
           <div className="space-y-5 lg:col-span-8">
