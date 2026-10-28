@@ -1,5 +1,7 @@
 # Lát 1 — public catalog dùng BE thật
 
+Latest coordination status (2026-10-28): BE quiz read/answer are now available; earlier quiz404 observations below remain historical evidence. The user reports both quiz types playable. Later read-only checks found the existing attempt at revision18 with quiz:null/IN_PROGRESS and result404. A is not fully accepted; completion and recovery of that stuck attempt are B work. See `11-quiz-slice-a.md` Coordination update. No new application checks were run for this documentation sync.
+
 User yêu cầu không dùng mock/fixture nữa. Dừng preview4318, bỏ launcher fixture; dùng FE3000 proxy BE8080.
 Phạm vi: guest viewer thực tế khi BE chưa có auth; GET topics/search/filter/cursor và GET detail với metadata/counts từ DB hiện tại. Không gán learner/CEFR/progress giả, không seed/reset DB.
 BE mở rộng response hiện hữu cho UI: total, totalItemCount, metadata tổng của detail; progress=null và actions yêu cầu đăng nhập trong public slice. Các route học còn dùng provider giả cũ không được FE mở.

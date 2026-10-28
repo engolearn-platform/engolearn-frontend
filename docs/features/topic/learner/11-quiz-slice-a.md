@@ -2,6 +2,10 @@
 
 Ngày 2026-10-28. FE đã triển khai; integration quiz chưa nghiệm thu. Không đổi BE, seed/reset dữ liệu hoặc thêm mock/fixture. Lát B (result) và C (review/retry) chưa thuộc thay đổi này.
 
+## Coordination update
+
+The endpoint404 evidence below describes the initial FE handoff, not the latest runtime. BE quiz routes are now available, and the user reports both types playable. A later read through FE3000 found attempt `698a351bd05b76d98012c535` at revision18/SITUATIONAL_CHOICE2, `GET quiz` 200 with quiz:null and status IN_PROGRESS; GET result still404. This is the documented BE Slice A completion gap. FE currently treats the final unchanged frontier as CONTRACT_MISMATCH and retains the pending request; B must replace the misleading endless retry message and recover the stored final submission without resetting progress or writing on GET. Formal remaining A acceptance and B end-to-end acceptance are open. BE coordination tasks/handoff now reference FE `82d2201` and `b841354`; next work uses BE branch `feat/complete-topic-learning-flow`.
+
 ## Route, component và state
 
 Giữ `/topics/:topicId/attempts/:attemptId`, query stage/index chỉ điều khiển vị trí đang xem. `TopicLessonView` dùng `useTopicLesson` và `useTopicQuiz`; `TopicQuiz` là presentational component trong `components/learning/attempt`. Tái sử dụng Button, TopicState, LessonImage/LessonAudio, header progress và dropdown nav. Mẫu câu vẫn flatten purposes trực tiếp, toàn bộ examples của một purpose cùng màn.

@@ -2,7 +2,7 @@
 
 Status: planning only (2026-10-27). Baseline FE `a5d0b4a`, BE `4b36f15`; nghiệp vụ cập nhật ở business commit `aaff29c`. Không coi các task dưới đây là code đã triển khai.
 
-Cập nhật 2026-10-28: consumer FE lát A đã triển khai theo [bàn giao lát A](11-quiz-slice-a.md), chưa nghiệm thu end-to-end vì GET quiz thật còn 404. Chỉ đồng bộ delta 410 cho hai endpoint quiz; retry recovery hoãn sang C theo phạm vi người dùng chốt. B/C chưa triển khai. Completion giữ contract gốc; không chấp nhận `IN_PROGRESS + quiz:null` là hoàn thành.
+Cập nhật đồng bộ 2026-10-28: consumer FE lát A ở `b841354`, quiz 410 contract ở `82d2201`. BE đã có quiz read/answer; lỗi endpoint404 trong báo cáo trước là lịch sử. Người dùng đã làm được hai dạng; nghiệm thu có ghi bằng chứng cho cả hai dạng/reload/replay vẫn chưa hoàn tất. GET quiz cuối hiện trả200 với `quiz:null`, attempt vẫn `IN_PROGRESS`, result404: completion thuộc B, không phải success completion. B/C chưa triển khai. Retry recovery hoãn sang C. Lát B phải khôi phục lượt đã lưu đáp án cuối và sửa thông báo retry vô hạn của FE, không reset dữ liệu hoặc dựng tổng kết giả. BE tiếp tục trên `feat/complete-topic-learning-flow`; không đổi kiến trúc/hạ tầng trong bước đồng bộ docs này.
 
 ## Đọc trước khi làm
 
