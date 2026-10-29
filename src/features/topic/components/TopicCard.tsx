@@ -1,171 +1,32 @@
-import { Zap, CheckCircle2, ListChecks, Clock, Link2, Play, Lock, ArrowRight } from "lucide-react";
-import type { KeyboardEvent } from "react";
-import { Card } from "@shared/components/Card";
-import { Button } from "@/core/components/shadcn/button";
-import { cn } from "@shared/utils/cn";
+import { ArrowRight, BookOpen, Clock3, ListChecks, LockKeyhole, Sparkles } from "lucide-react";
+import { Link } from "react-router";
+import type { TopicCardDto } from "@features/topic/types/topic-api.types";
+import { topicDetailPath } from "@features/topic/utils/topic-catalog";
+import { TopicProgressBar } from "@features/topic/components/learning/catalog/TopicState";
 
-type Status = "inProgress" | "completed" | "locked";
-
-export interface TopicCardProps {
-  id: string;
-  title: string;
-  imgSrc: string;
-  status: Status;
-  vocabCount: number;
-  duration: string;
-  progress?: number;
-  linkLabel?: string;
-  onAction?: () => void;
-}
-
-export function TopicCard({ title, imgSrc, status, vocabCount, duration, progress, linkLabel, onAction }: TopicCardProps) {
-  const isLocked = status === "locked";
-  const isInProgress = status === "inProgress";
-  const isCompleted = status === "completed";
-  const isClickable = !isLocked && onAction !== undefined;
-
-  const handleCardClick = () => {
-    if (isClickable) {
-      onAction();
-    }
-  };
-
-  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (isClickable && (event.key === "Enter" || event.key === " ")) {
-      event.preventDefault();
-      onAction();
-    }
-  };
-
-  return (
-    <Card
-      onClick={handleCardClick}
-      onKeyDown={handleCardKeyDown}
-      tabIndex={isClickable ? 0 : undefined}
-      role={isClickable ? "link" : undefined}
-      className={cn(
-        "overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 group relative p-0 rounded-2xl border-outline-variant/40",
-        isLocked && "opacity-75 grayscale-[30%]",
-        isClickable && "cursor-pointer focus-visible:outline-2 focus-visible:outline-primary"
-      )}
-    >
-      {/* Image / Banner area */}
-      <div className="h-32 bg-surface-container-low relative overflow-hidden">
-        {isLocked ? (
-          <div className="h-full flex items-center justify-center bg-surface-container-high">
-            <Lock className="size-8 text-on-surface-variant/40" />
-          </div>
-        ) : (
-          <img src={imgSrc} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        )}
-        {/* Status badge */}
-        {!isLocked && (
-          <div
-            className={cn(
-              "absolute top-3 left-3 px-2 py-1 rounded-md text-label-sm font-semibold flex items-center gap-1 shadow-sm",
-              isInProgress
-                ? "bg-secondary-container text-on-secondary-container"
-                : "bg-surface text-primary border border-outline-variant/20"
-            )}
-          >
-            {isInProgress && <Zap className="size-3.5" fill="currentColor" />}
-            {isCompleted && <CheckCircle2 className="size-3.5 text-primary" fill="currentColor" />}
-            {isInProgress ? "Đang học" : "Đã xong"}
-          </div>
-        )}
-        {isLocked && (
-          <div className="absolute inset-0 bg-surface/50 backdrop-blur-[2px] flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-surface shadow-sm flex items-center justify-center text-on-surface-variant">
-              <Lock className="size-5" fill="currentColor" />
-            </div>
-          </div>
-        )}
+export function TopicCard({ topic, origin, mine = false, learner }: { topic: TopicCardDto; origin: string; mine?: boolean; learner: boolean }) {
+  const limited = !mine && learner && topic.startAvailability.reason === "LEVEL_TOO_LOW";
+  const progress = learner ? topic.progress : null;
+  return <Link to={topicDetailPath(topic.topicId, origin)} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest shadow-sm transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+    <div className="relative flex aspect-video items-center justify-center overflow-hidden bg-primary/5 text-primary/30">
+      <BookOpen className="size-12" aria-hidden="true" />
+      {topic.coverUrl && <img key={topic.coverUrl} src={topic.coverUrl} alt="" loading="lazy" onError={event => { event.currentTarget.hidden = true; }} className="absolute inset-0 size-full object-cover transition-transform group-hover:scale-105" />}
+      <span className="absolute left-4 top-4 rounded-full bg-surface-container-lowest px-3 py-1 text-label-lg font-semibold text-primary">{topic.cefrLevel}</span>
+      {limited && <span className="absolute right-3 top-4 flex items-center gap-1 rounded-full bg-secondary-container px-3 py-1 text-label-sm font-semibold text-on-secondary-container"><LockKeyhole className="size-3.5" aria-hidden="true" />Chưa phù hợp level</span>}
+    </div>
+    <div className="flex flex-1 flex-col gap-4 p-5">
+      <h2 className="text-headline-sm font-semibold text-on-surface transition-colors group-hover:text-primary">{topic.titleVi}</h2>
+      <div className="flex flex-wrap gap-x-3 gap-y-2 text-label-lg text-on-surface-variant">
+        <span className="inline-flex items-center gap-1.5"><BookOpen className="size-4" aria-hidden="true" />{topic.vocabularyCount} từ vựng</span>
+        <span className="inline-flex items-center gap-1.5"><ListChecks className="size-4" aria-hidden="true" />{topic.quizCount} bài tập</span>
+        <span className="inline-flex items-center gap-1.5"><Clock3 className="size-4" aria-hidden="true" />{topic.durationMinutes} phút</span>
       </div>
-
-      {/* Card body */}
-      <div className="p-5 flex flex-col h-full">
-        <h3 className={cn("text-headline-sm font-semibold text-on-surface mb-2", !isLocked && "group-hover:text-primary transition-colors", isLocked && "text-on-surface-variant")}>
-          {title}
-        </h3>
-
-        {/* Meta chips */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="inline-flex items-center gap-1 text-on-surface-variant text-label-sm bg-surface-container-low px-2 py-1 rounded-md">
-            <ListChecks className="size-3.5" />
-            {vocabCount} Từ vựng
-          </span>
-          <span className="inline-flex items-center gap-1 text-on-surface-variant text-label-sm bg-surface-container-low px-2 py-1 rounded-md">
-            <Clock className="size-3.5" />
-            {duration}
-          </span>
-        </div>
-
-        {/* Progress bar (in-progress only) */}
-        {isInProgress && typeof progress === "number" && (
-          <div className="mb-4">
-            <div className="flex justify-between text-label-sm mb-1 text-on-surface-variant">
-              <span>Tiến độ</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="w-full h-2 bg-primary/10 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-        )}
-
-        {/* Completed progress bar (100%) */}
-        {isCompleted && (
-          <div className="mb-4">
-            <div className="flex justify-between text-label-sm mb-1 text-primary">
-              <span>Hoàn thành</span>
-              <span>100%</span>
-            </div>
-            <div className="w-full h-2 bg-primary/10 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full" style={{ width: "100%" }} />
-            </div>
-          </div>
-        )}
-
-        {/* Locked hint */}
-        {isLocked && (
-          <p className="text-body-md text-sm text-on-surface-variant/80 mb-4 line-clamp-2">
-            Hoàn thành bài học "Thói quen hằng ngày" để mở khóa chủ đề này.
-          </p>
-        )}
-
-        {/* Footer */}
-        <div className={cn("mt-auto flex items-center justify-between", isCompleted && "pt-1 border-t border-outline-variant/20")}>
-          <span className="text-xs text-on-surface-variant/80 flex items-center gap-1">
-            <Link2 className="size-3.5" />
-            {linkLabel ?? ""}
-          </span>
-          {isInProgress && (
-            <Button
-              variant="default"
-              size="icon"
-              onClick={(event) => {
-                event.stopPropagation();
-                onAction?.();
-              }}
-              className="rounded-full"
-            >
-              <Play className="size-4" fill="currentColor" />
-            </Button>
-          )}
-          {isCompleted && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onAction?.();
-              }}
-              className="text-primary text-label-sm font-semibold flex items-center gap-1 hover:underline cursor-pointer"
-            >
-              Ôn tập <ArrowRight className="size-4" />
-            </button>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
+      {topic.hasNewContent && learner && <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-label-sm font-medium text-on-secondary-container"><Sparkles className="size-4" aria-hidden="true" />Có nội dung mới</span>}
+      {progress && <div className="space-y-2 text-label-sm text-on-surface-variant"><div className="flex justify-between gap-2">
+        <span>{mine ? (progress.status === "COMPLETED" ? "Đã hoàn thành: " : "Tiến độ: ") : limited ? "" : "Chưa học · "}{progress.completedItemCount} / {progress.totalItemCount} tình huống</span><span className="font-semibold text-primary">{progress.percent}%</span>
+      </div><TopicProgressBar percent={progress.percent} label={"Tiến độ " + topic.titleVi} /></div>}
+      {limited && <p className="rounded-xl bg-surface p-3 text-label-sm text-on-surface-variant">Cần đạt level {topic.cefrLevel} để bắt đầu học.</p>}
+      <span className={"mt-auto flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-label-lg font-semibold " + (limited ? "bg-surface-container-high text-on-surface" : "bg-primary text-on-primary")}>Xem chi tiết <ArrowRight className="size-4" aria-hidden="true" /></span>
+    </div>
+  </Link>;
 }

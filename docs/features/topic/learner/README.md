@@ -1,51 +1,41 @@
-# Learner docs — Luồng học của người học
+# Learner docs — Học theo chủ đề
 
-> Package tài liệu cho các màn **learner** (người học) của Topic.
-> Đối tác admin (soạn nội dung): `docs/features/admin/01–04`.
-> Trạng thái mock ↔ API tập trung: `00-mock-api-status.md`.
+Current 2026-10-29 UX: [08](08-attempt-learning.md), [11](11-quiz-slice-a.md), and [14](14-review-retry-slice-c.md) define reached-question navigation, content-only scroll readiness, stable Continue/quiz feedback, shared review navigation/footer, exclusive item resume/retry and confirmed whole-topic reset. These supersede older checkpoint descriptions below. Current static/live verification is tracked separately; no historical fixture result proves this revision.
 
-## Luồng học & route
+## Catalog và chi tiết (chặng2)
 
-```text
-/topics                        TopicPage (danh sách chủ đề)
-  │ back / chọn chủ đề
-  ▼
-/topics/:topicId               01-topic-detail.md — Chi tiết chủ đề
-  │ "Tiếp tục học" (sidebar + từng unit)
-  ▼
-/topics/:topicId/context       02-topic-context.md — Bối cảnh & Hội thoại (CONTEXT)
-  │ CTA "Bắt đầu học từ vựng" / footer Tiếp tục / sidebar vocab
-  ▼
-/topics/:topicId/vocab/:vocabId  03-topic-vocab.md — Từ vựng (VOCAB, paging theo vocabOrder)
-  │ hết list → tạm về /topics (sẽ sang Expressions)
-▼
-/topics/:topicId/expressions    05-topic-expressions.md — Mẫu câu giao tiếp (SENTENCES)
-   │ CTA "Chuyển sang Luyện tập (Quiz)" / footer Tiếp tục (chưa có màn Practice)
-   ▼
-(plần luyện tập — EXERCISES, chưa có màn)
-/topics/:topicId/practice       (planned)
-```
+- /topics: Khám phá các topic chưa từng bắt đầu; query q/level/sort.
+- /my-topics: Đang học / Đã hoàn thành; query tab.
+- /topics/:topicId: outline + quyền thao tác + progress. Quay lại giữ nguồn/bộ lọc.
+- /topics/:topicId/attempts/:attemptId: live lesson/quiz entry; completed attempts redirect to item result. Legacy completion recovery is an explicit action. See slice B below for current implementation and acceptance limits.
+- /topics/:topicId/attempts/:attemptId/result and /topics/:topicId/result: server-owned item/topic scores and legal next actions. Review/retry lifecycle remains C.
 
-Tracking tiến trình xuyên suốt mọi chặng: `04-learning-progress.md`
-(`furthest_reached`, PATCH mock, rule hoàn thành, sidebar states).
+## Package
 
-## Danh sách docs
+| File | Nội dung | Trạng thái |
+| --- | --- | --- |
+| 00-mock-api-status.md | Bảng nguồn dữ liệu hiện tại | Cập nhật cùng code |
+| 01-topic-detail.md | Chi tiết standalone, actions, sidebar progress | Client thật, BE chưa liên thông |
+| 02-topic-context.md | Màn Context legacy | Giữ route cũ; entry mới dùng API theo 08 |
+| 03-topic-vocab.md | Màn Vocab legacy | Giữ route cũ; entry mới dùng API theo 08 |
+| 04-learning-progress.md | Provider tiến độ legacy | Vẫn mock; không áp dụng catalog/detail mới |
+| 05-topic-expressions.md | Màn Expressions legacy | Giữ route cũ; entry mới dùng API theo 08 |
+| 06-api-foundation.md | Contract + typed client | Chặng1 hoàn thành |
+| 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Hoàn thành chặng2 |
+| 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
+| 09-live-integration.md | Bằng chứng FE proxy → BE thật | Giới hạn theo từng lát đã chạy |
+| 10-completion-implementation-plan.md | A/B/C plan and latest scoped exclusions | A/B/C consumers implemented within recorded scope |
+| 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | Implemented; early404 evidence is historical, remaining acceptance tracked with B |
+| 12-completion-slice-b.md | Completion recovery, item/topic result and legal next actions | FE consumer implemented; live acceptance recorded separately |
+| 14-review-retry-slice-c.md | Read-only review, confirmed retry and frozen session resume | FE implemented; focused parent live acceptance recorded |
 
-| # | File | Màn / Route | Trạng thái code |
-|---|------|-------------|-----------------|
-| 00 | `00-mock-api-status.md` | Bảng mock ↔ API toàn package | — |
-| 01 | `01-topic-detail.md` | Chi tiết chủ đề — `/topics/:topicId` | Đã implement (mock) |
-| 02 | `02-topic-context.md` | Bối cảnh & hội thoại — `.../context` | Đã implement (mock, audio noop) |
-| 03 | `03-topic-vocab.md` | Từ vựng — `.../vocab/:vocabId` | Đã implement (mock, audio simulation) |
-| 04 | `04-learning-progress.md` | Contract progress dùng chung | Đã implement (mock PATCH) |
-| 05 | `05-topic-expressions.md` | Mẫu câu giao tiếp — `.../expressions` | Đã implement (mock, audio simulation) |
+## Luồng legacy còn tồn tại
 
-## Quy ước của package
+Các route .../context, .../vocab/:vocabId, .../expressions và .../practice giữ nguyên để tránh sửa khung học trước checkpoint3.
+Các action ở ba màn mới không dẫn vào chúng. Khung mới đã dùng header progress, dropdown nav lồng cấp và nút quay về frontier theo thiết kế Từ vựng đã duyệt. Xem [08-attempt-learning.md](08-attempt-learning.md).
+Reuse learning views cho review/retry ở chặng5, với đúng mode và version của attempt.
 
-- Mỗi doc theo khung: nguồn Stitch → route & trigger → bản đồ component →
-  state → điểm UI-only → khác biệt vs Stitch → responsive → checklist refactor.
-- Shell dùng chung (`ContextTopBar`, `LessonProgressCard`,
-  `TopicStructureNav`, `MemoryTipCard`, `LearningFooterNav`) không có doc
-  riêng — ghi trong mục reuse của từng doc.
-- Sửa view learner nào thì cập nhật doc tương ứng + bảng `00` (rule trong
-  `AGENTS.md`).
+## Quy ước
+
+Mỗi thay đổi cập nhật feature doc và bảng00 trong cùng commit.
+Kiểm chứng: [verification](../../../handout/topic-learning/verification.md).

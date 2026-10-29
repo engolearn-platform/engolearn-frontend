@@ -13,7 +13,7 @@
 > [traceability/deviations.md](traceability/deviations.md)
 
 **Legend:** enforcement is **automated** only if `npm run build` (`tsc -b && vite build`) or
-`npm run lint` (`eslint .`) catches it. Everything else is **review** or **manual**. Test runner,
+`npm run lint` (`eslint .`) catches it. Topic API boundary checks also use `npm run test:topic-api` (D13). Other behavior is **review** or **manual**. React/browser suites,
 CI, and pre-commit hooks are **NOT AVAILABLE** ([guides/testing.md](guides/testing.md)).
 
 ---

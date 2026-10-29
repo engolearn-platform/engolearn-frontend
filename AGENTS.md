@@ -9,7 +9,8 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 - `npm run dev` — dev server on port 3000 (see `vite.config.ts`).
 - `npm run build` — always `tsc -b && vite build`; type errors fail the build, fix them first.
 - `npm run lint` — `eslint .` (ignores `dist` only).
-- No test runner, no CI, no pre-commit configured. Verify with `build` + `lint`.
+- Topic catalog/state tests: `npm run test:topic`. User instruction: never use mock/fixture verification; run the real FE proxy against the real BE. Historical mocked tests must not be used for this integration.
+- Topic API boundary tests: `npm run test:topic-api` (native Node22.18+, no added test dependency). Contract/type drift: `npm run topic:types:check`. No React/browser suite, CI or pre-commit configured. Always verify with `build` + `lint`; also run API tests when touching the topic client/contract.
 
 ## Routing / entrypoints
 

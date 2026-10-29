@@ -1,3 +1,5 @@
+> Ghi chú chặng3: tài liệu bên dưới mô tả route/provider legacy. Luồng attempt mới đã dùng API, header progress, dropdown nav và advance theo [08-attempt-learning.md](08-attempt-learning.md); không dùng scroll/quick check để ghi completion.
+
 # Learner — Mẫu câu giao tiếp (Useful Expressions)
 
 > Tài liệu workflow cho màn learner *Mẫu câu giao tiếp* (Stitch: "Web — Topic Item: 4. Mẫu câu giao tiếp (Useful Expressions)").

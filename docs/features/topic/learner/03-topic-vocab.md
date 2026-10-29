@@ -1,3 +1,5 @@
+> Ghi chú chặng3: tài liệu bên dưới mô tả route/provider legacy. Luồng attempt mới đã dùng API, header progress, dropdown nav và advance theo [08-attempt-learning.md](08-attempt-learning.md); không dùng scroll/quick check để ghi completion.
+
 # Learner — Từ vựng (Topic Vocab)
 
 > Tài liệu workflow cho màn learner Từ vựng của 1 Topic Item, stage VOCAB của

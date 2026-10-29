@@ -1,71 +1,52 @@
 # Guide — Testing & validation strategy
 
-> **Purpose:** What verification actually exists today, the PROPOSED strategy layered on top of it,
-> and what evidence a change must attach.
-> **Scope:** All verification for `engolearn-frontend`. Nothing here may claim tooling the repo
-> doesn't have.
-> **Owner:** Frontend engineering docs — update the moment a runner/CI is introduced (`C-11`).
-> **Status:** §1 EXISTING (verified). §2–§4 PROPOSED — not approved; nothing accepted.
-> **Relationships:** [code-validation.md](../code-validation.md) (the executable procedure) ·
-> [AGENTS.md](../../../AGENTS.md) (Commands) · [implementation-constraints.md](../implementation-constraints.md) ·
-> [00-mock-api-status.md](../../features/topic/learner/00-mock-api-status.md) ·
-> [../traceability/README.md](../traceability/README.md)
+Updated 2026-10-27 for topic API stage 1.
+Related: [code validation](../code-validation.md), [decision register](../decisions/README.md), [topic evidence](../../handout/topic-learning/verification.md).
 
-## 1. EXISTING — what is available today
+## Available checks
 
-| Capability | Status | Exact command / evidence |
-|---|---|---|
-| Type check + bundle | AVAILABLE | `npm run build` (= `tsc -b && vite build`, `package.json:8`) |
-| Lint | AVAILABLE | `npm run lint` (= `eslint .`, ignores `dist` only) |
-| Dev server (manual checks) | AVAILABLE | `npm run dev` (port 3000, `vite.config.ts:9-11`) |
-| Unit/integration test runner | **NOT AVAILABLE** | no test script, no runner dependency in `package.json` |
-| CI pipeline | **NOT AVAILABLE** | no `.github/workflows` or equivalent configured |
-| Pre-commit hooks | **NOT AVAILABLE** | no husky/lint-staged/commitlint configured |
-| Coverage tooling | **NOT AVAILABLE** | — |
-| Automated auth/permission checks | **NOT AVAILABLE** | guards themselves are NOT IMPLEMENTED ([auth.md](auth.md)) |
-| a11y/lighthouse automated audit | **NOT AVAILABLE** | manual spot-check only ([a11y-ui-quality.md](a11y-ui-quality.md)) |
+| Capability | Command / status |
+| --- | --- |
+| Type check and production build | npm run build |
+| Lint | npm run lint; no new warnings allowed |
+| Contract refs, metadata and generated DTO drift | npm run topic:types:check |
+| Topic API transport/contract-boundary tests | npm run test:topic-api |
+| Dev server for browser checks | npm run dev |
+| React component/hook/browser test suite | NOT IMPLEMENTED |
+| CI, pre-commit, coverage | NOT IMPLEMENTED |
+| Real multi-user auth/ownership tests | NOT IMPLEMENTED; BE topic provider is fixed |
 
-The EXISTING project rule stands: **verify with build + lint** ([AGENTS.md](../../../AGENTS.md)
-Commands; [project-structure.md §11.7](../../architecture/project-structure.md)).
+Build+lint remain mandatory. Native API tests are additional when editing the topic contract/client/generator.
+The native runner requires Node22.18+ and strips erasable TypeScript in tests; npm dependencies were not added.
+Production code still compiles through the existing TypeScript/Vite build.
 
-### Playwright claim — UNKNOWN / unverified
+## D13 — narrow tooling choice
 
-`docs/features/topic/learner/00-mock-api-status.md` (row Progress) contains the phrase
-"Forward-only đã verify Playwright". **No Playwright dependency, config, or test file exists in
-this repo** (verified against `package.json` and repo files) — the claim is **UNKNOWN / unverified**
-here. Do not repeat it as a fact; treat any Playwright evidence as external until a config lands.
+Status: accepted 2026-10-27, routine implementation choice within the user's approved staged API work and FE-mocked persona tests.
+Choice: node:test + assert, injected fetch, and a dependency-free OpenAPI-to-TypeScript generator. No test library, store or browser automation framework is introduced.
+Rationale: test the transport's consequential failure paths and contract wiring using Node already installed.
+Alternative: add a general test framework now, or keep build/lint only. A framework adds dependencies before component-testing needs are settled; build/lint alone cannot exercise cancellation, failed/malformed responses or mutation identity.
+Scope: API boundary only. This does not settle auth guards, React testing tooling, CI or a whole-project testing standard.
+The source OpenAPI is written in JSON syntax (valid YAML1.2) so Node can parse it without a YAML library.
 
-## 2. PROPOSED — strategy (layered, cheapest first)
+## What the tests prove
 
-1. **Type + lint gate (existing, mandatory):** `npm run build` && `npm run lint`, zero errors and
-   no **new** warnings (see `C-04` warn-policy in [code-validation.md](../code-validation.md) step 3).
-2. **Manual scripted checks (existing practice, now made explicit):** the loading/empty/success/
-   failure + navigation regression checklist in [code-validation.md](../code-validation.md) steps 5–6,
-   executed in `npm run dev`.
-3. **Future automated tests (PROPOSED direction, runner UNKNOWN):** when a runner is introduced it
-   should cover, in priority order: (a) domain logic pure functions
-   (`topic-progress.types.ts` `isAhead`/`deriveSidebarStates`, form `isValid` derivations),
-   (b) hook behavior (`useFetch` abort/normalize), (c) critical flows end-to-end.
-   **Choosing/adding a runner is not yet a registered decision** — record one in
-   [../decisions/README.md](../decisions/README.md) before installing anything (`C-13`-style rule;
-   no dependency sneaks in as "just a devDep" without a decision).
+- Stable code/status survive ProblemDetail; malformed success/HTML failures do not become mocks, guest or empty state.
+- AbortSignal propagation, encoded search/cursors/IDs, same-origin credentials.
+- No automatic retry of an uncertain mutation; required caller-supplied Idempotency-Key.
+- All client operations match their declared paths/methods/request schemas.
+- Guest and A1–C2 viewer payloads can be supplied in isolated tests without auth/user collection.
 
-## 3. What validation evidence to attach
+They do not prove server idempotency/transactions/authorization, UI state isolation, accessibility or real end-to-end behavior.
+Generated-type checks validate local refs and operation metadata; no external full OpenAPI validator has been run.
 
-For every change (from [code-validation.md](../code-validation.md) "Evidence to record"):
+## Evidence and later stages
 
-- Verbatim outcome of `npm run build` and `npm run lint` (pass/fail + counts).
-- Docs updated (paths + rows/sections) proving the docs-first loop.
-- Mock-matrix rows affected, or "none".
-- Manual checklist answers (security/a11y/regression) + explicitly what was NOT checked and why.
-- Any **UNKNOWN** encountered (backend contract, touch-target measurement, Playwright claim…).
+Record actual command outcomes, existing/new warnings, UI scenarios run/skipped and BE dependencies in [verification.md](../../handout/topic-learning/verification.md).
+Only call a screen integrated when its hook/view calls the real endpoint and that has been exercised.
+The historical Playwright wording in learner docs remains unverified: this task has not added or run Playwright.
 
-Evidence format: included in the change report to the orchestrator. There is **no automated place
-to store evidence** (CI/test reports **NOT AVAILABLE**) — the report is the record.
+## Chặng2: state và browser fixture
 
-## 4. Reporting outcomes
-
-Use the three outcomes defined in [../code-validation.md](../code-validation.md): **PASS** /
-**FAIL** / **BLOCKED**. BLOCKED inputs are typically: missing frozen API contract, unsettled
-decision (`D1`–`D12`), or tooling marked **NOT AVAILABLE** — never claim PASS by substituting an
-unavailable check with an assumed one.
+npm run test:topic chạy cả33 API checks và12 catalog/state/mutation checks (45 tests). Native Node alias hook chỉ dùng trong test để đọc module TypeScript; không thêm dependency hoặc store.
+Browser QA dùng CUA với npm run dev:topic-fixtures (API4317, UI4318), tách khỏi npm run dev mặc định. Fixture không phải BE implementation và không chứng minh auth/transactions. Bằng chứng cụ thể và các phần chưa chạy ghi ở verification.md. Chưa có React/browser test suite được cấu hình trong repo.

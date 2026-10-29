@@ -1,9 +1,10 @@
 import {
   BookOpenText,
+  Bookmark,
+  Compass,
   ClipboardList,
   GraduationCap,
   Home,
-  LayoutGrid,
   RotateCcw,
   Search,
   Target,
@@ -21,7 +22,8 @@ export interface LearningNavItem {
 
 export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
   { label: "Trang chủ", to: ROUTES.HOME, icon: Home },
-  { label: "Chủ đề", to: ROUTES.TOPICS, icon: LayoutGrid },
+  { label: "Khám phá chủ đề", to: ROUTES.TOPICS, icon: Compass },
+  { label: "Chủ đề của tôi", to: ROUTES.MY_TOPICS, icon: Bookmark },
   { label: "Ngữ pháp", to: ROUTES.GRAMMAR, icon: BookOpenText },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
   { label: "Tra từ", icon: Search, disabled: true },
