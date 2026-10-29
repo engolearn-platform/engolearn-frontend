@@ -37,6 +37,7 @@ function mapWeek(week: LearningPathDetailDto["weeks"][number]): LearningPathWeek
     startDate: formatDate(week.openedAt),
     endDate: precedingDate(week.status === "CLOSED" ? week.closedAt ?? week.closeAt : week.closeAt),
     closeDate: formatDate(week.closeAt),
+    closeAt: week.closeAt,
     remainingDays: week.status === "OPEN" ? remainingDays(week.closeAt) : undefined,
     assigned: overall?.assigned ?? week.progress?.assigned ?? 0,
     answered: overall?.answered ?? week.progress?.answered ?? 0,
@@ -47,6 +48,7 @@ function mapWeek(week: LearningPathDetailDto["weeks"][number]): LearningPathWeek
     days: week.days.map((day) => ({
       number: day.dayNo,
       status: day.status,
+      closedAt: day.closedAt,
       assigned: day.progress?.assigned ?? 0,
       answered: day.progress?.answered ?? 0,
       completionRate: rounded(day.result?.completionRate),
