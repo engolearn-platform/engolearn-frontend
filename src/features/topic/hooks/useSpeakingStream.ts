@@ -87,7 +87,7 @@ export function useSpeakingStream(
             }
             if (message.type === "INTERIM_TRANSCRIPT") setInterim(message.text ?? "");
             if (message.snapshot) onSnapshotRef.current(message.snapshot as SpeakingSession);
-            if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR"].includes(message.type)) {
+            if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR", "SESSION_ENDED"].includes(message.type)) {
               setRecording("idle");
               setInterim("");
               void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});

@@ -29,7 +29,8 @@ export interface SpeakingContentSnapshot {
   title: string;
   description: string;
   goals: SpeakingGoal[];
-  goalPercentage: number;
+  goalPercentage?: number | null;
+  completionPolicyVersion?: "REQUIRED_GOALS_V2" | "LEGACY_RATIO_V1" | null;
   minimumValidTurns: number;
   vocabulary: string[];
   expressions: string[];
@@ -76,6 +77,10 @@ export interface SpeakingSession {
   validTurnCount: number;
   committedTurnCount: number;
   achievedGoalIds: string[];
+  goalResults: { goalId: string; priority: "REQUIRED" | "OPTIONAL";
+    achieved: boolean; evidenceQuote: string | null }[];
+  requiredGoalsMet: boolean;
+  completionEligible: boolean;
   controllerEpoch: number;
   revision: number;
   canStartTurn: boolean;
@@ -88,7 +93,5 @@ export interface SpeakingItemConfig {
   itemVersionId: string;
   title: string;
   goals: SpeakingGoal[];
-  goalPercentage: number;
-  requiredGoalCount: number;
   minimumValidTurns: number;
 }

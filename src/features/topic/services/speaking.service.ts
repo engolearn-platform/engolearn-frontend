@@ -1,6 +1,21 @@
 import type { SpeakingItemConfig, SpeakingSession } from "@features/topic/types/speaking.types";
 
 const BASE = "/api/v1/speaking";
+export const speakingDemoEnabled = import.meta.env.DEV ||
+  import.meta.env.VITE_SPEAKING_DEMO_ENABLED === "true";
+
+function demoLearnerKey(): string | null {
+  if (!speakingDemoEnabled) return null;
+  const storageKey = "engolearn-speaking-demo-learner-key";
+  let key = localStorage.getItem(storageKey);
+  if (!key) {
+    const generated = sessionStorage.getItem("engolearn-dev-user-id") ??
+      import.meta.env.VITE_DEV_USER_ID ?? crypto.randomUUID();
+    key = generated;
+    localStorage.setItem(storageKey, generated);
+  }
+  return key;
+}
 
 export class SpeakingApiError extends Error {
   readonly code: string;
@@ -14,11 +29,13 @@ async function request<T>(path: string, method = "GET", body?: object): Promise<
   const devUser = import.meta.env.DEV
     ? (sessionStorage.getItem("engolearn-dev-user-id") ?? import.meta.env.VITE_DEV_USER_ID ?? "dev-user")
     : null;
+  const demoKey = demoLearnerKey();
   const response = await fetch(`${BASE}${path}`, {
     method,
     headers: {
       ...(body ? { "Content-Type": "application/json" } : {}),
       ...(devUser ? { "X-Dev-User-Id": devUser } : {}),
+      ...(demoKey ? { "X-Speaking-Demo-Learner-Key": demoKey } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
