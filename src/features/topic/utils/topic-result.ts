@@ -20,6 +20,7 @@ export function assertItemResult(value: ItemResultDto, topicId: string, attemptI
   requireResult(!value.nextItemAvailability.allowed || !!value.nextTopicItemId);
 }
 export function assertTopicResult(value: TopicResultDto, topicId: string): void {
+  requireResult(value?.resetAvailability && typeof value.resetAvailability.allowed === "boolean");
   requireResult(value && value.topicId === topicId && typeof value.titleVi === "string" && score(value) &&
     value.retryAvailability && typeof value.retryAvailability.allowed === "boolean" && Array.isArray(value.items) &&
     value.items.every(item => typeof item.topicItemId === "string" && typeof item.title === "string" &&

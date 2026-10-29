@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { topicApi } from "@features/topic/services/topic-api.service";
-import { runTopicMutation } from "@features/topic/services/topic-mutation-journal";
+import { clearTopicGeneration, runTopicMutation } from "@features/topic/services/topic-mutation-journal";
 import { useTopicViewer } from "./topic-viewer.context";
-import { topicAttemptPath, topicErrorMessage } from "@features/topic/utils/topic-catalog";
+import { topicAttemptPath, topicDetailPath, topicErrorMessage } from "@features/topic/utils/topic-catalog";
 import type { TopicDetailDto, TopicItemSummaryDto } from "@features/topic/types/topic-api.types";
 
-export type TopicLaunchAction = "start" | "continue" | "review" | "retry" | "resumeRetry" | "restartRetry" | "topicRetry" | "resumeTopicRetry";
-type Selection = { action: TopicLaunchAction; item?: TopicItemSummaryDto; observedRetrySessionId: string | null };
+export type TopicLaunchAction = "start" | "continue" | "review" | "retry" | "resumeRetry" | "reset" | "resumeTopicRetry";
+type Selection = { action: TopicLaunchAction; item?: TopicItemSummaryDto; observedRetrySessionId: string | null; generation: number };
 export function useTopicLaunch(detail: TopicDetailDto | null, origin: string, refresh: () => void) {
   const viewer = useTopicViewer();
   const navigate = useNavigate();
@@ -28,29 +28,35 @@ export function useTopicLaunch(detail: TopicDetailDto | null, origin: string, re
     if (action === "resumeTopicRetry" && detail.retrySession?.currentAttemptId) {
       navigate(topicAttemptPath(detail.topicId, detail.retrySession.currentAttemptId, origin)); return;
     }
-    if (!["start", "retry", "restartRetry", "topicRetry", "resumeRetry", "resumeTopicRetry"].includes(action)) return;
+    if (!["start", "retry", "reset", "resumeRetry", "resumeTopicRetry"].includes(action)) return;
     setError(""); lock.current = true; setBusy(true);
     const request = new AbortController();
     controller.current = request;
     const resuming = action === "resumeRetry" || action === "resumeTopicRetry";
-    const replaceRetrySessionId = resuming || action === "start" ? null : selection.observedRetrySessionId;
+    const replaceRetrySessionId = null;
     const targetItemId = action === "resumeTopicRetry" ? detail.retrySession?.nextTopicItemId : item?.topicItemId;
     const retrySessionId = resuming ? selection.observedRetrySessionId : null;
     try {
-      const body = action === "topicRetry" ? { replaceRetrySessionId } : {
+      const identity = { learnerId: viewer.learnerId, topicId: detail.topicId, generation: selection.generation };
+      if (action === "reset") {
+        const receipt = await runTopicMutation({ identity, scope: JSON.stringify([viewer.learnerId, detail.topicId, "reset", selection.generation]), run: idempotencyKey => topicApi.resetTopic(detail.topicId, { generation: selection.generation }, { idempotencyKey, signal: request.signal }) });
+        if (request.signal.aborted) return;
+        if (receipt.topicId !== detail.topicId || receipt.generation !== selection.generation + 1) throw Object.assign(new Error("Invalid reset receipt"), { code: "CONTRACT_MISMATCH" });
+        clearTopicGeneration(identity, detail.items.flatMap(value => [value.learningAttempt?.attemptId, value.retryAttempt?.attemptId, value.completedAttemptId].filter((id): id is string => !!id)));
+        refresh();
+        navigate(topicDetailPath(detail.topicId, origin), { replace: true, state: { topicNotice: "Đã xoá tiến độ và kết quả chủ đề. Bạn có thể bắt đầu học lại." } });
+        return;
+      }
+      const body = {
         mode: action === "start" ? "LEARN" as const : "RETRY" as const,
         retrySessionId,
         replaceRetrySessionId,
       };
       const attemptId = await runTopicMutation({
-        scope: JSON.stringify([viewer.learnerId, detail.topicId, targetItemId, action, body]),
+        identity,
+        scope: JSON.stringify([viewer.learnerId, detail.topicId, selection.generation, targetItemId, action, body]),
         run: async idempotencyKey => {
           const options = { idempotencyKey, signal: request.signal };
-          if (action === "topicRetry") {
-            const session = await topicApi.startTopicRetry(detail.topicId, body, options);
-            if (!session.currentAttemptId || !session.retrySessionId || session.scope !== "TOPIC" || session.topicId !== detail.topicId) throw Object.assign(new Error("Invalid retry result"), { code: "CONTRACT_MISMATCH" });
-            return session.currentAttemptId;
-          }
           if (!targetItemId || body.mode === undefined) throw new Error("Missing topic item");
           const attempt = await topicApi.startAttempt(targetItemId, { mode: body.mode, retrySessionId, replaceRetrySessionId }, options);
           if (!attempt.attemptId || attempt.topicItemId !== targetItemId || attempt.topicId !== detail.topicId ||
@@ -72,8 +78,8 @@ export function useTopicLaunch(detail: TopicDetailDto | null, origin: string, re
   }
   const choose = (action: TopicLaunchAction, item?: TopicItemSummaryDto) => {
     if (!detail || busy) return;
-    const selection = { action, item, observedRetrySessionId: detail.retrySession?.status === "IN_PROGRESS" ? detail.retrySession.retrySessionId : null };
-    if (action === "retry" || action === "restartRetry" || action === "topicRetry") setConfirmation(selection);
+    const selection = { action, item, generation: detail.generation ?? 0, observedRetrySessionId: detail.retrySession?.status === "IN_PROGRESS" ? detail.retrySession.retrySessionId : null };
+    if (action === "retry" || action === "reset") setConfirmation(selection);
     else void perform(selection);
   };
   return { busy, error, confirmation, choose, cancel: () => setConfirmation(null), confirm: () => {

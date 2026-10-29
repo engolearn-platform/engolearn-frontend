@@ -1,4 +1,4 @@
-import type { AttemptDto, LessonContentDto, PositionDto, ContentStageDto } from "@features/topic/types/topic-api.types";
+import type { AttemptDto, LessonContentDto, PositionDto, ContentStageDto, QuizNavigationEntryDto } from "@features/topic/types/topic-api.types";
 
 export const LESSON_SECTIONS = [
   { stage: "CONTEXT", label: "Bối cảnh & Hội thoại" },
@@ -21,25 +21,25 @@ export function isContentPosition(position: PositionDto): position is PositionDt
 export function samePosition(a: PositionDto | null, b: PositionDto | null) {
   return a !== null && b !== null && a.stage === b.stage && a.itemIndex === b.itemIndex;
 }
-export function canViewPosition(candidate: PositionDto, attempt: AttemptDto, content: LessonContentDto) {
+export function canViewPosition(candidate: PositionDto, attempt: AttemptDto, content: LessonContentDto, entries: QuizNavigationEntryDto[] = []) {
   if (!Number.isInteger(candidate.itemIndex) || candidate.itemIndex < 0 || !STAGES.includes(candidate.stage)) return false;
   const { vocabulary, purposes } = lessonUnits(content);
   const length = candidate.stage === "CONTEXT" ? 1 : candidate.stage === "VOCAB" ? vocabulary.length :
     candidate.stage === "EXPRESSIONS" ? purposes.length : attempt.progress.totalQuizCount;
   if (candidate.itemIndex >= length) return false;
-  // Running quizzes are only addressable at the current frontier, never by history URL.
-  if (!isContentPosition(candidate)) return attempt.status === "IN_PROGRESS" && samePosition(candidate, attempt.position);
+  // A running attempt exposes only its frontier and authoritatively solved rows.
+  if (!isContentPosition(candidate)) return attempt.status === "IN_PROGRESS" && (samePosition(candidate, attempt.position) || entries.some(entry => entry.type === candidate.stage && entry.index === candidate.itemIndex && entry.status === "COMPLETED"));
   if (attempt.status === "COMPLETED") return true;
   const frontier = attempt.position;
   if (!frontier) return false;
   const order = STAGES.indexOf(candidate.stage) - STAGES.indexOf(frontier.stage);
   return order < 0 || (order === 0 && candidate.itemIndex <= frontier.itemIndex);
 }
-export function viewingPosition(query: URLSearchParams, attempt: AttemptDto, content: LessonContentDto): PositionDto | null {
+export function viewingPosition(query: URLSearchParams, attempt: AttemptDto, content: LessonContentDto, entries: QuizNavigationEntryDto[] = []): PositionDto | null {
   const stage = query.get("stage");
   const index = query.get("index");
   const candidate = { stage, itemIndex: index === null || !/^\d+$/.test(index) ? -1 : Number(index) } as PositionDto;
-  if (stage && canViewPosition(candidate, attempt, content)) return candidate;
+  if (stage && canViewPosition(candidate, attempt, content, entries)) return candidate;
   return attempt.position;
 }
 export function contentPositions(content: LessonContentDto): Array<PositionDto & { label: string }> {

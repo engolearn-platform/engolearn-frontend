@@ -12,8 +12,9 @@ function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId
   const loaded = useItemResult(topicId, attemptId);
   const data = loaded.data;
   const launch = useTopicLaunch(data?.detail ?? null, origin, loaded.refetch);
-  const next = useNextTopicItem(data?.result ?? null, origin, loaded.refetch);
+  const next = useNextTopicItem(data?.result ?? null, origin, loaded.refetch, data?.detail.generation ?? 0);
   const detailPath = topicDetailPath(topicId, origin);
+  if (loaded.error?.code === "TOPIC_RESET") return <Navigate to={detailPath} replace state={{ topicNotice: "Tiến độ chủ đề đã được xoá. Hãy chọn bài học từ trạng thái mới nhất." }} />;
   if (loaded.error?.status === 410 && loaded.error.code === "ITEM_HIDDEN") return <Navigate to={detailPath} replace state={{ topicNotice: "Nội dung này không còn khả dụng. Vui lòng chọn bài học khác." }} />;
   return <main className="min-h-screen bg-surface px-5 py-6 text-on-surface">
     <div className="mx-auto max-w-3xl space-y-6">
@@ -29,15 +30,14 @@ function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId
           {data.detail.progress?.status === "COMPLETED" && <Button asChild className="min-h-12 w-full rounded-xl"><Link to={topicResultPath(topicId, origin)}>Xem tổng kết chủ đề<ArrowRight className="size-5" aria-hidden="true" /></Link></Button>}
           <div className="flex flex-wrap gap-3">
             {data.item?.actions.review.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("review", data.item)} className="min-h-12 rounded-xl"><BookOpen className="size-5" aria-hidden="true" />Xem lại</Button>}
-            {data.item?.actions.retry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("retry", data.item)} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại bài này</Button>}
+            {!data.item?.actions.resumeRetry.allowed && data.item?.actions.retry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("retry", data.item)} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại bài này</Button>}
             {data.item?.actions.resumeRetry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("resumeRetry", data.item)} className="min-h-12 rounded-xl">Tiếp tục làm lại</Button>}
-            {data.item?.actions.restartRetry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("restartRetry", data.item)} className="min-h-12 rounded-xl">Làm lại từ đầu</Button>}
             <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={detailPath}>Về chi tiết chủ đề</Link></Button>
           </div>
         </section>
       </>}
     </div>
-    <TopicRetryDialog open={!!launch.confirmation} replacing={!!launch.confirmation?.observedRetrySessionId} cancel={launch.cancel} confirm={launch.confirm} />
+    <TopicRetryDialog open={!!launch.confirmation} reset={launch.confirmation?.action === "reset"} cancel={launch.cancel} confirm={launch.confirm} />
   </main>;
 }
 

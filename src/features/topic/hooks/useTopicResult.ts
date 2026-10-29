@@ -14,7 +14,8 @@ export function useItemResult(topicId: string, attemptId: string) {
     const [result, detail] = await Promise.all([topicApi.getItemResult(attemptId, signal), topicCatalogService.detail(topicId, signal)]);
     assertItemResult(result, topicId, attemptId);
     const item = detail.items.find(item => item.topicItemId === result.topicItemId);
-    if (item?.completedAttemptId && item.completedAttemptId !== attemptId) {
+    if (item?.completedAttemptId !== attemptId) {
+      if (!item?.completedAttemptId && detail.generation > 0) throw Object.assign(new Error("Topic was reset"), { code: "TOPIC_RESET", status: 409 });
       throw Object.assign(new Error("Result reference changed"), { code: "RESULT_CHANGED", status: 409 });
     }
     return { result, detail, item };
@@ -25,11 +26,12 @@ export function useTopicResult(topicId: string) {
   return useFetch(useCallback(async (signal: AbortSignal) => {
     const [result, detail] = await Promise.all([topicApi.getTopicResult(topicId, signal), topicCatalogService.detail(topicId, signal)]);
     assertTopicResult(result, topicId);
+    if (detail.progress?.status !== "COMPLETED") throw Object.assign(new Error("Topic result changed"), { code: detail.generation > 0 ? "TOPIC_RESET" : "RESULT_CHANGED", status: 409 });
     return { result, detail };
   }, [topicId]));
 }
 
-export function useNextTopicItem(result: ItemResultDto | null, origin: string, refresh: () => void) {
+export function useNextTopicItem(result: ItemResultDto | null, origin: string, refresh: () => void, generation = 0) {
   const viewer = useTopicViewer();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -49,7 +51,8 @@ export function useNextTopicItem(result: ItemResultDto | null, origin: string, r
       retrySessionId: result.retrySession?.retrySessionId ?? null, replaceRetrySessionId: null };
     try {
       const attempt = await runTopicMutation({
-        scope: JSON.stringify([viewer.learnerId, result.topicId, itemId, "result-next", body]),
+        identity: { learnerId: viewer.learnerId, topicId: result.topicId, generation },
+        scope: JSON.stringify([viewer.learnerId, result.topicId, generation, itemId, "result-next", body]),
         run: async idempotencyKey => {
           const value = await topicApi.startAttempt(itemId, body, { idempotencyKey, signal: request.signal });
           if (!value.attemptId || value.topicId !== result.topicId || value.topicItemId !== itemId ||

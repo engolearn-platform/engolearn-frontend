@@ -45,6 +45,7 @@ export function createTopicCatalogService(api: ReturnType<typeof createTopicApi>
     },
     async detail(id: string, signal: AbortSignal): Promise<TopicDetailDto> {
       const value = await api.getTopicDetail(id, signal);
+      requireShape(count(value.generation) && record(value.resetAvailability) && typeof value.resetAvailability.allowed === "boolean");
       requireShape(record(value) && typeof value.titleVi === "string" && typeof value.description === "string" &&
         level(value.cefrLevel) && progress(value.progress) && Array.isArray(value.items) && typeof value.hasNewContent === "boolean" && record(value.retryAvailability) && typeof value.retryAvailability.allowed === "boolean" &&
         [value.durationMinutes, value.vocabularyCount, value.expressionCount, value.quizCount].every(count));

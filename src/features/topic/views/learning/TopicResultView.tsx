@@ -1,4 +1,4 @@
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, Navigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, ArrowRight, BookOpen, RotateCcw } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { TopicState } from "@features/topic/components/learning/catalog/TopicState";
@@ -12,6 +12,7 @@ function TopicResult({ topicId, origin }: { topicId: string; origin: string }) {
   const loaded = useTopicResult(topicId);
   const data = loaded.data;
   const launch = useTopicLaunch(data?.detail ?? null, origin, loaded.refetch);
+  if (loaded.error?.code === "TOPIC_RESET") return <Navigate to={topicDetailPath(topicId, origin)} replace />;
   return <main className="min-h-screen bg-surface px-5 py-6 text-on-surface">
     <div className="mx-auto max-w-3xl space-y-6">
       <Link to={topicDetailPath(topicId, origin)} className="inline-flex min-h-12 items-center gap-2 font-semibold text-primary"><ArrowLeft className="size-5" aria-hidden="true" />Quay lại chủ đề</Link>
@@ -30,16 +31,17 @@ function TopicResult({ topicId, origin }: { topicId: string; origin: string }) {
               <div className="flex flex-wrap gap-3">
                 <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={topicItemResultPath(topicId, item.completedAttemptId, origin)}>Kết quả bài học<ArrowRight className="size-4" aria-hidden="true" /></Link></Button>
                 {currentReference && item.actions.review.allowed && current.actions.review.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("review", current)} className="min-h-12 rounded-xl"><BookOpen className="size-4" aria-hidden="true" />Xem lại</Button>}
-                {currentReference && item.actions.retry.allowed && current.actions.retry.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("retry", current)} className="min-h-12 rounded-xl"><RotateCcw className="size-4" aria-hidden="true" />Làm lại</Button>}
+                {currentReference && current.actions.resumeRetry.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeRetry", current)} className="min-h-12 rounded-xl">Tiếp tục làm lại</Button>}
+                {currentReference && !item.actions.resumeRetry.allowed && item.actions.retry.allowed && current.actions.retry.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("retry", current)} className="min-h-12 rounded-xl"><RotateCcw className="size-4" aria-hidden="true" />Làm lại</Button>}
               </div>
             </article>;
           })}
         </section>
-        {data.result.retryAvailability.allowed && data.detail.retryAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("topicRetry")} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại toàn bộ chủ đề</Button>}
-        {data.detail.retrySession?.status === "IN_PROGRESS" && (data.detail.retrySession.currentAttemptId || data.detail.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 rounded-xl">Tiếp tục lượt làm lại</Button>}
+        {data.result.resetAvailability.allowed && data.detail.resetAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("reset")} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Xoá tiến độ chủ đề</Button>}
+        {data.detail.retrySession?.scope === "TOPIC" && data.detail.retrySession.status === "IN_PROGRESS" && (data.detail.retrySession.currentAttemptId || data.detail.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 rounded-xl">Tiếp tục lượt làm lại</Button>}
       </>}
     </div>
-    <TopicRetryDialog open={!!launch.confirmation} replacing={!!launch.confirmation?.observedRetrySessionId} cancel={launch.cancel} confirm={launch.confirm} />
+    <TopicRetryDialog open={!!launch.confirmation} reset={launch.confirmation?.action === "reset"} cancel={launch.cancel} confirm={launch.confirm} />
   </main>;
 }
 

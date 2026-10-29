@@ -9,7 +9,7 @@ export type LearningStageDto = "CONTEXT" | "VOCAB" | "EXPRESSIONS" | "FILL_BLANK
 
 export type ContentStageDto = "CONTEXT" | "VOCAB" | "EXPRESSIONS";
 
-export type BlockReasonDto = "SIGN_IN_REQUIRED" | "LEVEL_TOO_LOW" | "PREDECESSOR_INCOMPLETE" | "OTHER_ITEM_IN_PROGRESS" | "ALREADY_COMPLETED" | "NOT_COMPLETED" | "NO_RUNNING_ATTEMPT" | "CONTENT_UNAVAILABLE";
+export type BlockReasonDto = "SIGN_IN_REQUIRED" | "LEVEL_TOO_LOW" | "PREDECESSOR_INCOMPLETE" | "OTHER_ITEM_IN_PROGRESS" | "ALREADY_COMPLETED" | "NOT_COMPLETED" | "NO_RUNNING_ATTEMPT" | "CONTENT_UNAVAILABLE" | "ITEM_RETRY_IN_PROGRESS" | "RETRY_RESTART_NOT_ALLOWED";
 
 export type ViewerDto = {
   "kind": "GUEST" | "LEARNER";
@@ -167,6 +167,8 @@ export type TopicDetailDto = {
   "items": Array<TopicItemSummaryDto>;
   "retrySession": RetrySessionDto | null;
   "retryAvailability": ActionAvailabilityDto;
+  "generation": number;
+  "resetAvailability": ActionAvailabilityDto;
 };
 
 export type TopicItemProgressDto = {
@@ -380,6 +382,7 @@ export type TopicResultDto = {
   "accuracyPercent": number;
   "items": Array<TopicResultItemDto>;
   "retryAvailability": ActionAvailabilityDto;
+  "resetAvailability": ActionAvailabilityDto;
 };
 
 export type StartAttemptRequestDto = {
@@ -423,4 +426,28 @@ export type RetryItemSnapshotDto = {
   "topicItemId": string;
   "topicItemVersionId": string;
   "orderIndex": number;
+};
+
+export type QuizNavigationEntryDto = {
+  "quizId": string;
+  "type": "FILL_BLANK" | "SITUATIONAL_CHOICE";
+  "index": number;
+  "status": "LOCKED" | "CURRENT" | "COMPLETED";
+  "quiz": QuizDto | null;
+  "feedback": QuizFeedbackDto | null;
+  "firstTryCorrect": boolean | null;
+};
+
+export type QuizNavigationDto = {
+  "attempt": AttemptDto;
+  "entries": Array<QuizNavigationEntryDto>;
+};
+
+export type ResetTopicRequestDto = {
+  "generation": number;
+};
+
+export type ResetTopicDto = {
+  "topicId": string;
+  "generation": number;
 };

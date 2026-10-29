@@ -11,6 +11,8 @@ import type {
   LessonContentDto,
   MyTopicPageDto,
   QuizAnswerDto,
+  QuizNavigationDto,
+  ResetTopicDto,
   RetrySessionDto,
   StartAttemptRequestDto,
   StartTopicRetryRequestDto,
@@ -79,6 +81,10 @@ export function createTopicApi(options: TopicApiClientOptions = {}) {
       post<AttemptDto>("/topic-attempts/" + idSegment(attemptId) + "/advance", body, mutation),
     getCurrentQuiz: (attemptId: string, signal?: AbortSignal) =>
       get<CurrentQuizDto>("/topic-attempts/" + idSegment(attemptId) + "/quiz", signal),
+    getQuizNavigation: (attemptId: string, signal?: AbortSignal) =>
+      get<QuizNavigationDto>("/topic-attempts/" + idSegment(attemptId) + "/quiz-navigation", signal),
+    resetTopic: (topicId: string, body: { generation: number }, mutation: TopicMutationOptions) =>
+      post<ResetTopicDto>("/topics/" + idSegment(topicId) + "/reset", body, mutation),
     answerQuiz: (attemptId: string, quizId: string, body: AnswerQuizRequestDto, mutation: TopicMutationOptions) =>
       post<QuizAnswerDto>("/topic-attempts/" + idSegment(attemptId) + "/quizzes/" + idSegment(quizId) + "/answers", body, mutation),
     completeAttempt: (attemptId: string, body: CompleteAttemptRequestDto, mutation: TopicMutationOptions) =>

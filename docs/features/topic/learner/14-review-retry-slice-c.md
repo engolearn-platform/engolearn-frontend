@@ -1,23 +1,15 @@
-# Slice C - review and retry consumer
+# Review, item retry and topic reset
 
-Scope: read-only current-result review, item/topic retry confirmation, resume/restart and frozen next-item progression. Hide/unhide while a session is running is excluded by the user's scope decision; existing410 denial remains. No UI redesign or new global primitive.
+Current behavior, 2026-10-29. Supersedes replacement/restart and new TOPIC retry creation in the original slice C.
 
-## Implemented consumer behavior
+Review stays on the existing attempt route with `mode=review`. It shares content/quiz renderers and the lesson navigation, desktop content-left/navigation-right order and mobile single-column layout. Back/Next traverse every content unit and question; the final footer action opens the existing item result. No scroll gate or answer mutation applies. Question statuses say correct on first try or needed another try, never final incorrect; every reviewed question was eventually solved. Access recency remains a separate event.
 
-- Review stays on the attempt route with `mode=review`; reuse lesson content and quiz presentation with answer inputs disabled. Select learned content or any completed quiz, display correct feedback and first-try label, never wrong submission history. GET review is read-only; separate access event changes recency only.
-- Every new/restarted retry requires a confirmation. Capture the observed retrySessionId when opening the dialog so a refreshed detail cannot silently authorize replacement of a newer session. Cancel sends no request.
-- Resume an active attempt directly. A topic session between items starts `nextTopicItemId` explicitly with its retrySessionId; GET never starts one. The frozen snapshot comes from BE.
-- Running retry uses the lesson/quiz flow and authoritative AttemptDto mode/session. Results and detail keep the official previous score until each item completes; FE never calculates replacement scores.
-- Replaced sessions and superseded result references clear the displayed learning/review state and lead back to refreshed topic actions. No automatic answer resend with a new key.
+Item actions expose either Resume retry or a new Retry, never both. Restart/replacement is absent. New item retry confirms that the learner must finish it before another item in that topic. Same-item starts resume the same attempt; another item conflicts. The prior official score/review remains readable until completion, when the new result replaces it even if lower. There is no user-facing attempt history.
 
-## Verification budget
+Whole-topic action is Reset progress. Detail/topic result use `resetAvailability`, not deprecated retryAvailability. Confirmation explicitly clears every item progress/result and any active item retry; Cancel sends no request. Confirm posts `{generation}` with an exact Idempotency-Key to `/topics/{id}/reset`. The observed generation is captured when the dialog opens. A successful receipt increments it once, removes journal scopes through the submitted generation, refreshes current detail/progress and returns to detail. New-generation requests survive delayed reset replay. Future normal starts use LEARN/current published content.
 
-Build PASS (existing bundle-size warning); lint --quiet PASS; type drift PASS53 schemas; diff check PASS. These were run once after consumer code stabilized. No fixtures or historical mocked suites were used.
+Old owned attempts/results/review/session/mutation handles fail with TOPIC_RESET and lead back to refreshed topic actions; they cannot restore prior results. No new TOPIC retry session is launched. Existing legacy TOPIC sessions retain resume/next-item completion support and their pinned manifest.
 
-Parent live acceptance: one focused56-request real clone scenario verified review GET read-only, TOPIC retry resume, old3/6 retained until item completion, lower new0/6 replacing it, aggregate24/30=80%, explicit next-item start and stable frozen manifest. Replacing stale R1 and advancing its old attempt both returned409 while R2 remained intact. Browser review selected the first solved quiz with every option disabled and firstTryCorrect=false; cancelling the retry dialog left session/attempt DTOs unchanged. No FE code change followed this acceptance. The parent owns the raw evidence and final backend package check.
+OpenAPI/generated types/client and shape assertions match the approved additive navigation/generation/reset contract. Server ownership, scoring, eligibility and cross-topic independence remain authoritative. No libraries, profile changes, service restarts or global redesign are introduced.
 
-Limits: no network fault injection, hide/unhide scenario or repeated full-topic run. Hide/unhide during an active session remains explicitly outside this change. This report does not claim a new UI redesign or full-repository test pass.
-
-Review uses `useTopicReview` and `TopicReviewView`, retaining the attempt route and selecting content by stage/index or solved quiz by quizId. Optional local quick-check buttons are also disabled during review; audio remains optional and interactive. A RESULT_CHANGED access/read conflict removes the displayed review data and leaves a route back to current topic actions.
-
-`useTopicLaunch` stores observedRetrySessionId in the dialog selection. New/restarted retry always confirms; resume navigates a current attempt or explicitly starts the BE next item. Main detail and results expose resume controls. Running retry validates a non-null session ID and shows a retry context label, while official scores remain server-owned. Replaced-session read failures clear invalid temporary answer/completion descriptors and reload the attempt without issuing a mutation.
+Verification follows the fixed task budget. Browser/live evidence is pending matching running services and coordinated topic use; historical slice acceptance is not proof of the new reset semantics.

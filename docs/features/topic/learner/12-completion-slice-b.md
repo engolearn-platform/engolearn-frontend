@@ -1,5 +1,7 @@
 # Slice B - completion and results
 
+Current UX delta (2026-10-29): item results expose exclusive resume/new retry and no restart/replacement; whole-topic results expose confirmed generation-based reset rather than creating TOPIC retries. Old owned result/review links return to refreshed detail on TOPIC_RESET. Next-item mutations carry topic/generation journal metadata. Learning retains the final quiz feedback until Continue and uses a stable footer. The remaining verification section below is historical slice-B evidence; current change evidence is recorded separately in verification.md and the task report.
+
 Implementation and live acceptance date: 2026-10-28. The parent integration run supplied the observed BE/browser outcomes below. Review and retry lifecycle implementation remain Slice C.
 
 ## Routes and presentation

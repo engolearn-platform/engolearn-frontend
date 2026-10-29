@@ -17,7 +17,8 @@ export function useTopicLesson(topicId: string, attemptId: string) {
     if (attempt.status === "COMPLETED") return { attempt, content: null };
     const content = await topicApi.getAttemptContent(attemptId, signal);
     assertLesson(attempt, content, topicId, attemptId);
-    return { attempt, content };
+    const detail = await topicApi.getTopicDetail(topicId, signal);
+    return { attempt, content, generation: detail.generation ?? 0 };
   }, [topicId, attemptId]);
   const result = useFetch(read);
   const [updated, setUpdated] = useState<AttemptDto | null>(null);
@@ -53,6 +54,7 @@ export function useTopicLesson(topicId: string, attemptId: string) {
     const body = { revision: attempt.revision, stage: source.stage, itemIndex: source.itemIndex };
     try {
       const next = await runTopicMutation({
+        identity: { learnerId: viewer.learnerId, topicId, generation: result.data.generation ?? 0 },
         scope: JSON.stringify([viewer.learnerId, attemptId, "advance", body]),
         run: async idempotencyKey => {
           const value = await topicApi.advanceContent(attemptId, body, { idempotencyKey, signal: controller.signal });
@@ -76,5 +78,5 @@ export function useTopicLesson(topicId: string, attemptId: string) {
       if (!controller.signal.aborted) setBusy(false);
     }
   };
-  return { ...result, attempt, content: result.data?.content ?? null, busy, mutationError, accessError, advance, updateAttempt };
+  return { ...result, attempt, generation: result.data?.generation ?? 0, content: result.data?.content ?? null, busy, mutationError, accessError, advance, updateAttempt };
 }

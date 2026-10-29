@@ -60,6 +60,8 @@ export function topicBlockMessage(reason: string | null | undefined) {
     NOT_COMPLETED: "Hoàn thành bài học trước khi làm lại.",
     NO_RUNNING_ATTEMPT: "Chưa có lượt học để tiếp tục.",
     CONTENT_UNAVAILABLE: "Nội dung hiện chưa sẵn sàng.",
+    ITEM_RETRY_IN_PROGRESS: "Hoàn thành lượt làm lại đang dở trước khi làm lại bài khác trong chủ đề.",
+    RETRY_RESTART_NOT_ALLOWED: "Tiếp tục lượt làm lại đang dở để hoàn thành bài học.",
   };
   return reason ? labels[reason] ?? "Thao tác hiện chưa khả dụng." : "";
 }
@@ -81,6 +83,10 @@ export function topicErrorMessage(error: { code?: string; status?: number; messa
     STATE_CHANGED: "Tiến trình vừa thay đổi. Hãy tải lại để xem trạng thái mới nhất.",
     RETRY_SESSION_CHANGED: "Lượt làm lại vừa thay đổi. Hãy tải lại chủ đề.",
     RESULT_CHANGED: "Kết quả đã được cập nhật. Hãy mở lại từ chi tiết chủ đề.",
+    TOPIC_RESET: "Tiến độ chủ đề đã được xoá. Hãy mở lại chi tiết chủ đề.",
+    ITEM_RETRY_IN_PROGRESS: "Hoàn thành lượt làm lại đang dở trước khi làm lại bài khác trong chủ đề.",
+    RETRY_RESTART_NOT_ALLOWED: "Bạn cần tiếp tục và hoàn thành lượt làm lại đang dở.",
+    TOPIC_RETRY_RETIRED: "Hãy dùng thao tác xoá tiến độ trên trang chi tiết chủ đề.",
   };
   if (error.code && labels[error.code]) return labels[error.code];
   if (error.status === 404) return "Nội dung không tồn tại hoặc đã được gỡ xuất bản.";

@@ -29,10 +29,9 @@ export function TopicItemCard({ item, index, current, learner, busy, onAction }:
         </div>}
         {locked && reason && <p className="text-label-sm text-on-surface-variant">{reason}</p>}
         {learner && <div className="flex flex-wrap justify-end gap-2 border-t border-outline-variant/40 pt-4">
-          {item.actions.review.allowed && item.completedAttemptId && <Button type="button" variant="outline" disabled={busy} onClick={() => onAction("review", item)} className="min-h-11 rounded-xl">Xem lại</Button>}
-          {item.actions.resumeRetry.allowed && item.retryAttempt && <Button type="button" disabled={busy} onClick={() => onAction("resumeRetry", item)} className="min-h-11 rounded-xl">Tiếp tục làm lại</Button>}
-          {item.actions.retry.allowed && <Button type="button" variant="outline" disabled={busy} onClick={() => onAction("retry", item)} className="min-h-11 rounded-xl">Làm lại</Button>}
-          {item.actions.restartRetry.allowed && <Button type="button" variant="ghost" disabled={busy} onClick={() => onAction("restartRetry", item)} className="min-h-11 rounded-xl">Làm lại từ đầu</Button>}
+          {item.actions.review.allowed && item.completedAttemptId && <Button type="button" variant="outline" disabled={busy} onClick={() => onAction("review", item)} className="min-h-12 rounded-xl">Xem lại</Button>}
+          {item.actions.resumeRetry.allowed && item.retryAttempt && <Button type="button" disabled={busy} onClick={() => onAction("resumeRetry", item)} className="min-h-12 rounded-xl">Tiếp tục làm lại</Button>}
+          {!item.actions.resumeRetry.allowed && item.actions.retry.allowed && <Button type="button" variant="outline" disabled={busy} onClick={() => onAction("retry", item)} className="min-h-12 rounded-xl">Làm lại</Button>}
           {item.actions.continue.allowed && item.learningAttempt && <Button type="button" disabled={busy} onClick={() => onAction("continue", item)} className="min-h-12 rounded-xl px-6">{busy ? "Đang mở…" : "Tiếp tục bài học"}</Button>}
           {item.learningStatus === "NOT_STARTED" && <Button type="button" disabled={busy || !item.actions.start.allowed} onClick={() => onAction("start", item)} className="min-h-12 rounded-xl px-6">{busy ? "Đang mở…" : "Bắt đầu học"}</Button>}
         </div>}

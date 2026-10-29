@@ -1,26 +1,15 @@
-# Chặng 3 — khung học theo attempt
+# Attempt learning
 
-Delta 2026-10-28: cửa vào Practice đã được thay bằng consumer quiz thật theo [lát A](11-quiz-slice-a.md). Running nav/URL chỉ cho current quiz, không xem quiz đã đúng. Các đoạn nói dừng tại Practice dưới đây mô tả checkpoint chặng3; kết quả nối BE mới nhất ở09-live-integration.md.
+Current UX contract, 2026-10-29. Supersedes the original stage-3 checkpoint.
 
-## Thiết kế và route
-Theo thiết kế Từ vựng user cung cấp: header chứa tiến độ BE của lượt học, không còn hai progress card legacy. Sidebar bốn phần có dropdown; chỉ mở nhánh đang xem mặc định, người học có thể đóng/mở. Nút Quay lại vị trí đang học dùng attempt.position.
-Route giữ /topics/:topicId/attempts/:attemptId; query stage/index là vị trí đang xem, không phải tiến độ. from giữ đường về chi tiết. Review vẫn là receipt chặng 2, hoàn thiện ở chặng 5.
+The route `/topics/:topicId/attempts/:attemptId` contains both lesson content and exercises. Desktop uses content left (8 columns), navigation right (4); mobile stacks navigation and content. The feature reuses existing Button, content/audio, quiz, semantic surfaces, Hanken Grotesk and spacing tokens. Context, vocabulary, expressions and practice have distinct token-backed section accents.
 
-## Component và state
-TopicLessonView dùng useTopicLesson + typed client đã có. TopicLessonNav và TopicLessonContent là component riêng của feature; Button, TopicState, TopicProgressBar, MemoryTipCard được tái sử dụng.
-GET attempt + GET content phải khớp topic/item/version. VOCAB sắp theo orderIndex rồi vocabId; EXPRESSIONS flatten theo thứ tự groups, mỗi group sắp purposes theo orderIndex rồi purposeId.
-Chỉ vị trí đã học hoặc frontier được mở. F5 giữ query hợp lệ; vị trí tương lai hoặc không tồn tại được đưa về frontier. Xem lại không gửi advance và không kéo tiến độ lùi.
-Tiếp tục tại frontier gửi revision + vị trí nguồn với Idempotency-Key được giữ qua lỗi mạng. Chỉ cập nhật sau response thành công; 409 tải lại attempt/content và báo trạng thái thay đổi. Không tự retry mutation.
-Bốn phần UI: Context, Vocab, Expressions, Practice (hai quiz stages). Chặng 3 dừng tại cửa vào Practice; không giả completion/quiz/result.
+`stage/index` selects a viewed unit, independently of server progress. Content ordering is context, vocabulary sorted by orderIndex/ID, then flattened expression purposes. Individual questions follow the pinned server quiz-navigation order. Future rows stay visible and locked, with no prompt/options/feedback. Reached solved questions are selectable and read-only. Invalid/future URLs fall back to the authoritative frontier. Viewing and Back never send advance.
 
-## Nội dung và audio
-Context hiển thị scenario, ảnh/câu gợi mở nếu có, hội thoại EN/VI và audio URL thật.
-Mỗi từ có nghĩa, IPA, tags, ảnh, collocations, examples theo response. Quick check optional, chấm local; không gửi accuracy hoặc chặn Tiếp tục.
-Mỗi purpose là một bước Mẫu câu, hiển thị toàn bộ examples và usageNote; không tự bịa XP hoặc mục tiêu.
-Media/tips thiếu thì ẩn, audio không tự phát; lỗi audio không chặn học. Không thêm mock/fallback vào runtime.
-Không tự đánh dấu tiến độ bằng scroll, nghe audio hoặc quick check.
+Continue remains mounted in the bottom footer, with an adjacent disabled explanation. Only frontier CONTEXT/VOCAB/EXPRESSIONS require the bottom sentinel to enter the visible window above the measured footer. Short visible content unlocks immediately. Learner/attempt/version/position changes reset readiness; content/media/viewport resize revalidates it. Old content and exercises have no scroll condition. Optional audio and quick checks never advance progress or block Continue.
 
-## Responsive và kiểm chứng
-Header co dòng trên màn nhỏ, nội dung một cột; sidebar dropdown ở trên nội dung khi mobile, hai cột trên desktop. Footer không có Bỏ qua.
-Chỉ thêm unit tests critical: thứ tự/flatten, khóa tương lai, giữ vị trí xem riêng, identity/version/frontier. Chạy build/lint và suite topic một lần cuối; chỉ chạy lại nếu sửa lỗi.
-Nếu endpoint BE chưa có: báo blocked integration; không mở rộng fixture để thay thế. UI/browser integration chưa xác minh không được ghi PASS.
+Frontier content Continue sends revision/source with its exact journaled key. Old content Continue moves to the next reached unit. Exercise Continue requires authoritative correct feedback, then moves to the next frontier or item result; it never becomes a topic-detail button. Solved-question Continue is read-only navigation. A single return-to-frontier action appears only while viewing elsewhere.
+
+Identity/version/revision assertions remain mandatory. Conflicts refresh progress and await user action. TOPIC_RESET clears stale attempt actions and returns to fresh detail. Scores and positions remain server-owned. See [quiz lifecycle](11-quiz-slice-a.md), [review/reset](14-review-retry-slice-c.md) and [verification](../../../handout/topic-learning/verification.md).
+
+Browser/live acceptance for this change is tracked separately from historical stage evidence. No fixture/mock verification is integration proof.

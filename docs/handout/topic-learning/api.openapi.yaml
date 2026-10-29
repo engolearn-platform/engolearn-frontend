@@ -1268,7 +1268,7 @@
       "post": {
         "operationId": "startTopicRetry",
         "summary": "Confirm retry of entire completed topic",
-        "description": "Check level. Freeze ordered visible item IDs+versions; immediately create first CONTEXT/0 attempt. One retry session per topic/learner. Replacing an existing one requires exact observed retrySessionId. Results replaced item-by-item only on completion. Subsequent item attempts are explicitly started via startAttempt(mode:RETRY); GET never creates attempts.",
+        "description": "Retired for new starts (410 TOPIC_RETRY_RETIRED). Existing current-generation legacy exact-key replay remains supported.",
         "x-backend-status": "new",
         "parameters": [
           {
@@ -1570,6 +1570,223 @@
           }
         }
       }
+    },
+    "/topic-attempts/{attemptId}/quiz-navigation": {
+      "get": {
+        "operationId": "getQuizNavigation",
+        "summary": "Read only first unanswered quiz",
+        "description": "Read-only reached question navigation. LOCKED entries contain metadata only. COMPLETED attempts return STATE_CHANGED; stale generation returns TOPIC_RESET.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuizNavigationDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "examples": {
+                  "firstQuiz": {
+                    "value": {
+                      "data": {
+                        "attempt": {
+                          "attemptId": "attempt-001",
+                          "topicId": "66f1a2b3c4d5e6f708091a01",
+                          "topicItemId": "66f1a2b3c4d5e6f708091b01",
+                          "topicItemVersionId": "66f1a2b3c4d5e6f708091c01",
+                          "version": 1,
+                          "mode": "LEARN",
+                          "status": "IN_PROGRESS",
+                          "revision": 5,
+                          "position": {
+                            "stage": "FILL_BLANK",
+                            "itemIndex": 0
+                          },
+                          "progress": {
+                            "completedStepCount": 5,
+                            "totalStepCount": 11,
+                            "percent": 45,
+                            "learnedVocabularyCount": 3,
+                            "learnedExpressionCount": 3,
+                            "completedQuizCount": 0,
+                            "totalQuizCount": 6
+                          },
+                          "retrySessionId": null,
+                          "startedAt": "2026-10-27T10:00:00Z",
+                          "lastAccessedAt": "2026-10-27T10:00:00Z",
+                          "completedAt": null
+                        },
+                        "quiz": {
+                          "quizId": "quiz-001",
+                          "title": "Hỏi gợi ý món ăn",
+                          "index": 0,
+                          "totalInType": 3,
+                          "situationVi": "Bạn muốn nhờ người phục vụ gợi ý món đặc sản.",
+                          "imageUrl": null,
+                          "tips": null,
+                          "promptAudioUrl": null,
+                          "type": "FILL_BLANK",
+                          "sentenceBefore": "Can you ",
+                          "sentenceAfter": " a good local specialty?",
+                          "options": [
+                            {
+                              "optionId": "option-1",
+                              "text": "order"
+                            },
+                            {
+                              "optionId": "option-2",
+                              "text": "recommend"
+                            },
+                            {
+                              "optionId": "option-3",
+                              "text": "bill"
+                            },
+                            {
+                              "optionId": "option-4",
+                              "text": "starter"
+                            }
+                          ]
+                        }
+                      },
+                      "timestamp": "2026-10-27T10:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "410": {
+            "$ref": "#/components/responses/Problem410"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
+    },
+    "/topics/{topicId}/reset": {
+      "post": {
+        "operationId": "resetTopic",
+        "summary": "Confirm retry of entire completed topic",
+        "description": "Explicit reset of all effective topic progress/results including active retry. Generation CAS and exact-key replay protect newer work. Old owned handles return TOPIC_RESET.",
+        "x-backend-status": "new",
+        "parameters": [
+          {
+            "name": "topicId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "One key per action; reuse the same key and identical body after an uncertain response. Scope to viewer + method + path."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetTopicRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success envelope. Nullable fields are explicitly present.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data",
+                    "timestamp"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ResetTopicDto"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem401"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem422"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem503"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1621,7 +1838,9 @@
           "ALREADY_COMPLETED",
           "NOT_COMPLETED",
           "NO_RUNNING_ATTEMPT",
-          "CONTENT_UNAVAILABLE"
+          "CONTENT_UNAVAILABLE",
+          "ITEM_RETRY_IN_PROGRESS",
+          "RETRY_RESTART_NOT_ALLOWED"
         ]
       },
       "ViewerDto": {
@@ -2351,7 +2570,9 @@
           "progress",
           "items",
           "retrySession",
-          "retryAvailability"
+          "retryAvailability",
+          "generation",
+          "resetAvailability"
         ],
         "properties": {
           "topicId": {
@@ -2425,6 +2646,13 @@
             ]
           },
           "retryAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resetAvailability": {
             "$ref": "#/components/schemas/ActionAvailabilityDto"
           }
         }
@@ -3524,7 +3752,8 @@
           "totalQuizCount",
           "accuracyPercent",
           "items",
-          "retryAvailability"
+          "retryAvailability",
+          "resetAvailability"
         ],
         "properties": {
           "topicId": {
@@ -3553,6 +3782,9 @@
             }
           },
           "retryAvailability": {
+            "$ref": "#/components/schemas/ActionAvailabilityDto"
+          },
+          "resetAvailability": {
             "$ref": "#/components/schemas/ActionAvailabilityDto"
           }
         }
@@ -3725,6 +3957,118 @@
             "type": "string"
           },
           "orderIndex": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "QuizNavigationEntryDto": {
+        "type": "object",
+        "required": [
+          "quizId",
+          "type",
+          "index",
+          "status",
+          "quiz",
+          "feedback",
+          "firstTryCorrect"
+        ],
+        "properties": {
+          "quizId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "FILL_BLANK",
+              "SITUATIONAL_CHOICE"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "LOCKED",
+              "CURRENT",
+              "COMPLETED"
+            ]
+          },
+          "quiz": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuizFeedbackDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firstTryCorrect": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "QuizNavigationDto": {
+        "type": "object",
+        "required": [
+          "attempt",
+          "entries"
+        ],
+        "properties": {
+          "attempt": {
+            "$ref": "#/components/schemas/AttemptDto"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuizNavigationEntryDto"
+            }
+          }
+        }
+      },
+      "ResetTopicRequestDto": {
+        "type": "object",
+        "required": [
+          "generation"
+        ],
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "ResetTopicDto": {
+        "type": "object",
+        "required": [
+          "topicId",
+          "generation"
+        ],
+        "properties": {
+          "topicId": {
+            "type": "string"
+          },
+          "generation": {
             "type": "integer",
             "minimum": 0
           }

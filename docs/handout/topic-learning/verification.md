@@ -1,5 +1,11 @@
 # Topic Learning — kiểm chứng và nghiệm thu
 
+## Current learning/review UX revision (2026-10-29)
+
+The approved task plan supersedes historical current-question-only navigation, excluded scroll gating, restart/replacement and new TOPIC retry behavior below. Verify reached solved questions/future metadata privacy; persistent Continue with content-only bottom gate and correct-answer quiz gate; stable same-question rendering; review desktop/mobile sequential controls; exclusive resume/retry; confirmed topic reset including active retry and old-generation journal/URL invalidation. Use the real FE proxy and matching BE, never fixtures or injected fetch as integration evidence. Existing historical mocked suites are not run for this integration.
+
+Fixed budget: at most three scoped FE invocations; one final build/lint/types/diff batch, each command once. Browser: desktop plus mobile, at most twelve scenarios/twenty minutes shared. Current command counts/results and live limitations are recorded in `.artifacts/engolearn-fe-ux/fe-report.md` in the parent workspace. User-run services must load the new BE revision before changed endpoints can be verified; agents do not restart them.
+
 Ngày 2026-10-27. Báo cáo tăng dần theo từng chặng; không đánh dấu tích hợp thật trước khi đã chạy.
 Contract chuẩn: [api.openapi.yaml](api.openapi.yaml); cách BE thực hiện: [backend-handoff.md](backend-handoff.md).
 

@@ -9,7 +9,7 @@ export function TopicQuiz({ quiz, feedback, selected, busy, pending, wrong, disa
 }) {
   const chosen = quiz.options.find(option => option.optionId === selected);
   const correct = feedback ? quiz.options.find(option => option.optionId === feedback.correctOptionId) : null;
-  return <section className="space-y-5 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-5 shadow-sm md:p-6" aria-busy={busy}>
+  return <section className="space-y-5 rounded-2xl border border-t-4 border-outline-variant/40 border-t-primary bg-surface-container-lowest p-5 shadow-sm md:p-6" aria-busy={busy}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-label-lg font-semibold text-primary">{quiz.type === "FILL_BLANK" ? "Điền từ" : "Chọn tình huống"}</p>
       <span className="text-label-sm text-on-surface-variant">Câu {quiz.index + 1}/{quiz.totalInType}</span>
@@ -34,6 +34,7 @@ export function TopicQuiz({ quiz, feedback, selected, busy, pending, wrong, disa
         </Button>;
       })}</div>
     </fieldset>
+    <div className="min-h-24" aria-live="polite" aria-atomic="true">
     {busy && <p role="status" className="flex items-center gap-2 text-body-md text-primary"><LoaderCircle className="size-4 animate-spin" aria-hidden="true" />Đang gửi đáp án…</p>}
     {wrong && !pending && !feedback && <p role="status" className="text-body-md text-error">Chưa đúng. Bạn có thể chọn lại.</p>}
     {feedback && <div role="status" className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-5">
@@ -44,5 +45,6 @@ export function TopicQuiz({ quiz, feedback, selected, busy, pending, wrong, disa
       {feedback.grammarNoteVi && <p className="text-body-md text-on-surface-variant">{feedback.grammarNoteVi}</p>}
       <LessonAudio url={feedback.audioUrl} label="Nghe câu trả lời đúng" />
     </div>}
+    </div>
   </section>;
 }

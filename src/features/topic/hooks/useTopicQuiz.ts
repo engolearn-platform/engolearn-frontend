@@ -15,9 +15,11 @@ interface QuizOptions {
   onAttempt: (attempt: AttemptDto) => void;
   onHidden: () => void;
   refreshLesson: () => void;
+  topicId: string;
+  generation: number;
 }
 
-export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidden, refreshLesson }: QuizOptions) {
+export function useTopicQuiz({ attempt, learnerId, attemptId, topicId, generation, onAttempt, onHidden, refreshLesson }: QuizOptions) {
   const scope = JSON.stringify([learnerId, attemptId, "quiz-answer"]);
   const completionScope = JSON.stringify([learnerId, attemptId, "completion"]);
   const [restored] = useState(() => {
@@ -42,8 +44,11 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
   const [completion, setCompletion] = useState<CompleteAttemptRequestDto | null>(restored.completion);
   const [contractMismatch, setContractMismatch] = useState(false);
   const [error, setError] = useState(restored.error);
+  const [snapshot, setSnapshot] = useState<QuizDto | null>(restored.pending?.quiz ?? null);
   const lock = useRef(false);
   const controller = useRef<AbortController | null>(null);
+  const latestAttempt = useRef(attempt);
+  latestAttempt.current = attempt;
   useEffect(() => () => controller.current?.abort(), []);
 
   const active = !!attempt && attempt.status === "IN_PROGRESS" && !!attempt.position && !isContentPosition(attempt.position) && !feedback && !busy && !restored.error;
@@ -61,11 +66,14 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
           }
         }
       } else if (value.quiz !== null) throw Object.assign(new Error("Completed attempt exposes quiz"), { code: "CONTRACT_MISMATCH" });
-      if (!signal.aborted) onAttempt(value.attempt);
+      if (!signal.aborted && value.attempt.revision >= (latestAttempt.current?.revision ?? 0)) {
+        onAttempt(value.attempt);
+        if (value.quiz) setSnapshot(value.quiz);
+      }
       return value;
     } catch (failure) {
       const problem = failure as { code?: string; status?: number };
-      if (!signal.aborted && problem.status === 410 && problem.code === "ITEM_HIDDEN") onHidden();
+      if (!signal.aborted && (problem.status === 410 && problem.code === "ITEM_HIDDEN" || problem.code === "TOPIC_RESET")) onHidden();
       if (!signal.aborted && problem.status === 409 && ["RETRY_SESSION_CHANGED", "RESULT_CHANGED"].includes(problem.code ?? "")) {
         clearTopicPendingAction(scope);
         clearTopicPendingAction(completionScope);
@@ -79,7 +87,8 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
     }
   }, [attempt, attemptId, active, onAttempt, onHidden, scope, completionScope, refreshLesson]);
   const result = useFetch(read, active);
-  const quiz = feedback?.quiz ?? pending?.quiz ?? (active && result.data?.attempt.revision === attempt?.revision ? result.data.quiz : null);
+  const frontierSnapshot = snapshot && snapshot.type === attempt?.position?.stage && snapshot.index === attempt.position.itemIndex ? snapshot : null;
+  const quiz = feedback?.quiz ?? pending?.quiz ?? frontierSnapshot ?? (active && result.data?.attempt.revision === attempt?.revision ? result.data.quiz : null);
   const needsCompletion = !!attempt && attempt.status === "IN_PROGRESS" && result.data?.attempt.revision === attempt.revision && result.data.quiz === null;
   useEffect(() => {
     if (attempt?.status !== "COMPLETED") return;
@@ -92,7 +101,7 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
   const answer = async (optionId?: string) => {
     if (lock.current || !attempt || restored.error || feedback || needsCompletion || completion || contractMismatch) return;
     const action = pending ?? (quiz && optionId ? { quiz, body: { revision: attempt.revision, optionId } } : null);
-    if (!action || !pending && (!active || result.loading || !quiz?.options.some(option => option.optionId === optionId))) return;
+    if (!action || !pending && (!active || result.loading && !frontierSnapshot || !quiz?.options.some(option => option.optionId === optionId))) return;
     lock.current = true;
     setBusy(true);
     setError("");
@@ -102,9 +111,10 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
     const abort = new AbortController();
     controller.current = abort;
     try {
-      saveTopicPendingAction(scope, action);
+      saveTopicPendingAction(scope, action, { learnerId, topicId, generation });
       setPending(action);
       const value = await runTopicMutation({
+        identity: { learnerId, topicId, generation },
         scope: JSON.stringify([learnerId, attemptId, "answer", action.quiz.quizId, action.body]),
         run: async idempotencyKey => {
           const response = await topicApi.answerQuiz(attemptId, action.quiz.quizId, action.body, { idempotencyKey, signal: abort.signal });
@@ -116,6 +126,7 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
       clearTopicPendingAction(scope);
       setPending(null);
       onAttempt(value.attempt);
+      setSnapshot(action.quiz);
       if (value.attempt.revision < attempt.revision) {
         setSelected(null);
         refreshLesson();
@@ -128,7 +139,7 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
         clearTopicPendingAction(scope);
         setPending(null);
         setSelected(null);
-        if (problem.status === 410 && problem.code === "ITEM_HIDDEN") { setFeedback(null); onHidden(); return; }
+        if (problem.status === 410 && problem.code === "ITEM_HIDDEN" || problem.code === "TOPIC_RESET") { setFeedback(null); onHidden(); return; }
         if (problem.status === 409) {
           setFeedback(null);
           refreshLesson();
@@ -156,10 +167,11 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
     controller.current = request;
     const body = completion ?? { revision: attempt.revision };
     try {
-      saveTopicPendingAction(completionScope, body);
+      saveTopicPendingAction(completionScope, body, { learnerId, topicId, generation });
       setCompletion(body);
       const value = await runTopicMutation({
         scope: JSON.stringify([learnerId, attemptId, "completion", body]),
+        identity: { learnerId, topicId, generation },
         run: async idempotencyKey => {
           const response = await topicApi.completeAttempt(attemptId, body, { idempotencyKey, signal: request.signal });
           assertQuizAttempt(response, attempt);
@@ -182,7 +194,7 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
       if (problem.status && problem.status >= 400 && problem.status < 500) {
         clearTopicPendingAction(completionScope);
         setCompletion(null);
-        if (problem.status === 410 && problem.code === "ITEM_HIDDEN") { onHidden(); return; }
+        if (problem.status === 410 && problem.code === "ITEM_HIDDEN" || problem.code === "TOPIC_RESET") { onHidden(); return; }
         if (problem.status === 409) { refreshLesson(); result.refetch(); }
       }
       setError(topicErrorMessage(problem));
@@ -197,8 +209,7 @@ export function useTopicQuiz({ attempt, learnerId, attemptId, onAttempt, onHidde
     setSelected(null);
     setWrongQuizId(null);
     setError("");
-    // Refresh frontier even when another tab progressed after this receipt.
-    refreshLesson();
+    result.refetch();
   };
   return { quiz, feedback: feedback?.value ?? null, pending: !!pending, completionPending: !!completion, needsCompletion, contractMismatch, busy, selected, wrong: !!quiz && wrongQuizId === quiz.quizId, error,
     readError: active ? result.error : null, loading: active && (result.loading || !result.data && !result.error),

@@ -68,7 +68,7 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
   if (position.stage === "CONTEXT") {
     const context = content.context;
     return <div className="space-y-6">
-      <section className={card}>
+      <section className={card + " border-t-4 border-t-primary"}>
         <p className="text-label-lg font-semibold uppercase text-primary">Bối cảnh & Hội thoại</p>
         <h1 className="text-headline-lg font-bold">{content.title}</h1>
         {content.description && <p className="text-body-md text-on-surface-variant">{content.description}</p>}
@@ -89,7 +89,8 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
   if (position.stage === "VOCAB") {
     const word = vocabulary[position.itemIndex];
     return <div className="space-y-6">
-      <section className={card}>
+      <section className={card + " border-t-4 border-t-secondary"}>
+        <p className="text-label-lg font-semibold uppercase text-secondary">Từ vựng cốt lõi</p>
         <div className={"grid gap-6 " + (mediaUrl(word.imageUrl) ? "md:grid-cols-2" : "")}>
           {mediaUrl(word.imageUrl) && <LessonImage url={word.imageUrl} alt={word.word} />}
           <div className="space-y-4">
@@ -114,7 +115,7 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
   }
   const purpose = purposes[position.itemIndex];
   return <div className="space-y-6">
-    <section className={card}><p className="text-label-lg font-semibold uppercase text-primary">Mẫu câu thực tế</p>
+    <section className={card + " border-t-4 border-t-tertiary"}><p className="text-label-lg font-semibold uppercase text-tertiary">Mẫu câu thực tế</p>
       {purpose.purposeEn && <h1 lang="en" className="text-headline-lg font-bold">{purpose.purposeEn}</h1>}
       <h2 className={purpose.purposeEn ? "text-headline-sm font-semibold" : "text-headline-lg font-bold"}>{purpose.purposeVi}</h2>
     </section>
