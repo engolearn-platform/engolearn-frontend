@@ -11,6 +11,13 @@ colors:
   secondary-container: "#fcd400"
   tertiary: "#4d5a74"
   error: "#ba1a1a"
+  learning-mint: "#ddf5f4" # Selected rows, dialogue emphasis, positive feedback
+  learning-mint-border: "#b8dfdb"
+  learning-note: "#fff0b8" # Existing learning tips and part-of-speech badges
+  learning-note-ink: "#544600"
+  learning-outline: "#e2e8ea" # Learning card and nested example borders
+  learning-nav-active: "#f5fefe" # Actual active learning category
+  learning-nav-border: "#c4dfdf" # Active category frame/dividers
 
 typography:
   headline-lg:

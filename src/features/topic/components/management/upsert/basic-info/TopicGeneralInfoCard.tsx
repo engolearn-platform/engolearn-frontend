@@ -15,6 +15,7 @@ interface TopicGeneralInfoCardProps {
   showErrors?: boolean;
   onPatch: (patch: Partial<TopicBasicInfoDraft>) => void;
   onCefrChange: (cefr: CefrLevel) => void;
+  fieldErrors?: Record<string, string>;
 }
 
 const FIELD_CLASS =
@@ -35,11 +36,12 @@ export default function TopicGeneralInfoCard({
   showErrors = false,
   onPatch,
   onCefrChange,
+  fieldErrors = {},
 }: TopicGeneralInfoCardProps) {
   const titleEnError = showErrors && draft.titleEn.trim().length === 0;
   const titleViError = showErrors && draft.titleVi.trim().length === 0;
-  const durationError = showErrors && draft.duration.trim().length === 0;
-  const descriptionError = showErrors && draft.description.trim().length === 0;
+  const titleEnFieldError = fieldErrors.titleEn;
+  const titleViFieldError = fieldErrors.titleVi;
 
   return (
     <section className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-8">
@@ -69,14 +71,16 @@ export default function TopicGeneralInfoCard({
               value={draft.titleEn}
               onChange={(event) => onPatch({ titleEn: event.target.value })}
               placeholder="e.g. Asking for Directions"
-              aria-invalid={titleEnError}
-              className={cn(FIELD_CLASS, titleEnError && "ring-2 ring-error")}
+              aria-invalid={titleEnError || !!titleEnFieldError}
+              className={cn(FIELD_CLASS, (titleEnError || titleEnFieldError) && "ring-2 ring-error")}
             />
             <span className="absolute top-3.5 right-3.5 text-label-sm text-on-surface-variant uppercase">
               EN
             </span>
           </div>
-          {titleEnError ? (
+          {titleEnFieldError ? (
+            <p className="text-label-sm text-error">{titleEnFieldError}</p>
+          ) : titleEnError ? (
             <p className="text-label-sm text-error">Vui lòng nhập tên chủ đề tiếng Anh.</p>
           ) : (
             <p className="text-label-sm text-on-surface-variant">
@@ -100,14 +104,16 @@ export default function TopicGeneralInfoCard({
               value={draft.titleVi}
               onChange={(event) => onPatch({ titleVi: event.target.value })}
               placeholder="Ví dụ: Chỉ đường & Giao thông"
-              aria-invalid={titleViError}
-              className={cn(FIELD_CLASS, titleViError && "ring-2 ring-error")}
+              aria-invalid={titleViError || !!titleViFieldError}
+              className={cn(FIELD_CLASS, (titleViError || titleViFieldError) && "ring-2 ring-error")}
             />
             <span className="absolute top-3.5 right-3.5 text-label-sm text-on-surface-variant uppercase">
               VI
             </span>
           </div>
-          {titleViError ? (
+          {titleViFieldError ? (
+            <p className="text-label-sm text-error">{titleViFieldError}</p>
+          ) : titleViError ? (
             <p className="text-label-sm text-error">Vui lòng nhập tên chủ đề tiếng Việt.</p>
           ) : (
             <p className="text-label-sm text-on-surface-variant">
@@ -121,7 +127,6 @@ export default function TopicGeneralInfoCard({
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-label-lg font-semibold text-on-surface">
             Trình độ CEFR mục tiêu
-            <RequiredMark />
           </span>
           <span className="text-label-sm font-medium text-primary">
             Khung tham chiếu Châu Âu
@@ -141,7 +146,6 @@ export default function TopicGeneralInfoCard({
             className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
           >
             Danh mục học tập (Category)
-            <RequiredMark />
           </label>
           <div className="relative">
             <select
@@ -172,30 +176,24 @@ export default function TopicGeneralInfoCard({
             className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
           >
             Thời lượng học ước tính
-            <RequiredMark />
           </label>
           <div className="relative">
             <input
               id="estimated-time"
               type="text"
               value={draft.duration}
-              onChange={(event) => onPatch({ duration: event.target.value })}
-              placeholder="Khoảng 45 phút học (4 bài học nhỏ)"
-              aria-invalid={durationError}
-              className={cn(FIELD_CLASS, durationError && "ring-2 ring-error")}
+              readOnly
+              placeholder="—"
+              className={cn(FIELD_CLASS, "cursor-not-allowed opacity-80")}
             />
             <Clock
               className="pointer-events-none absolute top-3.5 right-3.5 size-5 text-on-surface-variant"
               aria-hidden="true"
             />
           </div>
-          {durationError ? (
-            <p className="text-label-sm text-error">Vui lòng nhập thời lượng học ước tính.</p>
-          ) : (
-            <p className="text-label-sm text-on-surface-variant">
-              Tối ưu cho nhịp độ học tập Micro-learning (10-15 phút/phiên).
-            </p>
-          )}
+          <p className="text-label-sm text-on-surface-variant">
+            Thời lượng được hệ thống tính toán (read-only).
+          </p>
         </div>
       </div>
 
@@ -206,7 +204,6 @@ export default function TopicGeneralInfoCard({
             className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
           >
             Mô tả ngắn chủ đề (Topic Description)
-            <RequiredMark />
           </label>
           <span className="text-label-sm text-on-surface-variant">
             {draft.description.length} / {maxDescription} ký tự
@@ -219,12 +216,8 @@ export default function TopicGeneralInfoCard({
           maxLength={maxDescription}
           onChange={(event) => onPatch({ description: event.target.value })}
           placeholder="Mô tả mục tiêu người học sẽ đạt được sau khi hoàn thành chuỗi bài..."
-          aria-invalid={descriptionError}
-          className={cn(FIELD_CLASS, "resize-none", descriptionError && "ring-2 ring-error")}
+          className={cn(FIELD_CLASS, "resize-none")}
         />
-        {descriptionError && (
-          <p className="text-label-sm text-error">Vui lòng nhập mô tả ngắn cho chủ đề.</p>
-        )}
       </div>
     </section>
   );

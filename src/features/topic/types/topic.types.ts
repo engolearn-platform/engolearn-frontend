@@ -22,10 +22,12 @@ export interface Topic {
   thumbnail: string;
 }
 
+import type { TopicCategory } from "./topic-management.types";
+
 export interface TopicManagementFilter {
   search: string;
   cefr: "ALL" | CefrLevel;
-  category: string;
+  category: "ALL" | TopicCategory;
   status: "ALL" | TopicStatus;
 }
 
@@ -33,5 +35,4 @@ export interface TopicManagementStats {
   total: number;
   published: number;
   draft: number;
-  inProgress: number;
 }

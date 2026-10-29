@@ -31,11 +31,7 @@ Any data that comes from (or will come from) a backend lives in a feature hook o
   `TopicManagementListView.tsx:36`).
 - Constants for paths: `ROUTES` in `src/shared/constants/app.constants.ts` — prefer them over
   string literals (`C-02` context).
-- **`useSearchParams`: EXISTING — 0 usages in `src/`** (verified). Query-param state (filters,
-  sort) is currently implemented as component state instead (e.g.
-  `TopicManagementFilterBar` internal state). Introducing `useSearchParams` for shareable list
-  state is a PROPOSED improvement — not yet a registered decision (**UNKNOWN** whether wanted);
-  record a decision before adopting it.
+- **useSearchParams (topic catalog, D14 accepted 2026-10-27):** q/level/sort and mine tab live in URL. Search uses350ms debounce with replace; filters/tab use navigation entries. Detail keeps a validated internal from URL. Other legacy screens may still use component-local filters.
 
 ## 3. Local state — `useState` drafts (EXISTING)
 
@@ -84,5 +80,5 @@ belongs to the mock→real recipe (matrix `00`, row Progress).
 | Question | Status |
 |---|---|
 | Keep "no store library" as a standing rule? | PROPOSED (to keep) — not accepted |
-| Adopt `useSearchParams` for list/filter state? | not registered (**UNKNOWN**) |
+| Adopt `useSearchParams` for topic catalog state? | D14 accepted2026-10-27; q/level/sort/tab + safe return URL |
 | Replace `persistedFurthest` with server initial state | blocked on backend contract (**UNKNOWN**) |

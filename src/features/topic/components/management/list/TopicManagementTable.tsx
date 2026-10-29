@@ -1,4 +1,3 @@
-import { cn } from "@shared/utils";
 import {
   Copy,
   Eye,
@@ -9,20 +8,17 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import type { Topic } from "@features/topic/types/topic.types";
+import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
 
 interface TopicManagementTableProps {
-  topics: Topic[];
-  onUnpublish: (topic: Topic) => void;
+  topics: TopicManagementListItem[];
+  onUnpublish: (topic: TopicManagementListItem) => void;
+  onEdit: (topic: TopicManagementListItem) => void;
 }
 
-function progressPercent(topic: Topic): number {
-  if (topic.progress.total === 0) return 0;
-  return Math.round((topic.progress.done / topic.progress.total) * 100);
-}
-
-function CefrBadge({ cefr }: { cefr: Topic["cefr"] }) {
-  const styles: Record<Topic["cefr"], string> = {
+function CefrBadge({ cefr }: { cefr?: TopicManagementListItem["cefr"] }) {
+  if (!cefr) return null;
+  const styles: Record<NonNullable<TopicManagementListItem["cefr"]>, string> = {
     A1: "bg-tertiary/15 text-tertiary",
     A2: "bg-primary/10 text-primary",
     B1: "bg-tertiary-container/20 text-tertiary",
@@ -30,17 +26,22 @@ function CefrBadge({ cefr }: { cefr: Topic["cefr"] }) {
   };
   return (
     <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-label-sm font-semibold",
-        styles[cefr],
-      )}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-label-sm font-semibold ${styles[cefr]}`}
     >
       {cefr}
     </span>
   );
 }
 
-export default function TopicManagementTable({ topics, onUnpublish }: TopicManagementTableProps) {
+const CATEGORY_LABELS: Record<string, string> = {
+  DINING: "Ẩm thực & Nhà hàng",
+  TRAVEL: "Du lịch & Khách sạn",
+  BUSINESS: "Công sở & Kinh doanh",
+  DAILY: "Đời sống xã hội",
+  HEALTH: "Khám bệnh & Y tế",
+};
+
+export default function TopicManagementTable({ topics, onUnpublish, onEdit }: TopicManagementTableProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   return (
@@ -52,7 +53,6 @@ export default function TopicManagementTable({ topics, onUnpublish }: TopicManag
             <th className="w-24 px-3 py-3.5 text-center">Trình độ</th>
             <th className="px-3 py-3.5">Danh mục</th>
             <th className="px-3 py-3.5 text-center">Số bài học</th>
-            <th className="min-w-[210px] px-4 py-3.5">Tiến độ nội dung</th>
             <th className="px-3 py-3.5 text-center">Trạng thái</th>
             <th className="px-3 py-3.5">Cập nhật</th>
             <th className="px-4 py-3.5 text-right"></th>
@@ -60,7 +60,6 @@ export default function TopicManagementTable({ topics, onUnpublish }: TopicManag
         </thead>
         <tbody className="text-body-md">
           {topics.map((topic) => {
-            const percent = progressPercent(topic);
             const isPublished = topic.status === "published";
             const isMenuOpen = openMenuId === topic.id;
             return (
@@ -69,61 +68,37 @@ export default function TopicManagementTable({ topics, onUnpublish }: TopicManag
                 className="transition-colors hover:bg-surface-container-low/40"
               >
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={topic.thumbnail}
-                      alt=""
-                      loading="lazy"
-                      className="size-10 shrink-0 rounded-lg object-cover shadow-xs"
-                    />
+                  <button
+                    type="button"
+                    onClick={() => onEdit(topic)}
+                    className="flex items-center gap-3 text-left"
+                  >
                     <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-label-lg font-semibold text-on-surface">
+                      <span className="truncate text-label-lg font-semibold text-on-surface hover:underline">
                         {topic.titleEn}
                       </span>
                       <span className="truncate text-label-sm text-on-surface-variant">
                         {topic.titleVi}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 </td>
                 <td className="px-3 py-3 text-center">
                   <CefrBadge cefr={topic.cefr} />
                 </td>
                 <td className="px-3 py-3">
-                  <span className="rounded-lg bg-surface-container px-2 py-1 text-label-sm text-on-surface">
-                    {topic.category}
-                  </span>
+                  {topic.category ? (
+                    <span className="rounded-lg bg-surface-container px-2 py-1 text-label-sm text-on-surface">
+                      {CATEGORY_LABELS[topic.category] ?? topic.category}
+                    </span>
+                  ) : (
+                    <span className="text-label-sm text-on-surface-variant">—</span>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-center">
                   <span className="text-label-sm font-semibold text-on-surface">
-                    {topic.itemsLabel}
+                    {topic.itemCount} bài học
                   </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between text-label-sm">
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          isPublished ? "text-primary" : "text-on-secondary-container",
-                        )}
-                      >
-                        {topic.progress.done}/{topic.progress.total} Items ({percent}%)
-                      </span>
-                      <span className="text-[11px] text-on-surface-variant">
-                        {topic.progress.note}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
-                      <div
-                        className={cn(
-                          "h-full rounded-full",
-                          percent === 100 ? "bg-primary-container" : "bg-secondary-container",
-                        )}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
                 </td>
                 <td className="px-3 py-3 text-center">
                   {isPublished ? (
@@ -145,29 +120,17 @@ export default function TopicManagementTable({ topics, onUnpublish }: TopicManag
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-1">
-                    {/* <button
-                      type="button"
-                      className={cn(
-                        "rounded-lg px-2.5 py-1 text-label-sm font-semibold transition-colors",
-                        isPublished
-                          ? "bg-surface-container text-on-surface hover:bg-primary-container hover:text-on-primary"
-                          : "bg-primary-container text-on-primary hover:bg-primary",
-                      )}
-                    >
-                      {isPublished ? "Chỉnh sửa" : "Tiếp tục soạn"}
-                    </button> */}
                     <div className="relative">
                       <button
                         type="button"
                         aria-label={`Thao tác cho ${topic.titleEn}`}
                         aria-expanded={isMenuOpen}
                         onClick={() => setOpenMenuId(isMenuOpen ? null : topic.id)}
-                        className={cn(
-                          "flex size-8 items-center justify-center rounded-lg transition-all",
+                        className={`flex size-8 items-center justify-center rounded-lg transition-all ${
                           isMenuOpen
                             ? "bg-primary-container text-on-primary"
-                            : "text-on-surface-variant hover:bg-surface-container",
-                        )}
+                            : "text-on-surface-variant hover:bg-surface-container"
+                        }`}
                       >
                         <MoreVertical className="size-[18px]" aria-hidden="true" />
                       </button>
@@ -178,6 +141,10 @@ export default function TopicManagementTable({ topics, onUnpublish }: TopicManag
                           </p>
                           <button
                             type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              onEdit(topic);
+                            }}
                             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm text-on-surface transition-colors hover:bg-surface-container-low"
                           >
                             <Pencil className="size-[18px] text-primary" aria-hidden="true" />

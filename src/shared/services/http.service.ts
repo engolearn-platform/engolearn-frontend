@@ -3,6 +3,54 @@ type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 interface RequestOptions {
   headers?: Record<string, string>;
   params?: Record<string, string>;
+  signal?: AbortSignal;
+}
+
+/**
+ * Development-auth storage key for the selected dev fixture user.
+ * Persisted in localStorage so the choice survives reloads.
+ * Default fixture key: "dev-user".
+ */
+export const DEV_USER_STORAGE_KEY = "engolearn.devUserId";
+
+/**
+ * Request header used by the dev auth filter (backend) to resolve the fixture user.
+ * Sent by the API client in development only. Not sent for the "guest" selection
+ * (unauthenticated — backend receives no identity, per the auth contract).
+ */
+export const DEV_USER_HEADER = "X-Dev-User-Id";
+
+/** Dev-only selection meaning "no identity": the API client sends no header. */
+export const DEV_GUEST_KEY = "guest";
+
+const DEFAULT_DEV_USER_KEY = "dev-user";
+const DEV_USER_KEYS = ["guest", "dev-user", "dev-cm", "dev-admin"] as const;
+type DevUserKey = (typeof DEV_USER_KEYS)[number];
+
+function getDevUserKey(): DevUserKey {
+  if (!import.meta.env.DEV) {
+    return DEFAULT_DEV_USER_KEY;
+  }
+  try {
+    const stored = localStorage.getItem(DEV_USER_STORAGE_KEY);
+    if (stored && DEV_USER_KEYS.includes(stored as DevUserKey)) {
+      return stored as DevUserKey;
+    }
+  } catch {
+    // localStorage may be unavailable in some environments
+  }
+  return DEFAULT_DEV_USER_KEY;
+}
+
+function getDevHeaders(): Record<string, string> {
+  if (!import.meta.env.DEV) {
+    return {};
+  }
+  const key = getDevUserKey();
+  if (key === DEV_GUEST_KEY) {
+    return {};
+  }
+  return { [DEV_USER_HEADER]: key };
 }
 
 class HttpService {
@@ -13,7 +61,7 @@ class HttpService {
   }
 
   private buildUrl(endpoint: string, params?: Record<string, string>): string {
-    const url = new URL(endpoint, this.baseUrl);
+    const url = new URL(endpoint, this.baseUrl || window.location.origin);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, value);
@@ -26,16 +74,18 @@ class HttpService {
     method: HttpMethod,
     endpoint: string,
     options?: RequestOptions,
-    body?: unknown
+    body?: unknown,
   ): Promise<T> {
     const url = this.buildUrl(endpoint, options?.params);
-    
+
     const config: RequestInit = {
       method,
       headers: {
         "Content-Type": "application/json",
+        ...getDevHeaders(),
         ...options?.headers,
       },
+      signal: options?.signal,
     };
 
     if (body && method !== "GET") {
@@ -45,7 +95,29 @@ class HttpService {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      let message = `HTTP Error: ${response.status} ${response.statusText}`;
+      // Try to read the ProblemDetail body for a friendlier message (detail/title).
+      try {
+        const problem = (await response.json()) as
+          | { detail?: string; title?: string }
+          | null;
+        if (problem) {
+          if (problem.detail) {
+            message = problem.detail;
+          } else if (problem.title) {
+            message = problem.title;
+          }
+        }
+      } catch {
+        // Ignore non-JSON error bodies; keep the default message.
+      }
+
+      const error = new Error(message) as Error & {
+        status?: number;
+        code?: string;
+      };
+      error.status = response.status;
+      throw error;
     }
 
     return response.json();
@@ -55,15 +127,27 @@ class HttpService {
     return this.request<T>("GET", endpoint, options);
   }
 
-  async post<T>(endpoint: string, body: unknown, options?: RequestOptions): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    body: unknown,
+    options?: RequestOptions,
+  ): Promise<T> {
     return this.request<T>("POST", endpoint, options, body);
   }
 
-  async put<T>(endpoint: string, body: unknown, options?: RequestOptions): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    body: unknown,
+    options?: RequestOptions,
+  ): Promise<T> {
     return this.request<T>("PUT", endpoint, options, body);
   }
 
-  async patch<T>(endpoint: string, body: unknown, options?: RequestOptions): Promise<T> {
+  async patch<T>(
+    endpoint: string,
+    body: unknown,
+    options?: RequestOptions,
+  ): Promise<T> {
     return this.request<T>("PATCH", endpoint, options, body);
   }
 
@@ -74,3 +158,5 @@ class HttpService {
 
 export const httpService = new HttpService();
 export { HttpService };
+export type { DevUserKey };
+export { getDevUserKey, DEFAULT_DEV_USER_KEY };

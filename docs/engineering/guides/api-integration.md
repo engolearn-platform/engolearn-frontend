@@ -25,19 +25,14 @@ normalization to `{ message }`. Usage contract (`C-06`):
   `useCallback`, honoring `signal`.
 - Views consume the hook — they never call `fetch`.
 
-Grounded example — mock hook ([`src/features/topic/hooks/useTopicDetail.ts`](../../../src/features/topic/hooks/useTopicDetail.ts)):
+Grounded example — topic detail now calls the target API through a feature service (stage2):
 
 ```ts
 export function useTopicDetail(topicId: string) {
-  const fetchTopicDetail = useCallback(
-    async (signal: AbortSignal): Promise<TopicDetail> => {
-      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-      return { ...MOCK_TOPIC_DETAIL, id: topicId };   // EXISTING mock body — no network
-    },
+  return useFetch(useCallback(
+    (signal: AbortSignal) => topicCatalogService.detail(topicId, signal),
     [topicId],
-  );
-  const { data, loading, error, refetch } = useFetch<TopicDetail>(fetchTopicDetail);
-  return { data, loading, error, refetch };
+  ));
 }
 ```
 
@@ -147,6 +142,13 @@ model, using the Vietnam time zone for dates. Closed-week and summary tabs displ
 backend rates, scores, and improvements; open progress uses answered/assigned counts. The
 daily practice and result routes remain UI-only until their backend APIs exist.
 
+## Topic learning — target contract (2026-10-27)
+
+[Target OpenAPI](../../handout/topic-learning/api.openapi.yaml) và [handoff](../../handout/topic-learning/backend-handoff.md) ghi contract cần BE bổ sung, không phải mô tả BE đã đáp ứng.
+`createTopicApi` trong feature topic dùng `/api/v1` cùng origin và fetch được tiêm trong test, không qua shared `HttpService` cũ. Có xử lý envelope, ProblemDetail/status/code, AbortSignal và Idempotency-Key bắt buộc cho POST; không tự retry và không fallback mock.
+Wire DTO được sinh bằng `npm run topic:types`, kiểm tra drift bằng `npm run topic:types:check`. Chặng1 chưa đổi các hook/view cũ.
+Native API tests: `npm run test:topic-api`; phạm vi và giới hạn ở [testing.md](testing.md). Auth module/token/session vẫn chưa triển khai.
+
 ## 8. Anti-patterns
 
 - `fetch` inside views/components (`C-06`).
@@ -154,3 +156,8 @@ daily practice and result routes remain UI-only until their backend APIs exist.
 - Hardcoding guessed endpoints/DTOs before a contract exists (**UNKNOWN** → BLOCKED).
 - New mock hooks that skip `signal` handling (abort safety, §1 notes).
 - Leaving a 🟡 row 🟡 after wiring real data (doc-code drift, AGENTS.md tie-break).
+
+## Chặng2: các hook đã chuyển
+
+useTopicDetail/useTopicProgress và useTopicCatalog dùng topicCatalogService; viewer được nạp một lần ở TopicViewerLayout. shared useFetch giữ code/status bên cạnh message, không import domain error vào shared.
+Default endpoint vẫn là /api/v1 qua proxy BE. Dữ liệu thiếu contract được báo lỗi; không có chuyển ngầm sang mock. Preview riêng và giới hạn: docs/handout/topic-learning/verification.md.
