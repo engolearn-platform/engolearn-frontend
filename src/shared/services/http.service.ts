@@ -80,6 +80,8 @@ class HttpService {
 
     const config: RequestInit = {
       method,
+      credentials: "same-origin",
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...getDevHeaders(),
@@ -96,12 +98,14 @@ class HttpService {
 
     if (!response.ok) {
       let message = `HTTP Error: ${response.status} ${response.statusText}`;
+      let code: string | undefined;
       // Try to read the ProblemDetail body for a friendlier message (detail/title).
       try {
         const problem = (await response.json()) as
-          | { detail?: string; title?: string }
+          | { detail?: string; title?: string; code?: string }
           | null;
         if (problem) {
+          if (typeof problem.code === "string") code = problem.code;
           if (problem.detail) {
             message = problem.detail;
           } else if (problem.title) {
@@ -117,6 +121,7 @@ class HttpService {
         code?: string;
       };
       error.status = response.status;
+      error.code = code;
       throw error;
     }
 
