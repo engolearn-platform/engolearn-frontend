@@ -1,12 +1,11 @@
 import { Info } from "lucide-react";
 import { cn } from "@shared/utils";
-import { percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
-import type { DailyAnswers, DailyQuestion } from "@features/learning-path/types/learning-path-day.types";
+import { scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
+import type { SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
 import styles from "./dailyResult.module.css";
 
 interface DailyResultSummaryProps {
-  questions: DailyQuestion[];
-  answers: DailyAnswers;
+  result: SubmitDayResult;
 }
 
 function rateTone(score: number | null) {
@@ -16,17 +15,15 @@ function rateTone(score: number | null) {
   return "correct";
 }
 
-export default function DailyResultSummary({ questions, answers }: DailyResultSummaryProps) {
-  const assigned = questions.length;
-  const answered = questions.filter((question) => answers[question.number] !== undefined).length;
-  const correct = questions.filter((question) => answers[question.number] === question.correctIndex).length;
-  const completionRate = percentage(answered, assigned);
-  const practiceScore = percentage(correct, answered);
+export default function DailyResultSummary({ result }: DailyResultSummaryProps) {
+  const { assigned, answered, correct, wrong } = result;
+  const completionRate = result.completionRate === null ? null : Math.round(result.completionRate);
+  const practiceScore = result.practiceScore === null ? null : Math.round(result.practiceScore);
   const metrics = [
     { label: "Câu được giao", value: String(assigned), tone: "neutral", emphasis: false },
     { label: "Đã làm", value: String(answered), tone: "neutral", emphasis: false },
     { label: "Đúng", value: String(correct), tone: "correct", emphasis: true },
-    { label: "Sai", value: String(answered - correct), tone: "wrong", emphasis: true },
+    { label: "Sai", value: String(wrong), tone: "wrong", emphasis: true },
     { label: "Completion Rate", value: scoreLabel(completionRate), tone: rateTone(completionRate), emphasis: completionRate !== null },
     { label: "Practice Score", value: scoreLabel(practiceScore), tone: rateTone(practiceScore), emphasis: practiceScore !== null },
   ];

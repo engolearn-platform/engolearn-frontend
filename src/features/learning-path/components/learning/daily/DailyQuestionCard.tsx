@@ -9,6 +9,7 @@ interface DailyQuestionCardProps {
   mode: "practice" | "review";
   selectedIndex?: number;
   onSelect?: (index: number) => void;
+  disabled?: boolean;
 }
 
 const optionLetters = ["A", "B", "C", "D"];
@@ -18,6 +19,7 @@ export default function DailyQuestionCard({
   mode,
   selectedIndex,
   onSelect,
+  disabled,
 }: DailyQuestionCardProps) {
   const review = mode === "review";
   const answered = selectedIndex !== undefined;
@@ -51,21 +53,22 @@ export default function DailyQuestionCard({
         </div>
       </div>
 
-      <div className="mt-4">
+      {question.stimulus && <div className="mt-4">
         {question.stimulus.type === "audio" ? (
-          <DailyAudioPlayer label={question.stimulus.label} duration={question.stimulus.duration} />
+          <DailyAudioPlayer label={question.stimulus.label} duration={question.stimulus.duration} url={question.stimulus.url} />
         ) : (
           <div className="rounded-xl border border-outline-variant/50 bg-surface-container-low p-4">
             <p className="mb-2 text-xs text-on-surface-variant">{question.stimulus.label}</p>
             <p className="text-sm leading-6 text-on-surface">{question.stimulus.text}</p>
           </div>
         )}
-      </div>
+      </div>}
 
       <p className="mt-4 text-base font-semibold leading-6 text-on-surface">{question.prompt}</p>
 
       <div className="mt-4 space-y-2">
         {question.options.map((option, index) => {
+          const optionId = question.optionIds?.[index] ?? optionLetters[index];
           const isSelected = selectedIndex === index;
           const isCorrectAnswer = question.correctIndex === index;
           const wrongSelection = review && isSelected && !isCorrectAnswer;
@@ -78,7 +81,7 @@ export default function DailyQuestionCard({
                 reviewState ? styles.letter : "bg-surface-container-low text-on-surface-variant",
                 !review && highlighted && "bg-primary text-on-primary",
               )}>
-                {optionLetters[index]}
+                {optionId}
               </span>
               <span className="min-w-0 flex-1">{option}</span>
               {review && (isCorrectAnswer || isSelected) ? (
@@ -99,11 +102,12 @@ export default function DailyQuestionCard({
           );
 
           return review ? (
-            <div key={optionLetters[index]} className={className}>{content}</div>
+            <div key={optionId} className={className}>{content}</div>
           ) : (
             <button
-              key={optionLetters[index]}
+              key={optionId}
               type="button"
+              disabled={disabled}
               className={className}
               aria-pressed={isSelected}
               onClick={() => onSelect?.(index)}

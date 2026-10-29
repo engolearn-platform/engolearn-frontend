@@ -29,7 +29,7 @@ The screen loads `GET /api/learning-paths/:pathId?userId=…` through `useLearni
 
 The response supplies path configuration and progress, baseline scores, week/day statuses, closed-week statistics, and the completed summary. Available backend Completion Rate, Practice Score, and improvement values are used directly and rounded for display; open progress is derived from answered/assigned counts. Date/time values are displayed in the Vietnam time zone. Locked weeks and the Summary tab stay unavailable until the backend status permits them.
 
-Day cards still open the UI-only practice or daily result screens described in `02-daily-practice-screen.md` and `03-daily-result-screen.md`. Those screens do not yet fetch questions or answers from the backend, so their content is illustrative even when reached from a real path.
+Day cards open the practice or daily result screens described in `02-daily-practice-screen.md` and `03-daily-result-screen.md`. Practice loads questions, saves drafts and submits through the backend. The submission response supplies the immediate daily summary; opening an old daily result and reviewing answers require a future backend API.
 
 The layout stacks cards on narrow screens, allows the tab row and weekly table to scroll horizontally, and uses the existing learner shell.
 The detail content fills the learner workspace up to 1300px, with responsive side padding that balances card width and surrounding space.

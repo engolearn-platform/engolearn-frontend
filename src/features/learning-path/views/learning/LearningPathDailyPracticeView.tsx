@@ -1,220 +1,119 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Clock3 } from "lucide-react";
+import { EmptyState, Loading } from "@shared/components";
 import { ROUTES, learningPathDayPath } from "@shared/constants";
-import { dailyQuestions, sampleSavedAnswersThroughPageThree } from "@features/learning-path/data/learningPathDay.mock";
-import type { DailyAnswers, DailyResultRouteState } from "@features/learning-path/types/learning-path-day.types";
+import { useLearningPathDayPractice } from "@features/learning-path/hooks/useLearningPathDayPractice";
+import { useLearningPathDetail } from "@features/learning-path/hooks/useLearningPathDetail";
+import { learningPathService } from "@features/learning-path/services/learningPath.service";
+import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
+import type { DailyAnswers, DailyQuestion, PracticeDayDto } from "@features/learning-path/types/learning-path-day.types";
 import DailyQuestionCard from "@features/learning-path/components/learning/daily/DailyQuestionCard";
 import DailyQuestionNavigator from "@features/learning-path/components/learning/daily/DailyQuestionNavigator";
 import DailyPracticeActionBar from "@features/learning-path/components/learning/daily/DailyPracticeActionBar";
 
-function initialPageFromQuery(value: string | null): number {
-  const page = Number(value);
-  return Number.isInteger(page) && page >= 1 && page <= 4 ? page : 1;
+interface SessionProps {
+  day: PracticeDayDto;
+  questions: DailyQuestion[];
+  initialAnswers: DailyAnswers;
+  detailUrl: string;
+  description: string;
 }
 
-interface PracticeRecord {
-  answers: DailyAnswers;
-  page: number;
-  startedDate: string;
-  submitted: boolean;
-}
-
-function todayInVietnam(): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const value = (type: string) => parts.find((part) => part.type === type)?.value;
-  return `${value("year")}-${value("month")}-${value("day")}`;
-}
-
-function nextMidnightInVietnam(startedDate: string): number {
-  return Date.parse(`${startedDate}T00:00:00+07:00`) + 24 * 60 * 60 * 1000;
-}
-
-function sampleAnswers(page: number): DailyAnswers {
-  const previous = Object.fromEntries(
-    Object.entries(sampleSavedAnswersThroughPageThree).filter(([number]) => Number(number) < (page - 1) * 3 + 1),
-  );
-  if (page === 2) return { ...previous, 4: 1, 5: 2 };
-  if (page === 4) return { ...previous, 10: 2 };
-  return previous;
-}
-
-function readPractice(storageKey: string, requestedPage: number): PracticeRecord {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (raw) {
-      const stored = JSON.parse(raw) as Partial<PracticeRecord>;
-      if (stored.answers && typeof stored.startedDate === "string"
-          && /^\d{4}-\d{2}-\d{2}$/.test(stored.startedDate)) {
-        const answers = Object.fromEntries(
-          Object.entries(stored.answers).filter(([number, option]) =>
-            Number.isInteger(Number(number)) && Number(number) >= 1 && Number(number) <= 10
-            && Number.isInteger(option) && option >= 0 && option <= 3,
-          ),
-        );
-        const page = stored.page;
-        return {
-          answers,
-          page: typeof page === "number" && Number.isInteger(page) && page >= 1 && page <= 4 ? page : 1,
-          startedDate: stored.startedDate,
-          submitted: stored.submitted === true,
-        };
-      }
-    }
-  } catch {
-    // The preview remains usable when browser storage is unavailable.
-  }
-  return { answers: sampleAnswers(requestedPage), page: requestedPage, startedDate: todayInVietnam(), submitted: false };
-}
-
-function writePractice(storageKey: string, record: PracticeRecord): void {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(record));
-  } catch {
-    // The current session can continue without browser storage.
-  }
-}
-
-interface PracticeSessionProps {
-  pathId: string;
-  weekNo: string;
-  dayNo: string;
-  storageKey: string;
-  requestedPage: number;
-  completedPreview: boolean;
-}
-
-function PracticeSession({ pathId, weekNo, dayNo, storageKey, requestedPage, completedPreview }: PracticeSessionProps) {
+function PracticeSession({ day, questions, initialAnswers, detailUrl, description }: SessionProps) {
   const navigate = useNavigate();
-  const [record, setRecord] = useState<PracticeRecord>(() => readPractice(storageKey, requestedPage));
-  const pageQuestions = dailyQuestions.slice((record.page - 1) * 3, record.page * 3);
-  const answeredCount = pageQuestions.filter((question) => record.answers[question.number] !== undefined).length;
-  const previewQuery = completedPreview ? "?preview=completed" : "";
-  const detailUrl = `${ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(pathId))}${previewQuery}`;
-  const resultUrl = `${learningPathDayPath(pathId, Number(weekNo), Number(dayNo), "result")}${previewQuery}`;
+  const [answers, setAnswers] = useState(initialAnswers);
+  const [page, setPage] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [failedQuestions, setFailedQuestions] = useState<number[]>([]);
+  const [error, setError] = useState("");
+  const [closed, setClosed] = useState(() => Date.parse(day.autoCloseAt) <= Date.now());
+  const savingRef = useRef(false);
+  const pageQuestions = questions.slice((page - 1) * 3, page * 3);
+  const answeredCount = pageQuestions.filter((question) => answers[question.number] !== undefined).length;
 
   useEffect(() => {
-    writePractice(storageKey, record);
-  }, [storageKey, record]);
-
-  useEffect(() => {
-    const remaining = nextMidnightInVietnam(record.startedDate) - Date.now();
-    if (record.submitted || remaining <= 0) {
-      if (!record.submitted) writePractice(storageKey, { ...record, submitted: true });
-      const state: DailyResultRouteState = { answers: record.answers, submittedFromPractice: true };
-      navigate(resultUrl, { replace: true, state });
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      writePractice(storageKey, { ...record, submitted: true });
-      const state: DailyResultRouteState = { answers: record.answers, submittedFromPractice: true };
-      navigate(resultUrl, { replace: true, state });
-    }, remaining);
+    const remaining = Date.parse(day.autoCloseAt) - Date.now();
+    if (remaining <= 0) return;
+    const timer = window.setTimeout(() => setClosed(true), remaining);
     return () => window.clearTimeout(timer);
-  }, [navigate, record, resultUrl, storageKey]);
+  }, [day.autoCloseAt]);
 
-  const chooseAnswer = (questionNumber: number, optionIndex: number) => {
-    const updated = { ...record, answers: { ...record.answers, [questionNumber]: optionIndex } };
-    writePractice(storageKey, updated);
-    setRecord(updated);
-  };
-
-  const goToPage = (page: number) => {
-    const updated = { ...record, page };
-    writePractice(storageKey, updated);
-    setRecord(updated);
-  };
-
-  const continuePractice = () => {
-    if (record.page < 4) {
-      goToPage(record.page + 1);
-      return;
+  const chooseAnswer = async (questionNumber: number, optionIndex: number) => {
+    if (savingRef.current || closed || Date.now() >= Date.parse(day.autoCloseAt)) return;
+    const question = day.questions.find((item) => item.order === questionNumber);
+    const option = question?.options[optionIndex];
+    if (!question || !option) return;
+    savingRef.current = true;
+    setSaving(true);
+    setError("");
+    try {
+      await learningPathService.saveDraft(day.pathId, String(day.weekNo), String(day.dayNo), question.questionId, option.optionId);
+      setAnswers((current) => ({ ...current, [questionNumber]: optionIndex }));
+      setFailedQuestions((current) => current.filter((number) => number !== questionNumber));
+    } catch (cause) {
+      setFailedQuestions((current) => current.includes(questionNumber) ? current : [...current, questionNumber]);
+      setError(`${cause instanceof Error ? cause.message : "Không lưu được đáp án."} Vui lòng chọn lại đáp án câu ${questionNumber}.`);
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    const submitted = { ...record, submitted: true };
-    writePractice(storageKey, submitted);
-    const state: DailyResultRouteState = { answers: submitted.answers, submittedFromPractice: true };
-    navigate(resultUrl, { state });
   };
+
+  const submitDay = async () => {
+    if (savingRef.current || failedQuestions.length > 0 || closed || Date.now() >= Date.parse(day.autoCloseAt)) return;
+    savingRef.current = true;
+    setSubmitting(true);
+    setError("");
+    try {
+      const result = await learningPathService.submitDay(day.pathId, day.weekNo, day.dayNo);
+      navigate(learningPathDayPath(day.pathId, day.weekNo, day.dayNo, "result"), { replace: true, state: { result } });
+    } catch (cause) {
+      setError(`${cause instanceof Error ? cause.message : "Không xác nhận được kết quả nộp bài."} Vui lòng kiểm tra lại lộ trình nếu bài đã được đóng.`);
+    } finally {
+      savingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  const closeTime = new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric",
+  }).format(new Date(day.autoCloseAt));
 
   return (
     <div className="mx-auto w-full max-w-[1300px] px-5 py-5 pb-24 lg:px-8 lg:py-8 xl:px-10">
-      <Link to={detailUrl} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-        <ArrowLeft className="size-4" aria-hidden="true" />
-        Thoát luyện tập
-      </Link>
-
+      <Link to={detailUrl} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"><ArrowLeft className="size-4" aria-hidden="true" />Thoát luyện tập</Link>
       <header className="mt-5 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface">Luyện tập Ngày {dayNo}</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Lộ trình ngày 09/10/2026 · Tuần {weekNo} · Level A1</p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-container bg-secondary-container/30 px-3 py-1.5 text-xs font-medium text-on-secondary-container">
-          <Clock3 className="size-3.5" aria-hidden="true" />
-          Tự đóng lúc 00:00 hôm nay
-        </span>
+        <div><h1 className="text-2xl font-bold text-on-surface">Luyện tập Ngày {day.dayNo}</h1><p className="mt-1 text-sm text-on-surface-variant">{description}</p></div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-secondary-container bg-secondary-container/30 px-3 py-1.5 text-xs font-medium text-on-secondary-container"><Clock3 className="size-3.5" aria-hidden="true" />Tự đóng lúc {closeTime}</span>
       </header>
-
+      {error && <p role="alert" className="mt-4 text-sm text-error">{error}</p>}
+      {failedQuestions.length > 0 && <p className="mt-4 text-sm text-error">Vui lòng lưu lại đáp án câu {failedQuestions.join(", ")} trước khi nộp.</p>}
+      {closed && <p role="alert" className="mt-4 text-sm text-error">Ngày luyện tập đã đến giờ đóng. Vui lòng quay lại lộ trình.</p>}
       <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0">
-          <p className="mb-3 text-sm font-medium text-on-surface-variant">
-            Câu {pageQuestions[0].number}{pageQuestions.length > 1 ? ` – ${pageQuestions[pageQuestions.length - 1].number}` : ""} trên 10
-          </p>
-          <div className="space-y-4">
-            {pageQuestions.map((question) => (
-              <DailyQuestionCard
-                key={question.number}
-                question={question}
-                mode="practice"
-                selectedIndex={record.answers[question.number]}
-                onSelect={(index) => chooseAnswer(question.number, index)}
-              />
-            ))}
-          </div>
-          <div className="mt-4">
-            <DailyPracticeActionBar
-              page={record.page}
-              firstQuestion={pageQuestions[0].number}
-              lastQuestion={pageQuestions[pageQuestions.length - 1].number}
-              questionCount={pageQuestions.length}
-              answeredCount={answeredCount}
-              onContinue={continuePractice}
-            />
-          </div>
+          <p className="mb-3 text-sm font-medium text-on-surface-variant">Câu {pageQuestions[0].number}{pageQuestions.length > 1 ? ` – ${pageQuestions[pageQuestions.length - 1].number}` : ""} trên 10</p>
+          <div className="space-y-4">{pageQuestions.map((question) => <DailyQuestionCard key={question.number} question={question} mode="practice" selectedIndex={answers[question.number]} disabled={saving || submitting || closed} onSelect={(index) => void chooseAnswer(question.number, index)} />)}</div>
+          <div className="mt-4"><DailyPracticeActionBar page={page} firstQuestion={pageQuestions[0].number} lastQuestion={pageQuestions[pageQuestions.length - 1].number} questionCount={pageQuestions.length} answeredCount={answeredCount} disabled={saving || submitting || closed || (page === 4 && failedQuestions.length > 0)} submitting={submitting} onContinue={() => page === 4 ? void submitDay() : setPage((current) => current + 1)} /></div>
         </section>
-        <DailyQuestionNavigator
-          mode="practice"
-          currentPage={record.page}
-          questions={dailyQuestions}
-          answers={{}}
-          draftAnswers={record.answers}
-          onSelectPage={goToPage}
-        />
+        <DailyQuestionNavigator mode="practice" currentPage={page} questions={questions} answers={{}} draftAnswers={answers} onSelectPage={setPage} />
       </div>
     </div>
   );
 }
 
-export default function LearningPathDailyPracticeView() {
-  const { pathId = "demo-active", weekNo = "2", dayNo = "1" } = useParams();
-  const [searchParams] = useSearchParams();
-  const requestedPage = initialPageFromQuery(searchParams.get("page"));
-  const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim() || "preview";
-  const storageKey = `engolearn:learning-path:practice:${userId}:${pathId}:${weekNo}:${dayNo}`;
+function PracticeView({ pathId, weekNo, dayNo }: { pathId: string; weekNo: string; dayNo: string }) {
+  const { data, loading, error } = useLearningPathDayPractice(pathId, weekNo, dayNo);
+  const { data: detail } = useLearningPathDetail(pathId);
+  const detailUrl = ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(pathId));
+  if (loading) return <div className="mx-auto w-full max-w-[1300px] px-5 py-5"><Loading size="lg" /></div>;
+  if (error || !data) return <div className="mx-auto w-full max-w-[1300px] px-5 py-5"><Link to={detailUrl} className="text-primary hover:underline">Trở về lộ trình</Link><EmptyState title="Không mở được bài luyện tập" description={error?.message ?? "Vui lòng thử lại."} /></div>;
+  const description = detail ? `Lộ trình ngày ${formatLearningPathDate(detail.createdDate)} · Tuần ${weekNo} · Level ${detail.level}` : `Tuần ${weekNo}`;
+  return <PracticeSession day={data.day} questions={data.questions} initialAnswers={data.answers} detailUrl={detailUrl} description={description} />;
+}
 
-  return (
-    <PracticeSession
-      key={storageKey}
-      pathId={pathId}
-      weekNo={weekNo}
-      dayNo={dayNo}
-      storageKey={storageKey}
-      requestedPage={requestedPage}
-      completedPreview={searchParams.get("preview") === "completed"}
-    />
-  );
+export default function LearningPathDailyPracticeView() {
+  const { pathId = "", weekNo = "", dayNo = "" } = useParams();
+  return <PracticeView key={`${pathId}:${weekNo}:${dayNo}`} pathId={pathId} weekNo={weekNo} dayNo={dayNo} />;
 }
