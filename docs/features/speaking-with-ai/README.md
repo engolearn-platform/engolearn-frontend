@@ -14,6 +14,7 @@
 - `useSpeakingStream` tracks connection separately from recording. It obtains a one-use socket ticket, sends 16 kHz mono PCM frames from `speaking-pcm-worklet.js`, shows interim text, and reloads the authoritative snapshot after connection or turn completion. It retries connection up to three times at roughly three-second intervals and drops uncommitted audio after disconnection. Microphone access is requested before session creation.
 - `AI_AUDIO_READY` refreshes the snapshot (the `TURN_RESULT` snapshot predates TTS, so `aiAudioAvailable` is still false there) and notifies the view so the AI reply for that turn plays automatically while the session is active. Each AI bubble with `aiAudioAvailable` keeps a “Nghe phản hồi AI” button that reuses the same short-lived `AI_REPLY` playback URL as learner replay.
 - A turn shows “Đang xử lý…” only while its evaluation state is `PENDING`. When assessment fails, the view shows a retry message instead of leaving the AI reply in a processing state.
+- [Achievement celebrations and finalized result summary](achievement-session-result.md) document the committed-turn adapter, deduplicated milestone behavior, final summary, UI-only finalizing state, and current verification/contract gaps.
 - The view supports create/replace/resume/end, item and account history, detail, 30-day recording availability, short-lived Cloudinary playback, deleting one session and deleting all. Closing the page stops local capture without sending End.
 
 ## Contract with BE

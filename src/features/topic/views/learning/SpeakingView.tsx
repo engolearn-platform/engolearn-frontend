@@ -3,8 +3,17 @@ import { useNavigate, useParams } from "react-router";
 import { Check, CircleAlert, Lightbulb, Mic, Play, Square, Trash2, UserRound } from "lucide-react";
 import { ROUTES } from "@shared/constants";
 import { speakingDemoEnabled, speakingService } from "@features/topic/services/speaking.service";
-import { useSpeakingStream } from "@features/topic/hooks/useSpeakingStream";
-import type { SpeakingAssessment, SpeakingEndReason, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
+import { useSpeakingStream, type SpeakingSnapshotEvent } from "@features/topic/hooks/useSpeakingStream";
+import type { SpeakingAssessment, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
+import { AchievementFireworks } from "./speaking-achievements/AchievementFireworks";
+import { AllGoalsMilestone } from "./speaking-achievements/AllGoalsMilestone";
+import { InlineMilestoneBanner } from "./speaking-achievements/InlineMilestoneBanner";
+import { SessionResultSummary } from "./speaking-achievements/SessionResultSummary";
+import { isFinalizedSession, toAchievementSnapshot } from "./speaking-achievements/speakingAchievementAdapter";
+import { decideCelebration, type CelebrationDecision } from "./speaking-achievements/speakingAchievementLogic";
+
+// Must stay >= the longest run in speakingAchievement.css (particles 2.2s + 150ms delay).
+const CELEBRATION_VISIBLE_MS = 2800;
 
 const statusLabels = {
   ACTIVE: "Đang luyện",
@@ -13,44 +22,49 @@ const statusLabels = {
   INCOMPLETE: "Chưa hoàn thành",
 } as const;
 
-const endReasonLabels: Record<SpeakingEndReason, string> = {
-  GOALS_REACHED: "Đạt tất cả mục tiêu",
-  LEARNER_ENDED: "Bạn kết thúc phiên",
-  SESSION_AGE: "Hết thời gian phiên",
-  TURN_LIMIT: "Đạt giới hạn lượt nói",
-  DAILY_QUOTA: "Hết hạn mức ngày",
-  RECOVERY_EXPIRED: "Hết thời gian phục hồi",
-  EVALUATION_FAILURES: "Lỗi đánh giá liên tiếp",
-  SERVICE_RESTART: "Sự cố hệ thống",
-  REPLACED: "Phiên được thay thế",
-  SOFT_DELETED: "Phiên đã xóa",
-};
-
-function feedbackItems(assessment: SpeakingAssessment | null, goals: SpeakingGoal[]) {
-  if (!assessment) return [];
-  const items = [
-    ...assessment.goalEvidence.map(evidence => {
-      const goal = goals.find(item => item.id === evidence.goalId);
-      return goal ? `Đạt mục tiêu: ${goal.title}` : "";
-    }),
-    ...assessment.corrections.map(item => `Sửa lỗi: ${item.original} → ${item.corrected}${item.explanation ? `. ${item.explanation}` : ""}`),
-    ...assessment.resourceEvidence.map(item => `Củng cố: ${item.explanation}`),
-  ].filter(Boolean).slice(0, 3);
-  if (assessment.hint && items.length < 3) {
-    items.push(`Gợi ý: ${assessment.hint}`);
-  }
-  return items.length ? items : assessment.feedback.filter(Boolean).slice(0, 3);
+interface FeedbackItem {
+  text: string;
+  kind: "goal" | "correction" | "resource" | "hint" | "feedback";
+  goalId?: string;
 }
 
-function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay }: {
+function feedbackItems(assessment: SpeakingAssessment | null, goals: SpeakingGoal[]): FeedbackItem[] {
+  if (!assessment) return [];
+  const goalItems: FeedbackItem[] = assessment.goalEvidence.flatMap(evidence => {
+      const goal = goals.find(item => item.id === evidence.goalId);
+      return goal ? [{ text: `Đạt mục tiêu: ${goal.title}`, kind: "goal", goalId: goal.id }] : [];
+    });
+  const items: FeedbackItem[] = [
+    ...goalItems,
+    ...assessment.corrections.map(item => ({ text: `Sửa lỗi: ${item.original} → ${item.corrected}${item.explanation ? `. ${item.explanation}` : ""}`, kind: "correction" as const })),
+    ...assessment.resourceEvidence.map(item => ({ text: `Củng cố: ${item.explanation}`, kind: "resource" as const })),
+  ].slice(0, 3);
+  if (assessment.hint && items.length < 3) {
+    items.push({ text: `Gợi ý: ${assessment.hint}`, kind: "hint" });
+  }
+  return items.length ? items : assessment.feedback.filter(Boolean).slice(0, 3)
+    .map(text => ({ text, kind: "feedback" as const }));
+}
+
+function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay, achievement, onFinish, validTurns = 0, minValidTurns = 0, showAchievementFireworks = false }: {
   text: string;
   assessment?: SpeakingAssessment | null;
   goals?: SpeakingGoal[];
   turn?: SpeakingTurn;
   playing?: boolean;
   onPlay?: (turn: SpeakingTurn) => void;
+  achievement?: CelebrationDecision;
+  onFinish: () => void;
+  validTurns?: number;
+  minValidTurns?: number;
+  showAchievementFireworks?: boolean;
 }) {
   const feedback = feedbackItems(assessment ?? null, goals);
+  const fireworksItemIndex = showAchievementFireworks && achievement?.type !== "ALL_GOALS"
+    && achievement?.type !== "FINAL_ALL_GOALS"
+    ? feedback.findIndex(item => item.kind === "goal" && item.goalId !== undefined
+      && achievement?.newGoalIds.includes(item.goalId))
+    : -1;
   return <div className="flex items-start gap-2.5 sm:gap-3">
     <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-800">✦</span>
     <div className="min-w-0 max-w-[85%] sm:max-w-[75%]">
@@ -66,13 +80,19 @@ function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay
         </div>}
         {feedback.length > 0 && <div className="mt-3 border-t border-teal-200 pt-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-900">Nhận xét lượt này</p>
-          <ul className="space-y-1.5">{feedback.map((item, index) => <li key={`${index}-${item}`}
-            className="flex gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm leading-5 text-slate-700">
-            {item.toLowerCase().includes("gợi ý") ? <Lightbulb aria-hidden="true" size={16} className="mt-0.5 shrink-0 text-sky-700" />
+          <ul className="space-y-1.5">{feedback.map((item, index) => <li key={`${index}-${item.text}`}
+            className={`relative flex gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm leading-5 text-slate-700 ${index === fireworksItemIndex ? "pr-16" : ""}`}>
+            {item.kind === "hint" ? <Lightbulb aria-hidden="true" size={16} className="mt-0.5 shrink-0 text-sky-700" />
               : <Check aria-hidden="true" size={16} className="mt-0.5 shrink-0 text-teal-700" />}
-            <span>{item}</span>
+            <span>{item.text}</span>
+            {index === fireworksItemIndex && <AchievementFireworks />}
           </li>)}</ul>
         </div>}
+        {achievement && <>
+          <InlineMilestoneBanner decision={achievement} onFinish={onFinish} />
+          <AllGoalsMilestone decision={achievement} goalTotal={goals.length}
+            validTurns={validTurns} minValidTurns={minValidTurns} celebrate={showAchievementFireworks} />
+        </>}
       </div>
     </div>
   </div>;
@@ -115,14 +135,54 @@ export default function SpeakingView() {
   const [showHistory, setShowHistory] = useState(!itemId);
   const [playingTurn, setPlayingTurn] = useState<string | null>(null);
   const [playingAiTurn, setPlayingAiTurn] = useState<string | null>(null);
+  const [achievementEvents, setAchievementEvents] = useState<CelebrationDecision[]>([]);
+  const [activeFireworkKey, setActiveFireworkKey] = useState<string | null>(null);
+  const [endingSession, setEndingSession] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playTokenRef = useRef(0);
-  const acceptSnapshot = useCallback((next: SpeakingSession) => {
-    setSession(previous => previous?.id === next.id && previous.revision > next.revision
-      ? previous : next);
+  const sessionRef = useRef<SpeakingSession | null>(null);
+  const playedAchievementKeys = useRef(new Set<string>());
+  const acceptSnapshot = useCallback((next: SpeakingSession | null, event: SpeakingSnapshotEvent = { source: "HYDRATE" }) => {
+    const previous = sessionRef.current;
+    if (!next) {
+      sessionRef.current = null;
+      setSession(null);
+      return;
+    }
+    if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
+    if (previous?.id === next.id && previous.revision > next.revision) return;
+    const changedSession = previous?.id !== next.id;
+    sessionRef.current = next;
+    setSession(next);
+    if (changedSession) {
+      playedAchievementKeys.current.clear();
+      setAchievementEvents([]);
+      setActiveFireworkKey(null);
+    }
+    const liveTransition = event.source !== "HYDRATE";
+    const after = toAchievementSnapshot(next);
+    let before = previous ? toAchievementSnapshot(previous) : null;
+    // A reconnect GET can arrive just before the live TURN_RESULT at the same
+    // revision. The committed assessment still identifies first-time evidence.
+    if (event.source === "TURN_RESULT" && event.turnId && before?.revision === after.revision) {
+      const turn = next.turns.find(item => item.id === event.turnId);
+      const firstGoalIds = new Set((turn?.assessment?.goalEvidence ?? []).filter(evidence =>
+        !next.turns.some(other => other.id !== turn?.id && other.sequence < (turn?.sequence ?? 0)
+          && other.assessment?.goalEvidence.some(item => item.goalId === evidence.goalId))).map(item => item.goalId));
+      if (firstGoalIds.size > 0) {
+        before = { ...before, goals: before.goals.map(goal => firstGoalIds.has(goal.id)
+          ? { ...goal, achieved: false } : goal), requiredMet: false, eligibleToFinish: false };
+      }
+    }
+    const decision = decideCelebration(before, after, { turnId: event.turnId, liveTransition });
+    if (decision.type !== "NONE" && !playedAchievementKeys.current.has(decision.eventKey)) {
+      playedAchievementKeys.current.add(decision.eventKey);
+      setAchievementEvents(current => [...current, decision]);
+      if ((decision.newGoalIds.length > 0 && event.turnId) || decision.type === "FINAL_ALL_GOALS") {
+        setActiveFireworkKey(decision.eventKey);
+      }
+    }
   }, []);
-  const sessionRef = useRef(session);
-  sessionRef.current = session;
   const historyOpenRef = useRef(showHistory);
   historyOpenRef.current = showHistory;
   const { connection, recording, interim, startRecording, finishRecording } =
@@ -138,24 +198,31 @@ export default function SpeakingView() {
       const [current, entries] = await Promise.all([
         speakingService.current(), speakingService.history(itemId),
       ]);
-      setSession(current);
+      acceptSnapshot(current);
       setHistory(entries);
       if (itemId) setConfig(await speakingService.config(itemId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không tải được Speaking.");
     }
-  }, [itemId]);
+  }, [acceptSnapshot, itemId]);
 
   useEffect(() => { if (speakingDemoEnabled) void refresh(); }, [refresh]);
   useEffect(() => () => { audioRef.current?.pause(); audioRef.current = null; }, []);
+  useEffect(() => {
+    if (!activeFireworkKey) return;
+    const timer = window.setTimeout(() => setActiveFireworkKey(current =>
+      current === activeFireworkKey ? null : current), CELEBRATION_VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeFireworkKey]);
 
-  async function run(action: () => Promise<SpeakingSession | number>, clearSession = false) {
+  async function run(action: () => Promise<SpeakingSession | number>, clearSession = false,
+    source: SpeakingSnapshotEvent["source"] = "HYDRATE") {
     setBusy(true);
     setError("");
     try {
       const result = await action();
-      if (clearSession || typeof result === "number") setSession(null);
-      else setSession(result);
+      if (clearSession || typeof result === "number") acceptSnapshot(null);
+      else acceptSnapshot(result, { source });
       setHistory(await speakingService.history(itemId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Thao tác không thành công.");
@@ -169,6 +236,16 @@ export default function SpeakingView() {
       mic.getTracks().forEach(track => track.stop());
       return replace ? speakingService.replace(itemId) : speakingService.create(itemId);
     });
+  }
+
+  async function endSession(target: SpeakingSession) {
+    if (endingSession) return;
+    setEndingSession(true);
+    try {
+      await run(() => speakingService.end(target), false, "SESSION_ENDED");
+    } finally {
+      setEndingSession(false);
+    }
   }
 
   async function playAudio(sessionId: string, turnId: string,
@@ -208,6 +285,15 @@ export default function SpeakingView() {
   const requiredAchieved = requiredGoals.filter(goal =>
     visibleSession?.achievedGoalIds.includes(goal.id)).length;
   const legacySession = visibleSession?.content.completionPolicyVersion !== "REQUIRED_GOALS_V2";
+  const limitFinalizing = visibleSession?.status === "ACTIVE" && !visibleSession.canStartTurn
+    && (visibleSession.committedTurnCount >= 30 || new Date(visibleSession.expiresAt).getTime() <= Date.now());
+  const finalizing = endingSession || limitFinalizing;
+  const finalDecision = achievementEvents.find(event => event.sessionId === visibleSession?.id
+    && (event.type === "FINAL_ALL_GOALS" || event.type === "FINAL_COMPLETED" || event.type === "FINAL_INCOMPLETE"));
+
+  function achievementForTurn(turnId: string) {
+    return achievementEvents.find(event => event.sessionId === visibleSession?.id && event.anchorTurnId === turnId);
+  }
 
   if (!speakingDemoEnabled) return <main className="mx-auto max-w-3xl p-6">
     <h1 className="text-2xl font-semibold">Luyện nói với AI</h1>
@@ -252,7 +338,7 @@ export default function SpeakingView() {
           <p>Bạn đang có phiên ở item “{session.content.title}”. Kết thúc hoặc thay thế phiên để luyện item này.</p>
           <div className="mt-3 flex gap-2">
             <button disabled={busy} className="rounded-lg border px-4 py-2"
-              onClick={() => void run(() => speakingService.end(session))}>Kết thúc phiên cũ</button>
+              onClick={() => void endSession(session)}>Kết thúc phiên cũ</button>
             <button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-white"
               onClick={() => void create(true)}>Thay thế và bắt đầu</button>
           </div>
@@ -273,42 +359,44 @@ export default function SpeakingView() {
                 <h2 className="mt-1 text-lg font-semibold sm:text-xl">{visibleSession.content.title}</h2>
                 {visibleSession.content.description && <p className="mt-1 text-sm text-on-surface-variant">{visibleSession.content.description}</p>}
               </div>
-              {open && <button disabled={busy} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
-                onClick={() => void run(() => speakingService.end(visibleSession))}>Kết thúc phiên</button>}
+              {open && <button disabled={busy || finalizing} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                onClick={() => void endSession(visibleSession)}>Kết thúc phiên</button>}
             </div>
             <p className="mt-4 text-sm text-on-surface-variant">{legacySession
               ? <strong className="text-on-surface">{visibleSession.requiredGoalsMet ? "Đã đạt" : "Chưa đạt"} điều kiện mục tiêu của phiên cũ</strong>
               : <strong className="text-on-surface">{requiredAchieved}/{requiredGoals.length} mục tiêu Bắt buộc</strong>}
               {" · "}<strong className="text-on-surface">{visibleSession.validTurnCount}/{visibleSession.content.minimumValidTurns}</strong> lượt hợp lệ tối thiểu</p>
-            {open && visibleSession.requiredGoalsMet && <p role="status" className="mt-2 text-sm font-medium text-emerald-800">Đã đạt mục tiêu bắt buộc{visibleSession.completionEligible ? ". Bạn có thể kết thúc hoặc luyện thêm mục tiêu tùy chọn." : ". Hãy tiếp tục đến khi đủ lượt nói hợp lệ."}</p>}
+            {open && visibleSession.requiredGoalsMet && <p className="mt-2 text-sm font-medium text-emerald-800">Đã đạt mục tiêu bắt buộc{visibleSession.completionEligible ? ". Bạn có thể kết thúc hoặc luyện thêm mục tiêu tùy chọn." : ". Hãy tiếp tục đến khi đủ lượt nói hợp lệ."}</p>}
             <ul aria-label="Mục tiêu tình huống" className="mt-4 flex flex-wrap gap-2">{visibleSession.content.goals.map(goal => {
               const achieved = visibleSession.achievedGoalIds.includes(goal.id);
               return <li key={goal.id} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${achieved ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
                 {achieved && <Check size={14} aria-hidden="true" />}{goal.title} · {goal.priority === "REQUIRED" ? "Bắt buộc" : "Tùy chọn"}
               </li>;
             })}</ul>
-            {!open && <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4" role="status">
-              <h3 className="font-semibold">{visibleSession.endReason === "GOALS_REACHED" ? "Đã hoàn thành tất cả mục tiêu" : statusLabels[visibleSession.status]}</h3>
-              <p className="mt-1 text-sm">{visibleSession.validTurnCount} lượt nói hợp lệ · {visibleSession.endReason ? endReasonLabels[visibleSession.endReason] : "Phiên đã kết thúc"}</p>
-              <ul className="mt-3 space-y-2 text-sm">{visibleSession.goalResults.map(result => {
-                const goal = visibleSession.content.goals.find(item => item.id === result.goalId);
-                return <li key={result.goalId}>{result.achieved ? "Đạt" : "Chưa đạt"} · {goal?.title ?? result.goalId}
-                  {result.evidenceQuote && <span className="block text-on-surface-variant">“{result.evidenceQuote}”</span>}</li>;
-              })}</ul>
+            {finalizing && <div role="status" className="mt-4 rounded-xl border border-primary-fixed-dim bg-primary-fixed/20 p-4 text-sm text-on-primary-fixed">
+              <p className="font-semibold">Đang tổng kết phiên luyện nói…</p>
+              <p className="mt-1 text-on-surface-variant">Không nhận lượt nói mới cho đến khi máy chủ xác nhận kết quả cuối.</p>
             </div>}
+            {visibleSession && isFinalizedSession(visibleSession) && <SessionResultSummary session={visibleSession}
+              celebrate={finalDecision?.type === "FINAL_ALL_GOALS" && finalDecision.eventKey === activeFireworkKey} announce={Boolean(finalDecision)} onReplay={() => void create(false)}
+              onTranscript={() => document.getElementById("speaking-transcript")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onTopic={() => itemId && navigate(ROUTES.TOPIC_CONTEXT.replace(":topicId", itemId))} />}
           </div>
 
-          <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
+          <div id="speaking-transcript" className="space-y-5 p-4 sm:space-y-6 sm:p-6">
             {[...visibleSession.turns].sort((a, b) => b.sequence - a.sequence).map(turn => <div key={turn.id} className="space-y-4 sm:space-y-5">
               {(turn.aiReply || turn.assessment || turn.evaluationState !== "SUCCEEDED") && <AiMessage
                 text={turn.aiReply || (turn.evaluationState === "PENDING" ? "Đang xử lý lượt nói…" : turn.evaluationState === "FAILED" ? "Chưa đánh giá được lượt này. Bạn có thể nói lại." : turn.evaluationState === "INVALID" ? "Chưa nghe rõ nội dung. Bạn hãy thử nói lại." : "Không có phản hồi AI.")}
                 assessment={turn.assessment} goals={visibleSession.content.goals}
                 turn={turn} playing={playingAiTurn === turn.id}
-                onPlay={item => void playAudio(visibleSession.id, item.id, "AI_REPLY")} />}
+                onPlay={item => void playAudio(visibleSession.id, item.id, "AI_REPLY")}
+                achievement={achievementForTurn(turn.id)} onFinish={() => void endSession(visibleSession)}
+                validTurns={visibleSession.validTurnCount} minValidTurns={visibleSession.content.minimumValidTurns}
+                showAchievementFireworks={achievementForTurn(turn.id)?.eventKey === activeFireworkKey} />}
               <LearnerMessage turn={turn} playingTurn={playingTurn}
                 onPlay={item => void playAudio(visibleSession.id, item.id, "LEARNER_RECORDING")} />
             </div>)}
-            {visibleSession.openingReply && <AiMessage text={visibleSession.openingReply} />}
+            {visibleSession.openingReply && <AiMessage text={visibleSession.openingReply} onFinish={() => void endSession(visibleSession)} />}
             {!visibleSession.openingReply && visibleSession.turns.length === 0 && <p className="py-8 text-center text-sm text-on-surface-variant">Phiên chưa có lượt hội thoại nào.</p>}
           </div>
 
@@ -318,17 +406,17 @@ export default function SpeakingView() {
             </div>}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold">{recording === "recording" ? "Đang nghe bạn nói" : recording === "processing" ? "Đang đánh giá lượt nói" : visibleSession.status === "INTERRUPTED" ? "Phiên bị gián đoạn" : "Sẵn sàng cho lượt tiếp theo"}</p>
-                <p role="status" className="mt-0.5 text-xs text-on-surface-variant">{connection === "reconnecting" ? "Đang kết nối lại…" : connection === "connecting" ? "Đang kết nối…" : connection === "disconnected" ? "Chưa kết nối" : recording === "processing" ? "Vui lòng đợi phản hồi trước khi nói tiếp" : "Micro đã sẵn sàng"}</p>
+                <p className="text-sm font-semibold">{finalizing ? "Đang tổng kết phiên luyện nói" : recording === "recording" ? "Đang nghe bạn nói" : recording === "processing" ? "Đang đánh giá lượt nói" : visibleSession.status === "INTERRUPTED" ? "Phiên bị gián đoạn" : "Sẵn sàng cho lượt tiếp theo"}</p>
+                <p role="status" className="mt-0.5 text-xs text-on-surface-variant">{finalizing ? "Đang chờ kết quả cuối từ máy chủ" : connection === "reconnecting" ? "Đang kết nối lại…" : connection === "connecting" ? "Đang kết nối…" : connection === "disconnected" ? "Chưa kết nối" : recording === "processing" ? "Vui lòng đợi phản hồi trước khi nói tiếp" : "Micro đã sẵn sàng"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {connection === "connected" && recording === "idle" && visibleSession.status === "ACTIVE" && <button
-                  disabled={!visibleSession.canStartTurn} onClick={() => void startRecording()}
+                  disabled={!visibleSession.canStartTurn || finalizing} onClick={() => void startRecording()}
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"><Mic size={18} /> Nhấn để nói</button>}
                 {recording === "recording" && <button onClick={() => void finishRecording()}
                   className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white"><Square size={16} /> Chốt câu</button>}
                 {recording === "processing" && <span className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">Đang xử lý…</span>}
-                {visibleSession.status === "INTERRUPTED" && <button disabled={busy} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                {visibleSession.status === "INTERRUPTED" && <button disabled={busy || finalizing} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
                   onClick={() => void run(() => speakingService.resume(visibleSession))}>Tiếp tục phiên</button>}
               </div>
             </div>
@@ -345,7 +433,7 @@ export default function SpeakingView() {
         {history.length === 0 && <p>Chưa có phiên luyện nói.</p>}
         {history.map(entry => <div key={entry.id} className="rounded-xl border p-4">
           <div className="flex items-center justify-between gap-2">
-            <button className="text-left font-semibold" onClick={() => { setSession(entry); setShowHistory(false); }}>
+            <button className="text-left font-semibold" onClick={() => { acceptSnapshot(entry); setShowHistory(false); }}>
               {entry.content.title}</button>
             <button aria-label="Xóa phiên" disabled={busy} onClick={() => {
               if (window.confirm("Xóa phiên luyện nói này?"))

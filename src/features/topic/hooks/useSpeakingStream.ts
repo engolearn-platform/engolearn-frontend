@@ -4,10 +4,16 @@ import type { SpeakingSession } from "@features/topic/types/speaking.types";
 
 type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
 type RecordingState = "idle" | "recording" | "processing";
+export type SpeakingSnapshotSource = "HYDRATE" | "TURN_RESULT" | "SESSION_ENDED";
+
+export interface SpeakingSnapshotEvent {
+  source: SpeakingSnapshotSource;
+  turnId?: string;
+}
 
 export function useSpeakingStream(
   session: SpeakingSession | null,
-  onSnapshot: (session: SpeakingSession) => void,
+  onSnapshot: (session: SpeakingSession, event: SpeakingSnapshotEvent) => void,
   onError: (message: string) => void,
   onAiAudioReady?: (turnId: string) => void,
 ) {
@@ -86,18 +92,31 @@ export function useSpeakingStream(
               ready = true;
               retries = 0;
               setConnection("connected");
-              void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});
+              if (!message.snapshot) void speakingService.get(sessionId).then(snapshot =>
+                onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
             }
             if (message.type === "INTERIM_TRANSCRIPT") setInterim(message.text ?? "");
             if (message.type === "AI_AUDIO_READY" && message.turnId) {
-              void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});
+              void speakingService.get(sessionId).then(snapshot =>
+                onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
               onAiAudioReadyRef.current?.(message.turnId as string);
             }
-            if (message.snapshot) onSnapshotRef.current(message.snapshot as SpeakingSession);
+            if (message.snapshot) {
+              const snapshot = message.snapshot as SpeakingSession;
+              const turn = message.turnId ? snapshot.turns.find(item => item.id === message.turnId) : undefined;
+              onSnapshotRef.current(snapshot, {
+                source: message.type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED"
+                  ? "TURN_RESULT"
+                  : message.type === "SESSION_ENDED" ? "SESSION_ENDED" : "HYDRATE",
+                ...(message.type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED" && message.turnId
+                  ? { turnId: message.turnId as string } : {}),
+              });
+            }
             if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR", "SESSION_ENDED"].includes(message.type)) {
               setRecording("idle");
               setInterim("");
-              void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});
+              if (!message.snapshot) void speakingService.get(sessionId).then(snapshot =>
+                onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
             }
             if (["ERROR", "TURN_FAILED", "PROCESSING_ERROR", "STT_ERROR", "TTS_ERROR"].includes(message.type)) {
               onErrorRef.current(message.message ?? "Lượt nói gặp lỗi. Hãy thử lại.");
