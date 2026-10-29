@@ -42,10 +42,13 @@ function feedbackItems(assessment: SpeakingAssessment | null, goals: SpeakingGoa
   return items.length ? items : assessment.feedback.filter(Boolean).slice(0, 3);
 }
 
-function AiMessage({ text, assessment, goals = [] }: {
+function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay }: {
   text: string;
   assessment?: SpeakingAssessment | null;
   goals?: SpeakingGoal[];
+  turn?: SpeakingTurn;
+  playing?: boolean;
+  onPlay?: (turn: SpeakingTurn) => void;
 }) {
   const feedback = feedbackItems(assessment ?? null, goals);
   return <div className="flex items-start gap-2.5 sm:gap-3">
@@ -54,6 +57,13 @@ function AiMessage({ text, assessment, goals = [] }: {
       <p className="mb-1 ml-1 text-xs font-semibold text-teal-900">AI</p>
       <div className="rounded-2xl rounded-tl-sm border border-teal-100 bg-teal-50 px-4 py-3 shadow-sm sm:px-5">
         <p className="whitespace-pre-wrap text-sm leading-6 text-slate-900 sm:text-base">{text}</p>
+        {turn?.aiAudioAvailable && <div className="mt-3 border-t border-teal-200 pt-3">
+          <button type="button" onClick={() => onPlay?.(turn)} disabled={playing}
+            aria-label={`Nghe phản hồi AI của lượt ${turn.sequence}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-900 hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60">
+            <Play aria-hidden="true" size={14} />{playing ? "Đang phát…" : "Nghe phản hồi AI"}
+          </button>
+        </div>}
         {feedback.length > 0 && <div className="mt-3 border-t border-teal-200 pt-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-teal-900">Nhận xét lượt này</p>
           <ul className="space-y-1.5">{feedback.map((item, index) => <li key={`${index}-${item}`}
@@ -104,13 +114,24 @@ export default function SpeakingView() {
   const [error, setError] = useState("");
   const [showHistory, setShowHistory] = useState(!itemId);
   const [playingTurn, setPlayingTurn] = useState<string | null>(null);
+  const [playingAiTurn, setPlayingAiTurn] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playTokenRef = useRef(0);
   const acceptSnapshot = useCallback((next: SpeakingSession) => {
     setSession(previous => previous?.id === next.id && previous.revision > next.revision
       ? previous : next);
   }, []);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const historyOpenRef = useRef(showHistory);
+  historyOpenRef.current = showHistory;
   const { connection, recording, interim, startRecording, finishRecording } =
-    useSpeakingStream(session, acceptSnapshot, setError);
+    useSpeakingStream(session, acceptSnapshot, setError, turnId => {
+      const current = sessionRef.current;
+      if (!current || current.status !== "ACTIVE" || historyOpenRef.current) return;
+      if (itemId && current.content.topicItemId !== itemId) return;
+      void playAudio(current.id, turnId, "AI_REPLY", true);
+    });
 
   const refresh = useCallback(async () => {
     try {
@@ -150,20 +171,33 @@ export default function SpeakingView() {
     });
   }
 
-  async function play(turn: SpeakingTurn) {
-    if (!session) return;
+  async function playAudio(sessionId: string, turnId: string,
+    kind: "LEARNER_RECORDING" | "AI_REPLY", silent = false) {
+    const token = ++playTokenRef.current;
     audioRef.current?.pause();
-    setPlayingTurn(turn.id);
+    audioRef.current = null;
+    if (kind === "AI_REPLY") { setPlayingAiTurn(turnId); setPlayingTurn(null); }
+    else { setPlayingTurn(turnId); setPlayingAiTurn(null); }
+    const stop = () => {
+      if (token !== playTokenRef.current) return;
+      setPlayingTurn(null);
+      setPlayingAiTurn(null);
+    };
     try {
-      const { url } = await speakingService.audio(session.id, turn.id, "LEARNER_RECORDING");
+      const { url } = await speakingService.audio(sessionId, turnId, kind);
+      if (token !== playTokenRef.current) return;
       const audio = new Audio(url);
       audioRef.current = audio;
-      audio.onended = () => setPlayingTurn(null);
-      audio.onerror = () => { setPlayingTurn(null); setError("Không phát được bản ghi âm."); };
+      audio.onended = stop;
+      audio.onerror = () => {
+        stop();
+        if (!silent) setError(kind === "AI_REPLY" ? "Không phát được phản hồi AI." : "Không phát được bản ghi âm.");
+      };
       await audio.play();
     } catch (cause) {
-      setPlayingTurn(null);
-      setError(cause instanceof Error ? cause.message : "Không phát được bản ghi âm.");
+      stop();
+      if (silent) return;
+      setError(cause instanceof Error ? cause.message : "Không phát được âm thanh.");
     }
   }
 
@@ -268,8 +302,11 @@ export default function SpeakingView() {
             {[...visibleSession.turns].sort((a, b) => b.sequence - a.sequence).map(turn => <div key={turn.id} className="space-y-4 sm:space-y-5">
               {(turn.aiReply || turn.assessment || turn.evaluationState !== "SUCCEEDED") && <AiMessage
                 text={turn.aiReply || (turn.evaluationState === "PENDING" ? "Đang xử lý lượt nói…" : turn.evaluationState === "FAILED" ? "Chưa đánh giá được lượt này. Bạn có thể nói lại." : turn.evaluationState === "INVALID" ? "Chưa nghe rõ nội dung. Bạn hãy thử nói lại." : "Không có phản hồi AI.")}
-                assessment={turn.assessment} goals={visibleSession.content.goals} />}
-              <LearnerMessage turn={turn} playingTurn={playingTurn} onPlay={turn => void play(turn)} />
+                assessment={turn.assessment} goals={visibleSession.content.goals}
+                turn={turn} playing={playingAiTurn === turn.id}
+                onPlay={item => void playAudio(visibleSession.id, item.id, "AI_REPLY")} />}
+              <LearnerMessage turn={turn} playingTurn={playingTurn}
+                onPlay={item => void playAudio(visibleSession.id, item.id, "LEARNER_RECORDING")} />
             </div>)}
             {visibleSession.openingReply && <AiMessage text={visibleSession.openingReply} />}
             {!visibleSession.openingReply && visibleSession.turns.length === 0 && <p className="py-8 text-center text-sm text-on-surface-variant">Phiên chưa có lượt hội thoại nào.</p>}

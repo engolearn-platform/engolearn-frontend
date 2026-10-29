@@ -9,6 +9,7 @@ export function useSpeakingStream(
   session: SpeakingSession | null,
   onSnapshot: (session: SpeakingSession) => void,
   onError: (message: string) => void,
+  onAiAudioReady?: (turnId: string) => void,
 ) {
   const [connection, setConnection] = useState<ConnectionState>("disconnected");
   const [recording, setRecording] = useState<RecordingState>("idle");
@@ -23,11 +24,13 @@ export function useSpeakingStream(
   const stopRef = useRef<() => Promise<void>>(async () => {});
   const onSnapshotRef = useRef(onSnapshot);
   const onErrorRef = useRef(onError);
+  const onAiAudioReadyRef = useRef(onAiAudioReady);
   const sessionId = session?.id;
   const sessionEpoch = session?.controllerEpoch;
   const sessionStatus = session?.status;
   onSnapshotRef.current = onSnapshot;
   onErrorRef.current = onError;
+  onAiAudioReadyRef.current = onAiAudioReady;
 
   const stopHardware = useCallback(async () => {
     workletRef.current?.disconnect();
@@ -86,6 +89,10 @@ export function useSpeakingStream(
               void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});
             }
             if (message.type === "INTERIM_TRANSCRIPT") setInterim(message.text ?? "");
+            if (message.type === "AI_AUDIO_READY" && message.turnId) {
+              void speakingService.get(sessionId).then(onSnapshotRef.current).catch(() => {});
+              onAiAudioReadyRef.current?.(message.turnId as string);
+            }
             if (message.snapshot) onSnapshotRef.current(message.snapshot as SpeakingSession);
             if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR", "SESSION_ENDED"].includes(message.type)) {
               setRecording("idle");
