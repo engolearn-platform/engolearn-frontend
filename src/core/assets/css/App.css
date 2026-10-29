@@ -136,6 +136,13 @@
   --color-surface-tint: #006a6a;
   --color-on-surface: #191c1e;
   --color-on-surface-variant: #3e4949;
+  --color-learning-mint: #ddf5f4;
+  --color-learning-mint-border: #b8dfdb;
+  --color-learning-note: #fff0b8;
+  --color-learning-note-ink: #544600;
+  --color-learning-outline: #e2e8ea;
+  --color-learning-nav-active: #f5fefe;
+  --color-learning-nav-border: #c4dfdf;
   --color-outline: #6e7979;
   --color-outline-variant: #bdc9c8;
   --color-on-primary: #ffffff;

@@ -1,4 +1,5 @@
 import { Link, Navigate, useSearchParams } from "react-router";
+import { useLayoutEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { TopicState } from "@features/topic/components/learning/catalog/TopicState";
@@ -13,6 +14,9 @@ import type { PositionDto } from "@features/topic/types/topic-api.types";
 export default function TopicReviewView({ topicId, attemptId, origin }: { topicId: string; attemptId: string; origin: string }) {
   const loaded = useTopicReview(topicId, attemptId);
   const [query, setQuery] = useSearchParams();
+  const continueSource = useRef<string | null>(null);
+  const queryKey = query.toString();
+  useLayoutEffect(() => { if (continueSource.current !== null && continueSource.current !== queryKey) { continueSource.current = null; window.scrollTo({ top: 0, left: 0, behavior: "auto" }); } }, [queryKey]);
   const detailPath = topicDetailPath(topicId, origin);
   const failure = loaded.error ?? (loaded.accessError?.code === "RESULT_CHANGED" || loaded.accessError?.code === "ITEM_HIDDEN" || loaded.accessError?.code === "TOPIC_RESET" ? loaded.accessError : null);
   if (failure?.code === "TOPIC_RESET") return <Navigate to={detailPath} replace state={{ topicNotice: "Tiến độ chủ đề đã được xoá. Hãy chọn bài học từ trạng thái mới nhất." }} />;
@@ -32,7 +36,7 @@ export default function TopicReviewView({ topicId, attemptId, origin }: { topicI
     else { next.delete("stage"); next.delete("index"); if (quizId) next.set("quizId", quizId); }
     return next;
   });
-  const select = (unit: PositionDto) => { const entry = entries.find(value => value.type === unit.stage && value.index === unit.itemIndex); choose(entry ? null : unit, entry?.quizId); };
+  const select = (unit: PositionDto, scrollToTop = false) => { const entry = entries.find(value => value.type === unit.stage && value.index === unit.itemIndex); if (scrollToTop && !samePosition(unit, selectedPosition)) continueSource.current = queryKey; choose(entry ? null : unit, entry?.quizId); };
   return <main className="min-h-screen bg-surface px-5 py-6 text-on-surface">
     <div className="mx-auto max-w-7xl space-y-5">
       <Link to={detailPath} className="inline-flex min-h-12 items-center gap-2 font-semibold text-primary"><ArrowLeft className="size-5" aria-hidden="true" />Quay lại chủ đề</Link>
@@ -51,7 +55,7 @@ export default function TopicReviewView({ topicId, attemptId, origin }: { topicI
         </div>
         <footer className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant bg-surface-container-lowest p-4">
           <Button variant="outline" disabled={selectedIndex <= 0} onClick={() => select(sequence[selectedIndex - 1])} className="min-h-12 rounded-xl">Quay lại</Button>
-          {selectedIndex < sequence.length - 1 ? <Button onClick={() => select(sequence[selectedIndex + 1])} className="min-h-12 rounded-xl">Tiếp theo</Button> : <Button asChild className="min-h-12 rounded-xl"><Link to={topicItemResultPath(topicId, attemptId, origin)}>Kết quả bài học</Link></Button>}
+          {selectedIndex < sequence.length - 1 ? <Button onClick={() => select(sequence[selectedIndex + 1], true)} className="min-h-12 rounded-xl">Tiếp theo</Button> : <Button asChild className="min-h-12 rounded-xl"><Link to={topicItemResultPath(topicId, attemptId, origin)}>Kết quả bài học</Link></Button>}
         </footer>
       </>}
     </div>

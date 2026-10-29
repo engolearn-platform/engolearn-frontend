@@ -1,6 +1,6 @@
 import { useContentReadiness } from "@features/topic/hooks/useContentReadiness";
 import { useTopicQuizNavigation } from "@features/topic/hooks/useTopicQuizNavigation";
-import { useCallback, useEffect, useLayoutEffect } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -37,10 +37,17 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
   const atFrontier = attempt?.status === "IN_PROGRESS" && samePosition(viewing, attempt.position);
   const showContent = !!viewing && isContentPosition(viewing);
   const readiness = useContentReadiness(JSON.stringify([viewer.learnerId, attemptId, attempt?.topicItemVersionId, viewing]), showContent && atFrontier);
-  useLayoutEffect(() => { readiness.contentRef.current?.scrollIntoView({ block: "start" }); }, [viewing?.stage, viewing?.itemIndex, readiness.contentRef]);
+  const continueSource = useRef<PositionDto | null>(null);
+  useLayoutEffect(() => {
+    if (continueSource.current && viewing && !samePosition(continueSource.current, viewing)) {
+      continueSource.current = null;
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [viewing]);
   useEffect(() => { if (lesson.error?.code === "TOPIC_RESET" || navigation.error?.code === "TOPIC_RESET") { clearTopicAttemptActions(viewer.learnerId, attemptId); void navigate(detailPath, { replace: true, state: { topicNotice: "Tiến độ chủ đề đã được xoá. Hãy chọn bài học từ trạng thái mới nhất." } }); } }, [lesson.error, navigation.error, viewer.learnerId, attemptId, navigate, detailPath]);
   const continueQuiz = () => {
     if (attempt?.status === "COMPLETED") { void navigate(topicItemResultPath(topicId, attemptId, origin), { replace: true }); return; }
+    continueSource.current = viewing;
     quiz.dismissFeedback();
     setParameters(current => { const query = new URLSearchParams(current); query.delete("stage"); query.delete("index"); return query; });
   };
@@ -79,8 +86,9 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
   const disabled = lesson.busy || lesson.loading || quiz.busy || quiz.pending || quiz.completionPending || quiz.needsCompletion || quiz.contractMismatch || quiz.blocked;
   const reviewed = !showContent && entries.find(entry => entry.type === viewing?.stage && entry.index === viewing.itemIndex && entry.status === "COMPLETED");
   const phase = viewing?.stage === "CONTEXT" ? 1 : viewing?.stage === "VOCAB" ? 2 : viewing?.stage === "EXPRESSIONS" ? 3 : 4;
-  const choose = (position: PositionDto | null) => {
+  const choose = (position: PositionDto | null, scrollToTop = false) => {
     if (disabled || position && !canViewPosition(position, attempt, content, entries)) return;
+    if (scrollToTop && position && !samePosition(position, viewing)) continueSource.current = viewing;
     if (quiz.feedback) quiz.dismissFeedback();
     setParameters(current => {
       const query = new URLSearchParams(current);
@@ -93,13 +101,16 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
     if (!viewing || !showContent || disabled || !readiness.ready) return;
     if (atFrontier) {
       const updated = await lesson.advance(viewing);
-      if (updated) setParameters(current => {
-        const query = new URLSearchParams(current);
-        if (updated.position) { query.set("stage", updated.position.stage); query.set("index", String(updated.position.itemIndex)); }
-        else { query.delete("stage"); query.delete("index"); }
-        return query;
-      });
-    } else choose(nextViewed && canViewPosition(nextViewed, attempt, content, entries) ? nextViewed : attempt.position);
+      if (updated) {
+        continueSource.current = viewing;
+        setParameters(current => {
+          const query = new URLSearchParams(current);
+          if (updated.position) { query.set("stage", updated.position.stage); query.set("index", String(updated.position.itemIndex)); }
+          else { query.delete("stage"); query.delete("index"); }
+          return query;
+        });
+      }
+    } else choose(nextViewed && canViewPosition(nextViewed, attempt, content, entries) ? nextViewed : attempt.position, true);
   };
   return <div className="min-h-screen bg-surface text-on-surface">
     <header className="sticky top-0 z-20 border-b border-outline-variant/40 bg-surface-container-lowest">
@@ -141,7 +152,7 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
         </Button>
         <div className="flex flex-wrap items-center justify-end gap-3">
           <p id="continue-reason" role="status" className="text-label-sm text-on-surface-variant">{lesson.busy || quiz.busy ? "Đang lưu…" : quiz.pending ? "Chưa xác định kết quả yêu cầu. Hãy kiểm tra yêu cầu đã gửi." : quiz.blocked || quiz.contractMismatch || quiz.completionPending || quiz.needsCompletion ? "Khôi phục tiến độ trước khi tiếp tục." : showContent && !readiness.ready ? "Đọc đến cuối nội dung để tiếp tục." : !showContent && !reviewed && !quiz.feedback ? "Trả lời đúng câu hỏi để tiếp tục." : lesson.loading ? "Đang tải tiến độ…" : ""}</p>
-          <Button type="button" aria-describedby="continue-reason" disabled={disabled || (showContent ? !readiness.ready : !reviewed && !quiz.feedback)} onClick={() => { if (showContent) void continueLesson(); else if (reviewed) choose(nextViewed && canViewPosition(nextViewed, attempt, content, entries) ? nextViewed : attempt.position); else continueQuiz(); }} className="min-h-12 rounded-xl px-6">Tiếp tục<ArrowRight className="size-4" aria-hidden="true" /></Button>
+          <Button type="button" aria-describedby="continue-reason" disabled={disabled || (showContent ? !readiness.ready : !reviewed && !quiz.feedback)} onClick={() => { if (showContent) void continueLesson(); else if (reviewed) choose(nextViewed && canViewPosition(nextViewed, attempt, content, entries) ? nextViewed : attempt.position, true); else continueQuiz(); }} className="min-h-12 rounded-xl px-6">Tiếp tục<ArrowRight className="size-4" aria-hidden="true" /></Button>
         </div>
       </div>
     </footer>

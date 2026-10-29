@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, ImageOff, Volume2 } from "lucide-react";
+import { BookOpen, ImageOff, MessageCircle, Quote, Volume2 } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { MemoryTipCard } from "@features/topic/components/learning/MemoryTipCard";
 import { lessonUnits } from "@features/topic/utils/topic-lesson";
 import type { LessonContentDto, PositionDto, QuickCheckDto } from "@features/topic/types/topic-api.types";
 
-const card = "space-y-5 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest p-5 shadow-sm md:p-6";
+const card = "space-y-5 rounded-2xl border border-learning-outline bg-surface-container-lowest p-5 shadow-sm md:p-6";
+function HighlightWord({ text, word }: { text: string; word: string }) {
+  if (!word.trim()) return text;
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text.split(new RegExp(`(${escaped})`, "gi")).map((part, index) => part.toLocaleLowerCase() === word.toLocaleLowerCase() ? <span key={index} className="font-semibold text-primary">{part}</span> : part);
+}
 function mediaUrl(url: string | null | undefined) {
   if (!url) return undefined;
   try { const parsed = new URL(url); return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : undefined; } catch { return undefined; }
@@ -50,8 +55,8 @@ function QuickCheck({ quiz, readOnly }: { quiz: QuickCheckDto; readOnly: boolean
     <p className="text-body-lg font-semibold">{quiz.question}</p>
     <div className="grid gap-3 sm:grid-cols-2">{quiz.options.map((option, index) =>
       <Button key={index} type="button" variant="outline" disabled={readOnly} aria-pressed={answer === option} onClick={() => setAnswer(option)}
-        className={"min-h-12 h-auto whitespace-normal rounded-xl px-4 py-3 text-left " + (answer === option ? "border-primary bg-primary/10" : "")}>
-        {String.fromCharCode(65 + index)}. {option}
+        className={"min-h-12 h-auto justify-start gap-3 whitespace-normal rounded-xl px-4 py-3 text-left focus-visible:ring-2 focus-visible:ring-primary " + (answer === option ? "border-primary bg-learning-mint text-primary" : "border-learning-outline hover:border-learning-mint-border hover:bg-surface-container-low")}>
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-low text-label-sm font-semibold">{String.fromCharCode(65 + index)}</span><span>{option}</span>
       </Button>)}</div>
     {answer !== null && <p role="status" className={answer === quiz.correctAnswer ? "font-semibold text-primary" : "text-error"}>
       {answer === quiz.correctAnswer ? "Chính xác!" : "Chưa đúng. Bạn có thể thử lại."}
@@ -74,13 +79,13 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
         {content.description && <p className="text-body-md text-on-surface-variant">{content.description}</p>}
         <LessonImage url={context.imageUrl} alt="Bối cảnh bài học" />
         <p className="whitespace-pre-line text-body-lg">{context.scenarioDescription}</p>
-        {context.promptingQuestion && <p className="rounded-xl bg-primary/5 p-4 font-semibold text-primary">{context.promptingQuestion}</p>}
+        {context.promptingQuestion && <p className="flex items-start gap-3 rounded-xl border border-learning-mint-border bg-learning-mint p-4 text-body-md font-semibold leading-relaxed text-primary"><MessageCircle className="mt-1 size-5 shrink-0" aria-hidden="true" /><span>{context.promptingQuestion}</span></p>}
       </section>
       {context.dialogue.length > 0 && <section className={card}>
-        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-headline-sm font-semibold">Hội thoại mẫu</h2><LessonAudio url={context.dialogueAudioUrl} label="Nghe toàn bộ hội thoại" /></div>
-        {context.dialogue.map((line, index) => <div key={index} className="space-y-2 rounded-xl bg-surface p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-label-lg font-semibold text-primary">{line.speaker}</span><LessonAudio url={line.audioUrl} label={"Nghe câu " + (index + 1)} /></div>
-          <p lang="en" className="text-headline-sm font-semibold">{line.textEn}</p><p className="text-body-md text-on-surface-variant">{line.textVi}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-headline-sm font-semibold"><MessageCircle className="size-5 text-primary" aria-hidden="true" />Hội thoại mẫu</h2><LessonAudio url={context.dialogueAudioUrl} label="Nghe toàn bộ hội thoại" /></div>
+        {context.dialogue.map((line, index) => <div key={index} className={"space-y-3 rounded-xl border p-4 " + (/customer|learner|student|^you$/i.test(line.speaker) ? "border-learning-mint-border bg-learning-mint" : "border-learning-outline bg-surface-container-low")}>
+          <div className="flex flex-wrap items-center justify-between gap-2"><span className="rounded-full bg-surface-container-lowest px-3 py-1 text-label-sm font-semibold text-primary">{line.speaker}</span><LessonAudio url={line.audioUrl} label={"Nghe câu " + (index + 1)} /></div>
+          <p lang="en" className="text-body-lg font-semibold leading-relaxed">{line.textEn}</p><p className="text-body-md leading-relaxed text-on-surface-variant">{line.textVi}</p>
         </div>)}
       </section>}
       {context.tips && <MemoryTipCard title="Mẹo ghi nhớ Engo" text={context.tips} />}
@@ -89,14 +94,14 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
   if (position.stage === "VOCAB") {
     const word = vocabulary[position.itemIndex];
     return <div className="space-y-6">
-      <section className={card + " border-t-4 border-t-secondary"}>
-        <p className="text-label-lg font-semibold uppercase text-secondary">Từ vựng cốt lõi</p>
+      <section className={card + " border-t-4 border-t-primary"}>
+        <p className="flex items-center gap-2 text-label-lg font-semibold uppercase tracking-wide text-primary"><BookOpen className="size-4" aria-hidden="true" />Từ vựng cốt lõi</p>
         <div className={"grid gap-6 " + (mediaUrl(word.imageUrl) ? "md:grid-cols-2" : "")}>
           {mediaUrl(word.imageUrl) && <LessonImage url={word.imageUrl} alt={word.word} />}
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">{[word.partOfSpeech, word.label].filter(Boolean).map((tag, index) => <span key={index} className="rounded-lg bg-secondary-container/20 px-3 py-1 text-label-sm font-medium">{tag}</span>)}</div>
-            <div className="flex flex-wrap items-baseline gap-3"><h1 lang="en" className="text-headline-lg font-bold">{word.word}</h1>{word.pronunciation && <span className="text-body-lg text-primary">{word.pronunciation}</span>}</div>
-            <p className="text-headline-sm font-semibold">{word.meaningVi}</p>
+            <div className="flex flex-wrap gap-2">{[word.partOfSpeech, word.label].filter(Boolean).map((tag, index) => <span key={index} className="rounded-full bg-learning-note px-3 py-1 text-label-sm font-semibold text-learning-note-ink">{tag}</span>)}</div>
+            <div className="space-y-2"><h1 lang="en" className="text-headline-lg font-bold text-primary">{word.word}</h1>{word.pronunciation && <p className="text-body-md text-on-surface-variant">{word.pronunciation}</p>}</div>
+            <p className="text-body-lg font-medium">{word.meaningVi}</p>
             {word.usageDescription && <p className="rounded-xl bg-surface p-4 text-body-md leading-relaxed text-on-surface-variant">{word.usageDescription}</p>}
             <div className="flex flex-wrap gap-2"><LessonAudio url={word.audioEn} label="UK · Phát âm Anh-Anh" /><LessonAudio url={word.audioUs} label="US · Phát âm Anh-Mỹ" />
               {!word.audioEn && !word.audioUs && <LessonAudio url={word.audioUrl} label="Nghe phát âm" />}</div>
@@ -106,8 +111,8 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
           <div className="grid gap-3 sm:grid-cols-2">{word.collocations.map((item, index) => <div key={index} className="rounded-xl bg-surface p-4"><p lang="en" className="font-semibold text-primary">{item.textEn}</p><p className="text-body-md text-on-surface-variant">{item.meaningVi}</p></div>)}</div>
         </div>}
       </section>
-      {word.examples.length > 0 && <section className={card}><h2 className="text-headline-sm font-semibold">Mẫu câu trong ngữ cảnh</h2>{word.examples.map(example =>
-        <div key={example.exampleId} className="space-y-3 rounded-xl bg-surface p-4"><p lang="en" className="text-headline-sm font-semibold">{example.textEn}</p>
+      {word.examples.length > 0 && <section className={card}><h2 className="flex items-center gap-2 text-headline-sm font-semibold"><Quote className="size-5 text-primary" aria-hidden="true" />Mẫu câu trong ngữ cảnh</h2>{word.examples.map(example =>
+        <div key={example.exampleId} className="space-y-3 rounded-xl border border-learning-outline bg-surface-container-low p-4"><p lang="en" className="text-body-lg leading-relaxed"><HighlightWord text={example.textEn} word={word.word} /></p>
           <p className="text-body-md text-on-surface-variant">{example.textVi}</p><LessonAudio url={example.audioUrl} label="Nghe câu mẫu" /></div>)}</section>}
       {word.quickCheck && <QuickCheck quiz={word.quickCheck} readOnly={readOnly} />}
       {word.tips && <MemoryTipCard title="Mẹo ghi nhớ Engo" text={word.tips} />}
@@ -115,14 +120,14 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
   }
   const purpose = purposes[position.itemIndex];
   return <div className="space-y-6">
-    <section className={card + " border-t-4 border-t-tertiary"}><p className="text-label-lg font-semibold uppercase text-tertiary">Mẫu câu thực tế</p>
+    <section className={card + " border-t-4 border-t-primary"}><p className="flex items-center gap-2 text-label-lg font-semibold uppercase tracking-wide text-primary"><MessageCircle className="size-4" aria-hidden="true" />Mẫu câu thực tế</p>
       {purpose.purposeEn && <h1 lang="en" className="text-headline-lg font-bold">{purpose.purposeEn}</h1>}
       <h2 className={purpose.purposeEn ? "text-headline-sm font-semibold" : "text-headline-lg font-bold"}>{purpose.purposeVi}</h2>
     </section>
     {purpose.examples.length > 0 ? <section className={card} aria-label="Các mẫu câu">
-      {purpose.examples.map(example => <article key={example.expressionId} className="space-y-3 rounded-xl bg-surface p-5">
-        <span className="text-label-sm font-semibold text-primary">{{ BASIC_SUGGESTION: "Gợi ý cơ bản", POLITE_INQUIRY: "Hỏi lịch sự", SLOT_PATTERN: "Mẫu thế chỗ" }[example.type]}</span>
-        <p lang="en" className="text-headline-sm font-semibold">{example.textEn}</p><p className="text-body-md text-on-surface-variant">{example.textVi}</p>
+      {purpose.examples.map(example => <article key={example.expressionId} className="space-y-3 rounded-xl border border-learning-mint-border bg-surface-container-lowest p-5">
+        <span className="inline-flex rounded-full bg-learning-mint px-3 py-1 text-label-sm font-semibold text-primary">{{ BASIC_SUGGESTION: "Gợi ý cơ bản", POLITE_INQUIRY: "Hỏi lịch sự", SLOT_PATTERN: "Mẫu thế chỗ" }[example.type]}</span>
+        <p lang="en" className="text-headline-sm font-semibold leading-relaxed text-primary">{example.textEn}</p><p className="text-body-md leading-relaxed text-on-surface-variant">{example.textVi}</p>
         {example.usageNote && <p className="border-t border-outline-variant/40 pt-3 text-body-md text-on-surface-variant">{example.usageNote}</p>}
         <LessonAudio url={example.audioUrl} label="Nghe mẫu câu" />
       </article>)}

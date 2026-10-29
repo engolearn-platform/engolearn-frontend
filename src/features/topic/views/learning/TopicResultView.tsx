@@ -37,7 +37,7 @@ function TopicResult({ topicId, origin }: { topicId: string; origin: string }) {
             </article>;
           })}
         </section>
-        {data.result.resetAvailability.allowed && data.detail.resetAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("reset")} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Xoá tiến độ chủ đề</Button>}
+        {data.result.resetAvailability.allowed && data.detail.resetAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("reset")} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại chủ đề</Button>}
         {data.detail.retrySession?.scope === "TOPIC" && data.detail.retrySession.status === "IN_PROGRESS" && (data.detail.retrySession.currentAttemptId || data.detail.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 rounded-xl">Tiếp tục lượt làm lại</Button>}
       </>}
     </div>

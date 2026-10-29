@@ -1,5 +1,7 @@
 # Review, item retry and topic reset
 
+UI polish wording: the whole-topic reset CTA is “Làm lại chủ đề”. Its confirmation still explicitly describes clearing all progress/results and any active retry; only wording/presentation changed. Review reuses the polished sidebar/content/quiz surfaces, keeps viewing independent of committed counts, and scrolls to top after a successful Next transition.
+
 Current behavior, 2026-10-29. Supersedes replacement/restart and new TOPIC retry creation in the original slice C.
 
 Review stays on the existing attempt route with `mode=review`. It shares content/quiz renderers and the lesson navigation, desktop content-left/navigation-right order and mobile single-column layout. Back/Next traverse every content unit and question; the final footer action opens the existing item result. No scroll gate or answer mutation applies. Question statuses say correct on first try or needed another try, never final incorrect; every reviewed question was eventually solved. Access recency remains a separate event.

@@ -7,14 +7,14 @@ export interface MemoryTipCardProps {
 
 export function MemoryTipCard({ title, text }: MemoryTipCardProps) {
   return (
-    <div className="rounded-2xl border border-secondary-fixed/50 bg-secondary-fixed/30 p-5">
+    <div className="rounded-2xl border border-learning-note bg-learning-note p-5">
       <div className="mb-2 flex items-center gap-2">
-        <Lightbulb className="size-5 text-on-secondary-fixed-variant" />
-        <span className="text-xs font-bold uppercase tracking-wider text-on-secondary-fixed-variant">
+        <Lightbulb className="size-5 shrink-0 text-learning-note-ink" aria-hidden="true" />
+        <span className="text-label-sm font-semibold uppercase tracking-wide text-learning-note-ink">
           {title}
         </span>
       </div>
-      <p className="text-sm leading-relaxed text-on-secondary-fixed">{text}</p>
+      <p className="text-body-md leading-relaxed text-learning-note-ink">{text}</p>
     </div>
   );
 }
