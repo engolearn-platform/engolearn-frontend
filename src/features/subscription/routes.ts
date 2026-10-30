@@ -3,6 +3,8 @@ import LearningLayout from "@/core/layouts/LearningLayout";
 import SubscriptionPlansView from "@features/subscription/views/learning/SubscriptionPlansView";
 import SubscriptionUsageView from "@features/subscription/views/learning/SubscriptionUsageView";
 import { ROUTES } from "@shared/constants";
+import SubscriptionManagementLayout from "@features/subscription/components/management/SubscriptionManagementLayout";
+import { SubscriptionPlanManagementView, SubscriptionQuotaManagementView } from "@features/subscription/views/management/SubscriptionManagementView";
 
 export const SubscriptionRoutes: RouteObject[] = [{
   path: ROUTES.SUBSCRIPTION,
@@ -10,5 +12,12 @@ export const SubscriptionRoutes: RouteObject[] = [{
   children: [
     { index: true, Component: SubscriptionPlansView },
     { path: "usage", Component: SubscriptionUsageView },
+  ],
+}, {
+  path: "/admin/subscription",
+  Component: SubscriptionManagementLayout,
+  children: [
+    { path: "plans", Component: SubscriptionPlanManagementView },
+    { path: "quotas", Component: SubscriptionQuotaManagementView },
   ],
 }];

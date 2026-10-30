@@ -1,6 +1,6 @@
 # Subscription learner UI handoff and implementation notes
 
-Updated: 2026-10-29. Scope: M1 + M2 user screens with real API integration; M4 is backend contract testing only. This replaces the initial readiness survey. Payment, Admin and actual Speaking/Proficiency UI/producer work remain deferred.
+Updated: 2026-10-29. Scope: M1 + M2 user screens with real API integration; M4 is backend contract testing only. This replaces the initial readiness survey. Payment runtime and actual Speaking/Proficiency UI/producer work remain deferred. M3 now has fact declarations only; M5 Admin implementation and evidence are tracked in [admin-ui-handoff.md](admin-ui-handoff.md).
 
 ## Sources of truth
 
@@ -65,13 +65,13 @@ Trial POST /api/v1/subscription/me/trial sends an empty object plus Idempotency-
 | Free A1-A2/Premium all CEFR content access | Unsupported by Subscription alone; requires Topic Learning resource rules and approved benefit metadata |
 | IPA/waveform,flashcards,24/7 support | Not promised; require separately authorized feature/benefit scope |
 | Automatic charge/cancel/grace/bonus/reset buttons | Not introduced; preserve MVP exclusions |
-| Admin reference screens | Deferred: wrong Topic-authoring shell and invented metrics/Redis/PostgreSQL must not become requirements. Immediate rights updates and blanket no-reset rules conflict with snapshot/Free activation policy |
+| Admin reference screens | Corrected in M5: reuse the management shell with actual Admin context; no invented metrics/Redis/PostgreSQL. Immediate rights updates and blanket no-reset rules still must not become requirements. See admin-ui-handoff.md |
 
 ## Contract dependencies and deferred work
 
 Three real GETs are /api/v1/subscription/plans, /api/v1/subscription/me and /api/v1/quota/me/usage. Successful responses use data/timestamp; protected reads require server identity. Keep currentBenefits/trialIneligibilityReason and quota allowanceStartAt aligned with OpenAPI. Trial is PREMIUM tier plus TRIAL status.
 
-No payment provider, purchase action, pending-intent read, reconciliation/refund action, real Speaking/Proficiency implementation or Admin screen was added. M4 mock-caller tests prove real Quota interfaces and transaction behavior, not real learning actions. Production sign-in and historical account migration remain separate readiness gates.
+No payment provider, purchase action, pending-intent read, reconciliation/refund action or real Speaking/Proficiency implementation was added. M5 Admin screens are documented separately. M4 mock-caller tests prove real Quota interfaces and transaction behavior, not real learning actions. Production sign-in and historical account migration remain separate readiness gates.
 
 No Outbox/replay/reconciliation is promised. Missed early refund or Free reset may leave stale state under ADR-0001; FE cannot repair this by changing counters. Retained history does not imply resource-specific lifetime access.
 
