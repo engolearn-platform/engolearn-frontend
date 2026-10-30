@@ -64,6 +64,13 @@ export default function DailyQuestionCard({
         )}
       </div>}
 
+      {review && question.stimulus?.type === "audio" && question.stimulus.transcript && (
+        <div className="mt-4 rounded-xl border border-outline-variant/50 bg-surface-container-low p-4">
+          <p className="mb-2 text-xs text-on-surface-variant">Nội dung bài nghe</p>
+          <p className="whitespace-pre-line text-sm leading-6 text-on-surface">{question.stimulus.transcript}</p>
+        </div>
+      )}
+
       <p className="mt-4 text-base font-semibold leading-6 text-on-surface">{question.prompt}</p>
 
       <div className="mt-4 space-y-2">

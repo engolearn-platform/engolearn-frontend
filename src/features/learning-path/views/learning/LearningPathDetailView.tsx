@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
@@ -16,9 +16,12 @@ import LearningPathClosedWeek from "@features/learning-path/components/learning/
 import LearningPathSummary from "@features/learning-path/components/learning/detail/LearningPathSummary";
 
 function LearningPathDetailContent({ path }: { path: LearningPathDetail }) {
+  const [searchParams] = useSearchParams();
+  const requestedWeek = Number(searchParams.get("week"));
+  const returnWeek = path.weeks.find((week) => week.number === requestedWeek && week.status !== "LOCKED");
   const [overviewExpanded, setOverviewExpanded] = useState(true);
   const [selectedTab, setSelectedTab] = useState<LearningPathTab>(
-    path.status === "COMPLETED" ? "summary" : path.currentWeekNo ?? path.weeks.find((week) => week.status === "OPEN")?.number ?? 1,
+    returnWeek?.number ?? (path.status === "COMPLETED" ? "summary" : path.currentWeekNo ?? path.weeks.find((week) => week.status === "OPEN")?.number ?? 1),
   );
   const week = selectedTab === "summary"
     ? null

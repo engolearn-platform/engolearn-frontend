@@ -67,8 +67,8 @@ function PracticeSession({ day, questions, initialAnswers, detailUrl, descriptio
     setSubmitting(true);
     setError("");
     try {
-      const result = await learningPathService.submitDay(day.pathId, day.weekNo, day.dayNo);
-      navigate(learningPathDayPath(day.pathId, day.weekNo, day.dayNo, "result"), { replace: true, state: { result } });
+      await learningPathService.submitDay(day.pathId, day.weekNo, day.dayNo);
+      navigate(learningPathDayPath(day.pathId, day.weekNo, day.dayNo, "result"), { replace: true });
     } catch (cause) {
       setError(`${cause instanceof Error ? cause.message : "Không xác nhận được kết quả nộp bài."} Vui lòng kiểm tra lại lộ trình nếu bài đã được đóng.`);
     } finally {

@@ -4,7 +4,7 @@ import type {
   LearningPathListStatus,
 } from "../types/learning-path.types";
 import type { LearningPathDetailDto } from "../types/learning-path-detail.types";
-import type { PracticeDayDto, SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
+import type { DayResultDto, PracticeDayDto, SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
 
 const LEARNING_PATHS_ENDPOINT = "/api/learning-paths";
 const LEARNING_PATHS_SEARCH_ENDPOINT = `${LEARNING_PATHS_ENDPOINT}/search`;
@@ -15,6 +15,18 @@ interface ProblemDetailResponse {
 }
 
 export const learningPathService = {
+  async dayResult(pathId: string, weekNo: string, dayNo: string, signal: AbortSignal): Promise<DayResultDto> {
+    const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim();
+    if (!userId) throw new Error("Thiếu VITE_LEARNING_PATH_USER_ID trong file .env.local.");
+    const params = new URLSearchParams({ userId });
+    const url = `${LEARNING_PATHS_ENDPOINT}/${encodeURIComponent(pathId)}/weeks/${encodeURIComponent(weekNo)}/days/${encodeURIComponent(dayNo)}/result?${params}`;
+    const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
+    if (!response.ok) {
+      const problem = (await response.json().catch(() => null)) as ProblemDetailResponse | null;
+      throw new Error(problem?.detail ?? problem?.title ?? `Không tải được kết quả luyện tập (${response.status}).`);
+    }
+    return ((await response.json()) as LearningPathApiResponse<DayResultDto>).data;
+  },
   async submitDay(pathId: string, weekNo: number, dayNo: number): Promise<SubmitDayResult> {
     const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim();
     if (!userId) throw new Error("Thiếu VITE_LEARNING_PATH_USER_ID trong file .env.local.");

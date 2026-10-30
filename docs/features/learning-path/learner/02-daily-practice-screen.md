@@ -14,4 +14,4 @@ The screen uses `LearningLayout` and a content container up to 1300px, matching 
 - Audio passages play their returned URL. Reading questions may have no passage. User ID comes from `VITE_LEARNING_PATH_USER_ID`, as on the list and detail screens.
 
 Questions and saved choices come from the backend. The API does not expose correct answers or explanations during practice.
-The submit response opens the daily result route with the six server-calculated metrics. An unsuccessful or uncertain submission keeps the learner on the practice screen with an error and guidance to check the path if it has closed.
+After a successful submit, the daily result route loads the server-calculated metrics and question review from the result API. An unsuccessful or uncertain submission keeps the learner on the practice screen with an error and guidance to check the path if it has closed.

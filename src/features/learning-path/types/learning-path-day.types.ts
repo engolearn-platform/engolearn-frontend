@@ -3,6 +3,7 @@ export interface DailyAudioStimulus {
   label: string;
   duration: string;
   url?: string;
+  transcript?: string | null;
 }
 
 export interface DailyPassageStimulus {
@@ -65,4 +66,15 @@ export interface SubmitDayResult {
   wrong: number;
   completionRate: number | null;
   practiceScore: number | null;
+}
+
+export interface DayResultQuestionDto extends PracticeQuestionDto {
+  passage: (NonNullable<PracticeQuestionDto["passage"]> & { transcript: string | null }) | null;
+  correctOptionId: string;
+  explanation: string;
+  answerStatus: "CORRECT" | "WRONG" | "UNANSWERED";
+}
+
+export interface DayResultDto extends SubmitDayResult {
+  questions: DayResultQuestionDto[];
 }
