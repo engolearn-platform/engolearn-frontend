@@ -1,6 +1,7 @@
 import { Clock3, Info } from "lucide-react";
 import { percentage } from "@features/learning-path/utils/learningPathMetrics";
 import { nextWeekOpeningTime } from "@features/learning-path/utils/learningPathWeekTiming";
+import { isFinishedDay } from "@features/learning-path/utils/learningPathDayStatus";
 import type { LearningPathWeek } from "@features/learning-path/types/learning-path-detail.types";
 import LearningPathDayCard from "./LearningPathDayCard";
 import LearningPathProgress from "./LearningPathProgress";
@@ -13,7 +14,7 @@ interface LearningPathActiveWeekProps {
 export default function LearningPathActiveWeek({ week, questionsPerDay }: LearningPathActiveWeekProps) {
   const progress = week.completionRate ?? percentage(week.answered, week.assigned) ?? 0;
   const waitingForNextWeek = week.number < 3 && week.days.length > 0
-    && week.days.every((day) => day.status === "COMPLETED" || day.status === "CLOSED");
+    && week.days.every((day) => isFinishedDay(day.status));
   const openingTime = waitingForNextWeek ? nextWeekOpeningTime(week) : null;
   const openingDate = openingTime === null ? null : new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric",

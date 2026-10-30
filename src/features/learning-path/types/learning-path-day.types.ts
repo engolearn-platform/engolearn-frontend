@@ -58,7 +58,7 @@ export interface SubmitDayResult {
   pathId: string;
   weekNo: number;
   dayNo: number;
-  status: "COMPLETED" | "CLOSED";
+  status: "COMPLETED" | "SUBMITTED" | "CLOSED";
   closedAt: string;
   assigned: number;
   answered: number;

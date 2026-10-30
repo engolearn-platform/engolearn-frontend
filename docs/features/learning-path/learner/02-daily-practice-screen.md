@@ -15,3 +15,4 @@ The screen uses `LearningLayout` and a content container up to 1300px, matching 
 
 Questions and saved choices come from the backend. The API does not expose correct answers or explanations during practice.
 After a successful submit, the daily result route loads the server-calculated metrics and question review from the result API. An unsuccessful or uncertain submission keeps the learner on the practice screen with an error and guidance to check the path if it has closed.
+Submitting with unanswered questions produces a terminal `SUBMITTED` day; submitting all answers produces `COMPLETED`.

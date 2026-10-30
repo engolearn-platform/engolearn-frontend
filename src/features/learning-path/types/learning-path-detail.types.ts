@@ -6,6 +6,7 @@ export type LearningPathDayStatus =
   | "NOT_STARTED"
   | "IN_PROGRESS"
   | "COMPLETED"
+  | "SUBMITTED"
   | "CLOSED";
 
 export interface LearningPathMicroSkill {
