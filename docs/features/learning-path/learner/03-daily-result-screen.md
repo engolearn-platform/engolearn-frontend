@@ -10,7 +10,7 @@ The screen uses the same 1300px content container and learner shell as daily pra
 
 - The header links back to the corresponding Learning Path and shows the day, source path, week, and level. It has no day-status tag.
 - Six metrics show assigned, answered, correct, wrong, Completion Rate, and Practice Score. Unanswered questions are distinct from wrong answers. Practice Score with zero answers displays **Không có dữ liệu**.
-- The wrong-count tile uses the result red fill and border, and the correct-count tile uses the result green fill and border. Completion Rate and Practice Score each use their own value for a visual color cue: below 50% red, 50–74% yellow, and 75–100% green. **Không có dữ liệu** stays neutral. These colors do not define a pass/fail result or change either metric.
+- The wrong-count tile uses a red fill and border when wrong answers are at least 50% of answered questions, green when below 50%, and neutral when none are answered. The correct-count tile uses the result green fill and border. Completion Rate and Practice Score each use their own value for a visual color cue: below 50% red, 50–74% yellow, and 75–100% green. **Không có dữ liệu** stays neutral. These colors do not define a pass/fail result or change either metric.
 - Review is read-only, paginated 3/3/3/1. All ten questions show the correct answer and explanation, including unanswered questions.
 - Audio questions include the saved transcript when present. User choices and answer keys are mapped from option IDs returned by the API.
 - The navigator groups all ten questions by page, marks correct/wrong/unanswered status, and provides **Hoàn thành việc xem lại** back to the Learning Path detail.
