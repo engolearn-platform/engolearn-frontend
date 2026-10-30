@@ -26,6 +26,9 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
         <PracticeResultMetrics assigned={week.assigned} answered={week.answered} correct={week.correct}
           wrong={week.wrong ?? week.answered - week.correct} completionRate={completion} practiceScore={practice}
           className="lg:grid-cols-6" />
+        <p className="mt-4 text-sm leading-6 text-on-surface-variant">
+          Completion Rate là tỷ lệ câu đã làm trên số câu được giao. Practice Score là tỷ lệ câu đúng trên số câu đã làm.
+        </p>
 
         <div className="mt-5 border-t border-outline-variant/40 pt-4">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Theo micro-skill</h3>

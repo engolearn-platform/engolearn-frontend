@@ -25,10 +25,14 @@ The three references are content states of one detail screen. Its navigation has
 - Completed day badges use the same green colors as completed Learning Path cards.
 - **Waiting between weeks:** when every day of open week 1 or 2 has been completed or closed, replace the remaining-days badge and ordinary deadline text with a message giving the next opening date at midnight in Vietnam time. The date comes from the last day closure and the week deadline; if closure times are unavailable, use a general midnight message. While this page remains open, it reloads server state around the expected closing time and retries every 30 seconds if the backend has not yet transitioned or is temporarily unavailable. The backend determines when the new week opens. This also covers days submitted with unanswered questions.
 - **Closed week:** date range, six metrics (assigned, answered, correct, wrong, Completion Rate, Practice Score), results per micro-skill, and read-only day cards with result actions.
+- The weekly statistics explain that Completion Rate is answered over assigned, while Practice Score is correct over answered.
 - Weekly metrics use the daily result color rules: wrong answers below 50% of answered are green, 50% or more are red, and no answered questions is neutral. Completion Rate and Practice Score are red below 50%, yellow from 50% to under 75%, green from 75%, or neutral when no data exists.
 - Weekly micro-skill changes are green for increases, red for decreases, and gray for zero or unavailable data.
 - Metric values without data use a smaller font so their text fits without increasing the height of the metric cards.
 - **Summary:** path date range, overall Completion Rate, progress per week, and one result card per micro-skill showing Final Practice Score, initial score, answered count, and signed improvement.
+- The summary explains that a finished path may have unanswered questions and identifies the two comparison sources: practice accuracy and the score from the source periodic test. Practice results do not change that test's score.
+- Summary micro-skill change badges use green for increases, red for decreases, and gray for zero or unavailable data, matching the weekly statistics.
+- Summary cards label each change, use a higher-contrast gray for baseline bars, and omit score bars when data is unavailable instead of depicting a zero value. The completion section avoids repeating the answered count within its main tile.
 
 ## Data source and states
 
