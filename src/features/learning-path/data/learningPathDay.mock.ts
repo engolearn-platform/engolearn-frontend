@@ -1,7 +1,7 @@
-import type { DailyAnswers, DailyQuestion } from "@features/learning-path/types/learning-path-day.types";
+import type { DailyAnswers, ReviewQuestion } from "@features/learning-path/types/learning-path-day.types";
 import { activeLearningPathPreview, completedLearningPathPreview } from "./learningPathDetail.mock";
 
-export const dailyQuestions: DailyQuestion[] = [
+export const dailyQuestions: ReviewQuestion[] = [
   {
     number: 1,
     microSkill: "Reading for Gist",

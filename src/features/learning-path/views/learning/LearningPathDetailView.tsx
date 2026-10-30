@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
 import { useLearningPathDetail } from "@features/learning-path/hooks/useLearningPathDetail";
+import { useWaitingWeekRefresh } from "@features/learning-path/hooks/useWaitingWeekRefresh";
 import type {
   LearningPathDetail,
   LearningPathTab,
@@ -56,9 +57,11 @@ function LearningPathDetailContent({ path }: { path: LearningPathDetail }) {
   );
 }
 
-export default function LearningPathDetailView() {
-  const { pathId = "" } = useParams();
-  const { data: path, loading, error } = useLearningPathDetail(pathId);
+function DetailPage({ pathId }: { pathId: string }) {
+  const { data, loading, error } = useLearningPathDetail(pathId);
+  const [updatedPath, setUpdatedPath] = useState<LearningPathDetail | null>(null);
+  const path = updatedPath ?? data;
+  useWaitingWeekRefresh(path, setUpdatedPath);
 
   if (loading) {
     return <div className="mx-auto w-full max-w-[1300px] px-5 py-5 lg:px-8 lg:py-8 xl:px-10"><Loading size="lg" /></div>;
@@ -72,5 +75,10 @@ export default function LearningPathDetailView() {
     );
   }
 
-  return <LearningPathDetailContent key={path.id} path={path} />;
+  return <LearningPathDetailContent key={`${path.id}:${path.currentWeekNo}:${path.status}`} path={path} />;
+}
+
+export default function LearningPathDetailView() {
+  const { pathId = "" } = useParams();
+  return <DetailPage key={pathId} pathId={pathId} />;
 }

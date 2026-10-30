@@ -17,6 +17,7 @@ export interface LearningPathMicroSkill {
 export interface LearningPathDay {
   number: number;
   status: LearningPathDayStatus;
+  closedAt?: string | null;
   answered: number;
   assigned: number;
   correct?: number | null;
@@ -41,6 +42,7 @@ export interface LearningPathWeek {
   startDate: string;
   endDate: string;
   closeDate: string;
+  closeAt?: string | null;
   remainingDays?: number;
   answered: number;
   assigned: number;
@@ -126,6 +128,7 @@ export interface LearningPathDetailDto {
     days: {
       dayNo: number;
       status: LearningPathDayStatus;
+      closedAt: string | null;
       progress: { assigned: number; answered: number } | null;
       result: { completionRate: number | null; practiceScore: number | null } | null;
     }[];

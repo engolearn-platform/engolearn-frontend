@@ -8,6 +8,8 @@ interface DailyPracticeActionBarProps {
   questionCount: number;
   answeredCount: number;
   onContinue: () => void;
+  disabled?: boolean;
+  submitting?: boolean;
 }
 
 export default function DailyPracticeActionBar({
@@ -17,6 +19,8 @@ export default function DailyPracticeActionBar({
   questionCount,
   answeredCount,
   onContinue,
+  disabled = false,
+  submitting = false,
 }: DailyPracticeActionBarProps) {
   const finalPage = page === 4;
 
@@ -28,17 +32,18 @@ export default function DailyPracticeActionBar({
         </p>
         <p className="mt-1 text-xs leading-5 text-on-surface-variant">
           {finalPage
-            ? "Bấm “Nộp bài” để kết thúc. Câu bỏ trống sẽ được tính là chưa làm."
+            ? "Bạn có thể nộp bài khi còn câu trống. Các câu đó sẽ được ghi nhận là chưa làm."
             : `Đã chọn ${answeredCount}/${questionCount} câu. Bạn có thể quay lại sửa trước khi nộp bài.`}
         </p>
       </div>
       <Button
         type="button"
         onClick={onContinue}
+        disabled={disabled}
         className="h-11 min-w-32 rounded-xl px-5 font-semibold"
       >
         {finalPage ? <Check className="size-4" aria-hidden="true" /> : null}
-        {finalPage ? "Nộp bài" : "Tiếp tục"}
+        {finalPage ? (submitting ? "Đang nộp..." : "Nộp bài") : "Tiếp tục"}
         {!finalPage && <ArrowRight className="size-4" aria-hidden="true" />}
       </Button>
     </div>
