@@ -38,7 +38,7 @@ export default function LearningPathDayCard({ day, weekNo, closedWeek }: Learnin
         <h3 className="text-lg font-semibold text-on-surface">Ngày {day.number}</h3>
         <span className={cn(
           "rounded-full border px-2.5 py-1 text-xs font-medium",
-          day.status === "COMPLETED" && "border-primary/20 bg-primary/10 text-primary",
+          day.status === "COMPLETED" && "border-green-700/10 bg-green-100 text-green-700",
           (day.status === "CLOSED" || day.status === "SUBMITTED") && "border-secondary-container bg-secondary-container/30 text-on-secondary-container",
           active && "border-secondary-container bg-secondary-container/30 text-on-secondary-container",
           day.status === "NOT_STARTED" && "border-outline-variant/50 bg-surface-container-low text-on-surface-variant",

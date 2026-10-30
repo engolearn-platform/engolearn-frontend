@@ -54,6 +54,9 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
                       ? "Không có dữ liệu"
                       : `${result.improvementPp >= 0 ? "+" : "−"}${Math.abs(result.improvementPp)}%`
                     : changeLabel(score, result.comparisonScore);
+                  const change = result.improvementPp !== undefined
+                    ? result.improvementPp
+                    : score === null || result.comparisonScore === null ? null : score - result.comparisonScore;
                   return (
                     <tr key={result.name} className="border-t border-outline-variant/40">
                       <th scope="row" className="px-3 py-3 font-medium text-on-surface">
@@ -65,7 +68,7 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
                       <td className="px-3 py-3 text-center font-semibold text-primary">{scoreLabel(score)}</td>
                       <td className="px-3 py-3 text-center text-on-surface-variant">{scoreLabel(result.comparisonScore)}</td>
                       <td className="px-3 py-3 text-center">
-                        <span className={`rounded-full bg-primary/10 py-1 font-medium text-primary ${improvement === "Không có dữ liệu" ? "px-3 text-xs" : "px-2"}`}>
+                        <span className={`rounded-full py-1 font-medium ${change === null || change === 0 ? "bg-surface-container text-on-surface-variant" : change > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} ${improvement === "Không có dữ liệu" ? "px-3 text-xs" : "px-2"}`}>
                           {improvement}
                         </span>
                       </td>

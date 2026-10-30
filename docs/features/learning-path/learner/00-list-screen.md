@@ -23,5 +23,10 @@ as the Learning Path detail screen.
 - Active and completed cards open `/learning-paths/:pathId`. The detail screen
   fetches that path by ID through the backend detail API. Cancelled cards remain
   non-interactive.
+- Card actions say “Bắt đầu luyện tập” for a path not started, “Tiếp tục luyện tập”
+  for an in-progress path, and “Xem lộ trình” for a completed path. Progress stays
+  beside the action at the bottom of active cards.
+- Cards grow with their content instead of using a fixed height. Cards in the same
+  grid row stretch equally, keeping their progress and action areas aligned.
 - Status badges distinguish `IN_PROGRESS` with a light cyan color and
   `NOT_STARTED` with neutral gray; both retain their text labels.

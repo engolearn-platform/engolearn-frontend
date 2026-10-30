@@ -35,14 +35,7 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
           : `Đang học · Tuần ${path.currentWeekNo ?? 1}/3`;
 
   return (
-    <article
-      className={cn(
-        "flex flex-col rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-2.5 transition-all duration-200 hover:border-primary/30 hover:shadow-md lg:p-[25px]",
-        isActive
-          ? "min-h-[260px] lg:h-[457.25px] lg:min-h-0"
-          : "h-auto",
-      )}
-    >
+    <article className="flex h-full flex-col rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-2.5 transition-all duration-200 hover:border-primary/30 hover:shadow-md lg:p-[25px]">
       <span
         className={cn(
           "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold lg:gap-[6px] lg:px-[13px] lg:py-[5px] lg:text-[13px] lg:leading-[19.5px]",
@@ -91,7 +84,7 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
         ))}
       </div>
 
-      <div className="mt-auto pt-3 lg:mt-4 lg:flex lg:flex-1 lg:flex-col">
+      <div className="mt-auto pt-5">
         <div className="flex items-center justify-between text-xs lg:text-[13.5px] lg:leading-[20.25px]">
           <span className="font-medium text-on-surface-variant">Tiến độ</span>
           <span className="font-bold text-primary">{progress}%</span>
@@ -117,13 +110,13 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
         </p>
 
         {(isActive || isCompleted) && (
-          <div className="mt-2.5 border-t border-outline-variant/40 pt-2.5 text-right lg:mt-auto lg:pt-[21px]">
+          <div className="mt-2.5 border-t border-outline-variant/40 pt-2.5 text-right lg:pt-[21px]">
             <Button
               asChild
               className="h-8 rounded-lg px-3 py-1.5 text-xs font-semibold lg:h-auto lg:rounded-xl lg:px-5 lg:has-[>svg]:px-5 lg:py-2.5 lg:text-sm"
             >
               <Link to={detailUrl}>
-                {isCompleted ? "Xem lộ trình" : "Tiếp tục luyện tập"}
+                {isCompleted ? "Xem lộ trình" : path.status === "NOT_STARTED" ? "Bắt đầu luyện tập" : "Tiếp tục luyện tập"}
                 <ArrowRight className="size-3.5 lg:size-3" aria-hidden="true" />
               </Link>
             </Button>
