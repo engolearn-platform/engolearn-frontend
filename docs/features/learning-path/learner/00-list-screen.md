@@ -23,3 +23,5 @@ as the Learning Path detail screen.
 - Active and completed cards open `/learning-paths/:pathId`. The detail screen
   fetches that path by ID through the backend detail API. Cancelled cards remain
   non-interactive.
+- Status badges distinguish `IN_PROGRESS` with a light cyan color and
+  `NOT_STARTED` with neutral gray; both retain their text labels.

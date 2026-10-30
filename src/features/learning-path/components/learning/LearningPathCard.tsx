@@ -46,7 +46,8 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
       <span
         className={cn(
           "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold lg:gap-[6px] lg:px-[13px] lg:py-[5px] lg:text-[13px] lg:leading-[19.5px]",
-          isActive && "border-primary/10 bg-primary/10 text-primary",
+          path.status === "IN_PROGRESS" && "border-cyan-700/10 bg-cyan-100 text-cyan-800",
+          path.status === "NOT_STARTED" && "border-outline-variant/60 bg-surface-container text-on-surface-variant",
           path.status === "COMPLETED" &&
             "border-green-700/10 bg-green-100 text-green-700",
           path.status === "CANCELLED" &&
