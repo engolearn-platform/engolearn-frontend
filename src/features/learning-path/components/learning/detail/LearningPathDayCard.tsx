@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import { learningPathDayPath } from "@shared/constants";
 import { cn } from "@shared/utils";
 import { percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
+import { isFinishedDay } from "@features/learning-path/utils/learningPathDayStatus";
 import type { LearningPathDay } from "@features/learning-path/types/learning-path-detail.types";
 import LearningPathProgress from "./LearningPathProgress";
 
@@ -20,10 +21,11 @@ export default function LearningPathDayCard({ day, weekNo, closedWeek }: Learnin
     ? day.practiceScore
     : day.correct == null ? null : percentage(day.correct, day.answered);
   const statusLabel = day.status === "COMPLETED" ? "Hoàn thành" :
+    day.status === "SUBMITTED" ? "Đã nộp · Chưa hoàn thành" :
     day.status === "CLOSED" ? "Đã đóng · chưa hoàn thành" :
       day.status === "IN_PROGRESS" ? "Đang làm dở" : "Chưa bắt đầu";
   const active = day.status === "IN_PROGRESS";
-  const showResult = closedWeek || day.status === "COMPLETED" || day.status === "CLOSED";
+  const showResult = closedWeek || isFinishedDay(day.status);
   const actionLabel = showResult ? "Xem kết quả" : active ? "Tiếp tục luyện tập" : "Bắt đầu luyện tập";
   const destination = learningPathDayPath(pathId, weekNo, day.number, showResult ? "result" : "practice");
 
@@ -36,8 +38,8 @@ export default function LearningPathDayCard({ day, weekNo, closedWeek }: Learnin
         <h3 className="text-lg font-semibold text-on-surface">Ngày {day.number}</h3>
         <span className={cn(
           "rounded-full border px-2.5 py-1 text-xs font-medium",
-          day.status === "COMPLETED" && "border-primary/20 bg-primary/10 text-primary",
-          day.status === "CLOSED" && "border-secondary-container bg-secondary-container/30 text-on-secondary-container",
+          day.status === "COMPLETED" && "border-green-700/10 bg-green-100 text-green-700",
+          (day.status === "CLOSED" || day.status === "SUBMITTED") && "border-secondary-container bg-secondary-container/30 text-on-secondary-container",
           active && "border-secondary-container bg-secondary-container/30 text-on-secondary-container",
           day.status === "NOT_STARTED" && "border-outline-variant/50 bg-surface-container-low text-on-surface-variant",
         )}>
@@ -53,7 +55,7 @@ export default function LearningPathDayCard({ day, weekNo, closedWeek }: Learnin
         <LearningPathProgress
           value={progress}
           label={`Ngày ${day.number}: ${progress}% hoàn thành`}
-          fillClassName={day.status === "CLOSED" ? "bg-secondary-container" : undefined}
+          fillClassName={day.status === "CLOSED" || day.status === "SUBMITTED" ? "bg-secondary-container" : undefined}
           className="mt-2"
         />
       </div>

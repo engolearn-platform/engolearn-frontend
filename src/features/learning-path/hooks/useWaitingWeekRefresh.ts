@@ -3,6 +3,7 @@ import { learningPathService } from "@features/learning-path/services/learningPa
 import type { LearningPathDetail } from "@features/learning-path/types/learning-path-detail.types";
 import { mapLearningPathDetail } from "@features/learning-path/utils/learningPathDetail.mapper";
 import { nextWeekOpeningTime } from "@features/learning-path/utils/learningPathWeekTiming";
+import { isFinishedDay } from "@features/learning-path/utils/learningPathDayStatus";
 
 const RETRY_MS = 30_000;
 
@@ -10,7 +11,7 @@ export function useWaitingWeekRefresh(path: LearningPathDetail | null, onUpdated
   useEffect(() => {
     const week = path?.weeks.find((item) => item.status === "OPEN" && item.number < 3);
     if (!path || !week || week.days.length === 0
-        || !week.days.every((day) => day.status === "COMPLETED" || day.status === "CLOSED")) return;
+        || !week.days.every((day) => isFinishedDay(day.status))) return;
 
     const deadline = nextWeekOpeningTime(week);
     const now = Date.now();
