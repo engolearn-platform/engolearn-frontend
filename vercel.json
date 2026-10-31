@@ -3,7 +3,7 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://distrust-hyperlink-unmoral.ngrok-free.dev.app/api/:path*"
+            "destination": "https://distrust-hyperlink-unmoral.ngrok-free.dev/api/:path*"
         },
         {
             "source": "/(.*)",
