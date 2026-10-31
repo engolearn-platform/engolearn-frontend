@@ -1,13 +1,23 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/:path*",
-            "destination": "https://distrust-hyperlink-unmoral.ngrok-free.dev/api/:path*"
+            "src": "/api/(.*)",
+            "dest": "https://distrust-hyperlink-unmoral.ngrok-free.dev/api/$1",
+            "transforms": [
+                {
+                    "type": "request.headers",
+                    "op": "set",
+                    "target": {
+                        "key": "ngrok-skip-browser-warning"
+                    },
+                    "args": "1"
+                }
+            ]
         },
         {
-            "source": "/(.*)",
-            "destination": "/index.html"
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
     ]
 }
