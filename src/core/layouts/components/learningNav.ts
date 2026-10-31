@@ -31,7 +31,7 @@ export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
   { label: "Hạn mức sử dụng", to: ROUTES.SUBSCRIPTION_USAGE, icon: ChartNoAxesColumn },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
   { label: "Tra từ", icon: Search, disabled: true },
-  { label: "Kiểm tra", icon: ClipboardList, disabled: true },
+  { label: "Kiểm tra", to: "/assessment", icon: ClipboardList },
   {
     label: "Luyện tập micro-skill",
     to: ROUTES.LEARNING_PATHS,

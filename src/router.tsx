@@ -1,3 +1,4 @@
+import { AssessmentRoutes } from "@features/assessment/routes";
 import { PostRoutes } from "@features/Post/routes";
 import { useRoutes } from "react-router";
 import { WelcomeRoutes } from "@features/Welcome/routes";
@@ -15,6 +16,7 @@ export const appRoutes = [
   ...TopicRoutes,
   ...LearningPathRoutes,
   ...SubscriptionRoutes,
+  ...AssessmentRoutes,
 ];
 
 export const AppRouter = () => {

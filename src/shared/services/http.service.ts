@@ -4,6 +4,7 @@ interface RequestOptions {
   headers?: Record<string, string>;
   params?: Record<string, string>;
   signal?: AbortSignal;
+  keepalive?: boolean;
 }
 
 /**
@@ -88,6 +89,7 @@ class HttpService {
         ...options?.headers,
       },
       signal: options?.signal,
+      keepalive: options?.keepalive,
     };
 
     if (body && method !== "GET") {
