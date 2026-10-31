@@ -9,6 +9,8 @@ import {
   Search,
   Target,
   User,
+  CreditCard,
+  ChartNoAxesColumn,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ROUTES } from "@shared/constants";
@@ -25,6 +27,8 @@ export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
   { label: "Khám phá chủ đề", to: ROUTES.TOPICS, icon: Compass },
   { label: "Chủ đề của tôi", to: ROUTES.MY_TOPICS, icon: Bookmark },
   { label: "Ngữ pháp", to: ROUTES.GRAMMAR, icon: BookOpenText },
+  { label: "Gói học & quyền lợi", to: ROUTES.SUBSCRIPTION, icon: CreditCard },
+  { label: "Hạn mức sử dụng", to: ROUTES.SUBSCRIPTION_USAGE, icon: ChartNoAxesColumn },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
   { label: "Tra từ", icon: Search, disabled: true },
   { label: "Kiểm tra", icon: ClipboardList, disabled: true },

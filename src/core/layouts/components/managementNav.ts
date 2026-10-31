@@ -16,5 +16,7 @@ export const MANAGEMENT_CONTENT_NAV_ITEMS: ManagementNavItem[] = [
 ];
 
 export const MANAGEMENT_SYSTEM_NAV_ITEMS: ManagementNavItem[] = [
+  { label: "Gói học & quyền lợi", to: ROUTES.ADMIN_SUBSCRIPTION_PLANS, icon: BookOpenText },
+  { label: "Cấu hình hạn mức", to: ROUTES.ADMIN_SUBSCRIPTION_QUOTAS, icon: Settings },
   { label: "Cài đặt hệ thống", to: "/admin/settings", icon: Settings },
 ];

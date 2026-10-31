@@ -2,6 +2,8 @@ export const APP_NAME = "Feature-Based React";
 
 export const ROUTES = {
   HOME: "/",
+  SUBSCRIPTION: "/subscription",
+  SUBSCRIPTION_USAGE: "/subscription/usage",
   POSTS: "/posts",
   PRODUCTS: "/products",
   GRAMMAR: "/grammar",
@@ -24,6 +26,8 @@ export const ROUTES = {
   // sidebar/footer navigation lands on a placeholder instead of blank.
   TOPIC_PRACTICE: "/topics/:topicId/practice",
   ADMIN_TOPICS: "/admin/topics",
+  ADMIN_SUBSCRIPTION_PLANS: "/admin/subscription/plans",
+  ADMIN_SUBSCRIPTION_QUOTAS: "/admin/subscription/quotas",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
   ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
   ADMIN_TOPIC_ITEM_SECTION: "/admin/topics/create/items/:itemId/:sectionKey",

@@ -3,11 +3,15 @@ import { Bell, ChevronRight, User } from "lucide-react";
 interface ManagementTopBarProps {
   userName?: string;
   userRole?: string;
+  title?: string;
+  brand?: string;
 }
 
 export default function ManagementTopBar({
   userName = "Thảo Nguyễn",
   userRole = "Lead Author",
+  title = "Quản lý chủ đề",
+  brand = "Môi trường biên tập",
 }: ManagementTopBarProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between bg-surface-container-lowest/90 px-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
@@ -17,13 +21,13 @@ export default function ManagementTopBar({
         </span>
         <ChevronRight className="size-4 shrink-0 text-outline-variant" aria-hidden="true" />
         <span className="truncate text-label-lg font-semibold text-on-surface">
-          Quản lý chủ đề
+          {title}
         </span>
       </div>
       <div className="flex items-center gap-4">
         <span className="hidden items-center gap-2 rounded-full bg-surface-container-low px-4 py-2 sm:flex">
           <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
-          <span className="text-label-sm text-on-surface">Môi trường biên tập</span>
+          <span className="text-label-sm text-on-surface">{brand}</span>
         </span>
         <button
           type="button"
