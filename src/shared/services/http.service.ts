@@ -53,6 +53,16 @@ function getDevHeaders(): Record<string, string> {
   return { [DEV_USER_HEADER]: key };
 }
 
+function getNgrokHeaders(): Record<string, string> {
+  if (import.meta.env.VITE_NGROK_SKIP_BROWSER_WARNING !== "true") {
+    return {};
+  }
+
+  return {
+    "ngrok-skip-browser-warning": "1",
+  };
+}
+
 class HttpService {
   private baseUrl: string;
 
@@ -85,6 +95,7 @@ class HttpService {
       headers: {
         "Content-Type": "application/json",
         ...getDevHeaders(),
+        ...getNgrokHeaders(),
         ...options?.headers,
       },
       signal: options?.signal,
