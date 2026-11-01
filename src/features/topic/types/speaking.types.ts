@@ -53,13 +53,21 @@ export interface SpeakingAssessment {
   feedback: string[];
 }
 
+export type SpeakingEvaluationState =
+  | "PENDING"
+  | "INVALID"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "UNRESOLVED"
+  | (string & {});
+
 export interface SpeakingTurn {
   id: string;
   sequence: number;
   transcript: string;
   committedAt: string;
   valid: boolean;
-  evaluationState: "PENDING" | "INVALID" | "SUCCEEDED" | "FAILED";
+  evaluationState: SpeakingEvaluationState;
   aiReply: string | null;
   assessment: SpeakingAssessment | null;
   recordingAvailable: boolean;

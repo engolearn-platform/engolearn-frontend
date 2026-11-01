@@ -46,6 +46,11 @@ function feedbackItems(assessment: SpeakingAssessment | null, goals: SpeakingGoa
     .map(text => ({ text, kind: "feedback" as const }));
 }
 
+function isKnownEvaluationState(state: SpeakingTurn["evaluationState"]): boolean {
+  return state === "PENDING" || state === "INVALID" || state === "SUCCEEDED"
+    || state === "FAILED" || state === "UNRESOLVED";
+}
+
 function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay, achievement, onFinish, validTurns = 0, minValidTurns = 0, showAchievementFireworks = false }: {
   text: string;
   assessment?: SpeakingAssessment | null;
@@ -151,16 +156,27 @@ export default function SpeakingView() {
     }
     if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
     if (previous?.id === next.id && previous.revision > next.revision) return;
+    const terminalTurns = new Map((previous?.turns ?? [])
+      .filter(turn => turn.evaluationState === "UNRESOLVED")
+      .map(turn => [turn.id, turn]));
+    const acceptedNext = terminalTurns.size === 0 ? next : {
+      ...next,
+      turns: next.turns.map(turn => {
+        if (!terminalTurns.has(turn.id)) return turn;
+        return { ...turn, valid: false, evaluationState: "UNRESOLVED", aiReply: null,
+          assessment: null, aiAudioAvailable: false };
+      }),
+    };
     const changedSession = previous?.id !== next.id;
-    sessionRef.current = next;
-    setSession(next);
+    sessionRef.current = acceptedNext;
+    setSession(acceptedNext);
     if (changedSession) {
       playedAchievementKeys.current.clear();
       setAchievementEvents([]);
       setActiveFireworkKey(null);
     }
     const liveTransition = event.source !== "HYDRATE";
-    const after = toAchievementSnapshot(next);
+    const after = toAchievementSnapshot(acceptedNext);
     let before = previous ? toAchievementSnapshot(previous) : null;
     // A reconnect GET can arrive just before the live TURN_RESULT at the same
     // revision. The committed assessment still identifies first-time evidence.
@@ -190,6 +206,8 @@ export default function SpeakingView() {
       const current = sessionRef.current;
       if (!current || current.status !== "ACTIVE" || historyOpenRef.current) return;
       if (itemId && current.content.topicItemId !== itemId) return;
+      const turn = current.turns.find(item => item.id === turnId);
+      if (turn?.evaluationState !== "SUCCEEDED") return;
       void playAudio(current.id, turnId, "AI_REPLY", true);
     });
 
@@ -365,7 +383,8 @@ export default function SpeakingView() {
             <p className="mt-4 text-sm text-on-surface-variant">{legacySession
               ? <strong className="text-on-surface">{visibleSession.requiredGoalsMet ? "Đã đạt" : "Chưa đạt"} điều kiện mục tiêu của phiên cũ</strong>
               : <strong className="text-on-surface">{requiredAchieved}/{requiredGoals.length} mục tiêu Bắt buộc</strong>}
-              {" · "}<strong className="text-on-surface">{visibleSession.validTurnCount}/{visibleSession.content.minimumValidTurns}</strong> lượt hợp lệ tối thiểu</p>
+              {" · "}<strong className="text-on-surface">{visibleSession.validTurnCount}/{visibleSession.content.minimumValidTurns}</strong> lượt hợp lệ tối thiểu
+              {" · "}<strong className="text-on-surface">{visibleSession.committedTurnCount}/30</strong> lượt đã chốt</p>
             {open && visibleSession.requiredGoalsMet && <p className="mt-2 text-sm font-medium text-emerald-800">Đã đạt mục tiêu bắt buộc{visibleSession.completionEligible ? ". Bạn có thể kết thúc hoặc luyện thêm mục tiêu tùy chọn." : ". Hãy tiếp tục đến khi đủ lượt nói hợp lệ."}</p>}
             <ul aria-label="Mục tiêu tình huống" className="mt-4 flex flex-wrap gap-2">{visibleSession.content.goals.map(goal => {
               const achieved = visibleSession.achievedGoalIds.includes(goal.id);
@@ -385,7 +404,14 @@ export default function SpeakingView() {
 
           <div id="speaking-transcript" className="space-y-5 p-4 sm:space-y-6 sm:p-6">
             {[...visibleSession.turns].sort((a, b) => b.sequence - a.sequence).map(turn => <div key={turn.id} className="space-y-4 sm:space-y-5">
-              {(turn.aiReply || turn.assessment || turn.evaluationState !== "SUCCEEDED") && <AiMessage
+              {turn.evaluationState === "UNRESOLVED" && <div role="status" className="mx-auto max-w-[85%] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 sm:max-w-[75%] sm:px-5">
+                Chưa ghi nhận được kết quả đánh giá cho lượt này; lượt vẫn được tính vào số lượt đã chốt.
+              </div>}
+              {!isKnownEvaluationState(turn.evaluationState) && <div role="status" className="mx-auto max-w-[85%] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 sm:max-w-[75%] sm:px-5">
+                Trạng thái kết quả chưa được hỗ trợ. Hãy làm mới phiên để xem trạng thái mới nhất.
+              </div>}
+              {isKnownEvaluationState(turn.evaluationState) && turn.evaluationState !== "UNRESOLVED"
+                && (turn.aiReply || turn.assessment || turn.evaluationState !== "SUCCEEDED") && <AiMessage
                 text={turn.aiReply || (turn.evaluationState === "PENDING" ? "Đang xử lý lượt nói…" : turn.evaluationState === "FAILED" ? "Chưa đánh giá được lượt này. Bạn có thể nói lại." : turn.evaluationState === "INVALID" ? "Chưa nghe rõ nội dung. Bạn hãy thử nói lại." : "Không có phản hồi AI.")}
                 assessment={turn.assessment} goals={visibleSession.content.goals}
                 turn={turn} playing={playingAiTurn === turn.id}
