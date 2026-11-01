@@ -14,6 +14,16 @@ function isFinished(session: SpeakingSession) {
   return session.status === "COMPLETED" || session.status === "INCOMPLETE";
 }
 
+function transcriptDisplayText(turn: SpeakingSession["turns"][number]): string {
+  if (turn.transcript !== null && turn.transcript !== "") return turn.transcript;
+  if (turn.payloadAvailability === "PENDING") return "Nội dung lời nói tạm không khả dụng";
+  if (turn.payloadAvailability === "UNAVAILABLE") {
+    return "Đã ghi nhận lượt nói nhưng không thể khôi phục nội dung";
+  }
+  if (turn.transcript === null) return "Nội dung lời nói không khả dụng";
+  return "";
+}
+
 export default function SpeakingDemoView() {
   const [item, setItem] = useState<DemoSpeakingItem | null>(null);
   const [session, setSession] = useState<SpeakingSession | null>(null);
@@ -235,7 +245,7 @@ export default function SpeakingDemoView() {
               {session?.turns.map((turn) => (
                 <li key={turn.id} className="rounded-xl border border-border p-4">
                   <p className="mb-2 text-sm font-semibold text-primary">Lượt {turn.number} · {turn.valid ? "Hợp lệ" : "Chưa hợp lệ"}</p>
-                  <p><strong>Bạn:</strong> {turn.transcript}</p>
+                  <p><strong>Bạn:</strong> {transcriptDisplayText(turn)}</p>
                   {turn.aiReply && <p className="mt-2"><strong>AI:</strong> {turn.aiReply}</p>}
                   {turn.goalEvidence.length > 0 && (
                     <ul className="mt-3 space-y-1 text-sm text-primary">

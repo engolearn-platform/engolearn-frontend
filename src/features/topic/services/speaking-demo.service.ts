@@ -20,6 +20,12 @@ export class SpeakingApiError extends Error {
   }
 }
 
+async function speakingFetch(path: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  headers.set("X-Speaking-Contract", "0.8.3");
+  return fetch(`${BASE}${path}`, { ...init, headers });
+}
+
 async function unwrap<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const problem = await response.json().catch(() => null);
@@ -33,7 +39,7 @@ async function unwrap<T>(response: Response): Promise<T> {
 }
 
 async function postJson<T>(path: string, body: object): Promise<T> {
-  return unwrap<T>(await fetch(`${BASE}${path}`, {
+  return unwrap<T>(await speakingFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -41,9 +47,9 @@ async function postJson<T>(path: string, body: object): Promise<T> {
 }
 
 export const speakingDemoService = {
-  demoItem: async () => unwrap<DemoSpeakingItem>(await fetch(`${BASE}/demo-item`)),
-  current: async () => unwrap<SpeakingSession | null>(await fetch(`${BASE}/sessions/current`)),
-  get: async (id: string) => unwrap<SpeakingSession>(await fetch(`${BASE}/sessions/${id}`)),
+  demoItem: async () => unwrap<DemoSpeakingItem>(await speakingFetch("/demo-item")),
+  current: async () => unwrap<SpeakingSession | null>(await speakingFetch("/sessions/current")),
+  get: async (id: string) => unwrap<SpeakingSession>(await speakingFetch(`/sessions/${id}`)),
   create: (itemId: string) => postJson<SpeakingSession>("/sessions", { itemId }),
   resume: (id: string) => postJson<SpeakingSession>(`/sessions/${id}/resume`, {}),
   end: (id: string, controllerEpoch: number) =>
@@ -55,7 +61,7 @@ export const speakingDemoService = {
     form.append("audio", audio, `turn.${type}`);
     form.append("turnId", crypto.randomUUID());
     form.append("controllerEpoch", String(controllerEpoch));
-    return unwrap<SpeakingTurnResult>(await fetch(`${BASE}/sessions/${id}/turns`, {
+    return unwrap<SpeakingTurnResult>(await speakingFetch(`/sessions/${id}/turns`, {
       method: "POST",
       body: form,
     }));

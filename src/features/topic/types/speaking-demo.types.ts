@@ -13,7 +13,8 @@ export interface SpeakingFeedback {
 export interface SpeakingTurn {
   id: string;
   number: number;
-  transcript: string;
+  transcript: string | null;
+  payloadAvailability?: "PENDING" | "UNAVAILABLE" | (string & {});
   valid: boolean;
   achievedGoalIds: string[];
   goalEvidence: { goalId: string; quote: string }[];
