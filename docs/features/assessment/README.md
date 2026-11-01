@@ -16,6 +16,18 @@ binding lives only in memory: navigation/reload cannot resume. Four progress sta
 server time are consistent on desktop/mobile. Official audio has no seeking/replay/rate controls.
 Review audio can replay. Do not persist hidden analysis or official taking data in localStorage.
 
+Learner-approved timing update (2026-11-01): reading previews at questions 11, 16,
+21 and 26 offer “Bắt đầu trả lời ngay”. The action calls the binding-protected real
+POST /attempts/{id}/finish-stage with unitIndex 10..13, phase READING_PREVIEW and a
+retry-stable commandId. The server starts the usual shared 300s answer window without
+carrying unused preview time. Listening lead has no manual skip button. Finishing
+question 45 advances immediately to 46 and unmounts the old audio. “Hoàn thành bài”
+on question 50 opens submission confirmation; cancel keeps the question, confirm
+saves the final choice and grades immediately through final Next. There is no completed-group
+waiting screen. Commands share the serialized mutation queue with autosave.
+Review explicitly shows the selected letter/outcome and the correct letter. A selected
+wrong option uses the existing error token with a text label; correct and blank states remain distinct.
+
 Validation: npm run build, npm run lint, real FE proxy against BE, desktop/mobile keyboard and
 screen-reader labels, race/deadline/quota/ownership/audio/refund scenarios in the delivery checklist.
 

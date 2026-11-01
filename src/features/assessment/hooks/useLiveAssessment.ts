@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@shared/hooks/useAuth";
 import { assessmentApi, abandonOnLeave, leaveHeaders } from "@features/assessment/services/assessmentApi";
 import { currentSession, clearSession } from "@features/assessment/services/assessmentSession";
-import type { AnswerCommand, AssessmentState } from "@features/assessment/types/assessment.types";
+import type { AnswerCommand, AssessmentState, FinishStageCommand } from "@features/assessment/types/assessment.types";
 
 let delayedLeave: ReturnType<typeof setTimeout> | undefined;
 export function useLiveAssessment() {
@@ -19,6 +19,7 @@ export function useLiveAssessment() {
   const mutation = useRef(false);
   const queued = useRef<Promise<unknown>>(Promise.resolve());
   const pendingNext = useRef<AnswerCommand | null>(null);
+  const pendingStage = useRef<FinishStageCommand | null>(null);
   const currentNumber = state?.current?.number;
   useEffect(() => {setSaving("Chưa chọn đáp án");}, [currentNumber]);
   const apply = (value: AssessmentState) => {
@@ -80,7 +81,7 @@ export function useLiveAssessment() {
       if (mounted.current && sequence === session.sequence) {setSaving("Đã lưu");setError(null);}
     }).catch(e => {if (mounted.current && sequence === session.sequence) {setSaving("Chưa lưu");setError((e as Error).message);}});
   };
-  const perform = async (action: "next" | "submit" | "abandon", choice: number | null) => {
+  const perform = async (action: "next" | "finishStage" | "submit" | "abandon", choice: number | null) => {
     if (!session || !session.live || !state || mutation.current) return;
     mutation.current = true; setBusy(true); setError(null);
     try {
@@ -92,6 +93,12 @@ export function useLiveAssessment() {
         };
         value = await assessmentApi.next(state.id, session.binding, pendingNext.current);
         pendingNext.current = null;
+      } else if (action === "finishStage" && state.phase === "READING_PREVIEW") {
+        if (!pendingStage.current || pendingStage.current.unitIndex !== state.unitIndex) pendingStage.current = {
+          unitIndex: state.unitIndex, phase: "READING_PREVIEW", commandId: crypto.randomUUID(),
+        };
+        value = await assessmentApi.finishStage(state.id, session.binding, pendingStage.current);
+        pendingStage.current = null;
       } else if (action === "submit") value = await assessmentApi.submit(state.id, session.binding);
       else if (action === "abandon") value = await assessmentApi.abandon(state.id);
       else return;

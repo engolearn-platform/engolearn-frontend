@@ -31,3 +31,4 @@ export interface ReviewQuestion extends Question {
 export interface Review {result: AssessmentResult; questions: ReviewQuestion[]}
 export interface Media {mimeType: string; base64: string}
 export interface AnswerCommand {question: number; sequence: number; choice: number | null; commandId: string}
+export interface FinishStageCommand {unitIndex: number; phase: "READING_PREVIEW"; commandId: string}
