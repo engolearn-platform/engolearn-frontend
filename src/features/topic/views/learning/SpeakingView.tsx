@@ -156,27 +156,28 @@ export default function SpeakingView() {
     }
     if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
     if (previous?.id === next.id && previous.revision > next.revision) return;
-    const terminalTurns = new Map((previous?.turns ?? [])
-      .filter(turn => turn.evaluationState === "UNRESOLVED")
-      .map(turn => [turn.id, turn]));
-    const acceptedNext = terminalTurns.size === 0 ? next : {
-      ...next,
-      turns: next.turns.map(turn => {
-        if (!terminalTurns.has(turn.id)) return turn;
-        return { ...turn, valid: false, evaluationState: "UNRESOLVED", aiReply: null,
-          assessment: null, aiAudioAvailable: false };
-      }),
-    };
+    const hasConflictingUnresolvedTurn = previous?.id === next.id
+      && (previous.status === "COMPLETED" || previous.status === "INCOMPLETE")
+      && previous.turns.some(previousTurn => {
+        if (previousTurn.evaluationState !== "UNRESOLVED") return false;
+        const incomingTurn = next.turns.find(turn => turn.id === previousTurn.id);
+        return !incomingTurn || incomingTurn.evaluationState !== "UNRESOLVED"
+          || incomingTurn.valid || incomingTurn.assessment !== null
+          || incomingTurn.aiReply !== null || incomingTurn.aiAudioAvailable;
+      });
+    // UNRESOLVED is committed with the terminal snapshot. Reject a conflicting
+    // revision wholesale so turn state, session evidence, and counts stay aligned.
+    if (hasConflictingUnresolvedTurn) return;
     const changedSession = previous?.id !== next.id;
-    sessionRef.current = acceptedNext;
-    setSession(acceptedNext);
+    sessionRef.current = next;
+    setSession(next);
     if (changedSession) {
       playedAchievementKeys.current.clear();
       setAchievementEvents([]);
       setActiveFireworkKey(null);
     }
     const liveTransition = event.source !== "HYDRATE";
-    const after = toAchievementSnapshot(acceptedNext);
+    const after = toAchievementSnapshot(next);
     let before = previous ? toAchievementSnapshot(previous) : null;
     // A reconnect GET can arrive just before the live TURN_RESULT at the same
     // revision. The committed assessment still identifies first-time evidence.
