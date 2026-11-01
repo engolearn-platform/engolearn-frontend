@@ -144,7 +144,7 @@ function LearnerMessage({ turn, playingTurn, onPlay }: {
       <p className="mb-1 mr-1 text-right text-xs font-semibold text-sky-900">Bạn</p>
       <div className="rounded-2xl rounded-tr-sm border border-sky-100 bg-sky-50 px-4 py-3 shadow-sm sm:px-5">
         <p className="mb-1 text-xs font-medium text-sky-800">Lời bạn nói</p>
-        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-900 sm:text-base">{turn.transcript || "Không có lời nói được ghi nhận."}</p>
+        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-900 sm:text-base">{turn.transcript || (turn.payloadAvailability === "PENDING" || turn.payloadAvailability === "UNAVAILABLE" ? "Nội dung lời nói tạm không khả dụng" : "Không có lời nói được ghi nhận.")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {turn.recordingAvailable ? <button type="button" disabled={playingTurn === turn.id}
             onClick={() => onPlay(turn)} aria-label={`Nghe lại lời bạn nói ở lượt ${turn.sequence}`}

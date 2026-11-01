@@ -61,10 +61,17 @@ export type SpeakingEvaluationState =
   | "UNRESOLVED"
   | (string & {});
 
+export type SpeakingPayloadAvailability =
+  | "AVAILABLE"
+  | "PENDING"
+  | "UNAVAILABLE"
+  | (string & {});
+
 export interface SpeakingTurn {
   id: string;
   sequence: number;
-  transcript: string;
+  transcript: string | null;
+  payloadAvailability?: SpeakingPayloadAvailability;
   committedAt: string;
   valid: boolean;
   evaluationState: SpeakingEvaluationState;
