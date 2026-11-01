@@ -51,6 +51,36 @@ function isKnownEvaluationState(state: SpeakingTurn["evaluationState"]): boolean
     || state === "FAILED" || state === "UNRESOLVED";
 }
 
+function terminalSemantics(session: SpeakingSession): string {
+  return JSON.stringify({
+    id: session.id,
+    content: session.content,
+    status: session.status,
+    endReason: session.endReason,
+    startedAt: session.startedAt,
+    expiresAt: session.expiresAt,
+    endedAt: session.endedAt,
+    validTurnCount: session.validTurnCount,
+    committedTurnCount: session.committedTurnCount,
+    achievedGoalIds: [...session.achievedGoalIds].sort(),
+    goalResults: [...session.goalResults].sort((a, b) => a.goalId.localeCompare(b.goalId)),
+    requiredGoalsMet: session.requiredGoalsMet,
+    completionEligible: session.completionEligible,
+    canStartTurn: session.canStartTurn,
+    openingReply: session.openingReply,
+    turns: [...session.turns].sort((a, b) => a.sequence - b.sequence).map(turn => ({
+      id: turn.id,
+      sequence: turn.sequence,
+      transcript: turn.transcript,
+      committedAt: turn.committedAt,
+      valid: turn.valid,
+      evaluationState: turn.evaluationState,
+      aiReply: turn.aiReply,
+      assessment: turn.assessment,
+    })),
+  });
+}
+
 function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay, achievement, onFinish, validTurns = 0, minValidTurns = 0, showAchievementFireworks = false }: {
   text: string;
   assessment?: SpeakingAssessment | null;
@@ -156,18 +186,20 @@ export default function SpeakingView() {
     }
     if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
     if (previous?.id === next.id && previous.revision > next.revision) return;
-    const hasConflictingUnresolvedTurn = previous?.id === next.id
+    const previousHasTerminalUnresolvedTurn = previous?.id === next.id
       && (previous.status === "COMPLETED" || previous.status === "INCOMPLETE")
-      && previous.turns.some(previousTurn => {
-        if (previousTurn.evaluationState !== "UNRESOLVED") return false;
-        const incomingTurn = next.turns.find(turn => turn.id === previousTurn.id);
-        return !incomingTurn || incomingTurn.evaluationState !== "UNRESOLVED"
-          || incomingTurn.valid || incomingTurn.assessment !== null
-          || incomingTurn.aiReply !== null || incomingTurn.aiAudioAvailable;
-      });
-    // UNRESOLVED is committed with the terminal snapshot. Reject a conflicting
-    // revision wholesale so turn state, session evidence, and counts stay aligned.
-    if (hasConflictingUnresolvedTurn) return;
+      && previous.turns.some(turn => turn.evaluationState === "UNRESOLVED");
+    const violatesUnresolvedInvariant = previous?.turns.some(previousTurn => {
+      if (previousTurn.evaluationState !== "UNRESOLVED") return false;
+      const incomingTurn = next.turns.find(turn => turn.id === previousTurn.id);
+      return !incomingTurn || incomingTurn.evaluationState !== "UNRESOLVED"
+        || incomingTurn.valid || incomingTurn.assessment !== null
+        || incomingTurn.aiReply !== null || incomingTurn.aiAudioAvailable;
+    });
+    // UNRESOLVED is committed with the terminal snapshot. Keep all authoritative
+    // terminal fields together; playback availability and revision may still age.
+    if (previousHasTerminalUnresolvedTurn && previous && (violatesUnresolvedInvariant
+      || terminalSemantics(previous) !== terminalSemantics(next))) return;
     const changedSession = previous?.id !== next.id;
     sessionRef.current = next;
     setSession(next);
