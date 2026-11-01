@@ -135,9 +135,13 @@ function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay
 
 function transcriptDisplayText(turn: SpeakingTurn): string {
   if (turn.transcript !== null && turn.transcript !== "") return turn.transcript;
-  if (turn.transcript === null || turn.payloadAvailability === "PENDING" || turn.payloadAvailability === "UNAVAILABLE") {
+  if (turn.payloadAvailability === "PENDING") {
     return "Nội dung lời nói tạm không khả dụng";
   }
+  if (turn.payloadAvailability === "UNAVAILABLE") {
+    return "Đã ghi nhận lượt nói nhưng không thể khôi phục nội dung";
+  }
+  if (turn.transcript === null) return "Nội dung lời nói không khả dụng";
   return "Không có lời nói được ghi nhận.";
 }
 
