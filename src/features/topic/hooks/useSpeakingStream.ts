@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { speakingService } from "@features/topic/services/speaking.service";
+import { speakingService, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
 import type { SpeakingSession } from "@features/topic/types/speaking.types";
 
 type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
@@ -82,6 +82,7 @@ export function useSpeakingStream(
         const url = new URL(`/ws/speaking/${encodeURIComponent(sessionId)}`, window.location.href);
         url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
         url.searchParams.set("ticket", ticket);
+        url.searchParams.set("contractVersion", SPEAKING_CONTRACT_VERSION);
         const socket = new WebSocket(url);
         socket.binaryType = "arraybuffer";
         socketRef.current = socket;

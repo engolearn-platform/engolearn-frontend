@@ -1,6 +1,7 @@
 import type { SpeakingItemConfig, SpeakingSession } from "@features/topic/types/speaking.types";
 
 const BASE = "/api/v1/speaking";
+export const SPEAKING_CONTRACT_VERSION = "0.8.3";
 export const speakingDemoEnabled = import.meta.env.DEV ||
   import.meta.env.VITE_SPEAKING_DEMO_ENABLED === "true";
 
@@ -33,6 +34,7 @@ async function request<T>(path: string, method = "GET", body?: object): Promise<
   const response = await fetch(`${BASE}${path}`, {
     method,
     headers: {
+      "X-Speaking-Contract": SPEAKING_CONTRACT_VERSION,
       ...(body ? { "Content-Type": "application/json" } : {}),
       ...(devUser ? { "X-Dev-User-Id": devUser } : {}),
       ...(demoKey ? { "X-Speaking-Demo-Learner-Key": demoKey } : {}),
