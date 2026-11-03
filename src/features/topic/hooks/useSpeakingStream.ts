@@ -29,7 +29,7 @@ export interface SpeakingStreamLifecycleEvent {
   occurredAt: string;
 }
 
-type SpeakingDemoDecisionHandler = (turnId: string, decision: SpeakingDemoDecision) => void;
+type SpeakingDemoDecisionHandler = (sessionId: string, turnId: string, decision: SpeakingDemoDecision) => void;
 
 export function useSpeakingStream(
   session: SpeakingSession | null,
@@ -37,6 +37,7 @@ export function useSpeakingStream(
   onError: (message: string) => void,
   onAiAudioReady?: (turnId: string) => void,
   onDemoDecision?: SpeakingDemoDecisionHandler,
+  diagnosticsActive = true,
 ) {
   const [connection, setConnection] = useState<ConnectionState>("disconnected");
   const [recording, setRecording] = useState<RecordingState>("idle");
@@ -54,6 +55,7 @@ export function useSpeakingStream(
   const onErrorRef = useRef(onError);
   const onAiAudioReadyRef = useRef(onAiAudioReady);
   const onDemoDecisionRef = useRef(onDemoDecision);
+  const diagnosticsActiveRef = useRef(diagnosticsActive);
   const lifecycleIdRef = useRef(0);
   const sessionId = session?.id;
   const sessionEpoch = session?.controllerEpoch;
@@ -62,8 +64,10 @@ export function useSpeakingStream(
   onErrorRef.current = onError;
   onAiAudioReadyRef.current = onAiAudioReady;
   onDemoDecisionRef.current = onDemoDecision;
+  diagnosticsActiveRef.current = diagnosticsActive;
 
   const recordLifecycle = useCallback((event: Omit<SpeakingStreamLifecycleEvent, "id" | "occurredAt">) => {
+    if (!diagnosticsActiveRef.current) return;
     const next = {
       ...event,
       id: ++lifecycleIdRef.current,
@@ -100,7 +104,17 @@ export function useSpeakingStream(
   stopRef.current = finishRecording;
 
   useEffect(() => {
-    if (!sessionId || (sessionStatus !== "ACTIVE" && sessionStatus !== "INTERRUPTED")) return;
+    if (!diagnosticsActive) setLifecycle([]);
+  }, [diagnosticsActive]);
+
+  useEffect(() => {
+    if (!sessionId || (sessionStatus !== "ACTIVE" && sessionStatus !== "INTERRUPTED")) {
+      setLifecycle([]);
+      setConnection("disconnected");
+      setRecording("idle");
+      setInterim("");
+      return;
+    }
     let canceled = false;
     let retries = 0;
     let ready = false;
@@ -134,7 +148,9 @@ export function useSpeakingStream(
               ...(typeof message.message === "string" ? { message: message.message } : {}),
             });
             const demoDecision = parseSpeakingDemoDecision(message.demoDecision);
-            if (turnId && demoDecision) onDemoDecisionRef.current?.(turnId, demoDecision);
+            if (turnId && demoDecision && diagnosticsActiveRef.current) {
+              onDemoDecisionRef.current?.(sessionId, turnId, demoDecision);
+            }
             if (type === "CONNECTED") {
               ready = true;
               retries = 0;

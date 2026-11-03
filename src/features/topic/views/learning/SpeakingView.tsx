@@ -189,11 +189,10 @@ function SpeakingDiagnostics({ session, connection, recording, interim, lifecycl
   lifecycle: SpeakingStreamLifecycleEvent[];
   decisions: Record<string, SpeakingDemoDecision>;
 }) {
-  const latestTurn = session?.turns.reduce<SpeakingTurn | null>((latest, turn) =>
-    !latest || turn.sequence > latest.sequence ? turn : latest, null) ?? null;
-  const latestDecision = session && latestTurn
-    ? decisions[diagnosticsDecisionKey(session.id, latestTurn.id)]
-    : undefined;
+  const decisionTurns = session ? [...session.turns]
+    .sort((a, b) => a.sequence - b.sequence)
+    .map(turn => ({ turn, decision: decisions[diagnosticsDecisionKey(session.id, turn.id)] })) : [];
+  const latestTurn = decisionTurns.length ? decisionTurns[decisionTurns.length - 1].turn : undefined;
 
   return <section aria-label="Chẩn đoán phiên Speaking" className="rounded-2xl border border-primary/20 bg-primary-fixed/10 p-4 shadow-sm sm:p-5">
     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -237,19 +236,24 @@ function SpeakingDiagnostics({ session, connection, recording, interim, lifecycl
 
     <div className="mt-4 grid gap-4 lg:grid-cols-2">
       <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Conversation Manager decision</p>
-        {latestDecision ? <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-on-surface-variant">
-          <div><dt>Outcome</dt><dd className="font-medium text-on-surface">{latestDecision.outcome}</dd></div>
-          <div><dt>Reason</dt><dd className="font-medium text-on-surface">{latestDecision.reasonCode}</dd></div>
-          <div><dt>Act</dt><dd className="font-medium text-on-surface">{latestDecision.acceptedAct ?? "—"}</dd></div>
-          <div><dt>Resulting status</dt><dd className="font-medium text-on-surface">{latestDecision.resultingStatus}</dd></div>
-          <div><dt>Finalized</dt><dd className="font-medium text-on-surface">{latestDecision.finalizedTurnCount}</dd></div>
-          <div><dt>Valid</dt><dd className="font-medium text-on-surface">{latestDecision.validTurnCount}</dd></div>
-          <div><dt>Eval errors</dt><dd className="font-medium text-on-surface">{latestDecision.consecutiveEvaluationErrors}</dd></div>
-          <div><dt>New goals</dt><dd className="font-medium text-on-surface">{latestDecision.newlyAchievedGoalIds.length}</dd></div>
-          <div><dt>Can complete</dt><dd className="font-medium text-on-surface">{latestDecision.completionEligible ? "yes" : "no"}</dd></div>
-          <div><dt>Auto-end</dt><dd className="font-medium text-on-surface">{latestDecision.autoEndEligible ? "yes" : "no"}</dd></div>
-        </dl> : <p className="mt-2 text-on-surface-variant">Chưa có demoDecision; sự kiện fallback vẫn được hiển thị bình thường.</p>}
+        <p className="font-semibold">Conversation Manager decisions</p>
+        {decisionTurns.length ? <ol className="mt-2 max-h-64 space-y-2 overflow-auto text-on-surface-variant">
+          {decisionTurns.map(({ turn, decision }) => <li key={turn.id} className="rounded-lg bg-primary-fixed/10 px-3 py-2">
+            <p className="flex flex-wrap gap-x-2 gap-y-1">
+              <span className="font-semibold text-on-surface">Lượt #{turn.sequence}</span>
+              <span>{turn.evaluationState}</span>
+              {decision && <><span>· {decision.outcome}</span><span>· {decision.reasonCode}</span></>}
+            </p>
+            {decision ? <p className="mt-1 text-xs leading-5">
+              Act: <span className="font-medium text-on-surface">{decision.acceptedAct ?? "—"}</span>
+              {" · Status: "}<span className="font-medium text-on-surface">{decision.resultingStatus}</span>
+              {" · Finalized/valid: "}<span className="font-medium text-on-surface">{decision.finalizedTurnCount}/{decision.validTurnCount}</span>
+              {" · New goals: "}<span className="font-medium text-on-surface">{decision.newlyAchievedGoalIds.length}</span>
+              {" · Complete: "}<span className="font-medium text-on-surface">{decision.completionEligible ? "yes" : "no"}</span>
+              {" · Auto-end: "}<span className="font-medium text-on-surface">{decision.autoEndEligible ? "yes" : "no"}</span>
+            </p> : <p className="mt-1 text-xs">Chưa nhận demoDecision cho lượt này.</p>}
+          </li>)}
+        </ol> : <p className="mt-2 text-on-surface-variant">Chưa có lượt đã chốt.</p>}
       </div>
 
       <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
@@ -288,9 +292,9 @@ export default function SpeakingView() {
   const playTokenRef = useRef(0);
   const sessionRef = useRef<SpeakingSession | null>(null);
   const playedAchievementKeys = useRef(new Set<string>());
-  const acceptDemoDecision = useCallback((turnId: string, decision: SpeakingDemoDecision) => {
+  const acceptDemoDecision = useCallback((sourceSessionId: string, turnId: string, decision: SpeakingDemoDecision) => {
     const current = sessionRef.current;
-    if (!current) return;
+    if (!current || current.id !== sourceSessionId) return;
     setDemoDecisions(existing => ({
       ...existing,
       [diagnosticsDecisionKey(current.id, turnId)]: decision,
@@ -301,6 +305,7 @@ export default function SpeakingView() {
     if (!next) {
       sessionRef.current = null;
       setSession(null);
+      setDemoDecisions({});
       return;
     }
     if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
@@ -323,6 +328,7 @@ export default function SpeakingView() {
     sessionRef.current = next;
     setSession(next);
     if (changedSession) {
+      setDemoDecisions({});
       playedAchievementKeys.current.clear();
       setAchievementEvents([]);
       setActiveFireworkKey(null);
@@ -351,9 +357,12 @@ export default function SpeakingView() {
       }
     }
   }, []);
-  useEffect(() => { setDemoDecisions({}); }, [session?.id]);
   const historyOpenRef = useRef(showHistory);
   historyOpenRef.current = showHistory;
+  const currentIsThisItem = session?.content.topicItemId === itemId;
+  const visibleSession = session && (currentIsThisItem || !itemId) ? session : null;
+  const diagnosticsActive = diagnosticsEnabled && !showHistory && !!visibleSession
+    && (visibleSession.status === "ACTIVE" || visibleSession.status === "INTERRUPTED");
   const { connection, recording, interim, lifecycle, startRecording, finishRecording } =
     useSpeakingStream(session, acceptSnapshot, setError, turnId => {
       const current = sessionRef.current;
@@ -362,7 +371,7 @@ export default function SpeakingView() {
       const turn = current.turns.find(item => item.id === turnId);
       if (turn?.evaluationState !== "SUCCEEDED") return;
       void playAudio(current.id, turnId, "AI_REPLY", true);
-    }, diagnosticsEnabled ? acceptDemoDecision : undefined);
+    }, diagnosticsEnabled ? acceptDemoDecision : undefined, diagnosticsActive);
 
   const refresh = useCallback(async () => {
     try {
@@ -450,8 +459,6 @@ export default function SpeakingView() {
   }
 
   const open = session?.status === "ACTIVE" || session?.status === "INTERRUPTED";
-  const currentIsThisItem = session?.content.topicItemId === itemId;
-  const visibleSession = session && (currentIsThisItem || !itemId) ? session : null;
   const requiredGoals = visibleSession?.content.goals.filter(goal => goal.priority === "REQUIRED") ?? [];
   const requiredAchieved = requiredGoals.filter(goal =>
     visibleSession?.achievedGoalIds.includes(goal.id)).length;
