@@ -1,25 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { speakingService, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
-import type { SpeakingSession } from "@features/topic/types/speaking.types";
+import { parseSpeakingDemoDecision } from "@features/topic/hooks/speakingDemoDecision";
+import type { SpeakingDemoDecision, SpeakingSession } from "@features/topic/types/speaking.types";
 
-type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
-type RecordingState = "idle" | "recording" | "processing";
+export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
+export type RecordingState = "idle" | "recording" | "processing";
 export type SpeakingSnapshotSource = "HYDRATE" | "TURN_RESULT" | "SESSION_ENDED";
+
+interface SpeakingSocketMessage {
+  type?: string;
+  text?: string;
+  message?: string;
+  turnId?: string;
+  snapshot?: SpeakingSession;
+  demoDecision?: unknown;
+}
 
 export interface SpeakingSnapshotEvent {
   source: SpeakingSnapshotSource;
   turnId?: string;
 }
 
+export interface SpeakingStreamLifecycleEvent {
+  id: number;
+  type: string;
+  turnId?: string;
+  message?: string;
+  occurredAt: string;
+}
+
+type SpeakingDemoDecisionHandler = (turnId: string, decision: SpeakingDemoDecision) => void;
+
 export function useSpeakingStream(
   session: SpeakingSession | null,
   onSnapshot: (session: SpeakingSession, event: SpeakingSnapshotEvent) => void,
   onError: (message: string) => void,
   onAiAudioReady?: (turnId: string) => void,
+  onDemoDecision?: SpeakingDemoDecisionHandler,
 ) {
   const [connection, setConnection] = useState<ConnectionState>("disconnected");
   const [recording, setRecording] = useState<RecordingState>("idle");
   const [interim, setInterim] = useState("");
+  const [lifecycle, setLifecycle] = useState<SpeakingStreamLifecycleEvent[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
@@ -31,12 +53,24 @@ export function useSpeakingStream(
   const onSnapshotRef = useRef(onSnapshot);
   const onErrorRef = useRef(onError);
   const onAiAudioReadyRef = useRef(onAiAudioReady);
+  const onDemoDecisionRef = useRef(onDemoDecision);
+  const lifecycleIdRef = useRef(0);
   const sessionId = session?.id;
   const sessionEpoch = session?.controllerEpoch;
   const sessionStatus = session?.status;
   onSnapshotRef.current = onSnapshot;
   onErrorRef.current = onError;
   onAiAudioReadyRef.current = onAiAudioReady;
+  onDemoDecisionRef.current = onDemoDecision;
+
+  const recordLifecycle = useCallback((event: Omit<SpeakingStreamLifecycleEvent, "id" | "occurredAt">) => {
+    const next = {
+      ...event,
+      id: ++lifecycleIdRef.current,
+      occurredAt: new Date().toISOString(),
+    };
+    setLifecycle(current => [...current.slice(-19), next]);
+  }, []);
 
   const stopHardware = useCallback(async () => {
     workletRef.current?.disconnect();
@@ -71,10 +105,12 @@ export function useSpeakingStream(
     let retries = 0;
     let ready = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    setLifecycle([]);
 
     async function connect() {
       if (!sessionId || sessionEpoch === undefined || canceled) return;
       setConnection(retries ? "reconnecting" : "connecting");
+      recordLifecycle({ type: retries ? "SOCKET_RECONNECTING" : "SOCKET_CONNECTING" });
       try {
         const { ticket } = await speakingService.ticket({ id: sessionId,
           controllerEpoch: sessionEpoch });
@@ -87,9 +123,19 @@ export function useSpeakingStream(
         socket.binaryType = "arraybuffer";
         socketRef.current = socket;
         socket.onmessage = event => {
+          if (canceled) return;
           try {
-            const message = JSON.parse(event.data as string);
-            if (message.type === "CONNECTED") {
+            const message = JSON.parse(event.data as string) as SpeakingSocketMessage;
+            const type = typeof message.type === "string" ? message.type : "UNKNOWN";
+            const turnId = typeof message.turnId === "string" ? message.turnId : undefined;
+            recordLifecycle({
+              type,
+              ...(turnId ? { turnId } : {}),
+              ...(typeof message.message === "string" ? { message: message.message } : {}),
+            });
+            const demoDecision = parseSpeakingDemoDecision(message.demoDecision);
+            if (turnId && demoDecision) onDemoDecisionRef.current?.(turnId, demoDecision);
+            if (type === "CONNECTED") {
               ready = true;
               retries = 0;
               setConnection("connected");
@@ -97,7 +143,7 @@ export function useSpeakingStream(
                 onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
             }
             if (message.type === "INTERIM_TRANSCRIPT") setInterim(message.text ?? "");
-            if (message.type === "AI_AUDIO_READY" && message.turnId) {
+            if (type === "AI_AUDIO_READY" && message.turnId) {
               void speakingService.get(sessionId).then(snapshot =>
                 onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
               onAiAudioReadyRef.current?.(message.turnId as string);
@@ -106,26 +152,27 @@ export function useSpeakingStream(
               const snapshot = message.snapshot as SpeakingSession;
               const turn = message.turnId ? snapshot.turns.find(item => item.id === message.turnId) : undefined;
               onSnapshotRef.current(snapshot, {
-                source: message.type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED"
+                source: type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED"
                   ? "TURN_RESULT"
-                  : message.type === "SESSION_ENDED" ? "SESSION_ENDED" : "HYDRATE",
-                ...(message.type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED" && message.turnId
+                  : type === "SESSION_ENDED" ? "SESSION_ENDED" : "HYDRATE",
+                ...(type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED" && message.turnId
                   ? { turnId: message.turnId as string } : {}),
               });
             }
-            if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR", "SESSION_ENDED"].includes(message.type)) {
+            if (["TURN_RESULT", "TURN_EMPTY", "TURN_FAILED", "TURN_CANCELED", "PROCESSING_ERROR", "SESSION_ENDED"].includes(type)) {
               setRecording("idle");
               setInterim("");
               if (!message.snapshot) void speakingService.get(sessionId).then(snapshot =>
                 onSnapshotRef.current(snapshot, { source: "HYDRATE" })).catch(() => {});
             }
-            if (["ERROR", "TURN_FAILED", "PROCESSING_ERROR", "STT_ERROR", "TTS_ERROR"].includes(message.type)) {
+            if (["ERROR", "TURN_FAILED", "PROCESSING_ERROR", "STT_ERROR", "TTS_ERROR"].includes(type)) {
               onErrorRef.current(message.message ?? "Lượt nói gặp lỗi. Hãy thử lại.");
             }
           } catch { onErrorRef.current("Không đọc được phản hồi từ máy chủ."); }
         };
         socket.onclose = () => {
           if (canceled) return;
+          recordLifecycle({ type: "SOCKET_CLOSED" });
           const wasReady = ready;
           ready = false;
           socketRef.current = null;
@@ -167,7 +214,7 @@ export function useSpeakingStream(
       turnRef.current = null;
       void stopHardware();
     };
-  }, [sessionId, sessionEpoch, sessionStatus, stopHardware]);
+  }, [recordLifecycle, sessionId, sessionEpoch, sessionStatus, stopHardware]);
 
   const startRecording = useCallback(async () => {
     if (!session || socketRef.current?.readyState !== WebSocket.OPEN || turnRef.current) return;
@@ -223,5 +270,5 @@ export function useSpeakingStream(
     }
   }, [session, stopHardware]);
 
-  return { connection, recording, interim, startRecording, finishRecording };
+  return { connection, recording, interim, lifecycle, startRecording, finishRecording };
 }

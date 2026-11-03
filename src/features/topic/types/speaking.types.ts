@@ -4,6 +4,19 @@ export type SpeakingSessionStatus =
   | "COMPLETED"
   | "INCOMPLETE";
 
+export interface SpeakingDemoDecision {
+  outcome: string;
+  reasonCode: string;
+  acceptedAct: string | null;
+  resultingStatus: string;
+  finalizedTurnCount: number;
+  validTurnCount: number;
+  consecutiveEvaluationErrors: number;
+  newlyAchievedGoalIds: string[];
+  completionEligible: boolean;
+  autoEndEligible: boolean;
+}
+
 export type SpeakingEndReason =
   | "GOALS_REACHED"
   | "LEARNER_ENDED"

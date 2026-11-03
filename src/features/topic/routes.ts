@@ -29,6 +29,7 @@ export const TopicRoutes: RouteObject[] = [
     element: createElement(Navigate, {
       to: ROUTES.TOPIC_SPEAKING.replace(":topicId", "690000000000000000000002"),
       replace: true,
+      state: { speakingDiagnostics: true },
     }),
   }] : []),
   {
