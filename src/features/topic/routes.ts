@@ -16,6 +16,7 @@ import TopicManagementListView from "@features/topic/views/management/TopicManag
 import TopicUpsertBasicInfoView from "@features/topic/views/management/TopicUpsertBasicInfoView";
 import TopicUpsertItemsView from "@features/topic/views/management/TopicUpsertItemsView";
 import TopicItemEditorView from "@features/topic/views/management/TopicItemEditorView";
+import AuthGuard from "@features/auth/components/AuthGuard";
 
 function LegacyTopicRedirect() {
   const { topicId = "" } = useParams();
@@ -41,6 +42,8 @@ export const TopicRoutes: RouteObject[] = [
     ],
   },
   {
+    Component: AuthGuard,
+    children: [{
     path: ROUTES.ADMIN_TOPICS,
     Component: ManagementLayout,
     children: [
@@ -52,5 +55,6 @@ export const TopicRoutes: RouteObject[] = [
       { path: ":topicId/edit/items", Component: TopicUpsertItemsView },
       { path: ":topicId/edit/items/:itemId/:sectionKey", Component: TopicItemEditorView },
     ],
+    }],
   },
 ];

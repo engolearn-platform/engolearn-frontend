@@ -1,7 +1,8 @@
 import * as React from "react";
-import { httpService, DEV_USER_STORAGE_KEY } from "@shared/services";
+import { httpService } from "@shared/services";
 import type { AuthUser, AuthMeResponse } from "@shared/types/auth.types";
 
+interface Credentials { email: string; password: string }
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
@@ -11,8 +12,9 @@ interface AuthContextType {
   isUser: () => boolean;
   isContentManager: () => boolean;
   isAdmin: () => boolean;
-  devUserKey: string | null;
-  setDevUserKey: (key: string) => void;
+  login: (credentials: Credentials) => Promise<AuthUser>;
+  register: (credentials: Credentials) => Promise<AuthUser>;
+  logout: () => Promise<void>;
   refetch: () => void;
 }
 
@@ -20,10 +22,22 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
   const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
+}
+
+function parseUser(value: unknown): AuthUser {
+  if (!value || typeof value !== "object") throw new Error("Invalid authentication response");
+  const user = value as Partial<AuthUser>;
+  if (typeof user.id !== "string" || !user.id.trim() || typeof user.email !== "string" || !["USER", "CONTENT_MANAGER", "ADMIN"].includes(user.role ?? "")) {
+    throw new Error("Invalid authentication response");
+  }
+  return user as AuthUser;
+}
+
+function responseUser(response: unknown): AuthUser {
+  if (!response || typeof response !== "object" || !("data" in response)) throw new Error("Invalid authentication response");
+  return parseUser((response as AuthMeResponse).data);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -33,103 +47,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [identityGeneration, setIdentityGeneration] = React.useState(0);
   const requestGeneration = React.useRef(0);
   const controllerRef = React.useRef<AbortController | null>(null);
-  const [devUserKey, setDevUserKeyState] = React.useState<string | null>(() => {
-    if (!import.meta.env.DEV) {
-      return null;
-    }
-    try {
-      return localStorage.getItem(DEV_USER_STORAGE_KEY) ?? "dev-user";
-    } catch {
-      return "dev-user";
-    }
-  });
 
-  const fetchMe = React.useCallback(async () => {
+  const beginIdentityChange = React.useCallback(() => {
     const generation = ++requestGeneration.current;
     controllerRef.current?.abort();
+    controllerRef.current = null;
+    setIdentityGeneration(generation);
+    return generation;
+  }, []);
+
+  const fetchMe = React.useCallback(async () => {
+    const generation = beginIdentityChange();
     const controller = new AbortController();
     controllerRef.current = controller;
-    setIdentityGeneration(generation);
     setUser(null);
     setIsLoading(true);
     setError(null);
     try {
-      const data = await httpService.get<AuthMeResponse>("/api/v1/auth/me", { signal: controller.signal });
+      const response = await httpService.get<AuthMeResponse>("/api/v1/auth/me", { signal: controller.signal });
       if (controller.signal.aborted || generation !== requestGeneration.current) return;
-      if (!data?.data || typeof data.data.id !== "string" || !data.data.id.trim() || typeof data.data.email !== "string" || !["USER", "CONTENT_MANAGER", "ADMIN"].includes(data.data.role)) {
-        throw new Error("Invalid authentication response");
-      }
-      setUser(data.data);
+      setUser(responseUser(response));
     } catch (err) {
       if (controller.signal.aborted || generation !== requestGeneration.current) return;
       const httpErr = err as Error & { status?: number };
-      if (httpErr.status === 401) {
-        setUser(null);
-        setError(null);
-      } else {
-        setUser(null);
-        setError(err instanceof Error ? err.message : "Unknown error");
-      }
+      if (httpErr.status === 401) { setUser(null); setError(null); }
+      else { setUser(null); setError(err instanceof Error ? err.message : "Could not check your session"); }
     } finally {
       if (!controller.signal.aborted && generation === requestGeneration.current) setIsLoading(false);
     }
-  }, []);
+  }, [beginIdentityChange]);
 
   React.useEffect(() => {
-    fetchMe();
+    void fetchMe();
     return () => { controllerRef.current?.abort(); };
   }, [fetchMe]);
 
-  React.useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const onStorage = (event: StorageEvent) => {
-      if (event.storageArea === localStorage && (event.key === DEV_USER_STORAGE_KEY || event.key === null)) {
-        setDevUserKeyState(localStorage.getItem(DEV_USER_STORAGE_KEY) ?? "dev-user");
-        void fetchMe();
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [fetchMe]);
-
-  const setDevUserKey = React.useCallback((key: string) => {
+  const authenticate = React.useCallback(async (path: "login" | "register", credentials: Credentials) => {
+    const generation = beginIdentityChange();
+    setIsLoading(true);
+    setError(null);
     try {
-      localStorage.setItem(DEV_USER_STORAGE_KEY, key);
-    } catch {
-      // localStorage unavailable
+      const result = await httpService.post<unknown>(`/api/v1/auth/${path}`, credentials, { skipAuthRefresh: true });
+      const nextUser = responseUser(result);
+      if (generation === requestGeneration.current) {
+        setUser(nextUser);
+        setError(null);
+        setIsLoading(false);
+      }
+      return nextUser;
+    } catch (err) {
+      if (generation === requestGeneration.current) {
+        setError(err instanceof Error ? err.message : "Authentication failed");
+        setIsLoading(false);
+      }
+      throw err;
     }
-    setDevUserKeyState(key);
-    fetchMe();
-  }, [fetchMe]);
+  }, [beginIdentityChange]);
+
+  const login = React.useCallback((credentials: Credentials) => authenticate("login", credentials), [authenticate]);
+  const register = React.useCallback((credentials: Credentials) => authenticate("register", credentials), [authenticate]);
+
+  const logout = React.useCallback(async () => {
+    const generation = beginIdentityChange();
+    setIsLoading(true);
+    setError(null);
+    let logoutError: unknown;
+    try {
+      await httpService.post<unknown>("/api/v1/auth/logout", {}, { skipAuthRefresh: true });
+    } catch (err) { logoutError = err; }
+    if (generation === requestGeneration.current) {
+      setUser(null);
+      setIsLoading(false);
+      if (logoutError) setError(logoutError instanceof Error ? `Signed out locally; server sign-out could not be confirmed: ${logoutError.message}` : "Signed out locally; server sign-out could not be confirmed");
+    }
+  }, [beginIdentityChange]);
 
   const isUser = React.useCallback(() => user?.role === "USER", [user]);
-  const isContentManager = React.useCallback(
-    () => user?.role === "CONTENT_MANAGER",
-    [user],
-  );
+  const isContentManager = React.useCallback(() => user?.role === "CONTENT_MANAGER", [user]);
   const isAdmin = React.useCallback(() => user?.role === "ADMIN", [user]);
-
-  const isAuthenticated = user !== null;
-
   const value: AuthContextType = {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    identityGeneration,
-    isUser,
-    isContentManager,
-    isAdmin,
-    devUserKey,
-    setDevUserKey,
-    refetch: fetchMe,
+    user, isAuthenticated: user !== null, isLoading, error, identityGeneration,
+    isUser, isContentManager, isAdmin,
+    login, register, logout, refetch: fetchMe,
   };
 
-  const Provider = AuthContext.Provider;
-
-  return (
-    <Provider value={value}>
-      {children}
-    </Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
