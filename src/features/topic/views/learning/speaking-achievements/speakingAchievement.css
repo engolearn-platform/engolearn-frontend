@@ -1,0 +1,127 @@
+/* One-shot celebration burst. The parent positions it; every spark radiates
+   from a single origin so the inline and milestone variants only differ by
+   the --firework-radius knob. */
+.achievement-fireworks {
+  --firework-radius: 1.4rem;
+  position: absolute;
+  top: 50%;
+  right: 2.25rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.achievement-fireworks--major {
+  --firework-radius: 2rem;
+  top: 2.25rem;
+  right: 2.5rem;
+  transform: scale(1.1);
+}
+
+.achievement-fireworks__core,
+.achievement-fireworks__particles,
+.achievement-fireworks__ring {
+  position: absolute;
+  inset: 0;
+}
+
+.achievement-fireworks__ring {
+  border-radius: 9999px;
+  border: 2px solid var(--color-primary-container);
+  animation: achievement-firework-ring 1200ms ease-out both;
+}
+
+.achievement-fireworks__core,
+.achievement-fireworks__particle {
+  position: absolute;
+  inset: 0;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  /* A light halo keeps every spark readable on teal, yellow and white cards. */
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.9);
+}
+
+.achievement-fireworks__core {
+  background: var(--color-secondary-container);
+  animation: achievement-firework-core 1600ms ease-out both;
+}
+
+.achievement-fireworks__particle {
+  --firework-x: 0;
+  --firework-y: 0;
+  /* Shared by the flight keyframe and the reduced-motion still frame. */
+  --firework-translate: translate(
+    calc(var(--firework-x) * var(--firework-radius)),
+    calc(var(--firework-y) * var(--firework-radius))
+  );
+  background: var(--color-primary-container);
+  animation: achievement-firework-particle 2200ms cubic-bezier(0.16, 0.8, 0.36, 1) both;
+}
+
+.achievement-fireworks__particle:nth-child(2n) {
+  background: var(--color-secondary-container);
+}
+
+.achievement-fireworks__particle:nth-child(3n) {
+  background: var(--color-primary-fixed-dim);
+}
+
+/* Outer ring: unit vectors scaled by --firework-radius. */
+.achievement-fireworks__particle--1 { --firework-x: 0; --firework-y: -1; }
+.achievement-fireworks__particle--2 { --firework-x: 0.71; --firework-y: -0.71; }
+.achievement-fireworks__particle--3 { --firework-x: 1; --firework-y: 0; }
+.achievement-fireworks__particle--4 { --firework-x: 0.71; --firework-y: 0.71; }
+.achievement-fireworks__particle--5 { --firework-x: 0; --firework-y: 1; }
+.achievement-fireworks__particle--6 { --firework-x: -0.71; --firework-y: 0.71; }
+.achievement-fireworks__particle--7 { --firework-x: -1; --firework-y: 0; }
+.achievement-fireworks__particle--8 { --firework-x: -0.71; --firework-y: -0.71; }
+
+/* Inner sparkle, staggered so the burst reads as two layers. */
+.achievement-fireworks__particle--9 { --firework-x: 0.28; --firework-y: -0.52; animation-delay: 90ms; }
+.achievement-fireworks__particle--10 { --firework-x: 0.58; --firework-y: 0.16; animation-delay: 90ms; }
+.achievement-fireworks__particle--11 { --firework-x: -0.05; --firework-y: 0.6; animation-delay: 150ms; }
+.achievement-fireworks__particle--12 { --firework-x: -0.6; --firework-y: -0.2; animation-delay: 150ms; }
+
+@keyframes achievement-firework-ring {
+  0% { opacity: 0.85; transform: scale(0.4); }
+  60% { opacity: 0.25; transform: scale(4.6); }
+  100% { opacity: 0; transform: scale(5.8); }
+}
+
+@keyframes achievement-firework-core {
+  0% { opacity: 0; transform: scale(0.2); }
+  15% { opacity: 1; transform: scale(1.9); }
+  45% { opacity: 0.9; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+/* Sparks flare out fast, hold the outer radius, then fade: a longer visible
+   window is what makes the celebration readable in slow/automated reviews. */
+@keyframes achievement-firework-particle {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  12% { opacity: 1; }
+  55% { opacity: 0.95; transform: var(--firework-translate) scale(0.85); }
+  100% { opacity: 0; transform: var(--firework-translate) scale(0.7); }
+}
+
+/* Reduced motion must not delete the celebration: the burst is drawn once,
+   fully expanded and still, instead of flying outwards. */
+@media (prefers-reduced-motion: reduce) {
+  .achievement-fireworks__ring {
+    display: none;
+  }
+
+  .achievement-fireworks__core {
+    animation: none;
+    opacity: 1;
+  }
+
+  .achievement-fireworks__particle {
+    animation: none;
+    opacity: 1;
+    transform: var(--firework-translate) scale(0.9);
+  }
+}

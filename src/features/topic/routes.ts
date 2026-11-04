@@ -3,6 +3,7 @@ import { Navigate, useParams } from "react-router";
 import { topicDetailPath } from "@features/topic/utils/topic-catalog";
 import type { RouteObject } from "react-router";
 import ManagementLayout from "@/core/layouts/ManagementLayout";
+import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import TopicViewerLayout from "@features/topic/components/learning/catalog/TopicViewerLayout";
 import TopicCatalogLayout from "@features/topic/components/learning/catalog/TopicCatalogLayout";
@@ -17,6 +18,8 @@ import TopicUpsertBasicInfoView from "@features/topic/views/management/TopicUpse
 import TopicUpsertItemsView from "@features/topic/views/management/TopicUpsertItemsView";
 import TopicItemEditorView from "@features/topic/views/management/TopicItemEditorView";
 import AuthGuard from "@features/auth/components/AuthGuard";
+import SpeakingDemoView from "@features/topic/views/learning/SpeakingDemoView";
+import SpeakingView from "@features/topic/views/learning/SpeakingView";
 
 function LegacyTopicRedirect() {
   const { topicId = "" } = useParams();
@@ -24,6 +27,25 @@ function LegacyTopicRedirect() {
 }
 
 export const TopicRoutes: RouteObject[] = [
+  {
+    Component: AuthGuard,
+    children: [
+      { path: ROUTES.SPEAKING_HISTORY, Component: LearningLayout,
+        children: [{ index: true, Component: SpeakingView }] },
+      ...(import.meta.env.DEV ? [{
+        path: ROUTES.SPEAKING_DEMO,
+        Component: LearningLayout,
+        children: [{ index: true, Component: SpeakingDemoView }],
+      }, {
+        path: ROUTES.SPEAKING_SESSION_DEV,
+        element: createElement(Navigate, {
+          to: ROUTES.TOPIC_SPEAKING.replace(":topicId", "690000000000000000000002"),
+          replace: true,
+          state: { speakingDiagnostics: true },
+        }),
+      }] satisfies RouteObject[] : []),
+    ],
+  },
   {
     Component: TopicViewerLayout,
     children: [
@@ -39,6 +61,9 @@ export const TopicRoutes: RouteObject[] = [
       { path: ROUTES.TOPIC_ITEM_RESULT, Component: TopicItemResultView },
       { path: ROUTES.TOPIC_ATTEMPT, Component: TopicAttemptEntryView },
       { path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView },
+      { Component: AuthGuard, children: [
+        { path: ROUTES.TOPIC_SPEAKING, Component: SpeakingView },
+      ] },
     ],
   },
   {

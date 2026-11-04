@@ -20,6 +20,7 @@ Current 2026-10-29 UX: [08](08-attempt-learning.md), [11](11-quiz-slice-a.md), a
 | 03-topic-vocab.md | Màn Vocab legacy | Giữ route cũ; entry mới dùng API theo 08 |
 | 04-learning-progress.md | Provider tiến độ legacy | Vẫn mock; không áp dụng catalog/detail mới |
 | 05-topic-expressions.md | Màn Expressions legacy | Giữ route cũ; entry mới dùng API theo 08 |
+| 06-speaking-demo.md | Speaking demo, lịch sử và session | Baseline tích hợp auth cookie |
 | 06-api-foundation.md | Contract + typed client | Chặng1 hoàn thành |
 | 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Hoàn thành chặng2 |
 | 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
@@ -30,6 +31,8 @@ Current 2026-10-29 UX: [08](08-attempt-learning.md), [11](11-quiz-slice-a.md), a
 | 14-review-retry-slice-c.md | Read-only review, confirmed retry and frozen session resume | FE implemented; focused parent live acceptance recorded |
 
 ## Luồng legacy còn tồn tại
+
+Speaking dùng `/topics/:topicId/speaking` cho item đã mở và `/speaking/history` cho lịch sử. Route `/dev/speaking` chỉ có trong môi trường phát triển. Các API Speaking yêu cầu phiên đăng nhập chung.
 
 Các route .../context, .../vocab/:vocabId, .../expressions và .../practice giữ nguyên để tránh sửa khung học trước checkpoint3.
 Các action ở ba màn mới không dẫn vào chúng. Khung mới đã dùng header progress, dropdown nav lồng cấp và nút quay về frontier theo thiết kế Từ vựng đã duyệt. Xem [08-attempt-learning.md](08-attempt-learning.md).
