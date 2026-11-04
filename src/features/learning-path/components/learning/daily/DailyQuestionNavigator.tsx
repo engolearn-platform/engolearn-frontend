@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { Check } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import type { DailyAnswers, DailyQuestion } from "@features/learning-path/types/learning-path-day.types";
@@ -11,6 +12,9 @@ interface DailyQuestionNavigatorProps {
   answers: DailyAnswers;
   draftAnswers?: DailyAnswers;
   onSelectPage?: (page: number) => void;
+  onSubmit?: () => void;
+  submitDisabled?: boolean;
+  submitting?: boolean;
   returnTo?: string;
 }
 
@@ -21,6 +25,9 @@ export default function DailyQuestionNavigator({
   answers,
   draftAnswers = {},
   onSelectPage,
+  onSubmit,
+  submitDisabled = false,
+  submitting = false,
   returnTo,
 }: DailyQuestionNavigatorProps) {
   const review = mode === "review";
@@ -121,7 +128,12 @@ export default function DailyQuestionNavigator({
               <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-primary" />Đã chọn</span>
               <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-primary" />Chưa chọn</span>
             </div>
-            <p className="mt-4 leading-5">Bạn có thể chuyển trang và sửa đáp án trước khi bấm “Nộp bài”.</p>
+            {onSubmit && (
+              <Button type="button" className="mt-4 h-11 w-full rounded-xl font-semibold" disabled={submitDisabled} onClick={onSubmit}>
+                <Check className="size-4" aria-hidden="true" />
+                {submitting ? "Đang nộp..." : "Nộp bài"}
+              </Button>
+            )}
           </>
         )}
       </div>
