@@ -2,6 +2,9 @@ export const APP_NAME = "Feature-Based React";
 
 export const ROUTES = {
   HOME: "/",
+  LOGIN: "/login",
+  REGISTER: "/register",
+  PROFILE: "/profile",
   SUBSCRIPTION: "/subscription",
   SUBSCRIPTION_USAGE: "/subscription/usage",
   POSTS: "/posts",

@@ -1,4 +1,7 @@
 import { Flame } from "lucide-react";
+import { useNavigate } from "react-router";
+import { ROUTES } from "@shared/constants";
+import { useAuth } from "@shared/hooks";
 
 interface LearningTopBarProps {
   userName: string;
@@ -24,6 +27,12 @@ export default function LearningTopBar({
   levelName = "Beginner",
   avatarUrl,
 }: LearningTopBarProps) {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  async function handleSignOut() {
+    await auth.logout();
+    await navigate(ROUTES.LOGIN, { replace: true });
+  }
   return (
     <header className="z-20 w-full border-b border-outline-variant/60 bg-surface-container-lowest">
       <div className="hidden h-[67px] items-center justify-between px-8 lg:flex xl:px-10">
@@ -37,6 +46,8 @@ export default function LearningTopBar({
           <span className="h-4 w-px bg-outline-variant" aria-hidden="true" />
           <span className="text-on-surface-variant">{levelName}</span>
         </div>
+        <button type="button" onClick={() => { void navigate(ROUTES.PROFILE); }} className="min-h-12 rounded-md px-3 text-sm font-semibold text-primary hover:bg-learning-mint">Profile</button>
+        <button type="button" onClick={handleSignOut} className="min-h-10 rounded-md px-3 text-sm font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary">Sign out</button>
       </div>
 
       <div className="flex items-center justify-between px-4 py-3 lg:hidden">
@@ -72,6 +83,8 @@ export default function LearningTopBar({
             aria-hidden="true"
           />
         </div>
+        <button type="button" onClick={() => { void navigate(ROUTES.PROFILE); }} className="min-h-12 rounded-md px-3 text-sm font-semibold text-primary hover:bg-learning-mint">Profile</button>
+        <button type="button" onClick={handleSignOut} aria-label="Sign out" className="ml-2 min-h-10 rounded-md px-3 text-xs font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary">Sign out</button>
       </div>
     </header>
   );
