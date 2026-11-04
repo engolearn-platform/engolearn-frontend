@@ -71,7 +71,7 @@ export default function DailyQuestionNavigator({
                       )}
                       aria-label={review
                         ? `Câu ${question.number}: ${savedAnswer === undefined ? "chưa làm" : isCorrect ? "đúng" : "sai"}`
-                        : `Câu ${question.number}: ${isSelected ? "đã trả lời" : "chưa trả lời"}`}
+                        : `Câu ${question.number}: ${isSelected ? "đã chọn" : "chưa chọn"}`}
                     >
                       {question.number}
                       {review && (
@@ -118,8 +118,8 @@ export default function DailyQuestionNavigator({
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2">
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-primary" />Đã trả lời</span>
-              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-primary" />Chưa trả lời</span>
+              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full bg-primary" />Đã chọn</span>
+              <span className="inline-flex items-center gap-1"><span className="size-2 rounded-full border border-primary" />Chưa chọn</span>
             </div>
             <p className="mt-4 leading-5">Bạn có thể chuyển trang và sửa đáp án trước khi bấm “Nộp bài”.</p>
           </>

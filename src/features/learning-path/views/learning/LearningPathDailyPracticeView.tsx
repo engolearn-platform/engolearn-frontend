@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Clock3 } from "lucide-react";
+import { ArrowLeft, Clock3, TriangleAlert } from "lucide-react";
+import { Button } from "@/core/components/shadcn/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES, learningPathDayPath } from "@shared/constants";
 import { useLearningPathDayPractice } from "@features/learning-path/hooks/useLearningPathDayPractice";
@@ -26,12 +28,15 @@ function PracticeSession({ day, questions, initialAnswers, detailUrl, descriptio
   const [page, setPage] = useState(1);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [partialSubmitOpen, setPartialSubmitOpen] = useState(false);
   const [failedQuestions, setFailedQuestions] = useState<number[]>([]);
   const [error, setError] = useState("");
   const [closed, setClosed] = useState(() => Date.parse(day.autoCloseAt) <= Date.now());
   const savingRef = useRef(false);
   const pageQuestions = questions.slice((page - 1) * 3, page * 3);
   const answeredCount = pageQuestions.filter((question) => answers[question.number] !== undefined).length;
+  const totalAnsweredCount = questions.filter((question) => answers[question.number] !== undefined).length;
+  const unansweredCount = questions.length - totalAnsweredCount;
 
   useEffect(() => {
     const remaining = Date.parse(day.autoCloseAt) - Date.now();
@@ -77,6 +82,19 @@ function PracticeSession({ day, questions, initialAnswers, detailUrl, descriptio
     }
   };
 
+  const continuePractice = () => {
+    if (page !== 4) {
+      setPage((current) => current + 1);
+      return;
+    }
+    if (savingRef.current || failedQuestions.length > 0 || closed || Date.now() >= Date.parse(day.autoCloseAt)) return;
+    if (unansweredCount > 0) {
+      setPartialSubmitOpen(true);
+      return;
+    }
+    void submitDay();
+  };
+
   const closeTime = new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric",
   }).format(new Date(day.autoCloseAt));
@@ -95,10 +113,24 @@ function PracticeSession({ day, questions, initialAnswers, detailUrl, descriptio
         <section className="min-w-0">
           <p className="mb-3 text-sm font-medium text-on-surface-variant">Câu {pageQuestions[0].number}{pageQuestions.length > 1 ? ` – ${pageQuestions[pageQuestions.length - 1].number}` : ""} trên 10</p>
           <div className="space-y-4">{pageQuestions.map((question) => <DailyQuestionCard key={question.number} question={question} mode="practice" selectedIndex={answers[question.number]} disabled={saving || submitting || closed} onSelect={(index) => void chooseAnswer(question.number, index)} />)}</div>
-          <div className="mt-4"><DailyPracticeActionBar page={page} firstQuestion={pageQuestions[0].number} lastQuestion={pageQuestions[pageQuestions.length - 1].number} questionCount={pageQuestions.length} answeredCount={answeredCount} disabled={saving || submitting || closed || (page === 4 && failedQuestions.length > 0)} submitting={submitting} onContinue={() => page === 4 ? void submitDay() : setPage((current) => current + 1)} /></div>
+          <div className="mt-4"><DailyPracticeActionBar page={page} firstQuestion={pageQuestions[0].number} lastQuestion={pageQuestions[pageQuestions.length - 1].number} questionCount={pageQuestions.length} answeredCount={answeredCount} disabled={saving || submitting || closed || (page === 4 && failedQuestions.length > 0)} submitting={submitting} onContinue={continuePractice} /></div>
         </section>
         <DailyQuestionNavigator mode="practice" currentPage={page} questions={questions} answers={{}} draftAnswers={answers} onSelectPage={setPage} />
       </div>
+      <Dialog open={partialSubmitOpen} onOpenChange={setPartialSubmitOpen}>
+        <DialogContent showCloseButton={false} className="rounded-2xl border-outline-variant bg-surface-container-lowest">
+          <DialogHeader className="rounded-xl bg-learning-note p-4 text-left">
+            <DialogTitle className="flex items-center gap-2 text-learning-note-ink"><TriangleAlert className="size-5 shrink-0" aria-hidden="true" />Bạn còn {unansweredCount} câu chưa chọn</DialogTitle>
+            <DialogDescription className="leading-6 text-learning-note-ink">
+              Bạn đã chọn {totalAnsweredCount}/{questions.length} câu. Nếu nộp bây giờ, các câu còn trống sẽ được ghi nhận là chưa làm và bạn không thể sửa bài sau khi nộp.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" className="min-h-12 rounded-xl" onClick={() => setPartialSubmitOpen(false)}>Tiếp tục làm bài</Button>
+            <Button type="button" className="min-h-12 rounded-xl" disabled={saving || submitting || closed || failedQuestions.length > 0} onClick={() => { setPartialSubmitOpen(false); void submitDay(); }}>Vẫn nộp bài</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
