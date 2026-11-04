@@ -1,4 +1,7 @@
 import { Bell, ChevronRight, User } from "lucide-react";
+import { useNavigate } from "react-router";
+import { ROUTES } from "@shared/constants";
+import { useAuth } from "@shared/hooks";
 
 interface ManagementTopBarProps {
   userName?: string;
@@ -13,6 +16,12 @@ export default function ManagementTopBar({
   title = "Quản lý chủ đề",
   brand = "Môi trường biên tập",
 }: ManagementTopBarProps) {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  async function handleSignOut() {
+    await auth.logout();
+    await navigate(ROUTES.LOGIN, { replace: true });
+  }
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between bg-surface-container-lowest/90 px-5 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">
@@ -50,6 +59,8 @@ export default function ManagementTopBar({
             <User className="size-[18px] text-on-primary" aria-hidden="true" />
           </span>
         </span>
+        <button type="button" onClick={() => { void navigate(ROUTES.PROFILE); }} className="min-h-12 rounded-md px-3 text-sm font-semibold text-primary hover:bg-learning-mint">Profile</button>
+        <button type="button" onClick={handleSignOut} className="min-h-10 rounded-md px-3 text-sm font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary">Sign out</button>
       </div>
     </header>
   );
