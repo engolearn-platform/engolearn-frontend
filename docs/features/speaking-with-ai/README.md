@@ -24,6 +24,12 @@
 
 ## Contract with BE
 
+New assessment snapshots may include additive nullable `hintExampleEn` and
+`hintLeadVi`. The FE renders the English example with the optional Vietnamese
+lead; historical sessions continue rendering legacy `hint` without relabeling
+it. Closing/terminal turns render no hint. The persisted partner reply remains
+the single source for both the visible AI message and permitted TTS.
+
 REST uses `/api/v1/speaking`, the `ApiResponse<T>` envelope, and `ProblemDetail` errors. The socket is `/ws/speaking/{sessionId}?ticket=...`. It sends `START_TURN`/`END_OF_TURN`/`CANCEL_TURN` with `turnId` and `controllerEpoch`, plus binary PCM; BE emits `CONNECTED`, `INTERIM_TRANSCRIPT`, `TURN_ACCEPTED`, `TURN_RESULT`, `AI_AUDIO_READY`, and stage errors with `turnId`, epoch, and revision. `AI_AUDIO_READY` carries no snapshot and arrives after the `TURN_RESULT` snapshot, so FE must re-read `GET /sessions/{id}` before trusting `aiAudioAvailable`. The FE takes the BE snapshot as authority after reconnect.
 
 The old `/dev/speaking` route remains only as a comparison and still points at its legacy demo API. It is not the main Speaking entry point.

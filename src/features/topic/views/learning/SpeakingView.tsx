@@ -39,7 +39,11 @@ function feedbackItems(assessment: SpeakingAssessment | null, goals: SpeakingGoa
     ...assessment.corrections.map(item => ({ text: `Sửa lỗi: ${item.original} → ${item.corrected}${item.explanation ? `. ${item.explanation}` : ""}`, kind: "correction" as const })),
     ...assessment.resourceEvidence.map(item => ({ text: `Củng cố: ${item.explanation}`, kind: "resource" as const })),
   ].slice(0, 3);
-  if (assessment.hint && items.length < 3) {
+  const englishHint = assessment.hintExampleEn?.trim();
+  const hintLead = assessment.hintLeadVi?.trim();
+  if (englishHint && items.length < 3) {
+    items.push({ text: `Gợi ý${hintLead ? `: ${hintLead}` : ""} ${englishHint}`, kind: "hint" });
+  } else if (assessment.hint && items.length < 3) {
     items.push({ text: `Gợi ý: ${assessment.hint}`, kind: "hint" });
   }
   return items.length ? items : assessment.feedback.filter(Boolean).slice(0, 3)

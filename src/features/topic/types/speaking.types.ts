@@ -63,6 +63,8 @@ export interface SpeakingAssessment {
   resourceEvidence: { resourceId: string; quote: string; explanation: string }[];
   corrections: { original: string; corrected: string; explanation: string }[];
   hint: string | null;
+  hintExampleEn?: string | null;
+  hintLeadVi?: string | null;
   feedback: string[];
 }
 
