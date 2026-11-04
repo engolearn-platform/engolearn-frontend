@@ -1,6 +1,7 @@
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
+import { isLearningPathFullyAnswered } from "@features/learning-path/utils/learningPathMetrics";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
 import { ROUTES } from "@shared/constants";
@@ -22,14 +23,15 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
   const progress = getProgress(path);
   const isActive =
     path.status === "IN_PROGRESS" || path.status === "NOT_STARTED";
-  const isCompleted = path.status === "COMPLETED";
+  const isEnded = path.status === "COMPLETED";
+  const fullyAnswered = isEnded && isLearningPathFullyAnswered(path.progress?.answered, path.progress?.assigned);
   const detailUrl = ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(path.id));
 
   const statusLabel =
     path.status === "NOT_STARTED"
       ? "Chưa bắt đầu"
-      : path.status === "COMPLETED"
-        ? "Đã hoàn thành"
+      : isEnded
+        ? fullyAnswered ? "Đã hoàn thành" : "Đã kết thúc"
         : path.status === "CANCELLED"
           ? "Đã bị hủy"
           : `Đang học · Tuần ${path.currentWeekNo ?? 1}/3`;
@@ -41,8 +43,8 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
           "inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold lg:gap-[6px] lg:px-[13px] lg:py-[5px] lg:text-[13px] lg:leading-[19.5px]",
           path.status === "IN_PROGRESS" && "border-cyan-700/10 bg-cyan-100 text-cyan-800",
           path.status === "NOT_STARTED" && "border-outline-variant/60 bg-surface-container text-on-surface-variant",
-          path.status === "COMPLETED" &&
-            "border-green-700/10 bg-green-100 text-green-700",
+          fullyAnswered && "border-green-700/10 bg-green-100 text-green-700",
+          isEnded && !fullyAnswered && "border-tertiary/40 bg-tertiary-fixed text-on-tertiary-fixed",
           path.status === "CANCELLED" &&
             "border-outline-variant/60 bg-surface-container text-on-surface-variant",
         )}
@@ -109,14 +111,14 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
           làm
         </p>
 
-        {(isActive || isCompleted) && (
+        {(isActive || isEnded) && (
           <div className="mt-2.5 border-t border-outline-variant/40 pt-2.5 text-right lg:pt-[21px]">
             <Button
               asChild
               className="h-8 rounded-lg px-3 py-1.5 text-xs font-semibold lg:h-auto lg:rounded-xl lg:px-5 lg:has-[>svg]:px-5 lg:py-2.5 lg:text-sm"
             >
               <Link to={detailUrl}>
-                {isCompleted ? "Xem lộ trình" : path.status === "NOT_STARTED" ? "Bắt đầu luyện tập" : "Tiếp tục luyện tập"}
+                {isEnded ? "Xem lộ trình" : path.status === "NOT_STARTED" ? "Bắt đầu luyện tập" : "Tiếp tục luyện tập"}
                 <ArrowRight className="size-3.5 lg:size-3" aria-hidden="true" />
               </Link>
             </Button>

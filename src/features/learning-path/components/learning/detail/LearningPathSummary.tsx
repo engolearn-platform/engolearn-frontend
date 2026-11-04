@@ -1,5 +1,6 @@
 import { AudioLines, BookOpen, Ear, Info } from "lucide-react";
-import { changeLabel, percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
+import { cn } from "@shared/utils";
+import { changeLabel, isLearningPathFullyAnswered, percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
 import type { LearningPathDetail } from "@features/learning-path/types/learning-path-detail.types";
 import LearningPathProgress from "./LearningPathProgress";
@@ -11,6 +12,7 @@ interface LearningPathSummaryProps {
 export default function LearningPathSummary({ path }: LearningPathSummaryProps) {
   const completion = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
   const durationWeeks = path.durationWeeks ?? path.weeks.length;
+  const fullyAnswered = isLearningPathFullyAnswered(path.answered, path.assigned);
 
   return (
     <div className="space-y-5">
@@ -21,7 +23,10 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
             {formatLearningPathDate(path.createdDate)} – {path.completedDate ? formatLearningPathDate(path.completedDate) : ""} · {durationWeeks} tuần
           </p>
         </div>
-        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">Đã kết thúc</span>
+        <span className={cn(
+          "rounded-full border px-3 py-1 text-xs font-medium",
+          fullyAnswered ? "border-green-700/10 bg-green-100 text-green-700" : "border-tertiary/40 bg-tertiary-fixed text-on-tertiary-fixed",
+        )}>{fullyAnswered ? "Đã hoàn thành" : "Đã kết thúc"}</span>
       </section>
 
       <section className="rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-5 shadow-sm">
