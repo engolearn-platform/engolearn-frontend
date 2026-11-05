@@ -5,6 +5,7 @@ import SubscriptionUsageView from "@features/subscription/views/learning/Subscri
 import { ROUTES } from "@shared/constants";
 import SubscriptionManagementLayout from "@features/subscription/components/management/SubscriptionManagementLayout";
 import { SubscriptionPlanManagementView, SubscriptionQuotaManagementView } from "@features/subscription/views/management/SubscriptionManagementView";
+import AuthGuard from "@features/auth/components/AuthGuard";
 
 export const SubscriptionRoutes: RouteObject[] = [{
   path: ROUTES.SUBSCRIPTION,
@@ -14,10 +15,13 @@ export const SubscriptionRoutes: RouteObject[] = [{
     { path: "usage", Component: SubscriptionUsageView },
   ],
 }, {
+  Component: AuthGuard,
+  children: [{
   path: "/admin/subscription",
   Component: SubscriptionManagementLayout,
   children: [
     { path: "plans", Component: SubscriptionPlanManagementView },
     { path: "quotas", Component: SubscriptionQuotaManagementView },
   ],
+  }],
 }];

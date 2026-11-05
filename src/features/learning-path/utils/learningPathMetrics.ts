@@ -2,6 +2,10 @@ export function percentage(numerator: number, denominator: number): number | nul
   return denominator === 0 ? null : Math.round((numerator / denominator) * 100);
 }
 
+export function isLearningPathFullyAnswered(answered: number | null | undefined, assigned: number | null | undefined): boolean {
+  return assigned != null && assigned > 0 && answered === assigned;
+}
+
 export function scoreLabel(score: number | null): string {
   return score === null ? "Không có dữ liệu" : `${score}%`;
 }

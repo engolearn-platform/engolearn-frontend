@@ -1,5 +1,5 @@
 import { Outlet } from "react-router";
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 import LearningBottomNav from "./components/LearningBottomNav";
 import LearningSidebar from "./components/LearningSidebar";
 import LearningTopBar from "./components/LearningTopBar";

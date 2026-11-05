@@ -15,6 +15,7 @@ export default function AssessmentPreparationView() {
   const [rules, setRules] = useState(false), [heard, setHeard] = useState(false);
   const [sound, setSound] = useState<string | null>(null), [played, setPlayed] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
+  const [showStartFeedback, setShowStartFeedback] = useState(false);
   const [abandon, setAbandon] = useState(false);
   const mounted = useRef(true);
   const soundElement = useRef<HTMLAudioElement | null>(null);
@@ -27,7 +28,7 @@ export default function AssessmentPreparationView() {
     finally {if (mounted.current) setBusy(false);}
   };
   const start = async () => {
-    if (!user) return;
+    if (!user || busy) return;
     setBusy(true); setError(null);
     const session = pendingSession(user.id);
     const identity = leaveHeaders();
@@ -42,18 +43,51 @@ export default function AssessmentPreparationView() {
   const data = query.data;
   if (query.loading && !data) return <p className="p-5" role="status">Đang kiểm tra điều kiện làm bài…</p>;
   if (!data) return <div className="p-5"><AssessmentError message={query.error?.message ?? "Không tải được thông tin."} retry={query.refetch} /></div>;
-  const eligible = data.baselineValid && data.cooldownSatisfied && data.paperAvailable && !!data.quota && data.quota.remaining > 0;
+  const startBlockers: string[] = [];
+  if (!rules) startBlockers.push("Bạn cần tích vào ô “Tôi đã hiểu quy tắc làm bài”.");
+  if (!played) startBlockers.push("Bạn cần phát âm thanh mẫu trong mục “Thử âm thanh”.");
+  else if (!heard) startBlockers.push("Bạn cần tích vào ô “Tôi nghe rõ âm thanh mẫu”.");
+  if (data.activeAttemptId) startBlockers.push("Bạn cần xử lý bài đánh giá đang mở trước khi bắt đầu bài mới.");
+  if (!data.baselineValid) startBlockers.push("Bạn cần có kết quả đánh giá hợp lệ trước khi bắt đầu.");
+  if (!data.cooldownSatisfied) startBlockers.push(data.eligibleAt
+    ? `Bạn có thể làm bài tiếp theo từ ${vietnamTime(data.eligibleAt)}.`
+    : "Bạn chưa đủ thời gian chờ để làm bài tiếp theo.");
+  if (!data.activeAttemptId && (!data.quota || data.quota.remaining <= 0)) {
+    startBlockers.push(data.quota ? "Bạn đã hết lượt đánh giá tháng này." : "Chưa xác định được số lượt đánh giá.");
+  }
+  if (!data.paperAvailable) startBlockers.push("Hiện chưa có bộ đề đánh giá đang sử dụng.");
+
+  const handleStart = () => {
+    setShowStartFeedback(true);
+    if (startBlockers.length === 0) void start();
+  };
   return <div className="mx-auto max-w-5xl space-y-5 p-5 pb-24">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-[28px] leading-9 font-bold">Đánh giá định kỳ</h1><p className="mt-2">Kiểm tra kỹ năng đọc và nghe để biết phần cần luyện thêm.</p></div><Button asChild variant="outline" className="h-12"><Link to="/assessment/history">Lịch sử đánh giá</Link></Button></div>
     <DevelopmentNotice show={data.developmentData} />
     {error && <AssessmentError message={error} />}
     {data.activeAttemptId ? <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Bạn đang có một bài chưa kết thúc</h2><p className="my-4">Hãy quay về trang đã bắt đầu bài. Trang mới không khôi phục tiến trình. Nếu bỏ bài cũ, lượt đã dùng không được hoàn.</p><Button className="h-12" variant="outline" onClick={() => setAbandon(true)}>Bỏ bài cũ</Button>{rules && heard && currentSession()?.owner === user?.id && currentSession()?.state === null && <Button className="ml-3 h-12" disabled={busy} onClick={() => void start()}>Thử lại yêu cầu bắt đầu</Button>}</AssessmentCard> : null}
-    <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Cấu trúc bài đánh giá</h2><p className="mt-3">50 câu · Đọc 30 · Nghe 20 · Tối đa 60 phút</p><p className="mt-2 text-sm text-muted-foreground">Làm phần Đọc trước, phần Nghe sau. Thời gian thừa không cộng sang câu hoặc nhóm tiếp theo.</p></AssessmentCard>
+    <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Cấu trúc bài đánh giá</h2><p className="mt-3">50 câu · Nghe 20 · Đọc 30 · Tối đa 45 phút</p><p className="mt-2 text-sm text-muted-foreground">Nghe trước. Mỗi câu đơn có 30 giây và mỗi nhóm có 5 phút, đều tính cả 2 giây đệm trước audio. Reading có chung 30 phút. Thời gian thừa phần Nghe không cộng sang phần sau.</p></AssessmentCard>
     <div className="grid gap-5 md:grid-cols-2">
       <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Điều kiện làm bài</h2><ul className="mt-4 space-y-3"><li>{data.baselineValid ? "✓ Có kết quả đầu vào hoặc định kỳ hợp lệ" : "Cần hoàn thành đánh giá đầu vào trước"}</li><li>{data.cooldownSatisfied ? "✓ Đã đủ thời gian chờ" : `Có thể làm từ ${data.eligibleAt ? vietnamTime(data.eligibleAt) : "ngày đủ điều kiện"}`}</li><li>{data.quota ? `Còn ${data.quota.remaining}/${data.quota.limit} lượt tháng này` : "Xử lý bài đang mở trước khi xét lượt mới"}</li><li>{data.paperAvailable ? "✓ Có bộ đề đang sử dụng" : "Chưa có bộ đề đang sử dụng"}</li></ul></AssessmentCard>
-      <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Thử âm thanh</h2><p className="my-3">Kiểm tra loa hoặc tai nghe trước khi vào bài. Chưa tính lượt.</p>{sound ? <audio ref={soundElement} controls src={sound} onPlay={() => setPlayed(true)} onError={() => {setHeard(false);setPlayed(false);setError("Không phát được âm thanh mẫu.");}} className="w-full" /> : <Button className="h-12" variant="outline" disabled={busy} onClick={() => void prepareSound()}>Nghe thử</Button>}<label className="mt-4 flex min-h-12 items-center gap-3"><input type="checkbox" checked={heard} disabled={!played} onChange={e => setHeard(e.target.checked)} />Tôi nghe rõ âm thanh mẫu</label></AssessmentCard>
+      <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Thử âm thanh</h2><p className="my-3">Kiểm tra loa hoặc tai nghe trước khi vào bài. Chưa tính lượt.</p>{sound ? <audio ref={soundElement} controls src={sound} onPlaying={() => setPlayed(true)} onError={() => {setHeard(false);setPlayed(false);setSound(null);setError("Không phát được âm thanh mẫu.");}} className="w-full" /> : <Button className="h-12" variant="outline" disabled={busy} onClick={() => void prepareSound()}>Nghe thử</Button>}<label className="mt-4 flex min-h-12 items-center gap-3"><input type="checkbox" checked={heard} disabled={!played} onChange={e => setHeard(e.target.checked)} />Tôi nghe rõ âm thanh mẫu</label></AssessmentCard>
     </div>
-    <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Quy tắc làm bài</h2><ul className="my-4 list-inside list-disc space-y-2"><li>Làm theo thứ tự, không quay lại.</li><li>Mỗi audio chỉ nghe một lần.</li><li>Bỏ dở vẫn tính lượt; tải lại trang không tiếp tục bài.</li></ul><label className="flex min-h-12 items-center gap-3"><input type="checkbox" checked={rules} onChange={e => setRules(e.target.checked)} />Tôi đã hiểu quy tắc làm bài.</label><Button className="mt-4 h-12 rounded-xl" disabled={!eligible || !rules || !heard || busy || !!data.activeAttemptId} onClick={() => void start()}>{busy ? "Đang xử lý…" : "Bắt đầu bài đánh giá"}</Button><p className="mt-3 text-sm text-muted-foreground">Chỉ tính lượt khi tạo bài thành công.</p></AssessmentCard>
+    <AssessmentCard>
+      <h2 className="text-[22px] leading-7 font-semibold">Quy tắc làm bài</h2>
+      <ul className="my-4 list-inside list-disc space-y-2"><li>Nghe đơn làm lần lượt; nghe nhóm được sửa 5 câu trong nhóm. Đã chuyển tiếp thì không quay lại phần nghe trước.</li><li>Reading được chọn và sửa bất kỳ câu nào từ 21 đến 50 trong 30 phút.</li><li>Mỗi audio chỉ nghe một lần.</li><li>Bỏ dở vẫn tính lượt; tải lại trang không tiếp tục bài.</li></ul>
+      <label className="flex min-h-12 items-center gap-3"><input type="checkbox" checked={rules} onChange={e => setRules(e.target.checked)} />Tôi đã hiểu quy tắc làm bài.</label>
+      <Button className="mt-4 h-12 rounded-xl" disabled={busy || query.loading} aria-describedby={showStartFeedback && startBlockers.length > 0 ? "assessment-start-feedback" : undefined} onClick={handleStart}>
+        {busy || query.loading ? "Đang xử lý…" : "Bắt đầu bài đánh giá"}
+      </Button>
+      {showStartFeedback && startBlockers.length > 0 && (
+        <div id="assessment-start-feedback" role="alert" className="mt-4 rounded-xl bg-learning-note p-4 text-learning-note-ink">
+          <p className="font-semibold">Chưa thể bắt đầu bài đánh giá</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {startBlockers.map(message => <li key={message}>{message}</li>)}
+          </ul>
+        </div>
+      )}
+      <p className="mt-3 text-sm text-muted-foreground">Chỉ tính lượt khi tạo bài thành công.</p>
+    </AssessmentCard>
     <Confirmation open={abandon} title="Bỏ bài đang mở?" description="Bài sẽ không có điểm, không được làm tiếp và không hoàn lượt. Bạn sẽ trở về chuẩn bị, không tự bắt đầu bài mới." busy={busy} onCancel={() => setAbandon(false)} onConfirm={() => {setBusy(true); void assessmentApi.abandon(data.activeAttemptId!).then(() => {setAbandon(false); query.refetch();}).catch(e => setError((e as Error).message)).finally(() => setBusy(false));}} />
   </div>;
 }

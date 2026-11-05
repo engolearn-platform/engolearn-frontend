@@ -143,9 +143,9 @@ export default function LearningPathListView() {
         </LearningPathSection>
 
         <LearningPathSection
-          title="Lộ trình đã hoàn thành"
+          title="Lộ trình đã kết thúc"
           count={completedCount}
-          icon="completed"
+          icon="ended"
           collapsible={!isSearching}
           expanded={isSearching || completedExpanded}
           onToggle={isSearching ? undefined : toggleCompleted}
@@ -167,7 +167,7 @@ export default function LearningPathListView() {
                 </div>
               ) : (
                 <EmptyState
-                  title="Không tìm thấy lộ trình đã hoàn thành phù hợp"
+                  title="Không tìm thấy lộ trình đã kết thúc phù hợp"
                   description="Thử tìm theo micro-skill hoặc ngày tạo dạng DD/MM/YYYY."
                 />
               )
@@ -175,7 +175,7 @@ export default function LearningPathListView() {
               <Loading size="sm" />
             ) : completed.error ? (
               <EmptyState
-                title="Không tải được lộ trình đã hoàn thành"
+                title="Không tải được lộ trình đã kết thúc"
                 description={completed.error.message}
               />
             ) : visibleCompletedPaths.length > 0 ? (
@@ -186,8 +186,8 @@ export default function LearningPathListView() {
               </div>
             ) : (
               <EmptyState
-                title="Chưa có lộ trình đã hoàn thành"
-                description="Các lộ trình hoàn thành sẽ xuất hiện tại đây."
+                title="Chưa có lộ trình đã kết thúc"
+                description="Các lộ trình đã kết thúc sẽ xuất hiện tại đây."
               />
             ))}
         </LearningPathSection>

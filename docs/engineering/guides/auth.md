@@ -1,5 +1,7 @@
 # Guide — Auth & guards
 
+> **Current implementation:** Frontend auth MVP is implemented. See [auth feature docs](../../features/auth/README.md). Auth requests use browser-managed cookies and do not use a CSRF endpoint or header.
+
 > **Purpose:** Record what auth exists today (nothing), and the PROPOSED approach for when it
 > arrives — so no one documents or codes against protection that doesn't exist.
 > **Scope:** Route guards, session/permission handling, and auth-related error mapping in the

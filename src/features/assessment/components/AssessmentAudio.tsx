@@ -3,7 +3,7 @@ import { Button } from "@/core/components/shadcn/button";
 import { mediaUrl } from "@features/assessment/services/assessmentApi";
 import type { Media } from "@features/assessment/types/assessment.types";
 
-export function AssessmentAudio({load, review = false, onFailure}: {load: () => Promise<Media>; review?: boolean; onFailure?: (reason: "LOAD_FAILED" | "PLAYBACK_FAILED" | "AUTOPLAY_BLOCKED") => void}) {
+export function AssessmentAudio({load, review = false, onFailure, startAt}: {startAt?: number; load: () => Promise<Media>; review?: boolean; onFailure?: (reason: "LOAD_FAILED" | "PLAYBACK_FAILED" | "AUTOPLAY_BLOCKED") => void}) {
   const ref = useRef<HTMLAudioElement | null>(null);
   const [url, setUrl] = useState<string | null>(null), [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false), [started, setStarted] = useState(false), [ended, setEnded] = useState(false);
@@ -28,10 +28,13 @@ export function AssessmentAudio({load, review = false, onFailure}: {load: () => 
   useEffect(() => {
     const audio = ref.current;
     if (!url || !audio || review) return;
+    const timer = window.setTimeout(() => {
+    if (startedRef.current) return;
     audio.playbackRate = 1;
     void audio.play().then(() => {startedRef.current = true;setStarted(true);setBlocked(false);}).catch(() => {setBlocked(true);onFailure?.("AUTOPLAY_BLOCKED");});
-    return () => {audio.pause(); audio.removeAttribute("src"); audio.load();};
-  }, [url, review, onFailure]);
+    }, Math.max(0, (startAt ?? performance.now()) - performance.now()));
+    return () => {clearTimeout(timer); audio.pause();};
+  }, [url, review, onFailure, startAt]);
   return <div className="space-y-3">
     <div className="flex flex-wrap justify-between gap-2"><strong>{review ? "Âm thanh bài đã làm" : "Đoạn nghe"}</strong>{!review && <span className="text-sm text-primary">Chỉ nghe một lần</span>}</div>
     <audio ref={ref} src={url ?? undefined} controls={review} preload="auto" controlsList="nodownload noplaybackrate"

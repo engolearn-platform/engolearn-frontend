@@ -1,4 +1,4 @@
-import { httpService, getDevUserKey } from "@shared/services/http.service";
+import { httpService } from "@shared/services/http.service";
 import type { AnswerCommand, AssessmentResult, AssessmentState, FinishStageCommand, HistoryItem, Media, Preparation, Review } from "@features/assessment/types/assessment.types";
 const base = "/api/v1/assessment";
 type Envelope<T> = {data: T};
@@ -21,7 +21,7 @@ export const assessmentApi = {
   reviewAudio: (id: string, index: number) => httpService.get<Envelope<Media>>(`${base}/attempts/${id}/review/audio/${index}`).then(r => r.data),
 };
 export function leaveHeaders(): Record<string, string> {
-  return import.meta.env.DEV ? {"X-Dev-User-Id": getDevUserKey()} : {};
+  return {};
 }
 export function abandonOnLeave(id: string, identityHeaders: Record<string, string>) {
   void httpService.post(base + `/attempts/${id}/abandon`, {confirmed: true}, {headers: identityHeaders, keepalive: true}).catch(() => undefined);

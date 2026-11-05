@@ -1,46 +1,98 @@
-# Periodic assessment learner F01/F02
+# Periodic assessment — learner F01/F02
 
-Stitch reference: https://stitch.withgoogle.com/projects/4463842687290353615
+Current learner specification: 2026-11-06, rules version 2. Current main's cookie
+authentication and shared HTTP refresh are reused; no Dev user selector or identity header.
+Historical Stitch reference: https://stitch.withgoogle.com/projects/4463842687290353615
+The approved Word changes and design-system tokens govern this implementation.
 
-Routes: /assessment (preparation), /assessment/taking (focused exam), /assessment/history,
-/assessment/attempts/:attemptId/result and /assessment/attempts/:attemptId/review.
-Register only these learner routes. Preparation/results/history reuse LearningLayout; taking
-uses a focused header. Feature components, hooks, types and API client stay inside assessment.
+## Routes and components
 
-States: preparation eligibility and active conflict; reading preview/answer; listening lead/answer;
-saving/saved/error; explicit submit/abandon confirmation; terminal READY/NO_RESULT/ABANDONED;
-history loading/empty/error; Free 2/5 skills or entitled 5/5; read-only review with answer/transcript.
+| Route | Behavior |
+| --- | --- |
+| /assessment | Eligibility, quota/cooldown, audio check, rules confirmation and start |
+| /assessment/taking | Focused exam; in-memory document binding |
+| /assessment/history | Paginated terminal attempts; one “Xem kết quả” action for valid results |
+| /assessment/attempts/:attemptId/result | Shared summary; skills table and reserved Learning Path composition area |
+| /assessment/attempts/:attemptId/review | Same summary; all fifty questions, filters and scroll navigator |
 
-API is real, not a mocked assessment service. Dev-only upstream fixtures are labeled. A document
-binding lives only in memory: navigation/reload cannot resume. Four progress states and contextual
-server time are consistent on desktop/mobile. Official audio has no seeking/replay/rate controls.
-Review audio can replay. Do not persist hidden analysis or official taking data in localStorage.
+`AssessmentLearningLayout` composes the shared LearningLayout with the standard fixed desktop sidebar,
+server-provided identity and no invented learner name/level/streak. Optional layout props
+preserve other features' existing defaults. Result/review share `AssessmentResultSummary`.
+Feature components/hooks/types/services remain assessment-owned. Common primitives reuse
+existing Button/Card/Dialog and the Hanken Grotesk/primary/learning design tokens.
 
-Learner-approved timing update (2026-11-01): reading previews at questions 11, 16,
-21 and 26 offer “Bắt đầu trả lời ngay”. The action calls the binding-protected real
-POST /attempts/{id}/finish-stage with unitIndex 10..13, phase READING_PREVIEW and a
-retry-stable commandId. The server starts the usual shared 300s answer window without
-carrying unused preview time. Listening lead has no manual skip button. Finishing
-question 45 advances immediately to 46 and unmounts the old audio. “Hoàn thành bài”
-on question 50 opens submission confirmation; cancel keeps the question, confirm
-saves the final choice and grades immediately through final Next. There is no completed-group
-waiting screen. Commands share the serialized mutation queue with autosave.
-Review explicitly shows the selected letter/outcome and the correct letter. A selected
-wrong option uses the existing error token with a text label; correct and blank states remain distinct.
+## Preparation feedback
 
-Validation: npm run build, npm run lint, real FE proxy against BE, desktop/mobile keyboard and
-screen-reader labels, race/deadline/quota/ownership/audio/refund scenarios in the delivery checklist.
+The start button accepts clicks when preparation data is ready. It lists unmet conditions
+near the button, including rules acknowledgement, sample playback and confirmation,
+and ineligible account or exam states. Missing conditions prevent a start API request.
+The server validates eligibility when a request is sent.
 
-Current main integration: routes use AssessmentLearningLayout, composing the existing
-LearningLayout with optional header/profile inputs while preserving other features' defaults.
-No hardcoded learner name, level or streak is displayed in the assessment shell. Types use
-assessment.types.ts; query results are tagged by account, auth generation and resource callback
-so changing attempts/pages does not display an old result while loading. Official audio
-failure observations use /audio-failure; these never change server deadlines or quota.
-The component reuses the same issue ID for a failed media transport retry.
+## Taking rules
 
-Premium is two starts/month in the approved separate demo policy; FE renders the provider's
-actual quota rather than hardcoding a plan limit. Main contains Subscription/Quota; the
-unmerged Payment branch and real authentication/baseline integrations are still release
-boundaries. No fake production auth or assessment API is introduced. The backend technical
-assessment document records the current production limitations and required handoffs.
+| Stage | Questions and interaction | Time |
+| --- | --- | --- |
+| Listening singles | 1–10, current only; Next saves/locks; no return | 30s including 2s preparation and audio |
+| Listening group 1 | 11–15 shown together; any answer editable | One 5-minute timer including 2s preparation and audio |
+| Listening group 2 | 16–20 shown together; any answer editable | One 5-minute timer including 2s preparation and audio |
+| Reading | Any question 21–50 selectable/editable; no Listening return | One 30-minute timer |
+
+The countdown runs during the two-second preparation and keeps the same server deadline
+when audio starts. Group finish opens confirmation and locks the group when accepted. Unused time never
+carries. Reading has no preview/per-passage timer; question 50 does not submit. A separate
+confirmed Submit ends the whole attempt, or the server auto-settles saved answers at
+expiry. Early submission remains available from any stage. Normal audio has no seeking,
+replay or speed control and starts no earlier than server `audioStartsAt`; blocked autoplay
+shows an activation button and does not pause time. Moving to a new unit stops old audio.
+Review playback may replay. No silent audio fallback or timing/refund extension is invented.
+
+`AssessmentTakingV2` handles version 2; the original taking renderer handles active legacy
+snapshots. Legacy numbering, 01/11 preview skipping, immediate group/final-Next behavior
+and review answers remain supported. New BE starts require a version-2 published paper.
+Correctness and section grading come from snapshot metadata, not question-number assumptions.
+
+`useLiveAssessment` serializes autosave/Next/finish/submit mutations and rejects older
+state revisions. Draft choices remain visible on save failure, with a reselect-to-retry
+action. A failed answer in the current editable scope blocks advancing/submitting until
+saved; a failure from an expired scope is disclosed and cannot block all later stages.
+The server decides deadlines and editable scope. A late selection is not represented as a
+saved answer. A retry-stable audio issue ID permits transport retry without an extra play.
+
+The binding, taking answers and audio are memory-only. Reload/new documents cannot resume.
+SPA departure/pagehide attempts cookie-authenticated keepalive abandon; visibility changes
+do not abandon. Network/poll/save errors remain visible. Abrupt closure without delivery
+keeps server deadlines running. NO_RESULT is distinct from a valid zero score.
+
+## Results, review and responsive behavior
+
+Result and review share the same responsive content width, padding and title placement.
+History uses consistent “Lịch sử đánh giá” wording and one result action. The result summary
+contains “Xem chi tiết”. Skills take one desktop half; the other half is reserved for the
+Learning Path owner's future integration, without fake recommendations or writes.
+
+Review defaults to all fifty original questions with selected wrong/correct/blank text,
+correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
+and Đúng/Sai/Chưa chọn. Section and outcome combine; clicking an active filter clears it.
+The fifty-cell navigator disables filtered-out questions and scrolls/focuses a visible
+question. The review question navigator can collapse and content expands. Desktop columns
+stack on small screens; navigation/actions use 48px targets and text/icon status labels.
+The server sends two or five skill rows according to retained access; FE never computes
+hidden analysis or hardcodes quota count.
+
+## Auth integration
+
+Guests are redirected to /login with their local destination. GuestOnlyGuard and AuthForm
+share one validated return-path function so session changes do not redirect the learner to
+/ before the form can return to /assessment. Invalid credentials remain a form error and do
+not replace the form with the session-bootstrap error screen. No token enters web storage.
+See [authentication](../auth/README.md) and [shared HTTP](../../engineering/guides/http-service.md).
+
+## Validation and remaining boundaries
+
+Required commands: `npm run build`, `npm run lint`; integration uses real FE proxy + real BE,
+never a mocked assessment API. Review keyboard navigation, mobile overflow, audio timing,
+failed-save/deadline transitions, owner/binding checks and historical snapshots.
+Build/lint and API/real-browser results have separate meanings. The release still requires
+real Placement/baseline, exact refund-to-analysis delivery, approved content/media and
+staging/Windows acceptance. Learning Path is a composition slot, not a completed integration.
+The local handoff package includes dated verification results and Windows demo instructions.

@@ -1,11 +1,11 @@
 export type AttemptStatus = "ACTIVE" | "READY" | "NO_RESULT" | "ABANDONED";
-export interface Question { number: number; prompt: string; options: string[]; selected: number | null }
+export interface Question { number: number; prompt: string; options: string[]; selected: number | null; passage: string | null }
 export interface AssessmentState {
   id: string; status: AttemptStatus; revision: number; serverNow: string; startedAt: string; deadline: string | null;
   phase: string; unitIndex: number; section: "READING" | "LISTENING"; series: string; paperVersion: number;
   passage: string | null; current: Question | null; preview: Question[]; audioAvailable: boolean;
   progress: {number: number; status: "ANSWERED" | "BLANK" | "CURRENT" | "FUTURE"}[];
-  savedCount: number; developmentData: boolean;
+  savedCount: number; developmentData: boolean; rulesVersion: number; audioStartsAt: string | null; questions: Question[];
 }
 export interface Preparation {
   baselineValid: boolean; eligibleAt: string | null; cooldownSatisfied: boolean;
@@ -31,4 +31,4 @@ export interface ReviewQuestion extends Question {
 export interface Review {result: AssessmentResult; questions: ReviewQuestion[]}
 export interface Media {mimeType: string; base64: string}
 export interface AnswerCommand {question: number; sequence: number; choice: number | null; commandId: string}
-export interface FinishStageCommand {unitIndex: number; phase: "READING_PREVIEW"; commandId: string}
+export interface FinishStageCommand {unitIndex: number; phase: string; commandId: string}

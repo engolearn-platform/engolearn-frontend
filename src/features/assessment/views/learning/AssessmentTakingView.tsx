@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { AssessmentCard, AssessmentError, Confirmation } from "@features/assessment/components/AssessmentCommon";
 import { AssessmentAudio } from "@features/assessment/components/AssessmentAudio";
+import { AssessmentTakingV2 } from "@features/assessment/components/AssessmentTakingV2";
 import { useLiveAssessment } from "@features/assessment/hooks/useLiveAssessment";
 import { assessmentApi } from "@features/assessment/services/assessmentApi";
 import type { AssessmentState, Question } from "@features/assessment/types/assessment.types";
@@ -41,6 +42,7 @@ export default function AssessmentTakingView() {
   const state = live.state;
   if (!state || !live.session) return <div className="p-5"><AssessmentCard><h1 className="text-2xl font-bold">Không có bài đang làm trên trang này</h1><p className="my-4">Bài chỉ được làm tại trang đã bắt đầu, không khôi phục sau khi tải lại.</p><Button asChild className="h-12"><Link to="/assessment">Về chuẩn bị</Link></Button></AssessmentCard></div>;
   if (state.status !== "ACTIVE") return <p className="p-5" role="status">Đang mở kết quả…</p>;
+  if (state.rulesVersion === 2) return <AssessmentTakingV2 live={live} />;
   const completedCount = state.savedCount + (state.current?.selected === null && finalChoice !== null ? 1 : 0);
   const submitDescription = confirm === "complete"
     ? `Sẽ lưu đáp án câu 50 và nộp bài ngay. Đã trả lời ${completedCount}/50 câu; còn ${50 - completedCount} câu trống. Câu trống tính sai.`

@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
-import { Outlet } from "react-router";
+import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuth } from "@shared/hooks/useAuth";
+import { ROUTES } from "@shared/constants";
 import { Card } from "@shared/components/Card";
 import { Button } from "@/core/components/shadcn/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
 
 export function AssessmentGate() {
   const auth = useAuth();
+  const location = useLocation();
   if (auth.isLoading) return <p className="p-5" role="status">Đang xác minh tài khoản…</p>;
-  if (!auth.isAuthenticated) return <div className="p-5"><AssessmentCard><h1 className="text-2xl font-bold">Vui lòng đăng nhập</h1><p>{auth.error ?? "Bạn cần đăng nhập để làm và xem bài đánh giá."}</p></AssessmentCard></div>;
+  if (auth.error) return <div className="p-5"><AssessmentError message={auth.error} retry={auth.refetch} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   return <Outlet key={auth.identityGeneration} />;
 }
 export function AssessmentCard({children, className = ""}: {children: ReactNode; className?: string}) {

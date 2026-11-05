@@ -1,10 +1,10 @@
-import { CheckCircle2, ChevronRight, FolderOpen, FolderX } from "lucide-react";
+import { ChevronRight, Flag, FolderOpen, FolderX } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface LearningPathSectionProps {
   title: string;
   count: number;
-  icon: "active" | "completed" | "cancelled";
+  icon: "active" | "ended" | "cancelled";
   collapsible?: boolean;
   expanded?: boolean;
   onToggle?: () => void;
@@ -13,7 +13,7 @@ interface LearningPathSectionProps {
 
 const iconMap = {
   active: FolderOpen,
-  completed: CheckCircle2,
+  ended: Flag,
   cancelled: FolderX,
 };
 

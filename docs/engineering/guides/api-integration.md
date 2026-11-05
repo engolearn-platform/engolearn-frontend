@@ -1,7 +1,7 @@
 # Guide — API integration
 
 > **Purpose:** How data enters the UI: the `useFetch` pattern, the services layer, why
-> `HttpService` is not wired, and the recipe for swapping mock → real.
+> `HttpService` integration, and the recipe for swapping mock → real.
 > **Scope:** All data fetching in `src/`. The Learning Path list and detail contracts are recorded in §6–7;
 > other backend contracts remain **UNKNOWN** until supplied (never improvised:
 > [../README.md](../README.md) precedence).
@@ -62,7 +62,7 @@ Two legitimate homes for request logic:
 | Layer | Location | Use for |
 |---|---|---|
 | Feature service | `src/features/<d>/services/*.service.ts` | domain verbs (e.g. `updateTopicProgress`) |
-| Shared HTTP primitive | `src/shared/services/http.service.ts` | generic verb wrappers — **NOT USABLE today, §3** |
+| Shared HTTP primitive | `src/shared/services/http.service.ts` | shared same-origin transport, request options and bounded auth refresh; see [http-service.md](http-service.md) |
 
 EXISTING feature-service example (`src/features/topic/services/topic-progress.service.ts`):
 `updateTopicProgress(topicItemId, payload, current)` — body currently `console.info` + local
@@ -72,27 +72,17 @@ lands** (contract = **UNKNOWN** for now; do not invent URL/DTO).
 `API_URLS` (`src/shared/constants/api.constants.ts`) holds only two third-party demo hosts used by
 legacy `Post`/`Product` (DEVIATION `DEV-03` — no real backend base URL exists).
 
-## 3. `HttpService` status: NOT USABLE
+## 3. `HttpService` status: available for same-origin API integration
 
-EXISTING FACTS (verified):
+`httpService` is already used by shared auth and subscription services. It resolves `/api/...`
+against the browser origin, sends browser-managed cookies, merges common and per-request headers,
+accepts query params and `AbortSignal`, and performs one bounded refresh/retry on eligible 401s.
+Auth tokens are HttpOnly cookies, not JavaScript header values. Its full interface, error shape and
+feature-owner migration checklist are in [http-service.md](http-service.md).
 
-- `src/shared/services/http.service.ts:11` — `constructor(baseUrl: string = "")`;
-  `:75` — `export const httpService = new HttpService();` (default `""`).
-- **0 call sites**: nothing in `src/` invokes `httpService.get/post/…` (only a doc-comment mention
-  in `topic-progress.service.ts:11`).
-- With `baseUrl = ""`, `buildUrl` calls `new URL(endpoint, "")` (`:16`) — an empty base is invalid,
-  so relative endpoints throw `TypeError`. It remains unused. The Learning Path list uses a
-  feature service with a relative `/api` URL; Vite's development proxy forwards it to the backend.
-
-**What a reusable shared HTTP layer still needs** (pending for future integrations):
-
-1. A reusable base-URL/configuration strategy for production.
-2. Frozen backend contracts for the other features.
-3. Auth header/session handling — blocked on `D6` / [auth.md](auth.md) (**NOT IMPLEMENTED**).
-4. A decision on whether to wire `HttpService` or keep feature-owned requests (`DEV-07`).
-
-The Learning Path list has its own known endpoint and DTO; it does not make the shared
-`HttpService` usable for other features.
+Existing Learning Path, topic management, topic learning and the profile test page still have
+feature-owned request implementations. They are **not** claimed to be migrated by this guide.
+Feature owners must preserve their contract validation and domain error handling when integrating.
 
 ## 4. Mock → real recipe (from the learner matrix)
 
@@ -147,12 +137,12 @@ daily practice and result routes remain UI-only until their backend APIs exist.
 [Target OpenAPI](../../handout/topic-learning/api.openapi.yaml) và [handoff](../../handout/topic-learning/backend-handoff.md) ghi contract cần BE bổ sung, không phải mô tả BE đã đáp ứng.
 `createTopicApi` trong feature topic dùng `/api/v1` cùng origin và fetch được tiêm trong test, không qua shared `HttpService` cũ. Có xử lý envelope, ProblemDetail/status/code, AbortSignal và Idempotency-Key bắt buộc cho POST; không tự retry và không fallback mock.
 Wire DTO được sinh bằng `npm run topic:types`, kiểm tra drift bằng `npm run topic:types:check`. Chặng1 chưa đổi các hook/view cũ.
-Native API tests: `npm run test:topic-api`; phạm vi và giới hạn ở [testing.md](testing.md). Auth module/token/session vẫn chưa triển khai.
+Native API tests: `npm run test:topic-api`; phạm vi và giới hạn ở [testing.md](testing.md). Auth MVP dùng cookie HttpOnly; topic client hiện vẫn có transport riêng.
 
 ## 8. Anti-patterns
 
 - `fetch` inside views/components (`C-06`).
-- Claiming `httpService` is wired while `baseUrl` is `""` (`DEV-07`).
+- Duplicating auth refresh or manually attaching access/refresh token headers in feature services.
 - Hardcoding guessed endpoints/DTOs before a contract exists (**UNKNOWN** → BLOCKED).
 - New mock hooks that skip `signal` handling (abort safety, §1 notes).
 - Leaving a 🟡 row 🟡 after wiring real data (doc-code drift, AGENTS.md tie-break).

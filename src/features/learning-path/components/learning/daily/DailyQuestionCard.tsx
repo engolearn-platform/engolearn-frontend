@@ -79,14 +79,13 @@ export default function DailyQuestionCard({
           const isSelected = selectedIndex === index;
           const isCorrectAnswer = question.correctIndex === index;
           const wrongSelection = review && isSelected && !isCorrectAnswer;
-          const highlighted = review ? isCorrectAnswer : isSelected;
           const reviewState = review && (isCorrectAnswer || wrongSelection);
           const content = (
             <>
               <span className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                 reviewState ? styles.letter : "bg-surface-container-low text-on-surface-variant",
-                !review && highlighted && "bg-primary text-on-primary",
+                !review && isSelected && "bg-primary text-on-primary",
               )}>
                 {optionId}
               </span>
@@ -96,13 +95,15 @@ export default function DailyQuestionCard({
                   {wrongSelection ? <X className="size-3" aria-hidden="true" /> : <Check className="size-3" aria-hidden="true" />}
                   {isCorrectAnswer && isSelected ? "Bạn đã chọn · Đáp án đúng" : isCorrectAnswer ? "Đáp án đúng" : "Bạn đã chọn"}
                 </span>
-              ) : highlighted ? <Check className="size-4 text-primary" aria-hidden="true" /> : null}
+              ) : !review && isSelected ? (
+                <span className="text-xs font-medium text-on-surface-variant">Đã chọn</span>
+              ) : null}
             </>
           );
           const className = cn(
             "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm",
             !reviewState && "border border-outline-variant/50 text-on-surface",
-            !review && highlighted && "border-primary bg-primary/10",
+            !review && isSelected && "border-primary bg-primary/10",
             reviewState && (wrongSelection ? styles.wrong : styles.correct),
             reviewState && styles.option,
             !review && "transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
