@@ -1,6 +1,12 @@
 # Subscription learner UI handoff and implementation notes
 
-Updated: 2026-10-29. Scope: M1 + M2 user screens with real API integration; M4 is backend contract testing only. This replaces the initial readiness survey. Payment runtime and actual Speaking/Proficiency UI/producer work remain deferred. M3 now has fact declarations only; M5 Admin implementation and evidence are tracked in [admin-ui-handoff.md](admin-ui-handoff.md).
+## Learner layout update, 2026-11-07
+
+Plan cards use short 4–6-word descriptions, price, action, then benefit names with API quota values. Descriptions below individual benefits are omitted. The shared monthly/annual selector stays outside cards; Free always reads “0đ / tháng”. The auto-fit grid adapts to available width and plan count. Gói học, Hạn mức sử dụng and Lịch sử mua hàng are independent entries in desktop/mobile navigation, with the plan link matching its own route exactly. Existing purchase, Trial, history and VNPay routes remain available.
+
+User-approved presentation benefits supplement API metadata: Free includes A1–A2 topics; Premium includes A1–B2 topics, in-depth skill analysis and personalized learning paths. No upcoming label is shown at the user's request. These are display additions; feature enforcement is implemented separately. Prices, billing options and existing quota values continue to come from the API.
+
+Updated: 2026-10-29. Scope: M1 + M2 user screens with real API integration; M4 is backend contract testing only. This replaces the initial readiness survey. Purchase UI and VNPay handoff are restored below. Actual Speaking/Proficiency producer work remains deferred. M3 now has fact declarations only; M5 Admin implementation and evidence are tracked in [admin-ui-handoff.md](admin-ui-handoff.md).
 
 ## Sources of truth
 
@@ -37,7 +43,7 @@ Feature-relative paths above start at src/features/subscription/. AuthUser still
 | Expired/Refunded | Use effective tier with historical period reason; no client inference of content/resource access |
 | Trial submission | Immediate duplicate-submit guard; UUID intent retained across ambiguous retry; no automatic action retries; successful result triggers read refresh |
 | Accepted Trial with failed read refresh | Acceptance message remains separate from unavailable refreshed summary; never invent the new entitlement locally |
-| Purchase/payment pending | Not implemented. No working-looking dead checkout or simulated success; later Payment contract is required |
+| Purchase/payment pending | Existing purchase intent, history, detail polling and VNPay checkout are restored. Server-confirmed outcomes drive status. |
 
 Trial POST /api/v1/subscription/me/trial sends an empty object plus Idempotency-Key, never a user ID/client clock/policy. Backend confirmation controls success. Public offers describe the latest configuration; currentBenefits describes current immutable period rights. Raw policy snapshot IDs and implementation jargon are not rendered to learners.
 
@@ -62,7 +68,7 @@ Trial POST /api/v1/subscription/me/trial sends an empty object plus Idempotency-
 | Global reset clock / device timezone | Replaced by per-card server boundaries in Vietnam time |
 | Raw policy version/snapshot terminology | Removed from learner copy; keep IDs internal for contract/state correctness |
 | 199000 VND,33% discount,30-day month,extended Premium Speaking | Not copied; actual values require approved configuration. Do not infer month end from client clock |
-| Free A1-A2/Premium all CEFR content access | Unsupported by Subscription alone; requires Topic Learning resource rules and approved benefit metadata |
+| Premium all CEFR content access | User-approved A1–B2 benefit is shown directly; Topic access enforcement remains pending |
 | IPA/waveform,flashcards,24/7 support | Not promised; require separately authorized feature/benefit scope |
 | Automatic charge/cancel/grace/bonus/reset buttons | Not introduced; preserve MVP exclusions |
 | Admin reference screens | Corrected in M5: reuse the management shell with actual Admin context; no invented metrics/Redis/PostgreSQL. Immediate rights updates and blanket no-reset rules still must not become requirements. See admin-ui-handoff.md |
@@ -86,3 +92,7 @@ No Outbox/replay/reconciliation is promised. Missed early refund or Free reset m
 - Unknown-commit network injection, real producer usage, paid Premium states, production auth and all possible assistive-technology/device combinations are not verified. No screenshot/scenario switcher is substituted for integration evidence.
 
 Evidence and budgets live in workspace .artifacts/subscription-user-first/{execution-log,test-plan,agent-c}.md. Update this handoff and backend status in the same change as future routes/contracts/states; distinguish source implemented, tested with fake caller, live observed and still deferred.
+
+## Purchase restoration, 2026-11-07
+
+Routes include /subscription/purchases, /subscription/purchases/:reference and /subscription/payment-return. Purchase creation uses the existing UUID intent and backend-confirmed checkout URL. The returned browser query does not activate Premium. The development-only test-order release action remains gated by the backend devResetAllowed flag. Existing HTTP purchase contracts are reused.
