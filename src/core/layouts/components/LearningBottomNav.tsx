@@ -14,6 +14,7 @@ export default function LearningBottomNav() {
         <NavLink
           key={item.to}
           to={item.to!}
+          end={item.end}
           className={({ isActive }) =>
             cn(
               "flex w-20 shrink-0 flex-col items-center justify-center rounded-lg p-2 transition-colors",

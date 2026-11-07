@@ -11,6 +11,7 @@ import {
   User,
   CreditCard,
   ChartNoAxesColumn,
+  ShoppingBag,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ROUTES } from "@shared/constants";
@@ -20,6 +21,7 @@ export interface LearningNavItem {
   to?: string;
   icon: LucideIcon;
   disabled?: boolean;
+  end?: boolean;
 }
 
 export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
@@ -27,8 +29,9 @@ export const LEARNING_NAV_ITEMS: LearningNavItem[] = [
   { label: "Khám phá chủ đề", to: ROUTES.TOPICS, icon: Compass },
   { label: "Chủ đề của tôi", to: ROUTES.MY_TOPICS, icon: Bookmark },
   { label: "Ngữ pháp", to: ROUTES.GRAMMAR, icon: BookOpenText },
-  { label: "Gói học & quyền lợi", to: ROUTES.SUBSCRIPTION, icon: CreditCard },
+  { label: "Gói học", to: ROUTES.SUBSCRIPTION, icon: CreditCard, end: true },
   { label: "Hạn mức sử dụng", to: ROUTES.SUBSCRIPTION_USAGE, icon: ChartNoAxesColumn },
+  { label: "Lịch sử mua hàng", to: ROUTES.SUBSCRIPTION_PURCHASES, icon: ShoppingBag },
   { label: "Ôn tập", to: "/review", icon: RotateCcw },
   { label: "Tra từ", icon: Search, disabled: true },
   { label: "Kiểm tra", to: "/assessment", icon: ClipboardList },

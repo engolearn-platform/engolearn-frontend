@@ -30,6 +30,7 @@ function NavigationItem({ item }: { item: LearningNavItem }) {
   return (
     <NavLink
       to={item.to}
+      end={item.end}
       className={({ isActive }) =>
         cn(
           "flex items-center gap-3.5 rounded-[12px] px-4 py-3 text-[15px] leading-[22.5px] font-medium transition-colors duration-150",
