@@ -12,7 +12,7 @@ The approved Word changes and design-system tokens govern this implementation.
 | /assessment | Eligibility, quota/cooldown, audio check, rules confirmation and start |
 | /assessment/taking | Focused exam; in-memory document binding |
 | /assessment/history | Paginated terminal attempts; one “Xem kết quả” action for valid results |
-| /assessment/attempts/:attemptId/result | Shared summary; skills table and reserved Learning Path composition area |
+| /assessment/attempts/:attemptId/result | Shared summary; skills table and live Learning Path recommendation |
 | /assessment/attempts/:attemptId/review | Same summary; all fifty questions, filters and scroll navigator |
 
 `AssessmentLearningLayout` composes the shared LearningLayout with the standard fixed desktop sidebar,
@@ -67,8 +67,25 @@ keeps server deadlines running. NO_RESULT is distinct from a valid zero score.
 
 Result and review share the same responsive content width, padding and title placement.
 History uses consistent “Lịch sử đánh giá” wording and one result action. The result summary
-contains “Xem chi tiết”. Skills take one desktop half; the other half is reserved for the
-Learning Path owner's future integration, without fake recommendations or writes.
+contains “Xem chi tiết”. Skills take one desktop half; the other half displays the
+cookie-authenticated Learning Path recommendation. Columns stack on mobile.
+
+`useLearningPathRecommendation` requests
+`GET /api/learning-paths/recommendation/by-assessment?assessmentAttemptId=<result.id>` only
+after a valid result loads, through shared HTTP with cancellation and assessment identity
+guards. No ID mapping, identity override, or cross-feature import is kept in the frontend.
+Loading, errors and retry stay within the recommendation card and leave the result visible.
+`AVAILABLE` shows returned skills, scores, level, weeks, days/week and questions/day; the
+total question count is their product. Canonical micro-skill names remain unchanged.
+`NO_WEAK_SKILLS` hides the card and expands the skill column; `NO_ELIGIBLE_SKILLS` displays
+the backend message; `ALREADY_CREATED` tells the learner a path already exists.
+The “Tạo lộ trình học tập” button is visible but disabled for `AVAILABLE` during UI review.
+There is no create request or navigation wired to that button.
+
+The backend adapter currently requires imported Learning Path projections, keyed by
+`assessment_source_attempt_id`. Newly submitted assessments without a projection return
+404 with retry feedback. Automatic projection delivery and Create Learning Path integration
+remain separate work; the frontend does not fabricate missing recommendations.
 
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
@@ -94,5 +111,5 @@ never a mocked assessment API. Review keyboard navigation, mobile overflow, audi
 failed-save/deadline transitions, owner/binding checks and historical snapshots.
 Build/lint and API/real-browser results have separate meanings. The release still requires
 real Placement/baseline, exact refund-to-analysis delivery, approved content/media and
-staging/Windows acceptance. Learning Path is a composition slot, not a completed integration.
+staging/Windows acceptance. Learning Path creation and automatic projection delivery remain open.
 The local handoff package includes dated verification results and Windows demo instructions.
