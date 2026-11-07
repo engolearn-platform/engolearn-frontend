@@ -22,13 +22,13 @@ export function LessonImage({ url, alt }: { url: string | null; alt: string }) {
   return failed ? <div className="flex aspect-video items-center justify-center rounded-xl bg-surface text-on-surface-variant"><ImageOff className="size-6" aria-hidden="true" /><span className="ml-2">Không tải được ảnh</span></div> :
     <img src={source} alt={alt} onError={() => setFailed(true)} className="aspect-video w-full rounded-xl object-cover" />;
 }
-export function LessonAudio({ url, label }: { url: string | null; label: string }) {
+export function LessonAudio({ url, label, showUnavailable = false }: { url: string | null; label: string; showUnavailable?: boolean }) {
   const player = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
   useEffect(() => { const audio = player.current; return () => { audio?.pause(); }; }, [url]);
   const source = mediaUrl(url);
-  if (!source) return null;
+  if (!source) return showUnavailable ? <Button type="button" variant="outline" disabled aria-label={label + " · Chưa có audio"} className="min-h-12 whitespace-normal rounded-xl"><Volume2 className="size-4 shrink-0" aria-hidden="true" />Chưa có audio</Button> : null;
   const toggle = () => {
     const audio = player.current;
     if (!audio) return;
@@ -82,11 +82,21 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
         {context.promptingQuestion && <p className="flex items-start gap-3 rounded-xl border border-learning-mint-border bg-learning-mint p-4 text-body-md font-semibold leading-relaxed text-primary"><MessageCircle className="mt-1 size-5 shrink-0" aria-hidden="true" /><span>{context.promptingQuestion}</span></p>}
       </section>
       {context.dialogue.length > 0 && <section className={card}>
-        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-headline-sm font-semibold"><MessageCircle className="size-5 text-primary" aria-hidden="true" />Hội thoại mẫu</h2><LessonAudio url={context.dialogueAudioUrl} label="Nghe toàn bộ hội thoại" /></div>
-        {context.dialogue.map((line, index) => <div key={index} className={"space-y-3 rounded-xl border p-4 " + (/customer|learner|student|^you$/i.test(line.speaker) ? "border-learning-mint-border bg-learning-mint" : "border-learning-outline bg-surface-container-low")}>
-          <div className="flex flex-wrap items-center justify-between gap-2"><span className="rounded-full bg-surface-container-lowest px-3 py-1 text-label-sm font-semibold text-primary">{line.speaker}</span><LessonAudio url={line.audioUrl} label={"Nghe câu " + (index + 1)} /></div>
-          <p lang="en" className="text-body-lg font-semibold leading-relaxed">{line.textEn}</p><p className="text-body-md leading-relaxed text-on-surface-variant">{line.textVi}</p>
-        </div>)}
+        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-headline-sm font-semibold"><MessageCircle className="size-5 text-primary" aria-hidden="true" />Hội thoại mẫu</h2><LessonAudio url={context.dialogueAudioUrl} label="Nghe toàn bộ hội thoại" showUnavailable /></div>
+        <div className="flex flex-col gap-5">{context.dialogue.map((line, index) => {
+          const learner = /customer|learner|student|^you$/i.test(line.speaker);
+          return <div key={index} className={"flex min-w-0 flex-col gap-2 " + (learner ? "items-end" : "items-start")}>
+            <div className={"flex items-center gap-2 px-1 text-label-sm font-semibold text-on-surface-variant " + (learner ? "flex-row-reverse" : "")}>
+              <span aria-hidden="true" className={"flex size-8 shrink-0 items-center justify-center rounded-full " + (learner ? "bg-learning-mint text-primary" : "bg-surface-container-low text-on-surface-variant")}>{Array.from(line.speaker.trim())[0]?.toLocaleUpperCase() || "?"}</span>
+              <span>{line.speaker}</span>
+            </div>
+            <div className={"w-fit max-w-[90%] space-y-2 break-words rounded-2xl border p-4 text-left sm:max-w-[80%] " + (learner ? "rounded-tr-sm border-learning-mint-border bg-learning-mint" : "rounded-tl-sm border-learning-outline bg-surface-container-low")}>
+              <p lang="en" className="text-body-lg font-semibold leading-relaxed">{line.textEn}</p>
+              <p lang="vi" className="text-body-md leading-relaxed text-on-surface-variant">{line.textVi}</p>
+              <LessonAudio url={line.audioUrl} label={"Nghe câu " + (index + 1)} />
+            </div>
+          </div>;
+        })}</div>
       </section>}
       {context.tips && <MemoryTipCard title="Mẹo ghi nhớ Engo" text={context.tips} />}
     </div>;
