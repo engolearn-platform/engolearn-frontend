@@ -15,9 +15,8 @@ The approved Word changes and design-system tokens govern this implementation.
 | /assessment/attempts/:attemptId/result | Shared summary; skills table and live Learning Path recommendation |
 | /assessment/attempts/:attemptId/review | Same summary; all fifty questions, filters and scroll navigator |
 
-`AssessmentLearningLayout` composes the shared LearningLayout with the standard fixed desktop sidebar,
-server-provided identity and no invented learner name/level/streak. Optional layout props
-preserve other features' existing defaults. Result/review share `AssessmentResultSummary`.
+`AssessmentLearningLayout` uses the shared LearningLayout, which supplies the desktop sidebar,
+mobile navigation and account header. Result/review share `AssessmentResultSummary`.
 Feature components/hooks/types/services remain assessment-owned. Common primitives reuse
 existing Button/Card/Dialog and the Hanken Grotesk/primary/learning design tokens.
 
