@@ -19,12 +19,13 @@ interface LearningNavContentProps {
   compact?: boolean;
   isAuthenticated: boolean;
   onNavigate?: () => void;
+  showAccount?: boolean;
 }
 
 function navClass(active: boolean, compact: boolean) {
   return cn(
     "flex min-h-11 items-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-    compact ? "size-11 justify-center px-0" : "gap-3 px-3",
+    compact ? "h-11 w-full justify-center px-0" : "gap-3 px-3",
     active
       ? "bg-learning-nav-active font-semibold text-primary ring-1 ring-learning-nav-border"
       : "text-on-surface-variant hover:bg-surface-container-high",
@@ -44,7 +45,7 @@ function CompactTooltip({
   children: React.ReactNode;
   enabled?: boolean;
 }) {
-  const wrapperRef = React.useRef<HTMLSpanElement>(null);
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
   const [visible, setVisible] = React.useState(false);
   const [position, setPosition] = React.useState({ left: 0, top: 0 });
   const tooltipId = React.useId();
@@ -67,7 +68,7 @@ function CompactTooltip({
   return (
     <div
       ref={wrapperRef}
-      className="relative inline-flex"
+      className="relative flex w-full justify-center"
       onMouseEnter={() => { if (enabled) setVisible(true); }}
       onMouseLeave={() => setVisible(false)}
       onFocus={() => { if (enabled) setVisible(true); }}
@@ -432,6 +433,7 @@ export default function LearningNavContent({
   compact = false,
   isAuthenticated,
   onNavigate,
+  showAccount = true,
 }: LearningNavContentProps) {
   const location = useLocation();
   const activeRoute = React.useMemo(() => matchLearningRoute(location.pathname), [location.pathname]);
@@ -456,7 +458,10 @@ export default function LearningNavContent({
     <div className="flex min-h-0 flex-1 flex-col">
       <nav
         aria-label="Điều hướng chính"
-        className={cn("min-h-0 flex-1 overflow-y-auto", compact ? "space-y-2 px-2 py-4" : "space-y-5 px-4 py-4")}
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto",
+          compact ? "space-y-2 py-4 [scrollbar-gutter:stable_both-edges]" : "space-y-5 px-4 py-4",
+        )}
       >
         {LEARNING_NAV_SECTIONS.map((section) => (
           <SectionContent
@@ -474,47 +479,49 @@ export default function LearningNavContent({
         ))}
       </nav>
 
-      <div className={cn("border-t border-outline-variant", compact ? "p-2" : "p-4")}>
-        {compact ? (
-          <CompactTooltip label={isAuthenticated ? "Tài khoản" : "Đăng nhập"}>
+      {showAccount && (
+        <div className={cn("border-t border-outline-variant", compact ? "p-2" : "p-4")}>
+          {compact ? (
+            <CompactTooltip label={isAuthenticated ? "Tài khoản" : "Đăng nhập"}>
+              <Link
+                to={isAuthenticated ? ROUTES.PROFILE : ROUTES.LOGIN}
+                id="learning-sidebar-account"
+                state={!isAuthenticated ? routeBackTo(location.pathname, location.search, location.hash) : undefined}
+                onClick={onNavigate}
+                aria-current={location.pathname === ROUTES.PROFILE ? "page" : undefined}
+                aria-label={isAuthenticated ? "Tài khoản" : "Đăng nhập"}
+                className={cn(navClass(location.pathname === ROUTES.PROFILE, true), "w-full")}
+              >
+                {isAuthenticated ? <UserRound className="size-5" aria-hidden="true" /> : <LogIn className="size-5" aria-hidden="true" />}
+              </Link>
+            </CompactTooltip>
+          ) : isAuthenticated ? (
             <Link
-              to={isAuthenticated ? ROUTES.PROFILE : ROUTES.LOGIN}
-              id="learning-sidebar-account"
-              state={!isAuthenticated ? routeBackTo(location.pathname, location.search, location.hash) : undefined}
+              to={PROFILE_NAV_ITEM.to!}
               onClick={onNavigate}
               aria-current={location.pathname === ROUTES.PROFILE ? "page" : undefined}
-              aria-label={isAuthenticated ? "Tài khoản" : "Đăng nhập"}
-              className={cn(navClass(location.pathname === ROUTES.PROFILE, true), "w-full")}
+              className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-primary"
             >
-              {isAuthenticated ? <UserRound className="size-5" aria-hidden="true" /> : <LogIn className="size-5" aria-hidden="true" />}
+              <UserRound className="size-5" aria-hidden="true" />
+              {PROFILE_NAV_ITEM.label}
             </Link>
-          </CompactTooltip>
-        ) : isAuthenticated ? (
-          <Link
-            to={PROFILE_NAV_ITEM.to!}
-            onClick={onNavigate}
-            aria-current={location.pathname === ROUTES.PROFILE ? "page" : undefined}
-            className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            <UserRound className="size-5" aria-hidden="true" />
-            {PROFILE_NAV_ITEM.label}
-          </Link>
-        ) : (
-          <div className="rounded-xl border border-outline-variant bg-surface p-3">
-            <p className="text-sm font-semibold text-on-surface">Bắt đầu học cùng EngoLearn</p>
-            <p className="mt-1 text-xs leading-5 text-on-surface-variant">Đăng nhập để theo dõi tiến độ của bạn.</p>
-            <Link
-              to={ROUTES.LOGIN}
-              state={routeBackTo(location.pathname, location.search, location.hash)}
-              onClick={onNavigate}
-              className="mt-3 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <LogIn className="size-4" aria-hidden="true" />
-              Đăng nhập
-            </Link>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="rounded-xl border border-outline-variant bg-surface p-3">
+              <p className="text-sm font-semibold text-on-surface">Bắt đầu học cùng EngoLearn</p>
+              <p className="mt-1 text-xs leading-5 text-on-surface-variant">Đăng nhập để theo dõi tiến độ của bạn.</p>
+              <Link
+                to={ROUTES.LOGIN}
+                state={routeBackTo(location.pathname, location.search, location.hash)}
+                onClick={onNavigate}
+                className="mt-3 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <LogIn className="size-4" aria-hidden="true" />
+                Đăng nhập
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

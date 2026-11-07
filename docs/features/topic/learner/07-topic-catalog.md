@@ -33,5 +33,6 @@ Retry thay phiên dở cần Dialog xác nhận và đúng replaceRetrySessionId
 
 Grid1 cột ->2 ->3; trang detail1 cột -> nội dung+sidebar; padding20px mobile, chữ Việt không cắt dòng vào dấu.
 Header/sidebar dùng identity và CEFR có nguồn thật, không fake streak/tên/level trong surface topic. CEFR bridge được làm rỗng khi đổi identity để không lộ giá trị cũ.
+Sidebar desktop có thể thu gọn; các biểu tượng compact giữ cùng trục giữa cả khi danh sách có thanh cuộn. Nút thu/mở nằm ở giữa cạnh phải của phần đầu thương hiệu. Khu tài khoản thuộc topbar, còn drawer điều hướng trên mobile vẫn giữ khu tài khoản ở cuối danh sách.
 Kiểm tra native reducer/filter/route/error/service shape + API tests chặng1 + build/lint.
 Kiểm tra browser bằng fixture phải ghi rõ là mock network test, phân biệt smoke với BE thật.
