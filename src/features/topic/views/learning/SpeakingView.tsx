@@ -275,11 +275,16 @@ function SpeakingDiagnostics({ session, connection, recording, interim, lifecycl
   </section>;
 }
 
-export default function SpeakingView() {
-  const { topicId: itemId } = useParams();
+export default function SpeakingView({ devSession = false }: { devSession?: boolean }) {
+  const { topicId } = useParams();
   const location = useLocation();
+  const isDevSession = import.meta.env.DEV && devSession;
+  const itemId = isDevSession
+    ? new URLSearchParams(location.search).get("itemId") || "6b0400000000000000000003"
+    : topicId;
   const navigate = useNavigate();
-  const diagnosticsEnabled = import.meta.env.DEV && isSpeakingDiagnosticsLocation(location.state);
+  const diagnosticsEnabled = import.meta.env.DEV &&
+    (isDevSession || isSpeakingDiagnosticsLocation(location.state));
   const [session, setSession] = useState<SpeakingSession | null>(null);
   const [config, setConfig] = useState<SpeakingItemConfig | null>(null);
   const [history, setHistory] = useState<SpeakingSession[]>([]);

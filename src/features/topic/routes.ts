@@ -38,11 +38,8 @@ export const TopicRoutes: RouteObject[] = [
         children: [{ index: true, Component: SpeakingDemoView }],
       }, {
         path: ROUTES.SPEAKING_SESSION_DEV,
-        element: createElement(Navigate, {
-          to: ROUTES.TOPIC_SPEAKING.replace(":topicId", "690000000000000000000002"),
-          replace: true,
-          state: { speakingDiagnostics: true },
-        }),
+        Component: LearningLayout,
+        children: [{ index: true, element: createElement(SpeakingView, { devSession: true }) }],
       }] satisfies RouteObject[] : []),
     ],
   },
