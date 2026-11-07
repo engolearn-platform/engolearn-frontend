@@ -15,6 +15,8 @@ import {
 } from "@features/subscription/routes";
 import { AuthRoutes } from "@features/auth/routes";
 import LearningLayout from "@/core/layouts/LearningLayout";
+import { ROUTES } from "@shared/constants";
+import LearnerHomeRoute from "./LearnerHomeRoute";
 
 export const appRoutes = [
   ...AuthRoutes,
@@ -23,6 +25,7 @@ export const appRoutes = [
   {
     Component: LearningLayout,
     children: [
+      { path: ROUTES.HOME, Component: LearnerHomeRoute },
       ...GrammarRoutes,
       ...TopicCatalogRoutes,
       ...LearningPathRoutes,

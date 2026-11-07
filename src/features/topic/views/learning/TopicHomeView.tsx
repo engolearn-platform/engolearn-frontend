@@ -1,10 +1,12 @@
-import { ArrowRight, BookOpenText, Bookmark, Compass, MessageCircle } from "lucide-react";
+import { ArrowRight, Compass, MessageCircle } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import { TopicProgressBar, TopicState } from "@features/topic/components/learning/catalog/TopicState";
+import { TopicState } from "@features/topic/components/learning/catalog/TopicState";
+import { HomeContinueLearning } from "@features/topic/components/learning/home/HomeContinueLearning";
+import { HomeFeatureDiscovery } from "@features/topic/components/learning/home/HomeFeatureDiscovery";
+import { HomeProgressOverview } from "@features/topic/components/learning/home/HomeProgressOverview";
+import type { HomeOverviewSources } from "@features/topic/components/learning/home/HomeProgressOverview";
 import { topicCatalogService } from "@features/topic/services/topic-catalog.service";
-import type { TopicCardDto } from "@features/topic/types/topic-api.types";
-import { topicDetailPath, topicErrorMessage } from "@features/topic/utils/topic-catalog";
 import { Card } from "@shared/components";
 import { ROUTES } from "@shared/constants";
 import { useAuth, useFetch } from "@shared/hooks";
@@ -21,15 +23,7 @@ function BrowseTopicsLink() {
   );
 }
 
-function MyTopicsLink() {
-  return (
-    <Button asChild variant="outline" className="min-h-12 rounded-xl">
-      <Link to={ROUTES.MY_TOPICS}><Bookmark aria-hidden="true" />Chủ đề của tôi</Link>
-    </Button>
-  );
-}
-
-function BrowsePrompt({ guest = false, hasCompleted = false }: { guest?: boolean; hasCompleted?: boolean }) {
+function GuestBrowsePrompt() {
   return (
     <Card className="rounded-2xl border-learning-outline bg-surface-container-lowest p-5 sm:p-6">
       <div className="flex flex-col items-start gap-4 sm:flex-row">
@@ -38,7 +32,7 @@ function BrowsePrompt({ guest = false, hasCompleted = false }: { guest?: boolean
         </span>
         <div className="space-y-2">
           <h2 className="text-headline-md font-semibold">
-            {hasCompleted ? "Khám phá chủ đề mới" : "Bắt đầu với một chủ đề"}
+            Bắt đầu với một chủ đề
           </h2>
           <p className="text-body-md text-on-surface-variant">
             Học tiếng Anh qua các tình huống hằng ngày, từ làm quen đến luyện hội thoại.
@@ -49,90 +43,26 @@ function BrowsePrompt({ guest = false, hasCompleted = false }: { guest?: boolean
         <Button asChild className="min-h-12 rounded-xl">
           <Link to={ROUTES.TOPICS}>Khám phá chủ đề<ArrowRight aria-hidden="true" /></Link>
         </Button>
-        {guest && (
-          <Button asChild variant="outline" className="min-h-12 rounded-xl">
-            <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
-          </Button>
-        )}
-        {hasCompleted && <MyTopicsLink />}
+        <Button asChild variant="outline" className="min-h-12 rounded-xl">
+          <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
+        </Button>
       </div>
     </Card>
   );
 }
 
-function RecentTopicCard({ topic }: { topic: TopicCardDto }) {
-  const { progress } = topic;
+function LearnerDashboard(sources: HomeOverviewSources) {
+  const topics = useFetch(loadRecentTopic);
   return (
-    <section aria-labelledby="home-continue-title" className="space-y-3">
-      <h2 id="home-continue-title" className="text-headline-md font-semibold">Tiếp tục học</h2>
-      <Card className="rounded-2xl border-learning-outline bg-surface-container-lowest p-5 sm:p-6">
-        <div className="flex items-start gap-4">
-          <div aria-hidden="true" className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-learning-mint text-primary sm:size-20">
-            <BookOpenText className="size-6" />
-            {topic.coverUrl && (
-              <img
-                src={topic.coverUrl}
-                alt=""
-                className="absolute inset-0 size-full object-cover"
-                onError={(event) => { event.currentTarget.hidden = true; }}
-              />
-            )}
-          </div>
-          <div className="min-w-0 space-y-1">
-            <p className="text-label-sm font-semibold text-primary">Học theo chủ đề</p>
-            <h3 lang={topic.titleEn ? "en" : "vi"} className="break-words text-headline-md font-semibold">
-              {topic.titleEn || topic.titleVi}
-            </h3>
-            {topic.titleEn && topic.titleEn !== topic.titleVi && (
-              <p className="break-words text-body-md text-on-surface-variant">{topic.titleVi}</p>
-            )}
-          </div>
-        </div>
-        {progress && (
-          <div className="mt-5 space-y-2">
-            <div className="flex flex-wrap justify-between gap-2 text-label-lg">
-              <span className="text-on-surface-variant">
-                {progress.completedItemCount}/{progress.totalItemCount} tình huống đã hoàn thành
-              </span>
-              <span className="font-semibold text-primary">{progress.percent}%</span>
-            </div>
-            <TopicProgressBar percent={progress.percent} label="Tiến độ chủ đề" />
-          </div>
-        )}
-        <Button asChild className="mt-5 min-h-12 w-full rounded-xl sm:w-auto">
-          <Link to={topicDetailPath(topic.topicId, ROUTES.MY_TOPICS)}>Mở chủ đề<ArrowRight aria-hidden="true" /></Link>
-        </Button>
-      </Card>
-      <nav aria-label="Lối tắt học tập" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <MyTopicsLink />
-        <BrowseTopicsLink />
-      </nav>
-    </section>
+    <>
+      <HomeProgressOverview topics={topics} {...sources} />
+      <HomeContinueLearning topic={topics.data?.items[0]} loading={topics.loading} failed={Boolean(topics.error)} />
+      <HomeFeatureDiscovery />
+    </>
   );
 }
 
-function LearnerNextAction() {
-  const { data, loading, error, refetch } = useFetch(loadRecentTopic);
-
-  if (!data) {
-    return (
-      <TopicState
-        title={error ? "Không tải được chủ đề đang học" : "Đang tải chủ đề đang học…"}
-        description={topicErrorMessage(error)}
-        loading={loading}
-        error={Boolean(error)}
-        onRetry={error ? refetch : undefined}
-      >
-        <div className="mt-3"><BrowseTopicsLink /></div>
-      </TopicState>
-    );
-  }
-
-  const recentTopic = data.items[0];
-  return recentTopic ? <RecentTopicCard topic={recentTopic} /> : <BrowsePrompt hasCompleted={data.counts.completed > 0} />;
-}
-
-function NextAction() {
+function HomeContent(sources: HomeOverviewSources) {
   const auth = useAuth();
 
   if (auth.isLoading || auth.error) {
@@ -149,11 +79,11 @@ function NextAction() {
   }
 
   return auth.user
-    ? <LearnerNextAction key={auth.identityGeneration} />
-    : <BrowsePrompt guest />;
+    ? <LearnerDashboard key={auth.identityGeneration} {...sources} />
+    : <GuestBrowsePrompt />;
 }
 
-export default function TopicHomeView() {
+export default function TopicHomeView(sources: HomeOverviewSources) {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-5 py-6 md:px-8 md:py-10">
       <header className="relative isolate flex items-center justify-between gap-6 overflow-hidden rounded-2xl border border-learning-mint-border bg-learning-mint p-5 sm:p-8">
@@ -172,7 +102,7 @@ export default function TopicHomeView() {
           </div>
         </div>
       </header>
-      <NextAction />
+      <HomeContent {...sources} />
     </div>
   );
 }
