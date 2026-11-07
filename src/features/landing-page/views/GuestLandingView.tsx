@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
+import BrandImage from "@shared/components/BrandImage";
 import { LANDING_PATHS } from "@features/landing-page/paths";
 import { ROUTES } from "@shared/constants";
 
@@ -61,13 +62,10 @@ const journey = [
   { icon: TrendingUp, number: "03", title: "Theo dõi tiến bộ", description: "Nhìn lại hành trình và tiếp tục với bước học tiếp theo." },
 ];
 
-function Brand({ light = false }: { light?: boolean }) {
+function Brand() {
   return (
-    <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className={`inline-flex min-h-12 items-center gap-3 rounded-xl font-bold text-headline-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary ${light ? "text-white" : "text-primary"}`}>
-      <span aria-hidden="true" className={`grid size-10 place-items-center rounded-full ${light ? "bg-white/15" : "bg-learning-mint"}`}>
-        <GraduationCap className="size-6" />
-      </span>
-      <span>EngoLearn</span>
+    <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className="inline-flex min-h-12 items-center rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+      <BrandImage className="h-9 w-auto object-contain" />
     </Link>
   );
 }
@@ -141,13 +139,7 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
             </div>
             <div aria-hidden="true" className="relative mx-auto w-full max-w-2xl">
               <div className="absolute inset-x-10 bottom-3 top-8 rounded-[2rem] bg-white/55 blur-2xl" />
-              <img src="/landing/hero.webp" alt="" width="1050" height="700" fetchPriority="high" className="relative z-10 h-auto w-full object-contain" />
-              <div className="absolute left-0 top-1/4 z-20 hidden items-center gap-2 rounded-2xl border border-learning-mint-border bg-white px-4 py-3 font-semibold text-primary shadow-sm sm:flex">
-                <TrendingUp aria-hidden="true" className="size-5" />Từng bước tiến bộ
-              </div>
-              <div className="absolute bottom-6 right-0 z-20 hidden items-center gap-2 rounded-2xl border border-learning-mint-border bg-white px-4 py-3 font-semibold text-primary shadow-sm sm:flex">
-                <MessageCircle aria-hidden="true" className="size-5" />Học qua tình huống
-              </div>
+              <img src="/landing/penguin-hero.webp" alt="" width="1050" height="700" fetchPriority="high" className="relative z-10 h-auto w-full object-contain" />
             </div>
           </div>
         </section>

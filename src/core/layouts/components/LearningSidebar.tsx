@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { Link } from "react-router";
 import { cn } from "@shared/utils";
 import LearningNavContent from "./LearningNavContent";
-import { BRAND_ICON } from "./learningNav";
+import BrandImage from "@shared/components/BrandImage";
 
 const SIDEBAR_PREFERENCE_KEY = "engolearn:learner-sidebar-compact";
 
@@ -42,7 +42,6 @@ export default function LearningSidebar({
   );
   const defaultExpanded = useDefaultExpanded();
   const compact = compactOverride ?? !defaultExpanded;
-  const BrandIcon = BRAND_ICON;
 
   const toggleCompact = () => {
     const nextCompact = !compact;
@@ -76,14 +75,7 @@ export default function LearningSidebar({
           aria-label="EngoLearn, trang chủ"
           className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <BrandIcon className="size-5" aria-hidden="true" />
-          </span>
-          {!compact && (
-            <span className="truncate text-xl font-bold tracking-tight text-primary">
-              EngoLearn
-            </span>
-          )}
+          {compact ? <BrandImage variant="mark" className="size-9 shrink-0 object-contain" /> : <BrandImage className="h-8 w-auto min-w-0 object-contain" />}
         </Link>
         <button
           id="learning-sidebar-toggle"

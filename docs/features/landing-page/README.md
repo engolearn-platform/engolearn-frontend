@@ -2,7 +2,7 @@
 
 ## Visual reference
 
-Follow the supplied EngoLearn landing screenshot: teal and mint palette, illustrated study hero, compact benefits strip, feature cards, three-step learning journey, illustrated closing call to action, and footer. Use the shared Hanken Grotesk typography, color tokens, existing Button and Lucide icons. Hero and closing-banner artwork are decorative and use empty alt attributes. The closing banner places its illustration left, copy in the middle, and action at the right on wide screens, then stacks compactly on smaller screens. The landing page has no FAQ section or FAQ anchor links.
+Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin study hero, compact benefits strip, feature cards, three-step learning journey, illustrated closing call to action, and footer. Use the shared horizontal EngoLearn logo (`/brand/engolearn-logo.webp`) for full brand placements and the square mark (`/brand/engolearn-mark.png`) where an icon is needed. Use shared Hanken Grotesk typography, color tokens, existing Button and Lucide icons. Hero and closing-banner artwork are decorative and use empty alt attributes. The hero artwork is `/landing/penguin-hero.webp`; keep its art free of overlaid UI labels. The closing banner places its illustration left, copy in the middle, and action at the right on wide screens, then stacks compactly on smaller screens. The landing page has no FAQ section or FAQ anchor links.
 
 ## Route ownership
 

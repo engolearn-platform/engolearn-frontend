@@ -6,6 +6,7 @@ import {
 } from "@/core/components/shadcn/dialog";
 import type { RefObject } from "react";
 import LearningNavContent from "./LearningNavContent";
+import BrandImage from "@shared/components/BrandImage";
 
 interface LearningBottomNavProps {
   open: boolean;
@@ -32,7 +33,7 @@ export default function LearningBottomNav({
       >
         <div className="flex h-full min-h-0 flex-col bg-surface-container-lowest pt-5">
           <div className="border-b border-outline-variant px-5 pb-4 pr-14">
-            <DialogTitle className="text-lg text-primary">EngoLearn</DialogTitle>
+            <DialogTitle><span className="sr-only">EngoLearn</span><BrandImage className="h-8 w-auto object-contain" /></DialogTitle>
             <DialogDescription className="mt-1 leading-5">Điều hướng học tập</DialogDescription>
           </div>
           <LearningNavContent
