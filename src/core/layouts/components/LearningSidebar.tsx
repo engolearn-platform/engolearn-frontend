@@ -73,9 +73,11 @@ export default function LearningSidebar({
           aria-label={compact ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"}
           aria-pressed={!compact}
           onClick={toggleCompact}
-          className="absolute right-0 top-1/2 z-30 flex size-10 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant shadow-sm hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="group absolute right-0 top-1/2 z-30 flex size-10 translate-x-1/2 -translate-y-1/2 items-center justify-center bg-transparent text-on-surface-variant"
         >
-          {compact ? <ChevronRight className="size-3.5" aria-hidden="true" /> : <ChevronLeft className="size-3.5" aria-hidden="true" />}
+          <span className="flex size-7 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest shadow-sm transition-colors group-hover:bg-surface-container-high group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary">
+            {compact ? <ChevronRight className="size-3.5" aria-hidden="true" /> : <ChevronLeft className="size-3.5" aria-hidden="true" />}
+          </span>
         </button>
       </div>
 
