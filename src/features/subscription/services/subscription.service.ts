@@ -1,5 +1,6 @@
 import { httpService } from "@shared/services";
 import type { ApiEnvelope, MySubscriptionSummary, PlanBenefit, PlanCard, QuotaUsageItem, TrialActivation } from "@features/subscription/types/subscription.types";
+import type { BillingPeriod, PaymentReturn, Purchase, PurchaseHistory } from "@features/subscription/types/purchase.types";
 
 function invalid(): never { throw new Error("Dữ liệu phản hồi không hợp lệ. Vui lòng thử lại."); }
 function record(value: unknown): Record<string, unknown> {
@@ -24,7 +25,43 @@ function envelope<T>(value: unknown, validate: (data: Record<string, unknown>) =
   validate(record(result.data));
   return result as unknown as ApiEnvelope<T>;
 }
+function purchase(data: Record<string, unknown>) {
+  if (data.devResetAllowed !== undefined && typeof data.devResetAllowed !== "boolean") invalid();
+  if (data.devResetAt !== undefined && data.devResetAt !== null && !instant(data.devResetAt)) invalid();
+  if (!text(data.purchaseReference) || !["PAYMENT_SETUP_PENDING", "PAYMENT_PENDING", "PAYMENT_SETUP_FAILED", "PAYMENT_FAILED", "PAYMENT_EXPIRED", "ACTIVE", "REQUIRES_REVIEW", "REFUND_PENDING", "REFUNDED"].includes(String(data.status)) ||
+      !["MONTHLY", "ANNUAL"].includes(String(data.billingPeriod)) || !integer(data.amountVnd) || data.currency !== "VND" || !instant(data.createdAt) || !instant(data.expiresAt)) invalid();
+  for (const key of ["paymentId", "periodId", "failureCode", "refundReference", "refundId"]) if (data[key] !== null && !text(data[key])) invalid();
+  for (const key of ["paidAt", "periodEndAt"]) if (data[key] !== null && !instant(data[key])) invalid();
+  if (![null, "NONE", "REQUESTED", "PROCESSING", "UNKNOWN", "SUCCEEDED", "FAILED"].includes(data.refundStatus as null)) invalid();
+  if (data.checkoutUrl !== null) {
+    if (!text(data.checkoutUrl)) invalid();
+    const url = new URL(data.checkoutUrl);
+    if (url.protocol !== "https:" || url.username || url.password) invalid();
+  }
+}
 export const subscriptionService = {
+  async devResetPurchase(reference: string, signal: AbortSignal) {
+    return envelope<import("@features/subscription/types/purchase.types").DevPurchaseReset>(await httpService.post<unknown>(`/api/v1/subscription/me/purchases/${encodeURIComponent(reference)}/dev-reset`, {}, { signal }), data => {
+      if (!text(data.purchaseReference) || !instant(data.resetAt)) invalid();
+    });
+  },
+  async createPurchase(billingPeriod: BillingPeriod, key: string, signal: AbortSignal) {
+    return envelope<Purchase>(await httpService.post<unknown>("/api/v1/subscription/me/purchases", { planCode: "PREMIUM", billingPeriod }, { signal, headers: { "Idempotency-Key": key } }), purchase);
+  },
+  async purchase(reference: string, signal: AbortSignal) {
+    return envelope<Purchase>(await httpService.get<unknown>(`/api/v1/subscription/me/purchases/${encodeURIComponent(reference)}`, { signal }), purchase);
+  },
+  async purchases(cursor: string | null, signal: AbortSignal) {
+    return envelope<PurchaseHistory>(await httpService.get<unknown>("/api/v1/subscription/me/purchases", { signal, params: { limit: "10", ...(cursor ? { cursor } : {}) } }), data => {
+      if (!Array.isArray(data.items) || (data.nextCursor !== null && !text(data.nextCursor))) invalid();
+      for (const item of data.items) purchase(record(item));
+    });
+  },
+  async paymentReturn(search: string, signal: AbortSignal): Promise<PaymentReturn> {
+    const data = record(await httpService.get<unknown>(`/api/payment/vnpay/return${search}`, { signal }));
+    if (typeof data.validSignature !== "boolean" || (data.purchaseReference !== null && !text(data.purchaseReference)) || typeof data.message !== "string") invalid();
+    return data as unknown as PaymentReturn;
+  },
   async plans(signal: AbortSignal) {
     return envelope<{ items: PlanCard[] }>(await httpService.get<unknown>("/api/v1/subscription/plans", { signal }), data => {
       if (!Array.isArray(data.items)) invalid();

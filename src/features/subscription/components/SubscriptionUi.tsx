@@ -10,10 +10,11 @@ import type { PlanBenefit } from "@features/subscription/types/subscription.type
 export function Surface({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <Card className={`rounded-2xl border-border bg-card p-5 shadow-none ${className}`}>{children}</Card>;
 }
-export function SubscriptionPage({ usage = false, children }: { usage?: boolean; children: ReactNode }) {
-  return <div className="mx-auto max-w-6xl space-y-6 p-5 pb-28 md:pb-8">
-    <header className="space-y-2"><p className="font-semibold text-primary">YOUR LEARNING, YOUR PACE</p><h1 className="text-[28px] font-bold leading-9">{usage ? "Hạn mức sử dụng" : "Gói học & quyền lợi"}</h1><p className="leading-6 text-muted-foreground">{usage ? "Theo dõi mức sử dụng và thời điểm bắt đầu hạn mức tiếp theo." : "Xem quyền lợi hiện tại và khám phá các gói học đã công bố."}</p></header>
-    <nav aria-label="Gói học" className="flex flex-wrap gap-2 border-b border-border pb-4">{[["/subscription", "Gói học & quyền lợi"], ["/subscription/usage", "Hạn mức sử dụng"]].map(([to, label]) => <NavLink end key={to} to={to} className={({ isActive }) => `min-h-12 rounded-xl px-4 py-3 font-semibold ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>{label}</NavLink>)}</nav>
+export function SubscriptionPage({ usage = false, title, description, children }: { usage?: boolean; title?: string; description?: string; children: ReactNode }) {
+  return <div className="mx-auto max-w-7xl space-y-8 p-5 pb-28 md:space-y-10 md:p-8">
+    <header className="flex flex-wrap items-start justify-between gap-4">
+      <div className="max-w-3xl space-y-3"><p className="text-label-sm font-semibold uppercase tracking-wide text-primary">Tài khoản & dịch vụ</p><h1 className="text-headline-lg font-bold">{title ?? (usage ? "Hạn mức sử dụng" : "Gói học")}</h1><p className="text-body-md leading-relaxed text-on-surface-variant">{description ?? (usage ? "Theo dõi lượng đã dùng và kỳ hạn mức tiếp theo." : "Chọn gói phù hợp với bạn.")}</p></div>
+    </header>
     {children}
   </div>;
 }
@@ -35,11 +36,11 @@ export function PrivateAccount({ children }: { children: (userId: string) => Rea
 }
 export function Benefits({ items }: { items: PlanBenefit[] }) {
   if (items.length === 0) return <p className="text-muted-foreground">Chưa có quyền lợi được công bố.</p>;
-  return <ul className="space-y-4">{[...items].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code)).map(b => <li key={b.code} className="flex gap-3"><Check className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" /><div className="min-w-0"><p className="font-semibold leading-6">{b.title}{b.displayValue && <span className="ml-2 text-primary">{b.displayValue}</span>}</p>{b.description && <p className="mt-1 break-words leading-6 text-muted-foreground">{b.description}</p>}</div></li>)}</ul>;
+  return <ul className="space-y-5">{[...items].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code)).map(b => <li key={b.code} className="flex gap-3"><Check className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" /><p className="min-w-0 break-words leading-relaxed">{b.title}{b.displayValue && <span className="ml-2 font-semibold text-primary">{b.displayValue}</span>}</p></li>)}</ul>;
 }
 export function DateTime({ value }: { value: string }) {
   return <time dateTime={value}>{new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value))}</time>;
 }
 export function UsageLink() {
-  return <Button asChild variant="outline" className="min-h-12 rounded-xl"><NavLink to="/subscription/usage">Xem hạn mức<ArrowRight aria-hidden="true" /></NavLink></Button>;
+  return <Button asChild variant="outline" className="min-h-12 rounded-xl text-primary"><NavLink to="/subscription/usage">Xem hạn mức<ArrowRight aria-hidden="true" /></NavLink></Button>;
 }
