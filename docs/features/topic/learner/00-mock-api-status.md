@@ -17,7 +17,7 @@ Không fallback mock trong ứng dụng mặc định. Lệnh/launcher fixture l
 | --- | --- | --- | --- |
 | Khám phá | GET /topics qua client | Viewer + startAvailability từ BE | Browser fixture; BE chưa kết nối |
 | Chủ đề của tôi | GET /topics/mine, counts cả hai tab | Trạng thái và thứ tự server | Browser fixture; guest không gọi mine |
-| Trang chủ | GET /topics/mine?status=IN_PROGRESS&limit=1 | Tiến độ chủ đề từ API; chi tiết kiểm tra quyền học | [Homepage verification](15-homepage.md#verification-checklist) |
+| Trang chủ | Topic, hồ sơ, lộ trình và lịch sử đánh giá qua API | Tiến độ thật. Thẻ tiếp tục Ngữ pháp dùng dữ liệu mẫu có nhãn | [Homepage verification](15-homepage.md#verification-checklist) |
 | Chi tiết | GET /topics/{id}, không preview từ/mẫu câu | GET progress riêng; actions từ detail | Browser fixture; lỗi progress không giả0% |
 | Attempt học mới | GET attempt + content đúng version | POST advance với revision/source; POST access riêng | FE đã triển khai; chưa xác minh BE/browser |
 | Review entry | GET review | POST access, không advance | Vẫn receipt, đầy đủ ở chặng5 |
