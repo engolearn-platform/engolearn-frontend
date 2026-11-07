@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { Link } from "react-router";
 import { cn } from "@shared/utils";
 import LearningNavContent from "./LearningNavContent";
@@ -75,7 +75,7 @@ export default function LearningSidebar({
           onClick={toggleCompact}
           className="absolute right-0 top-1/2 z-30 flex size-10 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest text-on-surface-variant shadow-sm hover:bg-surface-container-high focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          {compact ? <ChevronRight className="size-4" aria-hidden="true" /> : <ChevronLeft className="size-4" aria-hidden="true" />}
+          {compact ? <ChevronRight className="size-3.5" aria-hidden="true" /> : <ChevronLeft className="size-3.5" aria-hidden="true" />}
         </button>
       </div>
 
@@ -84,6 +84,17 @@ export default function LearningSidebar({
         isAuthenticated={isAuthenticated}
         showAccount={false}
       />
+      <div className="flex shrink-0 justify-center border-t border-outline-variant p-2">
+        <button
+          type="button"
+          aria-label="Cài đặt (chưa khả dụng)"
+          title="Cài đặt (chưa khả dụng)"
+          disabled
+          className="flex size-12 items-center justify-center rounded-xl text-on-surface-variant/70"
+        >
+          <Settings className="size-5" aria-hidden="true" />
+        </button>
+      </div>
     </aside>
   );
 }
