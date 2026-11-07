@@ -13,7 +13,7 @@ export interface LearningPathProgress {
 
 export interface LearningPathListItem {
   id: string;
-  sourceAttemptId: string | null;
+  sourceAssessmentAttemptId: string | null;
   createdDate: string;
   level: string;
   k: number;

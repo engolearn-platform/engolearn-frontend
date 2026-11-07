@@ -1,6 +1,9 @@
 import { EmptyState, Loading } from "@shared/components";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Navigate, useLocation } from "react-router";
+import { useAuth } from "@shared/hooks/useAuth";
+import { ROUTES } from "@shared/constants";
 import LearningPathCard from "@features/learning-path/components/learning/LearningPathCard";
 import LearningPathSection from "@features/learning-path/components/learning/LearningPathSection";
 import { useLearningPaths } from "@features/learning-path/hooks/useLearningPaths";
@@ -9,7 +12,7 @@ import type { LearningPathListItem } from "@features/learning-path/types/learnin
 
 const EMPTY_PATHS: LearningPathListItem[] = [];
 
-export default function LearningPathListView() {
+function LearningPathListContent() {
   const active = useLearningPaths("ACTIVE");
   const completed = useLearningPaths("COMPLETED", false);
   const cancelled = useLearningPaths("CANCELLED", false);
@@ -143,9 +146,9 @@ export default function LearningPathListView() {
         </LearningPathSection>
 
         <LearningPathSection
-          title="Lộ trình đã hoàn thành"
+          title="Lộ trình đã kết thúc"
           count={completedCount}
-          icon="completed"
+          icon="ended"
           collapsible={!isSearching}
           expanded={isSearching || completedExpanded}
           onToggle={isSearching ? undefined : toggleCompleted}
@@ -167,7 +170,7 @@ export default function LearningPathListView() {
                 </div>
               ) : (
                 <EmptyState
-                  title="Không tìm thấy lộ trình đã hoàn thành phù hợp"
+                  title="Không tìm thấy lộ trình đã kết thúc phù hợp"
                   description="Thử tìm theo micro-skill hoặc ngày tạo dạng DD/MM/YYYY."
                 />
               )
@@ -175,7 +178,7 @@ export default function LearningPathListView() {
               <Loading size="sm" />
             ) : completed.error ? (
               <EmptyState
-                title="Không tải được lộ trình đã hoàn thành"
+                title="Không tải được lộ trình đã kết thúc"
                 description={completed.error.message}
               />
             ) : visibleCompletedPaths.length > 0 ? (
@@ -186,8 +189,8 @@ export default function LearningPathListView() {
               </div>
             ) : (
               <EmptyState
-                title="Chưa có lộ trình đã hoàn thành"
-                description="Các lộ trình hoàn thành sẽ xuất hiện tại đây."
+                title="Chưa có lộ trình đã kết thúc"
+                description="Các lộ trình đã kết thúc sẽ xuất hiện tại đây."
               />
             ))}
         </LearningPathSection>
@@ -226,4 +229,13 @@ export default function LearningPathListView() {
       <div className="h-20 lg:hidden" aria-hidden="true" />
     </div>
   );
+}
+
+export default function LearningPathListView() {
+  const auth = useAuth();
+  const location = useLocation();
+  if (auth.isLoading) return <div className="p-5"><Loading size="lg" /></div>;
+  if (auth.error) return <div className="p-5"><EmptyState title="Không xác minh được tài khoản" description={auth.error} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  return <LearningPathListContent key={auth.identityGeneration} />;
 }

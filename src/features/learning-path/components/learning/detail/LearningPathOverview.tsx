@@ -1,7 +1,8 @@
 import { BookOpen, ChevronDown, ChevronUp, Ear, AudioLines } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import { cn } from "@shared/utils";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
-import { percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
+import { isLearningPathFullyAnswered, percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
 import type { LearningPathDetail } from "@features/learning-path/types/learning-path-detail.types";
 import LearningPathProgress from "./LearningPathProgress";
 
@@ -19,8 +20,10 @@ export default function LearningPathOverview({
   const progress = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
   const durationWeeks = path.durationWeeks ?? path.weeks.length;
   const questionsPerWeek = path.questionsPerWeek ?? path.weeks[0]?.assigned ?? 0;
+  const isEnded = path.status === "COMPLETED";
+  const fullyAnswered = isEnded && isLearningPathFullyAnswered(path.answered, path.assigned);
   const status = path.status === "COMPLETED"
-    ? "Đã hoàn thành"
+    ? fullyAnswered ? "Đã hoàn thành" : "Đã kết thúc"
     : path.status === "NOT_STARTED"
       ? "Chưa bắt đầu"
       : `Đang học · Tuần ${path.currentWeekNo ?? 1}/${durationWeeks}`;
@@ -33,8 +36,11 @@ export default function LearningPathOverview({
             <h1 className="text-xl font-bold leading-7 text-on-surface lg:text-2xl">
               Lộ trình ngày {formatLearningPathDate(path.createdDate)}
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-              <span className="size-1.5 rounded-full bg-primary" />
+            <span className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+              fullyAnswered ? "bg-green-100 text-green-700" : isEnded ? "border border-tertiary/40 bg-tertiary-fixed text-on-tertiary-fixed" : "bg-primary/10 text-primary",
+            )}>
+              <span className="size-1.5 rounded-full bg-current" />
               {status}
             </span>
           </div>

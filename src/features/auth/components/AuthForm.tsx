@@ -3,16 +3,10 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
+import { authReturnTo } from "@features/auth/utils/authReturnTo";
 
 interface AuthFormProps { mode: "login" | "register" }
-interface LocationState { from?: { pathname?: string; search?: string; hash?: string } }
 interface FieldError { field: string; message: string }
-
-function safeReturnTo(state: unknown): string {
-  const from = (state as LocationState | null)?.from;
-  const target = `${from?.pathname ?? ""}${from?.search ?? ""}${from?.hash ?? ""}`;
-  return target.startsWith("/") && !target.startsWith("//") && !target.startsWith("/login") && !target.startsWith("/register") ? target : ROUTES.HOME;
-}
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const isRegister = mode === "register";
@@ -49,7 +43,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
     try {
       const credentials = { email: normalizedEmail, password };
       if (isRegister) await register(credentials); else await login(credentials);
-      await navigate(safeReturnTo(location.state), { replace: true });
+      await navigate(authReturnTo(location.state), { replace: true });
     } catch (error) {
       const detail = error as Error & { code?: string; fieldErrors?: FieldError[] };
       setFieldErrors(detail.fieldErrors ?? []);

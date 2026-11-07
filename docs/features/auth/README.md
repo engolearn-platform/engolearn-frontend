@@ -7,7 +7,7 @@
 - Registration asks for a password of at least 8 characters and at most 72 UTF-8 bytes, matching the backend password constraints. Session bootstrap failures and unconfirmed logout offer retry actions.
 
 - `/login` and `/register` are public routes owned by `src/features/auth/`.
-- `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state; authenticated users are redirected to `/` with history replacement. Session errors show a retry action rather than a guest form. The profile test page refreshes shared identity after login/register/logout so this gate sees cookie-auth changes made there.
+- `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state; authenticated users are redirected to a validated captured local destination, or `/`, with history replacement. Session errors show a retry action rather than a guest form. The profile test page refreshes shared identity after login/register/logout so this gate sees cookie-auth changes made there.
 - After successful authentication, the app returns to a safe local route captured by the guard, or `/`.
 - Admin topic and subscription management routes wait for session bootstrap and redirect guests to login. Topic learning routes remain public.
 - Learning and management top bars expose sign out. Local identity is cleared even when server revocation cannot be confirmed; the provider retains an error describing that outcome.
@@ -31,3 +31,5 @@ On 2026-11-04, the real FE proxy + default-profile backend + isolated Mongo HTTP
 ## Backend coordination
 
 The frontend targets the MVP contract in `Note/authentication/02-fe-be-api-contract.md`: `/register`, `/login`, `/refresh`, `/me`, and `/logout`. Cross-tab refresh rotation behavior is backend dependent and is not verified by this client.
+
+Assessment integration (2026-11-05): GuestOnlyGuard and AuthForm share `authReturnTo`; network-path/backslash/control-character and login/register-loop targets fall back to `/`. Authentication mutations use the form's busy state rather than tearing down the form through the global session-bootstrap loading gate. A rejected login is a form-owned error; only session bootstrap failures block the gate. Real-browser acceptance for the current change is recorded separately from historical auth harness results.

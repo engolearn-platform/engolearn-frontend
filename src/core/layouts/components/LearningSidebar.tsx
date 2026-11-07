@@ -1,89 +1,125 @@
+import * as React from "react";
+import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Link } from "react-router";
 import { cn } from "@shared/utils";
-import { Flame, UserRound } from "lucide-react";
-import { NavLink } from "react-router";
-import {
-  BRAND_ICON,
-  LEARNING_NAV_ITEMS,
-  PROFILE_NAV_ITEM,
-  type LearningNavItem,
-} from "./learningNav";
+import LearningNavContent from "./LearningNavContent";
+import { BRAND_ICON } from "./learningNav";
 
-function NavigationItem({ item }: { item: LearningNavItem }) {
-  const content = (
-    <>
-      <item.icon className="size-5 shrink-0" aria-hidden="true" />
-      <span>{item.label}</span>
-    </>
-  );
+const SIDEBAR_PREFERENCE_KEY = "engolearn:learner-sidebar-compact";
 
-  if (item.disabled || !item.to) {
-    return (
-      <span
-        aria-disabled="true"
-        className="flex cursor-not-allowed items-center gap-3.5 rounded-[12px] px-4 py-3 text-[15px] leading-[22.5px] text-on-surface-variant"
-      >
-        {content}
-      </span>
-    );
+function readPreference(): boolean | null {
+  try {
+    const value = window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY);
+    return value === "compact" ? true : value === "expanded" ? false : null;
+  } catch {
+    return null;
   }
-
-  return (
-    <NavLink
-      to={item.to}
-      className={({ isActive }) =>
-        cn(
-          "flex items-center gap-3.5 rounded-[12px] px-4 py-3 text-[15px] leading-[22.5px] font-medium transition-colors duration-150",
-          item.to === PROFILE_NAV_ITEM.to && "py-[10.5px]",
-          isActive
-            ? "bg-primary/10 font-semibold text-primary ring-1 ring-primary/10"
-            : "text-on-surface-variant hover:bg-surface-container-high",
-        )
-      }
-    >
-      {content}
-    </NavLink>
-  );
 }
 
-export default function LearningSidebar({ profile }: { profile?: { name: string; level: string | null } } = {}) {
+function useDefaultExpanded(): boolean {
+  const [expanded, setExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    const media = window.matchMedia("(min-width: 80rem)");
+    const update = () => setExpanded(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return expanded;
+}
+
+interface LearningSidebarProps {
+  isAuthenticated: boolean;
+}
+
+export default function LearningSidebar({
+  isAuthenticated,
+}: LearningSidebarProps) {
+  const [compactOverride, setCompactOverride] = React.useState<boolean | null>(
+    readPreference,
+  );
+  const defaultExpanded = useDefaultExpanded();
+  const compact = compactOverride ?? !defaultExpanded;
   const BrandIcon = BRAND_ICON;
 
-  return (
-    <aside className="z-10 hidden h-full w-[300px] shrink-0 flex-col border-r border-outline-variant/60 bg-surface-container-lowest lg:flex">
-      <div className="flex h-[88px] shrink-0 items-center gap-3 border-b border-outline-variant/60 px-6">
-        <span className="flex size-10 items-center justify-center rounded-[12px] bg-primary/10 text-primary">
-          <BrandIcon className="size-5" aria-hidden="true" />
-        </span>
+  const toggleCompact = () => {
+    const nextCompact = !compact;
+    setCompactOverride(nextCompact);
+    try {
+      window.localStorage.setItem(
+        SIDEBAR_PREFERENCE_KEY,
+        nextCompact ? "compact" : "expanded",
+      );
+    } catch {
+      // The shell remains usable when browser storage is unavailable.
+    }
+  };
 
-        <span className="text-[22px] leading-[33px] font-bold tracking-tight text-primary">
-          EngoLearn
-        </span>
+  return (
+    <aside
+      aria-label="Thanh điều hướng học tập"
+      className={cn(
+        "relative z-30 hidden h-dvh shrink-0 flex-col border-r border-outline-variant bg-surface-container-lowest transition-[width] duration-200 md:flex",
+        compact ? "w-[4.5rem]" : "w-[17rem]",
+      )}
+    >
+      <div
+        className={cn(
+          "relative flex h-16 shrink-0 items-center border-b border-outline-variant",
+          compact ? "justify-center pl-2 pr-6" : "gap-3 px-5",
+        )}
+      >
+        <Link
+          to="/"
+          aria-label="EngoLearn, trang chủ"
+          className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <BrandIcon className="size-5" aria-hidden="true" />
+          </span>
+          {!compact && (
+            <span className="truncate text-xl font-bold tracking-tight text-primary">
+              EngoLearn
+            </span>
+          )}
+        </Link>
+        <button
+          id="learning-sidebar-toggle"
+          type="button"
+          aria-label={
+            compact ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"
+          }
+          aria-pressed={!compact}
+          onClick={toggleCompact}
+          className="group absolute right-0 top-1/2 z-30 flex size-10 translate-x-1/2 -translate-y-1/2 items-center justify-center bg-transparent text-on-surface-variant"
+        >
+          <span className="flex size-7 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest shadow-sm transition-colors group-hover:bg-surface-container-high group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary">
+            {compact ? (
+              <ChevronRight className="size-3.5" aria-hidden="true" />
+            ) : (
+              <ChevronLeft className="size-3.5" aria-hidden="true" />
+            )}
+          </span>
+        </button>
       </div>
 
-      <nav
-        aria-label="Điều hướng chính"
-        className="flex flex-1 flex-col gap-[6px] overflow-y-auto px-6 py-2"
-      >
-        {LEARNING_NAV_ITEMS.map((item) => (
-          <NavigationItem key={item.label} item={item} />
-        ))}
-      </nav>
-
-      <div className="space-y-4 border-t border-outline-variant/60 px-6 pt-[25px] pb-6">
-        {profile ? <div className="flex items-center gap-3 rounded-xl bg-surface p-4"><span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary"><UserRound className="size-5" aria-hidden="true" /></span><div className="min-w-0 flex-1"><p className="truncate text-label-lg font-semibold">{profile.name}</p><p className="text-label-sm text-on-surface-variant">{profile.level ? "Level CEFR" : "Chưa đăng nhập"}</p></div>{profile.level && <span className="rounded-full bg-secondary-container px-3 py-1 text-label-sm font-semibold text-on-secondary-container">{profile.level}</span>}</div> : <div className="flex items-center justify-between rounded-[12px] border border-outline-variant/60 bg-surface px-3.5 py-[14px] text-[14px] leading-[21px] font-semibold text-on-surface-variant">
-          <span className="flex items-center gap-2.5">
-            <Flame
-              className="size-[16.5px] text-amber-500"
-              fill="currentColor"
-              aria-hidden="true"
-            />
-            Streak
-          </span>
-
-          <span className="text-on-surface">7 Ngày</span>
-        </div>}
-
-        <NavigationItem item={PROFILE_NAV_ITEM} />
+      <LearningNavContent
+        compact={compact}
+        isAuthenticated={isAuthenticated}
+        showAccount={false}
+      />
+      <div className="flex shrink-0 justify-center border-t border-outline-variant p-2">
+        <button
+          type="button"
+          aria-label="Cài đặt (chưa khả dụng)"
+          title="Cài đặt (chưa khả dụng)"
+          disabled
+          className="flex size-12 items-center justify-center rounded-xl text-on-surface-variant/70"
+        >
+          <Settings className="size-5" aria-hidden="true" />
+        </button>
       </div>
     </aside>
   );

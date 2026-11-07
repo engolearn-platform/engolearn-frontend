@@ -84,7 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const authenticate = React.useCallback(async (path: "login" | "register", credentials: Credentials) => {
     const generation = beginIdentityChange();
-    setIsLoading(true);
     setError(null);
     try {
       const result = await httpService.post<unknown>(`/api/v1/auth/${path}`, credentials, { skipAuthRefresh: true });
@@ -97,7 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return nextUser;
     } catch (err) {
       if (generation === requestGeneration.current) {
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        // The form owns a rejected login; only session bootstrap failures block route gates.
+        setError(null);
         setIsLoading(false);
       }
       throw err;
