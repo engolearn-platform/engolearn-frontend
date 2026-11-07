@@ -2,6 +2,8 @@
 
 Current 2026-10-29 UX: [08](08-attempt-learning.md), [11](11-quiz-slice-a.md), and [14](14-review-retry-slice-c.md) define reached-question navigation, content-only scroll readiness, stable Continue/quiz feedback, shared review navigation/footer, exclusive item resume/retry and confirmed whole-topic reset. These supersede older checkpoint descriptions below. Current static/live verification is tracked separately; no historical fixture result proves this revision.
 
+Catalog shell, topic viewer identity and guest handling are documented in [07-topic-catalog.md](07-topic-catalog.md). Catalog routes share the learner shell; standalone detail, attempt, result and review routes retain their focused presentation.
+
 ## Catalog và chi tiết (chặng2)
 
 - /topics: Khám phá các topic chưa từng bắt đầu; query q/level/sort.
@@ -28,6 +30,7 @@ Current 2026-10-29 UX: [08](08-attempt-learning.md), [11](11-quiz-slice-a.md), a
 | 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | Implemented; early404 evidence is historical, remaining acceptance tracked with B |
 | 12-completion-slice-b.md | Completion recovery, item/topic result and legal next actions | FE consumer implemented; live acceptance recorded separately |
 | 14-review-retry-slice-c.md | Read-only review, confirmed retry and frozen session resume | FE implemented; focused parent live acceptance recorded |
+| [15-homepage.md](15-homepage.md) | Learner homepage and recent Topic card | Uses the My Topics API |
 
 ## Luồng legacy còn tồn tại
 

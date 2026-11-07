@@ -15,12 +15,12 @@ UI test có server fixture riêng trong tests/support, chỉ được dùng khi 
 - /topics/:topicId?from=<catalog URL>: chi tiết standalone, quay lại đúng trang nguồn và bộ lọc. from chỉ chấp nhận hai route nội bộ trên.
 - /topics/:topicId/attempts/:attemptId?mode=learn hoặc review&from=...: điểm vào lượt học, lấy đúng attempt/position/version thật. Chặng2 chỉ hiển thị thông tin lượt đã lưu. Chặng3 đã nối khung học/advance (08-attempt-learning.md); quiz/review đầy đủ ở chặng4–5. Không chuyển người học vào mock cũ.
 
-TopicViewerLayout ở feature sở hữu provider. TopicCatalogLayout tái sử dụng sidebar/bottom-nav app shell qua props; detail không gắn mock progress provider cũ.
+`TopicViewerLayout` ở feature sở hữu viewer provider. `/topics` và `/my-topics` nằm trong `LearningLayout` dùng chung với grammar, learning paths và subscription. Chi tiết topic, attempt, result và review tiếp tục hiển thị độc lập ngoài shell. Provider viewer chỉ gọi API khi phiên đã xác thực; phiên khách được xác nhận bởi auth state và dùng viewer khách không có learnerId/CEFR. Lỗi kiểm tra phiên và lỗi viewer của người dùng đã đăng nhập vẫn hiện trạng thái lỗi cùng thao tác thử lại. CEFR thật được chuyển sang shell qua bridge có khóa identity; shell không phụ thuộc API topic.
 Components: TopicCard (cả thẻ là Link), TopicFilterChips controlled, TopicState, TopicItemCard; không preview nội dung từ/mẫu câu trong outline.
 
 ## State và dữ liệu
 
-Viewer lấy từ endpoint viewer, không đoán guest/A1 khi lỗi. Server state qua useFetch; lỗi giữ status/code.
+Viewer của learner lấy từ endpoint viewer; guest chỉ được suy ra sau khi auth xác nhận phiên ẩn danh, không suy từ lỗi mạng hay lỗi viewer. Server state qua useFetch; lỗi giữ status/code.
 Danh sách tải thêm bằng cursor; các trang đã tải vẫn còn khi tải trang sau lỗi. Dedupe theo topicId; đổi viewer/filter/tab remount data scope và hủy request cũ.
 Tìm kiếm debounce350ms; back/forward đồng bộ input. Đặt lại xóa keyword/level/sort.
 Chi tiết và progress tải riêng: lỗi progress không làm mất outline hoặc giả progress0%. Guest không gọi progress/mine.
@@ -32,6 +32,7 @@ Retry thay phiên dở cần Dialog xác nhận và đúng replaceRetrySessionId
 ## Responsive và kiểm tra
 
 Grid1 cột ->2 ->3; trang detail1 cột -> nội dung+sidebar; padding20px mobile, chữ Việt không cắt dòng vào dấu.
-Header/sidebar dùng viewer thật, không fake streak/tên/level trong surface topic.
+Header/sidebar dùng identity và CEFR có nguồn thật, không fake streak/tên/level trong surface topic. CEFR bridge được làm rỗng khi đổi identity để không lộ giá trị cũ.
+Sidebar desktop có thể thu gọn; các biểu tượng compact giữ cùng trục giữa cả khi danh sách có thanh cuộn. Nút thu/mở nằm ở giữa cạnh phải của phần đầu thương hiệu. Nút cài đặt dạng biểu tượng nằm giữa chân sidebar ở cả hai trạng thái, hiện là placeholder chưa khả dụng. Khu tài khoản thuộc topbar, còn drawer điều hướng trên mobile vẫn giữ khu tài khoản ở cuối danh sách.
 Kiểm tra native reducer/filter/route/error/service shape + API tests chặng1 + build/lint.
 Kiểm tra browser bằng fixture phải ghi rõ là mock network test, phân biệt smoke với BE thật.
