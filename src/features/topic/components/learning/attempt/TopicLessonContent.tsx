@@ -85,12 +85,11 @@ export function TopicLessonContent({ content, position, readOnly = false }: { co
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 text-headline-sm font-semibold"><MessageCircle className="size-5 text-primary" aria-hidden="true" />Hội thoại mẫu</h2><LessonAudio url={context.dialogueAudioUrl} label="Nghe toàn bộ hội thoại" showUnavailable /></div>
         <div className="flex flex-col gap-5">{context.dialogue.map((line, index) => {
           const learner = /customer|learner|student|^you$/i.test(line.speaker);
-          return <div key={index} className={"flex min-w-0 flex-col gap-2 " + (learner ? "items-end" : "items-start")}>
-            <div className={"flex items-center gap-2 px-1 text-label-sm font-semibold text-on-surface-variant " + (learner ? "flex-row-reverse" : "")}>
-              <span aria-hidden="true" className={"flex size-8 shrink-0 items-center justify-center rounded-full " + (learner ? "bg-learning-mint text-primary" : "bg-surface-container-low text-on-surface-variant")}>{Array.from(line.speaker.trim())[0]?.toLocaleUpperCase() || "?"}</span>
-              <span>{line.speaker}</span>
-            </div>
-            <div className={"w-fit max-w-[90%] space-y-2 break-words rounded-2xl border p-4 text-left sm:max-w-[80%] " + (learner ? "rounded-tr-sm border-learning-mint-border bg-learning-mint" : "rounded-tl-sm border-learning-outline bg-surface-container-low")}>
+          const messageColumn = learner ? "col-start-1" : "col-start-2";
+          return <div key={index} className={"grid w-fit max-w-[90%] items-start gap-x-2 gap-y-1 sm:max-w-[80%] " + (learner ? "grid-cols-[minmax(0,1fr)_auto] self-end" : "grid-cols-[auto_minmax(0,1fr)] self-start")}>
+            <span className={messageColumn + " row-start-1 break-words px-1 text-label-sm font-semibold text-on-surface-variant " + (learner ? "text-right" : "text-left")}>{line.speaker}</span>
+            <span aria-hidden="true" className={"row-start-2 flex size-8 items-center justify-center rounded-full text-label-sm font-semibold " + (learner ? "col-start-2 bg-learning-mint text-primary" : "col-start-1 bg-surface-container-low text-on-surface-variant")}>{Array.from(line.speaker.trim())[0]?.toLocaleUpperCase() || "?"}</span>
+            <div className={messageColumn + " row-start-2 space-y-2 break-words rounded-2xl border p-4 text-left " + (learner ? "rounded-tr-sm border-learning-mint-border bg-learning-mint" : "rounded-tl-sm border-learning-outline bg-surface-container-low")}>
               <p lang="en" className="text-body-lg font-semibold leading-relaxed">{line.textEn}</p>
               <p lang="vi" className="text-body-md leading-relaxed text-on-surface-variant">{line.textVi}</p>
               <LessonAudio url={line.audioUrl} label={"Nghe câu " + (index + 1)} />
