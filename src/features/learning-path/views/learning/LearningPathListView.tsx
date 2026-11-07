@@ -1,6 +1,9 @@
 import { EmptyState, Loading } from "@shared/components";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Navigate, useLocation } from "react-router";
+import { useAuth } from "@shared/hooks/useAuth";
+import { ROUTES } from "@shared/constants";
 import LearningPathCard from "@features/learning-path/components/learning/LearningPathCard";
 import LearningPathSection from "@features/learning-path/components/learning/LearningPathSection";
 import { useLearningPaths } from "@features/learning-path/hooks/useLearningPaths";
@@ -9,7 +12,7 @@ import type { LearningPathListItem } from "@features/learning-path/types/learnin
 
 const EMPTY_PATHS: LearningPathListItem[] = [];
 
-export default function LearningPathListView() {
+function LearningPathListContent() {
   const active = useLearningPaths("ACTIVE");
   const completed = useLearningPaths("COMPLETED", false);
   const cancelled = useLearningPaths("CANCELLED", false);
@@ -226,4 +229,13 @@ export default function LearningPathListView() {
       <div className="h-20 lg:hidden" aria-hidden="true" />
     </div>
   );
+}
+
+export default function LearningPathListView() {
+  const auth = useAuth();
+  const location = useLocation();
+  if (auth.isLoading) return <div className="p-5"><Loading size="lg" /></div>;
+  if (auth.error) return <div className="p-5"><EmptyState title="Không xác minh được tài khoản" description={auth.error} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  return <LearningPathListContent key={auth.identityGeneration} />;
 }

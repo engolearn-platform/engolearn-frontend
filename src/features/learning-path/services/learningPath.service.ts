@@ -84,63 +84,17 @@ export const learningPathService = {
     status: LearningPathListStatus,
     signal: AbortSignal,
   ): Promise<LearningPathApiResponse<LearningPathListData>> {
-    const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim();
-
-    if (!userId) {
-      throw new Error(
-        "Thiếu VITE_LEARNING_PATH_USER_ID trong file .env.local.",
-      );
-    }
-
-    const params = new URLSearchParams({ userId, status });
-    const response = await fetch(`${LEARNING_PATHS_ENDPOINT}?${params}`, {
-      signal,
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      const problem = (await response.json().catch(() => null)) as
-        | ProblemDetailResponse
-        | null;
-      throw new Error(
-        problem?.detail ??
-          problem?.title ??
-          `Không tải được Learning Path (${response.status}).`,
-      );
-    }
-
-    return (await response.json()) as LearningPathApiResponse<LearningPathListData>;
+    return httpService.get<LearningPathApiResponse<LearningPathListData>>(
+      LEARNING_PATHS_ENDPOINT, { signal, params: { status } },
+    );
   },
 
   async search(
     keyword: string,
     signal: AbortSignal,
   ): Promise<LearningPathApiResponse<LearningPathListData>> {
-    const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim();
-
-    if (!userId) {
-      throw new Error(
-        "Thiếu VITE_LEARNING_PATH_USER_ID trong file .env.local.",
-      );
-    }
-
-    const params = new URLSearchParams({ userId, keyword });
-    const response = await fetch(`${LEARNING_PATHS_SEARCH_ENDPOINT}?${params}`, {
-      signal,
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      const problem = (await response.json().catch(() => null)) as
-        | ProblemDetailResponse
-        | null;
-      throw new Error(
-        problem?.detail ??
-          problem?.title ??
-          `Không tìm kiếm được Learning Path (${response.status}).`,
-      );
-    }
-
-    return (await response.json()) as LearningPathApiResponse<LearningPathListData>;
+    return httpService.get<LearningPathApiResponse<LearningPathListData>>(
+      LEARNING_PATHS_SEARCH_ENDPOINT, { signal, params: { keyword } },
+    );
   },
 };

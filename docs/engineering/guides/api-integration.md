@@ -104,23 +104,28 @@ Reference table: [../../features/topic/learner/00-mock-api-status.md](../../feat
 
 ## 6. Learning Path list API (REAL)
 
-The learner list uses `GET /api/learning-paths?userId=<ObjectId>&status=<status>` through the
+The learner list uses `GET /api/learning-paths?status=<status>` through the
 Vite development proxy (`/api` → `http://localhost:8080`). `status` is `ACTIVE` by default;
 `COMPLETED` and `CANCELLED` are requested when their collapsed sections open. Every response has
 the backend envelope `{ data: { items, counts }, timestamp }`. The card DTO contains
-`id`, `sourceAttemptId`, `createdDate`, `level`, `k`, `microSkills: string[]`, `status`,
+`id`, `sourceAssessmentAttemptId: string|null`, `createdDate`, `level`, `k`, `microSkills: string[]`, `status`,
 `currentWeekNo`, and `progress { assigned, answered }`.
 
 The request callback lives in `features/learning-path/hooks/useLearningPaths.ts`, passes its
 `AbortSignal` to `learningPathService`. Search uses `GET /api/learning-paths/search` with
-`userId` and `keyword`; it matches an exact creation date in `DD/MM/YYYY` format or a partial,
+`keyword`; it matches an exact creation date in `DD/MM/YYYY` format or a partial,
 case-insensitive micro-skill name. Only active and completed paths are searched; cancelled paths
-are excluded. Search requests are debounced in the view. A local `VITE_LEARNING_PATH_USER_ID`
-supplies the test user's ObjectId until the frontend has an authentication/session source.
+are excluded. Search requests are debounced in the view. Both calls use shared HTTP with
+the authenticated cookie and bounded refresh; no `VITE_LEARNING_PATH_USER_ID` is needed.
+The list view redirects guests to login and remounts state on identity changes. The native
+Assessment ID replaces the former `sourceAttemptId` property: linked cards navigate to
+`/assessment/attempts/:id/result`, while null links remain disabled. See the
+[list screen](../../features/learning-path/learner/00-list-screen.md) for behavior.
 
 ## 7. Learning Path detail API (REAL)
 
-The four-tab learner detail screen requests `GET /api/learning-paths/{pathId}?userId=<ObjectId>`.
+The four-tab learner detail screen requests `GET /api/learning-paths/{pathId}` using shared
+HTTP and the session cookie, with an authenticated view guard.
 Its response uses the same `{ data, timestamp }` envelope as the list. The detail DTO
 contains `config`, `microSkills`, `progress`, `weeks` with day states and closed-week
 `stats`, plus `summary` when the path is completed. Locked weeks have no day details;
