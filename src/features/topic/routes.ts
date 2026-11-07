@@ -6,6 +6,7 @@ import ManagementLayout from "@/core/layouts/ManagementLayout";
 import { ROUTES } from "@shared/constants";
 import TopicViewerLayout from "@features/topic/components/learning/catalog/TopicViewerLayout";
 import TopicPage from "@features/topic/views/TopicPage";
+import TopicHomeView from "@features/topic/views/learning/TopicHomeView";
 import MyTopicsView from "@features/topic/views/learning/MyTopicsView";
 import TopicDetailView from "@features/topic/views/learning/TopicDetailView";
 import TopicAttemptEntryView from "@features/topic/views/learning/TopicAttemptEntryView";
@@ -23,6 +24,7 @@ function LegacyTopicRedirect() {
 }
 
 export const TopicCatalogRoutes: RouteObject[] = [
+  { path: ROUTES.HOME, Component: TopicHomeView },
   {
     Component: TopicViewerLayout,
     children: [

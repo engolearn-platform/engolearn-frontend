@@ -30,6 +30,7 @@ Catalog shell, topic viewer identity and guest handling are documented in [07-to
 | 11-quiz-slice-a.md | Quiz UI, answer journal, frontier/hidden | Implemented; early404 evidence is historical, remaining acceptance tracked with B |
 | 12-completion-slice-b.md | Completion recovery, item/topic result and legal next actions | FE consumer implemented; live acceptance recorded separately |
 | 14-review-retry-slice-c.md | Read-only review, confirmed retry and frozen session resume | FE implemented; focused parent live acceptance recorded |
+| [15-homepage.md](15-homepage.md) | Learner homepage and recent Topic card | Uses the My Topics API |
 
 ## Luồng legacy còn tồn tại
 

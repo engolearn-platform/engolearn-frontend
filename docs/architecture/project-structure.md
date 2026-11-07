@@ -125,7 +125,7 @@ Rules:
 ## 7. Routing
 
 - Each feature exports `RouteObject[]` from `routes.ts` (see `src/features/topic/routes.ts`, `src/features/Post/routes.ts`).
-- Feature route files own URL patterns and view declarations. `src/router.tsx` composes catalog, grammar, learning path, and learner subscription routes under one pathless `LearningLayout` parent. Public landing/auth, standalone topic detail/attempt/results, and management routes remain outside that shared learner parent.
+- Feature route files own URL patterns and view declarations. `src/router.tsx` composes Home, catalog, grammar, learning path, and learner subscription routes under one pathless `LearningLayout` parent. Auth, standalone topic detail/attempt/results, and management routes remain outside that shared learner parent.
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `AppRouter` calls `useRoutes(appRoutes)`.
 - Surface pattern inside one `routes.ts`:
 
