@@ -15,9 +15,19 @@ import {
 } from "@features/subscription/routes";
 import { AuthRoutes } from "@features/auth/routes";
 import LearningLayout from "@/core/layouts/LearningLayout";
+import LandingEntryView from "@features/landing-page/views/LandingEntryView";
+import { LandingPageRoutes } from "@features/landing-page/routes";
+import TopicHomeView from "@features/topic/views/learning/TopicHomeView";
+import { ROUTES } from "@shared/constants";
 
 export const appRoutes = [
   ...AuthRoutes,
+  {
+    path: ROUTES.HOME,
+    Component: LandingEntryView,
+    children: [{ index: true, Component: TopicHomeView }],
+  },
+  ...LandingPageRoutes,
   ...PostRoutes,
   ...ProducsRoute,
   {
