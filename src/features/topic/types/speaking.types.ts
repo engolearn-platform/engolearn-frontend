@@ -41,6 +41,10 @@ export interface SpeakingContentSnapshot {
   topicItemVersionId: string;
   title: string;
   description: string;
+  context: string;
+  learnerRole: string;
+  aiRole: string;
+  openingSide: "LEARNER" | "AI";
   goals: SpeakingGoal[];
   goalPercentage?: number | null;
   completionPolicyVersion?: "REQUIRED_GOALS_V2" | "LEGACY_RATIO_V1" | null;
@@ -48,6 +52,16 @@ export interface SpeakingContentSnapshot {
   vocabulary: string[];
   expressions: string[];
   configRevision: number;
+}
+
+export type SpeakingOpeningStatus = "NOT_REQUIRED" | "GENERATING" | "SYNTHESIZING"
+  | "READY" | "TEXT_ONLY" | "FAILED" | "CANCELLED";
+
+export interface SpeakingOpening {
+  status: SpeakingOpeningStatus;
+  reply: string | null;
+  hintExampleEn: string | null;
+  aiAudioAvailable: boolean;
 }
 
 export interface SpeakingGoalEvidence {
@@ -114,7 +128,7 @@ export interface SpeakingSession {
   controllerEpoch: number;
   revision: number;
   canStartTurn: boolean;
-  openingReply: string;
+  opening: SpeakingOpening;
   turns: SpeakingTurn[];
 }
 

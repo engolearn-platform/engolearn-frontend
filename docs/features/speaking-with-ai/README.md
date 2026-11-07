@@ -6,10 +6,10 @@
 ## Current evidence
 
 - `/dev/speaking` is a development route using `MediaRecorder` and multipart upload per turn. It is not the target PCM/WebSocket contract.
-- `/dev/speaking-session` renders the current PCM/WebSocket `SpeakingView` directly, keeping this URL and defaulting to seeded morning item `6b0400000000000000000003`. Optional `?itemId=6b0400000000000000000004` (daytime) or `?itemId=6b0400000000000000000005` (evening) selects another item; normal backend level and predecessor completion checks still apply. Opening the route checks for an existing session but does not create one.
+- `/dev/speaking-session` renders the current PCM/WebSocket `SpeakingView` directly and defaults to café item `691b00000000000000000003`. Use `?itemId=691b00000000000000000004` to try a learner-led opening. Level and predecessor checks still apply. The route looks up existing sessions and offers an explicit start action.
 - This DEV-only route requires cookie login and enables the existing diagnostics surface. It shows the authoritative session state, latest committed transcript/turn, connection/recording state, recent WebSocket lifecycle events (including `AI_AUDIO_READY` and `TTS_ERROR` when emitted), and optional ConversationManager `demoDecision` metadata for each committed turn.
 
-Local backend setup: import `tools/mongo-json-importer/samples/daily-routine-speaking-v1.json` into `engolearn_db`, ensure `topic_learner_profiles` contains the A1 profile `speaking-demo-learner`, and set `TOPIC_LOCAL_LEARNER_ID=speaking-demo-learner` in the backend worktree's ignored `.env`. Restart the backend after changing this variable. Vite proxies `/api` and `/ws` to `http://localhost:8080` by default. Provider keys must be configured in the backend `.env` for live voice interaction.
+Local backend setup uses the café opening configuration seed for the existing café Topic items in `engolearn_db`. Vite proxies `/api` and `/ws` to `http://localhost:8080` by default. Provider keys must be configured in the backend `.env` for live voice interaction.
 - The existing demo view and its types are retained for comparison. Opening the route does not create a session; it asks for microphone access before create; closing the route does not send End.
 - `src/features/topic/types/speaking.types.ts` mirrors the BE snapshot, turn, assessment and configuration response.
 - `SpeakingView` is available from the item Context tab at `/topics/:topicId/speaking`; `/speaking/history` lists all of the learner's non-deleted sessions, including sessions from hidden items, and is linked from the learner sidebar. Speaking stays outside Context → Vocabulary → Expressions → Practice progress.
@@ -25,6 +25,33 @@ Local backend setup: import `tools/mongo-json-importer/samples/daily-routine-spe
 - The view supports create/replace/resume/end, item and account history, detail, 30-day recording availability, short-lived Cloudinary playback, deleting one session and deleting all. Closing the page stops local capture without sending End.
 
 ## Contract with BE
+
+### Opening snapshot (accepted r2)
+
+Each session snapshot carries the immutable `content.context`, `learnerRole`,
+`aiRole`, and `openingSide`, plus `opening: { status, reply,
+hintExampleEn, aiAudioAvailable }`. The shared view used by the item route and
+`/dev/speaking-session` shows the situation and goal descriptions before the
+dialogue. `NOT_REQUIRED` tells the learner role to start; `GENERATING` and
+`SYNTHESIZING` show progress; `FAILED` offers retry to the connected
+controller; `READY` and `TEXT_ONLY` show the AI opener and English hint.
+Ready audio can be replayed through the opening audio endpoint.
+
+The AI opener appears once as the first AI chat bubble below the situation
+instructions, using the same message layout as AI replies. It retains the
+opening hint, text-only notice and replay control. This is a visual conversation
+entry only: it is not added to `turns`, turn counts or assessment. Learner-led
+openings and generation/retry notices remain in the instructions section.
+
+The WebSocket `OPENING_UPDATED` event carries the authoritative session
+snapshot. It follows the existing revision acceptance path. Only a direct
+transition to `READY` can trigger one automatic audio attempt; hydration and
+reconnect snapshots never autoplay. The microphone stays disabled while any
+session audio is loading or playing, and `canStartTurn` remains the server
+authority for starting a turn.
+The tab that starts or resumes a session records the controller epoch in
+session storage. Other tabs can view the session and take control explicitly
+with “Tiếp tục phiên”.
 
 New assessment snapshots may include additive nullable `hintExampleEn` and
 `hintLeadVi`. The FE renders the English example with the optional Vietnamese
@@ -55,6 +82,19 @@ The fixture is available only with the backend `dev` profile; the route is exclu
 - Speaking routes require the shared `AuthProvider`/`useAuth` session. The legacy `/dev/speaking` comparison route still targets its old demo API and needs separate migration before use.
 
 ## Verification on this branch
+
+- 2026-11-07 opening chat placement: build passed (existing bundle-size
+  warning); lint passed with 72 warnings. `test:topic` has two pre-existing
+  failures: operation count `20 !== 17` and schema example `Missing entries`.
+  The opening now reuses `AiMessage` outside the instructions card. Live
+  authenticated browser and audio checks were not run for this layout change.
+
+- 2026-11-07 opening integration. Build and lint passed with the existing
+  72 lint warnings and bundle-size warning. Backend and frontend were
+  started locally, and the real proxy preserved unauthenticated HTTP 401.
+  Browser automation was blocked for Cốc Cốc by the computer-use URL policy.
+  Authenticated UI, autoplay and microphone checks remain manual. The user
+  will perform live Gemini/Cartesia testing.
 
 - `npx eslint src/features/topic/hooks/useSpeakingStream.ts src/features/topic/views/learning/SpeakingView.tsx src/features/topic/services/speaking.service.ts`: exit 0, no warnings after the hook fix.
 - `npm run lint`: exit 0; see warning count above.

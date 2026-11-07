@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { Check, CircleAlert, Lightbulb, Mic, Play, Square, Trash2, UserRound } from "lucide-react";
+import { Check, CircleAlert, Lightbulb, Mic, Play, RotateCcw, Square, Trash2, UserRound } from "lucide-react";
 import { ROUTES } from "@shared/constants";
 import { speakingDemoEnabled, speakingService } from "@features/topic/services/speaking.service";
 import { useSpeakingStream, type ConnectionState, type SpeakingSnapshotEvent, type SpeakingStreamLifecycleEvent } from "@features/topic/hooks/useSpeakingStream";
@@ -71,7 +72,11 @@ function terminalSemantics(session: SpeakingSession): string {
     requiredGoalsMet: session.requiredGoalsMet,
     completionEligible: session.completionEligible,
     canStartTurn: session.canStartTurn,
-    openingReply: session.openingReply,
+    opening: {
+      status: session.opening.status,
+      reply: session.opening.reply,
+      hintExampleEn: session.opening.hintExampleEn,
+    },
     turns: [...session.turns].sort((a, b) => a.sequence - b.sequence).map(turn => ({
       id: turn.id,
       sequence: turn.sequence,
@@ -85,8 +90,10 @@ function terminalSemantics(session: SpeakingSession): string {
   });
 }
 
-function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay, achievement, onFinish, validTurns = 0, minValidTurns = 0, showAchievementFireworks = false }: {
+function AiMessage({ text, label = "AI", children, assessment, goals = [], turn, playing = false, onPlay, achievement, onFinish, validTurns = 0, minValidTurns = 0, showAchievementFireworks = false }: {
   text: string;
+  label?: string;
+  children?: ReactNode;
   assessment?: SpeakingAssessment | null;
   goals?: SpeakingGoal[];
   turn?: SpeakingTurn;
@@ -107,9 +114,10 @@ function AiMessage({ text, assessment, goals = [], turn, playing = false, onPlay
   return <div className="flex items-start gap-2.5 sm:gap-3">
     <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-800">✦</span>
     <div className="min-w-0 max-w-[85%] sm:max-w-[75%]">
-      <p className="mb-1 ml-1 text-xs font-semibold text-teal-900">AI</p>
+      <p className="mb-1 ml-1 text-xs font-semibold text-teal-900">{label}</p>
       <div className="rounded-2xl rounded-tl-sm border border-teal-100 bg-teal-50 px-4 py-3 shadow-sm sm:px-5">
         <p className="whitespace-pre-wrap text-sm leading-6 text-slate-900 sm:text-base">{text}</p>
+        {children}
         {turn?.aiAudioAvailable && <div className="mt-3 border-t border-teal-200 pt-3">
           <button type="button" onClick={() => onPlay?.(turn)} disabled={playing}
             aria-label={`Nghe phản hồi AI của lượt ${turn.sequence}`}
@@ -276,16 +284,18 @@ function SpeakingDiagnostics({ session, connection, recording, interim, lifecycl
 }
 
 export default function SpeakingView({ devSession = false }: { devSession?: boolean }) {
+  const controlStorageKey = "speaking-controller";
   const { topicId } = useParams();
   const location = useLocation();
   const isDevSession = import.meta.env.DEV && devSession;
   const itemId = isDevSession
-    ? new URLSearchParams(location.search).get("itemId") || "6b0400000000000000000003"
+    ? new URLSearchParams(location.search).get("itemId") || "691b00000000000000000003"
     : topicId;
   const navigate = useNavigate();
   const diagnosticsEnabled = import.meta.env.DEV &&
     (isDevSession || isSpeakingDiagnosticsLocation(location.state));
   const [session, setSession] = useState<SpeakingSession | null>(null);
+  const [controller, setController] = useState(() => sessionStorage.getItem(controlStorageKey));
   const [config, setConfig] = useState<SpeakingItemConfig | null>(null);
   const [history, setHistory] = useState<SpeakingSession[]>([]);
   const [busy, setBusy] = useState(false);
@@ -293,14 +303,29 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   const [showHistory, setShowHistory] = useState(!itemId);
   const [playingTurn, setPlayingTurn] = useState<string | null>(null);
   const [playingAiTurn, setPlayingAiTurn] = useState<string | null>(null);
+  const [playingOpening, setPlayingOpening] = useState(false);
+  const [audioBusy, setAudioBusy] = useState(false);
   const [achievementEvents, setAchievementEvents] = useState<CelebrationDecision[]>([]);
   const [activeFireworkKey, setActiveFireworkKey] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
   const [demoDecisions, setDemoDecisions] = useState<Record<string, SpeakingDemoDecision>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playTokenRef = useRef(0);
+  const openingAutoplay = useRef(false);
+  const itemIdRef = useRef(itemId);
+  itemIdRef.current = itemId;
   const sessionRef = useRef<SpeakingSession | null>(null);
+  const openingAutoPlayRef = useRef<(sessionId: string) => void>(() => {});
   const playedAchievementKeys = useRef(new Set<string>());
+  const cancelOpeningAutoplay = useCallback(() => {
+    if (!openingAutoplay.current) return;
+    openingAutoplay.current = false;
+    playTokenRef.current++;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setPlayingOpening(false);
+    setAudioBusy(false);
+  }, []);
   const acceptDemoDecision = useCallback((sourceSessionId: string, turnId: string, decision: SpeakingDemoDecision) => {
     const current = sessionRef.current;
     if (!current || current.id !== sourceSessionId) return;
@@ -312,6 +337,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   const acceptSnapshot = useCallback((next: SpeakingSession | null, event: SpeakingSnapshotEvent = { source: "HYDRATE" }) => {
     const previous = sessionRef.current;
     if (!next) {
+      cancelOpeningAutoplay();
       sessionRef.current = null;
       setSession(null);
       setDemoDecisions({});
@@ -334,8 +360,14 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
     if (previousHasTerminalUnresolvedTurn && previous && (violatesUnresolvedInvariant
       || terminalSemantics(previous) !== terminalSemantics(next))) return;
     const changedSession = previous?.id !== next.id;
+    if (changedSession || previous?.controllerEpoch !== next.controllerEpoch || next.status !== "ACTIVE") {
+      cancelOpeningAutoplay();
+    }
     sessionRef.current = next;
     setSession(next);
+    if (event.source === "OPENING_UPDATED" && next.opening.status === "READY"
+      && previous?.id === next.id && previous.opening.status !== "READY"
+      && next.status === "ACTIVE") openingAutoPlayRef.current(next.id);
     if (changedSession) {
       setDemoDecisions({});
       playedAchievementKeys.current.clear();
@@ -365,22 +397,27 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
         setActiveFireworkKey(decision.eventKey);
       }
     }
-  }, []);
+  }, [cancelOpeningAutoplay]);
   const historyOpenRef = useRef(showHistory);
   historyOpenRef.current = showHistory;
   const currentIsThisItem = session?.content.topicItemId === itemId;
+  const hasControl = !!session && controller === `${session.id}:${session.controllerEpoch}`;
   const visibleSession = session && (currentIsThisItem || !itemId) ? session : null;
   const diagnosticsActive = diagnosticsEnabled && !showHistory && !!visibleSession
     && (visibleSession.status === "ACTIVE" || visibleSession.status === "INTERRUPTED");
   const { connection, recording, interim, lifecycle, startRecording, finishRecording } =
-    useSpeakingStream(session, acceptSnapshot, setError, turnId => {
+    useSpeakingStream(hasControl && currentIsThisItem ? session : null, acceptSnapshot, setError, turnId => {
       const current = sessionRef.current;
       if (!current || current.status !== "ACTIVE" || historyOpenRef.current) return;
       if (itemId && current.content.topicItemId !== itemId) return;
       const turn = current.turns.find(item => item.id === turnId);
       if (turn?.evaluationState !== "SUCCEEDED") return;
       void playAudio(current.id, turnId, "AI_REPLY", true);
-    }, diagnosticsEnabled ? acceptDemoDecision : undefined, diagnosticsActive);
+    }, diagnosticsEnabled ? acceptDemoDecision : undefined, diagnosticsActive, () => {
+      sessionStorage.removeItem(controlStorageKey);
+      setController(null);
+      cancelOpeningAutoplay();
+    });
 
   const refresh = useCallback(async () => {
     try {
@@ -396,7 +433,22 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   }, [acceptSnapshot, itemId]);
 
   useEffect(() => { if (speakingDemoEnabled) void refresh(); }, [refresh]);
-  useEffect(() => () => { audioRef.current?.pause(); audioRef.current = null; }, []);
+  useEffect(() => () => {
+    playTokenRef.current++;
+    openingAutoplay.current = false;
+    audioRef.current?.pause();
+    audioRef.current = null;
+  }, []);
+  useEffect(() => {
+    cancelOpeningAutoplay();
+  }, [itemId, showHistory, cancelOpeningAutoplay]);
+  useEffect(() => {
+    function stopIfHidden() {
+      if (document.hidden) cancelOpeningAutoplay();
+    }
+    document.addEventListener("visibilitychange", stopIfHidden);
+    return () => document.removeEventListener("visibilitychange", stopIfHidden);
+  }, [cancelOpeningAutoplay]);
   useEffect(() => {
     if (!activeFireworkKey) return;
     const timer = window.setTimeout(() => setActiveFireworkKey(current =>
@@ -405,13 +457,20 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   }, [activeFireworkKey]);
 
   async function run(action: () => Promise<SpeakingSession | number>, clearSession = false,
-    source: SpeakingSnapshotEvent["source"] = "HYDRATE") {
+    source: SpeakingSnapshotEvent["source"] = "HYDRATE", grantControl = false) {
     setBusy(true);
     setError("");
     try {
       const result = await action();
       if (clearSession || typeof result === "number") acceptSnapshot(null);
-      else acceptSnapshot(result, { source });
+      else {
+        if (grantControl) {
+          const nextController = `${result.id}:${result.controllerEpoch}`;
+          sessionStorage.setItem(controlStorageKey, nextController);
+          setController(nextController);
+        }
+        acceptSnapshot(result, { source });
+      }
       setHistory(await speakingService.history(itemId));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Thao tác không thành công.");
@@ -424,11 +483,12 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       mic.getTracks().forEach(track => track.stop());
       return replace ? speakingService.replace(itemId) : speakingService.create(itemId);
-    });
+    }, false, "HYDRATE", true);
   }
 
   async function endSession(target: SpeakingSession) {
-    if (endingSession) return;
+    if (endingSession || !hasControl) return;
+    cancelOpeningAutoplay();
     setEndingSession(true);
     try {
       await run(() => speakingService.end(target), false, "SESSION_ENDED");
@@ -440,14 +500,18 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   async function playAudio(sessionId: string, turnId: string,
     kind: "LEARNER_RECORDING" | "AI_REPLY", silent = false) {
     const token = ++playTokenRef.current;
+    openingAutoplay.current = false;
     audioRef.current?.pause();
     audioRef.current = null;
+    setAudioBusy(true);
     if (kind === "AI_REPLY") { setPlayingAiTurn(turnId); setPlayingTurn(null); }
     else { setPlayingTurn(turnId); setPlayingAiTurn(null); }
     const stop = () => {
       if (token !== playTokenRef.current) return;
       setPlayingTurn(null);
       setPlayingAiTurn(null);
+      setPlayingOpening(false);
+      setAudioBusy(false);
     };
     try {
       const { url } = await speakingService.audio(sessionId, turnId, kind);
@@ -464,8 +528,61 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
       stop();
       if (silent) return;
       setError(cause instanceof Error ? cause.message : "Không phát được âm thanh.");
+    } finally {
+      if (token === playTokenRef.current && !audioRef.current) setAudioBusy(false);
     }
   }
+
+  async function playOpeningAudio(sessionId: string, silent = false) {
+    const token = ++playTokenRef.current;
+    const epoch = sessionRef.current?.controllerEpoch;
+    openingAutoplay.current = silent && epoch !== undefined;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setAudioBusy(true);
+    setPlayingOpening(true);
+    setPlayingTurn(null);
+    setPlayingAiTurn(null);
+    const stop = () => {
+      if (token !== playTokenRef.current) return;
+      openingAutoplay.current = false;
+      setPlayingOpening(false);
+      setAudioBusy(false);
+    };
+    try {
+      const { url } = await speakingService.openingAudio(sessionId);
+      if (token !== playTokenRef.current) return;
+      const current = sessionRef.current;
+      if (silent && (!current || current.id !== sessionId || current.controllerEpoch !== epoch
+        || current.status !== "ACTIVE" || historyOpenRef.current || document.hidden
+        || (itemIdRef.current && current.content.topicItemId !== itemIdRef.current))) {
+        stop();
+        return;
+      }
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = stop;
+      audio.onerror = () => {
+        stop();
+        if (!silent) setError("Không phát được lời mở đầu AI.");
+      };
+      await audio.play();
+    } catch (cause) {
+      stop();
+      if (!silent) setError(cause instanceof Error ? cause.message : "Không phát được lời mở đầu AI.");
+    } finally {
+      if (token === playTokenRef.current && !audioRef.current) setAudioBusy(false);
+    }
+  }
+
+  openingAutoPlayRef.current = sessionId => {
+    const current = sessionRef.current;
+    if (!current || current.id !== sessionId || current.status !== "ACTIVE"
+      || !hasControl || endingSession || document.hidden || historyOpenRef.current
+      || (itemId && current.content.topicItemId !== itemId)
+      || !current.opening.aiAudioAvailable) return;
+    void playOpeningAudio(sessionId, true);
+  };
 
   const open = session?.status === "ACTIVE" || session?.status === "INTERRUPTED";
   const requiredGoals = visibleSession?.content.goals.filter(goal => goal.priority === "REQUIRED") ?? [];
@@ -526,8 +643,8 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
         {open && session && !currentIsThisItem && itemId && <div className="rounded-xl border p-5">
           <p>Bạn đang có phiên ở item “{session.content.title}”. Kết thúc hoặc thay thế phiên để luyện item này.</p>
           <div className="mt-3 flex gap-2">
-            <button disabled={busy} className="rounded-lg border px-4 py-2"
-              onClick={() => void endSession(session)}>Kết thúc phiên cũ</button>
+            {hasControl && <button disabled={busy} className="rounded-lg border px-4 py-2"
+              onClick={() => void endSession(session)}>Kết thúc phiên cũ</button>}
             <button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-white"
               onClick={() => void create(true)}>Thay thế và bắt đầu</button>
           </div>
@@ -548,7 +665,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
                 <h2 className="mt-1 text-lg font-semibold sm:text-xl">{visibleSession.content.title}</h2>
                 {visibleSession.content.description && <p className="mt-1 text-sm text-on-surface-variant">{visibleSession.content.description}</p>}
               </div>
-              {open && <button disabled={busy || finalizing} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+              {open && hasControl && <button disabled={busy || finalizing} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
                 onClick={() => void endSession(visibleSession)}>Kết thúc phiên</button>}
             </div>
             <p className="mt-4 text-sm text-on-surface-variant">{legacySession
@@ -557,10 +674,11 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
               {" · "}<strong className="text-on-surface">{visibleSession.validTurnCount}/{visibleSession.content.minimumValidTurns}</strong> lượt hợp lệ tối thiểu
               {" · "}<strong className="text-on-surface">{visibleSession.committedTurnCount}/30</strong> lượt đã chốt</p>
             {open && visibleSession.requiredGoalsMet && <p className="mt-2 text-sm font-medium text-emerald-800">Đã đạt mục tiêu bắt buộc{visibleSession.completionEligible ? ". Bạn có thể kết thúc hoặc luyện thêm mục tiêu tùy chọn." : ". Hãy tiếp tục đến khi đủ lượt nói hợp lệ."}</p>}
-            <ul aria-label="Mục tiêu tình huống" className="mt-4 flex flex-wrap gap-2">{visibleSession.content.goals.map(goal => {
+            <ul aria-label="Mục tiêu tình huống" className="mt-4 grid gap-2 sm:grid-cols-2">{visibleSession.content.goals.map(goal => {
               const achieved = visibleSession.achievedGoalIds.includes(goal.id);
-              return <li key={goal.id} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${achieved ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
-                {achieved && <Check size={14} aria-hidden="true" />}{goal.title} · {goal.priority === "REQUIRED" ? "Bắt buộc" : "Tùy chọn"}
+              return <li key={goal.id} className={`rounded-xl border p-3 text-sm ${achieved ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
+                <p className="flex items-center gap-1.5 font-semibold">{achieved && <Check size={14} aria-hidden="true" />}{goal.title}
+                  <span className="text-xs font-normal">· {goal.priority === "REQUIRED" ? "Bắt buộc" : "Tùy chọn"}</span></p>
               </li>;
             })}</ul>
             {finalizing && <div role="status" className="mt-4 rounded-xl border border-primary-fixed-dim bg-primary-fixed/20 p-4 text-sm text-on-primary-fixed">
@@ -574,6 +692,35 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
           </div>
 
           <div id="speaking-transcript" className="space-y-5 p-4 sm:space-y-6 sm:p-6">
+            <section aria-label="Hướng dẫn mở đầu" className="rounded-2xl border border-learning-mint-border bg-learning-mint/40 p-4 sm:p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Hướng dẫn tình huống</p>
+              <p className="mt-2 text-sm leading-6">{visibleSession.content.context}</p>
+              <p className="mt-3 text-sm text-on-surface-variant">Bạn đóng vai <strong className="text-on-surface">{visibleSession.content.learnerRole}</strong>.
+                {" "}AI đóng vai <strong className="text-on-surface">{visibleSession.content.aiRole}</strong>.</p>
+              <p className="mt-3 text-sm font-semibold">Việc cần làm</p>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm leading-6">
+                {visibleSession.content.goals.map(goal => <li key={goal.id}>{goal.description}</li>)}
+              </ul>
+              {visibleSession.opening.status === "NOT_REQUIRED" && <p className="mt-3 rounded-xl bg-white/80 p-3 text-sm font-medium leading-6">
+                Bạn sẽ mở lời trong vai {visibleSession.content.learnerRole}. Hãy bắt đầu khi micro đã sẵn sàng.
+              </p>}
+              {visibleSession.opening.status === "CANCELLED" && <p role="status" className="mt-3 rounded-xl bg-white/80 p-3 text-sm leading-6">
+                Phiên đã kết thúc trước khi AI hoàn tất lời mở đầu.
+              </p>}
+              {(visibleSession.opening.status === "GENERATING" || visibleSession.opening.status === "SYNTHESIZING")
+                && <p role="status" className="mt-3 rounded-xl bg-white/80 p-3 text-sm leading-6">
+                  {visibleSession.opening.status === "GENERATING" ? "AI đang chuẩn bị câu mở lời và gợi ý…" : "AI đang chuẩn bị âm thanh cho câu mở lời…"}
+                </p>}
+              {visibleSession.opening.status === "FAILED" && <div className="mt-3 rounded-xl border border-red-200 bg-white p-3">
+                <p role="status" className="text-sm leading-6">Chưa tạo được câu mở lời và gợi ý. Bạn có thể thử lại.</p>
+                {open && hasControl && connection === "connected" && <button disabled={busy || audioBusy} className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  onClick={() => void run(() => speakingService.retryOpening(visibleSession.id,
+                    crypto.randomUUID(), visibleSession.controllerEpoch))}>
+                  <RotateCcw size={16} /> Thử lại
+                </button>}
+              </div>}
+            </section>
+
             {[...visibleSession.turns].sort((a, b) => b.sequence - a.sequence).map(turn => <div key={turn.id} className="space-y-4 sm:space-y-5">
               {turn.evaluationState === "UNRESOLVED" && <div role="status" className="mx-auto max-w-[85%] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700 sm:max-w-[75%] sm:px-5">
                 Chưa ghi nhận được kết quả đánh giá cho lượt này; lượt vẫn được tính vào số lượt đã chốt.
@@ -593,8 +740,27 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
               <LearnerMessage turn={turn} playingTurn={playingTurn}
                 onPlay={item => void playAudio(visibleSession.id, item.id, "LEARNER_RECORDING")} />
             </div>)}
-            {visibleSession.openingReply && <AiMessage text={visibleSession.openingReply} onFinish={() => void endSession(visibleSession)} />}
-            {!visibleSession.openingReply && visibleSession.turns.length === 0 && <p className="py-8 text-center text-sm text-on-surface-variant">Phiên chưa có lượt hội thoại nào.</p>}
+            {(visibleSession.opening.status === "READY" || visibleSession.opening.status === "TEXT_ONLY")
+              && visibleSession.opening.reply && <AiMessage
+                text={visibleSession.opening.reply} label={`AI · ${visibleSession.content.aiRole}`}
+                onFinish={() => void endSession(visibleSession)}>
+                    <div className="mt-3 border-t border-b border-teal-200 py-3 ">
+                      {visibleSession.opening.aiAudioAvailable && <button disabled={audioBusy || recording !== "idle"} className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-900 hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:opacity-60"
+                    onClick={() => void playOpeningAudio(visibleSession.id)}>
+                    <Play aria-hidden="true" size={14} /> {playingOpening ? "Đang phát lời mở đầu" : "Nghe lời mở đầu"}
+                  </button>}
+                    </div>
+                  {visibleSession.opening.hintExampleEn && visibleSession.status === "ACTIVE" && !finalizing
+                    && <div className="mt-3 rounded-xl p-3 text-learning-note-ink">
+                    <p className="flex items-center gap-2 text-xs font-semibold"><Lightbulb size={16} /> Gợi ý tiếng Anh</p>
+                    <p className="mt-1 text-base font-medium leading-6">{visibleSession.opening.hintExampleEn}</p>
+                  </div>}
+
+                  {visibleSession.opening.status === "TEXT_ONLY" && <p role="status" className="mt-3 text-xs leading-5 text-on-surface-variant">Bạn có thể đọc câu mở đầu rồi đáp bằng mic.</p>}
+              </AiMessage>}
+            {!visibleSession.opening.reply && visibleSession.turns.length === 0
+              && !["GENERATING", "SYNTHESIZING", "FAILED"].includes(visibleSession.opening.status)
+              && <p className="py-8 text-center text-sm text-on-surface-variant">Phiên chưa có lượt hội thoại nào.</p>}
           </div>
 
           {open && <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 p-4 backdrop-blur sm:px-6">
@@ -607,14 +773,15 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
                 <p role="status" className="mt-0.5 text-xs text-on-surface-variant">{finalizing ? "Đang chờ kết quả cuối từ máy chủ" : connection === "reconnecting" ? "Đang kết nối lại…" : connection === "connecting" ? "Đang kết nối…" : connection === "disconnected" ? "Chưa kết nối" : recording === "processing" ? "Vui lòng đợi phản hồi trước khi nói tiếp" : "Micro đã sẵn sàng"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {connection === "connected" && recording === "idle" && visibleSession.status === "ACTIVE" && <button
-                  disabled={!visibleSession.canStartTurn || finalizing} onClick={() => void startRecording()}
+                {hasControl && connection === "connected" && recording === "idle" && visibleSession.status === "ACTIVE" && <button
+                  disabled={!visibleSession.canStartTurn || finalizing || audioBusy} onClick={() => void startRecording()}
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"><Mic size={18} /> Nhấn để nói</button>}
                 {recording === "recording" && <button onClick={() => void finishRecording()}
                   className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white"><Square size={16} /> Chốt câu</button>}
                 {recording === "processing" && <span className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">Đang xử lý…</span>}
-                {visibleSession.status === "INTERRUPTED" && <button disabled={busy || finalizing} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-                  onClick={() => void run(() => speakingService.resume(visibleSession))}>Tiếp tục phiên</button>}
+                {itemId && (!hasControl || visibleSession.status === "INTERRUPTED") && <button
+                  disabled={busy || finalizing} className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                  onClick={() => void run(() => speakingService.resume(visibleSession), false, "HYDRATE", true)}>Tiếp tục phiên</button>}
               </div>
             </div>
           </div>}

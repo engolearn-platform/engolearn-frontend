@@ -49,9 +49,14 @@ export const speakingService = {
   ticket: (session: Pick<SpeakingSession, "id" | "controllerEpoch">) => request<{ ticket: string; expiresInSeconds: number }>(
     `/sessions/${encodeURIComponent(session.id)}/socket-ticket`, "POST",
     { controllerEpoch: session.controllerEpoch, requestId: crypto.randomUUID() }),
+  retryOpening: (sessionId: string, requestId: string, controllerEpoch: number) =>
+    request<SpeakingSession>(`/sessions/${encodeURIComponent(sessionId)}/opening/retry`, "POST",
+      { requestId, controllerEpoch }),
   remove: (id: string) => request<SpeakingSession>(`/sessions/${encodeURIComponent(id)}`, "DELETE"),
   removeAll: () => request<number>("/sessions", "DELETE"),
   audio: (sessionId: string, turnId: string, kind: "LEARNER_RECORDING" | "AI_REPLY") =>
     request<{ url: string; expiresInSeconds: number }>(
       `/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/audio/${kind}`),
+  openingAudio: (sessionId: string) => request<{ url: string; expiresInSeconds: number }>(
+    `/sessions/${encodeURIComponent(sessionId)}/opening/audio`),
 };

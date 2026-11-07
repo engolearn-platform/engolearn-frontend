@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { speakingService, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
+import { speakingService, SpeakingApiError, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
 import { parseSpeakingDemoDecision } from "@features/topic/hooks/speakingDemoDecision";
 import type { SpeakingDemoDecision, SpeakingSession } from "@features/topic/types/speaking.types";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
 export type RecordingState = "idle" | "recording" | "processing";
-export type SpeakingSnapshotSource = "HYDRATE" | "TURN_RESULT" | "SESSION_ENDED";
+export type SpeakingSnapshotSource = "HYDRATE" | "TURN_RESULT" | "SESSION_ENDED" | "OPENING_UPDATED";
 
 interface SpeakingSocketMessage {
   type?: string;
   text?: string;
   message?: string;
   turnId?: string;
+  controllerEpoch?: number;
+  revision?: number;
   snapshot?: SpeakingSession;
   demoDecision?: unknown;
 }
@@ -38,6 +40,7 @@ export function useSpeakingStream(
   onAiAudioReady?: (turnId: string) => void,
   onDemoDecision?: SpeakingDemoDecisionHandler,
   diagnosticsActive = true,
+  onControlLost?: () => void,
 ) {
   const [connection, setConnection] = useState<ConnectionState>("disconnected");
   const [recording, setRecording] = useState<RecordingState>("idle");
@@ -55,6 +58,7 @@ export function useSpeakingStream(
   const onErrorRef = useRef(onError);
   const onAiAudioReadyRef = useRef(onAiAudioReady);
   const onDemoDecisionRef = useRef(onDemoDecision);
+  const onControlLostRef = useRef(onControlLost);
   const diagnosticsActiveRef = useRef(diagnosticsActive);
   const lifecycleIdRef = useRef(0);
   const sessionId = session?.id;
@@ -64,6 +68,7 @@ export function useSpeakingStream(
   onErrorRef.current = onError;
   onAiAudioReadyRef.current = onAiAudioReady;
   onDemoDecisionRef.current = onDemoDecision;
+  onControlLostRef.current = onControlLost;
   diagnosticsActiveRef.current = diagnosticsActive;
 
   const recordLifecycle = useCallback((event: Omit<SpeakingStreamLifecycleEvent, "id" | "occurredAt">) => {
@@ -147,6 +152,12 @@ export function useSpeakingStream(
               ...(turnId ? { turnId } : {}),
               ...(typeof message.message === "string" ? { message: message.message } : {}),
             });
+            if (type === "CONTROLLER_CHANGED") {
+              canceled = true;
+              socket.close();
+              onControlLostRef.current?.();
+              return;
+            }
             const demoDecision = parseSpeakingDemoDecision(message.demoDecision);
             if (turnId && demoDecision && diagnosticsActiveRef.current) {
               onDemoDecisionRef.current?.(sessionId, turnId, demoDecision);
@@ -166,9 +177,13 @@ export function useSpeakingStream(
             }
             if (message.snapshot) {
               const snapshot = message.snapshot as SpeakingSession;
+              if (type === "OPENING_UPDATED" && (snapshot.id !== sessionId
+                || snapshot.controllerEpoch !== sessionEpoch || message.controllerEpoch !== sessionEpoch
+                || message.revision !== snapshot.revision)) return;
               const turn = message.turnId ? snapshot.turns.find(item => item.id === message.turnId) : undefined;
               onSnapshotRef.current(snapshot, {
-                source: type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED"
+                source: type === "OPENING_UPDATED" ? "OPENING_UPDATED"
+                  : type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED"
                   ? "TURN_RESULT"
                   : type === "SESSION_ENDED" ? "SESSION_ENDED" : "HYDRATE",
                 ...(type === "TURN_RESULT" && turn?.evaluationState === "SUCCEEDED" && message.turnId
@@ -209,6 +224,10 @@ export function useSpeakingStream(
         socket.onerror = () => socket.close();
       } catch (error) {
         if (canceled) return;
+        if (error instanceof SpeakingApiError && error.code === "CONTROLLER_CHANGED") {
+          onControlLostRef.current?.();
+          return;
+        }
         if (retries < 3) {
           retries += 1;
           setConnection("reconnecting");
