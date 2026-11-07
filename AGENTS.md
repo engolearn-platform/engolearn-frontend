@@ -15,7 +15,7 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 ## Routing / entrypoints
 
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `src/router.tsx` aggregates feature routes via `useRoutes`. Import router from `"react-router"`, **not** `react-router-dom`.
-- Each feature exports `XxxRoutes: RouteObject[]` from `src/features/<Name>/routes.ts` (layout `FullLayout` + `children` with `Component: <View>`). Register it in `src/router.tsx`'s `appRoutes` array.
+- Each feature exports its `RouteObject[]` from `src/features/<Name>/routes.ts` (layout `FullLayout` + `children` with `Component: <View>`). Register it in `src/router.tsx`; learner catalog, grammar, learning-path and subscription routes share one pathless `LearningLayout` parent, while standalone topic learning and management flows keep their own layouts.
 - Canonical shape per feature: `components/ hooks/ types/ views/ routes.ts`. `src/features/topic/` is currently an empty placeholder for new Engo Learn work.
 
 ## Imports & TS strictness

@@ -1,33 +1,46 @@
-import { cn } from "@shared/utils";
-import { NavLink } from "react-router";
-import { LEARNING_NAV_ITEMS, PROFILE_NAV_ITEM } from "./learningNav";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/core/components/shadcn/dialog";
+import type { RefObject } from "react";
+import LearningNavContent from "./LearningNavContent";
 
-const ITEMS = [...LEARNING_NAV_ITEMS.filter((item) => !item.disabled), PROFILE_NAV_ITEM];
+interface LearningBottomNavProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  isAuthenticated: boolean;
+}
 
-export default function LearningBottomNav() {
+export default function LearningBottomNav({
+  open,
+  onOpenChange,
+  triggerRef,
+  isAuthenticated,
+}: LearningBottomNavProps) {
   return (
-    <nav
-      aria-label="Điều hướng chính"
-      className="fixed bottom-0 z-50 flex w-full items-center gap-1 overflow-x-auto border-t border-outline-variant bg-surface py-2 pb-safe shadow-[0_-4px_20px_rgba(10,25,47,0.05)] lg:hidden"
-    >
-      {ITEMS.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to!}
-          end={item.end}
-          className={({ isActive }) =>
-            cn(
-              "flex w-20 shrink-0 flex-col items-center justify-center rounded-lg p-2 transition-colors",
-              isActive
-                ? "scale-110 font-bold text-primary"
-                : "text-on-surface-variant opacity-40 hover:bg-surface-container-low"
-            )
-          }
-        >
-          <item.icon className="mb-1 size-6" aria-hidden="true" />
-          <span className="text-label-sm">{item.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (triggerRef.current?.offsetParent !== null) triggerRef.current?.focus();
+        }}
+        className="!fixed !left-0 !top-0 !h-dvh !w-[min(20rem,calc(100vw-2rem))] !max-w-none !translate-x-0 !translate-y-0 !rounded-none !border-0 !border-r !p-0 !duration-200 data-[state=open]:!slide-in-from-left data-[state=closed]:!slide-out-to-left"
+      >
+        <div className="flex h-full min-h-0 flex-col bg-surface-container-lowest pt-5">
+          <div className="border-b border-outline-variant px-5 pb-4 pr-14">
+            <DialogTitle className="text-lg text-primary">EngoLearn</DialogTitle>
+            <DialogDescription className="mt-1 leading-5">Điều hướng học tập</DialogDescription>
+          </div>
+          <LearningNavContent
+            isAuthenticated={isAuthenticated}
+            onNavigate={() => onOpenChange(false)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

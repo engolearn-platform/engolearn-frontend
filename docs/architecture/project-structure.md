@@ -91,7 +91,7 @@ Even then, split as `<domain>-management` (still by domain), never as one giant 
 
 - Folder names: **lowercase singular domain** for all new Engo Learn work (`topic`, `grammar`, `vocabulary`). Legacy `Post/`, `Product/`, `Welcome/` keep their casing for history — do not copy that casing for new features.
 - Files: `PascalCase.tsx` for components/views (`TopicCard.tsx`, `TopicManagementListView.tsx`), `camelCase.ts` for hooks/utils (`useTopics.ts`), `*.types.ts` for types (`topic.types.ts`).
-- Route export: `<Domain>Routes` (e.g. `TopicRoutes`, `GrammarRoutes`).
+- Route exports: `<Domain>Routes` or purpose-specific route groups where a feature spans surfaces (e.g. topic catalog, standalone learner, and management routes).
 - Aliases (defined in `vite.config.ts` + `tsconfig.app.json`):
   - `@/` → `src/`, `@features/` → `src/features/`, `@shared/` → `src/shared/`.
   - Prefer `@features/` over `@/` for feature imports; `react-router` (never `react-router-dom`).
@@ -125,28 +125,24 @@ Rules:
 ## 7. Routing
 
 - Each feature exports `RouteObject[]` from `routes.ts` (see `src/features/topic/routes.ts`, `src/features/Post/routes.ts`).
-- `src/router.tsx` only aggregates: `export const appRoutes = [...TopicRoutes, ...GrammarRoutes, ...]`. No route definitions live in `router.tsx`.
+- Feature route files own URL patterns and view declarations. `src/router.tsx` composes Home, catalog, grammar, learning path, and learner subscription routes under one pathless `LearningLayout` parent. Auth, standalone topic detail/attempt/results, and management routes remain outside that shared learner parent.
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `AppRouter` calls `useRoutes(appRoutes)`.
 - Surface pattern inside one `routes.ts`:
 
 ```tsx
 // features/topic/routes.ts
-export const TopicRoutes: RouteObject[] = [
+export const TopicCatalogRoutes: RouteObject[] = [
   {
-    path: "/topics",
-    Component: LearningLayout, // learning shell
-    children: [{ path: "", Component: LearnerTopicView }],
-  },
-  {
-    path: "/admin/topics",
-    Component: ManagementLayout, // management shell (Content Studio)
+    Component: TopicViewerLayout,
     children: [
-      { path: "", Component: TopicManagementListView },
-      { path: "new", Component: TopicManagementFormView },
+      { path: "/topics", Component: LearnerTopicView },
+      { path: "/my-topics", Component: LearnerMyTopicsView },
     ],
   },
 ];
 ```
+
+`router.tsx` places `TopicCatalogRoutes` inside the shared pathless learner parent. The topic viewer provider remains feature-owned and wraps only topic routes that need viewer state. Standalone topic detail, attempt, result and review screens retain their focused presentation outside the shell. Topic management stays under its feature guard and management layout.
 
 Guards (auth/permission) wrap the route element or layout — never duplicate the feature folder to enforce permissions.
 

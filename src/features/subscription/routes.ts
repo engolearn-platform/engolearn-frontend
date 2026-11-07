@@ -1,5 +1,4 @@
 import type { RouteObject } from "react-router";
-import LearningLayout from "@/core/layouts/LearningLayout";
 import SubscriptionPlansView from "@features/subscription/views/learning/SubscriptionPlansView";
 import SubscriptionUsageView from "@features/subscription/views/learning/SubscriptionUsageView";
 import { SubscriptionPurchasesView, SubscriptionPurchaseDetailView, SubscriptionPaymentReturnView } from "@features/subscription/views/learning/SubscriptionPurchasesView";
@@ -8,9 +7,8 @@ import SubscriptionManagementLayout from "@features/subscription/components/mana
 import { SubscriptionPlanManagementView, SubscriptionQuotaManagementView } from "@features/subscription/views/management/SubscriptionManagementView";
 import AuthGuard from "@features/auth/components/AuthGuard";
 
-export const SubscriptionRoutes: RouteObject[] = [{
+export const SubscriptionLearnerRoutes: RouteObject[] = [{
   path: ROUTES.SUBSCRIPTION,
-  Component: LearningLayout,
   children: [
     { index: true, Component: SubscriptionPlansView },
     { path: "usage", Component: SubscriptionUsageView },
@@ -18,7 +16,9 @@ export const SubscriptionRoutes: RouteObject[] = [{
     { path: "purchases/:reference", Component: SubscriptionPurchaseDetailView },
     { path: "payment-return", Component: SubscriptionPaymentReturnView },
   ],
-}, {
+}];
+
+export const SubscriptionManagementRoutes: RouteObject[] = [{
   Component: AuthGuard,
   children: [{
   path: "/admin/subscription",
