@@ -91,7 +91,6 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
             <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#main-content">Trang chủ</a>
             <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#features">Tính năng</a>
             <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#journey">Lộ trình học</a>
-            <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#faq">Câu hỏi thường gặp</a>
           </nav>
           <div className="hidden items-center gap-3 sm:flex">
             <Button asChild variant="outline" className="min-h-12 rounded-xl border-learning-mint-border px-5">
@@ -110,7 +109,6 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
             <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#main-content">Trang chủ</a>
             <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#features">Tính năng</a>
             <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#journey">Lộ trình học</a>
-            <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#faq">Câu hỏi thường gặp</a>
             <Button asChild variant="outline" className="mt-2 min-h-12 rounded-xl">
               <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
             </Button>
@@ -203,7 +201,8 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
         </section>
 
         <section aria-labelledby="start-title" className="px-5 py-12 sm:py-16">
-          <div className="mx-auto flex max-w-7xl flex-col items-center gap-8 overflow-hidden rounded-3xl bg-primary px-6 py-9 text-center text-white sm:px-10 lg:flex-row lg:justify-between lg:px-14 lg:py-12 lg:text-left">
+          <div className="mx-auto grid max-w-7xl justify-items-center gap-5 overflow-hidden rounded-3xl bg-primary px-6 py-8 text-center text-white sm:px-10 sm:py-9 lg:grid-cols-[minmax(12rem,0.85fr)_minmax(0,2fr)_auto] lg:items-center lg:gap-8 lg:px-12 lg:py-10 lg:text-left xl:px-14 xl:py-12">
+            <img src="/landing/closing-banner.webp" alt="" width="720" height="480" loading="lazy" decoding="async" className="h-auto w-32 object-contain sm:w-44 lg:w-full lg:max-w-64" />
             <div className="max-w-2xl space-y-3">
               <span className="inline-flex items-center gap-2 text-label-lg font-semibold text-white/80"><GraduationCap aria-hidden="true" className="size-5" />ENGOLEARN</span>
               <h2 id="start-title" className="text-3xl font-bold leading-tight sm:text-4xl">Sẵn sàng bắt đầu hành trình học tiếng Anh của bạn?</h2>
@@ -215,27 +214,13 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
           </div>
         </section>
 
-        <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-4xl scroll-mt-8 px-5 pb-16">
-          <h2 id="faq-title" className="mb-6 text-center text-2xl font-bold sm:text-3xl">Câu hỏi thường gặp</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <article className="rounded-2xl border border-learning-outline bg-white p-5">
-              <h3 className="font-bold">Tôi có thể bắt đầu từ đâu?</h3>
-              <p className="mt-2 text-body-md leading-6 text-on-surface-variant">Bạn có thể khám phá <Link className="font-semibold text-primary underline underline-offset-4" to={ROUTES.TOPICS}>chủ đề giao tiếp</Link> hoặc <Link className="font-semibold text-primary underline underline-offset-4" to={ROUTES.GRAMMAR}>ngữ pháp</Link> ngay.</p>
-            </article>
-            <article className="rounded-2xl border border-learning-outline bg-white p-5">
-              <h3 className="font-bold">Làm sao để tiếp tục học?</h3>
-              <p className="mt-2 text-body-md leading-6 text-on-surface-variant">Đăng nhập để mở trang học tập và tiếp tục hành trình của bạn.</p>
-              <Link className="mt-3 inline-flex min-h-11 items-center gap-2 font-semibold text-primary underline underline-offset-4" to={ROUTES.LOGIN}>Đăng nhập<ArrowRight aria-hidden="true" className="size-4" /></Link>
-            </article>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t border-learning-outline bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2"><Brand /><p className="text-label-lg text-on-surface-variant">Học tiếng Anh theo chuẩn CEFR.</p></div>
           <div><h2 className="mb-3 font-bold">Sản phẩm</h2><ul className="space-y-2 text-label-lg text-on-surface-variant"><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.TOPICS}>Học theo chủ đề</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.GRAMMAR}>Ngữ pháp</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={LANDING_PATHS.PLACEMENT}>Kiểm tra trình độ</Link></li></ul></div>
-          <div><h2 className="mb-3 font-bold">Hỗ trợ</h2><ul className="space-y-2 text-label-lg text-on-surface-variant"><li><a className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" href="#faq">Câu hỏi thường gặp</a></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.LOGIN}>Đăng nhập</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.HOME}>Trang chủ</Link></li></ul></div>
+          <div><h2 className="mb-3 font-bold">Hỗ trợ</h2><ul className="space-y-2 text-label-lg text-on-surface-variant"><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.LOGIN}>Đăng nhập</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.HOME}>Trang chủ</Link></li></ul></div>
           <div><h2 className="mb-3 font-bold">Bắt đầu học</h2><p className="mb-3 text-label-lg leading-5 text-on-surface-variant">Chọn một chủ đề và bắt đầu luyện tập tiếng Anh.</p><Link className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary underline underline-offset-4" to={ROUTES.TOPICS}>Khám phá ngay<ArrowDownRight aria-hidden="true" className="size-4" /></Link></div>
         </div>
         <div className="border-t border-learning-outline px-5 py-4 text-center text-label-sm text-on-surface-variant">© EngoLearn</div>

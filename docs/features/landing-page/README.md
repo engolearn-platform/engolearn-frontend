@@ -2,7 +2,7 @@
 
 ## Visual reference
 
-Follow the supplied EngoLearn landing screenshot: teal and mint palette, illustrated study hero, compact benefits strip, feature cards, three-step learning journey, closing call to action, and footer. Use the shared Hanken Grotesk typography, color tokens, existing Button and Lucide icons. Hero artwork is decorative and uses an empty alt attribute.
+Follow the supplied EngoLearn landing screenshot: teal and mint palette, illustrated study hero, compact benefits strip, feature cards, three-step learning journey, illustrated closing call to action, and footer. Use the shared Hanken Grotesk typography, color tokens, existing Button and Lucide icons. Hero and closing-banner artwork are decorative and use empty alt attributes. The closing banner places its illustration left, copy in the middle, and action at the right on wide screens, then stacks compactly on smaller screens. The landing page has no FAQ section or FAQ anchor links.
 
 ## Route ownership
 
@@ -14,7 +14,7 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, illustr
 
 ## Components and state
 
-- `GuestLandingView`: header and section navigation, hero, benefits, learning feature cards, three-step journey, final CTA and footer.
+- `GuestLandingView`: header and section navigation, hero, benefits, learning feature cards, three-step journey, illustrated final CTA and footer.
 - `LandingEntryView`: root session routing and accessible pending/error states.
 - `PlacementPlaceholderView`: replaceable public placeholder route.
 - State is UI-only and derived from `useAuth`; retry calls `refetch`. No new API calls or auth mutations.
@@ -22,6 +22,7 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, illustr
 ## Responsive and accessibility checklist
 
 - [ ] Hero text and artwork stack on narrow viewports; feature cards and journey adapt without horizontal overflow.
+- [ ] Closing-banner illustration is compact on mobile and sits left of the copy and action on wide screens; heading and action remain close together on small screens.
 - [ ] Navigation, CTAs, cards, and retry are keyboard reachable with visible focus.
 - [ ] Decorative artwork and icons are hidden from assistive technology; headings and landmarks are semantic.
 - [ ] Pending state is announced; session retry is an actionable button.
