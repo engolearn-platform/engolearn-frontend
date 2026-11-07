@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, Navigate, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
+import { useAuth } from "@shared/hooks/useAuth";
 import { useLearningPathDetail } from "@features/learning-path/hooks/useLearningPathDetail";
 import { useWaitingWeekRefresh } from "@features/learning-path/hooks/useWaitingWeekRefresh";
 import type {
@@ -83,5 +84,10 @@ function DetailPage({ pathId }: { pathId: string }) {
 
 export default function LearningPathDetailView() {
   const { pathId = "" } = useParams();
-  return <DetailPage key={pathId} pathId={pathId} />;
+  const auth = useAuth();
+  const location = useLocation();
+  if (auth.isLoading) return <div className="p-5"><Loading size="lg" /></div>;
+  if (auth.error) return <div className="p-5"><EmptyState title="Không xác minh được tài khoản" description={auth.error} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  return <DetailPage key={`${pathId}:${auth.identityGeneration}`} pathId={pathId} />;
 }

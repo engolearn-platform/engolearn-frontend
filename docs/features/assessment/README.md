@@ -79,13 +79,24 @@ Loading, errors and retry stay within the recommendation card and leave the resu
 total question count is their product. Canonical micro-skill names remain unchanged.
 `NO_WEAK_SKILLS` hides the card and expands the skill column; `NO_ELIGIBLE_SKILLS` displays
 the backend message; `ALREADY_CREATED` tells the learner a path already exists.
-The “Tạo lộ trình học tập” button is visible but disabled for `AVAILABLE` during UI review.
-There is no create request or navigation wired to that button.
+The “Tạo lộ trình học tập” button opens the existing confirmation Dialog for `AVAILABLE`.
+Opening, cancelling, Escape or dismissing the dialog sends no creation request. Only its
+“Xác nhận” action calls `POST /api/learning-paths/by-assessment`, sending the result's native
+ID and the complete skill-name list captured when the dialog opened. `useCreateLearningPath`
+prevents repeated clicks, disables dialog actions during creation, aborts the client request
+on unmount/identity change and ignores its late result. Request errors remain visible and
+require another explicit confirmation to retry. A 409 reloads Recommendation and requires
+review and confirmation again; it never silently resubmits a new list.
+
+Both newly created and already-existing success responses navigate using the returned
+`pathId` to `/learning-paths/:pathId?week=1`. The detail page loads with the session cookie
+and opens the unlocked Week 1 tab. `ALREADY_CREATED` also provides a link to that owned path.
+Creation writes actual path/question snapshots; the Assessment result stays unchanged.
 
 The backend adapter currently requires imported Learning Path projections, keyed by
 `assessment_source_attempt_id`. Newly submitted assessments without a projection return
-404 with retry feedback. Automatic projection delivery and Create Learning Path integration
-remain separate work; the frontend does not fabricate missing recommendations.
+404 with retry feedback. Automatic projection delivery remains separate work; the frontend
+does not fabricate missing recommendations or use native IDs as ObjectIds.
 
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
@@ -111,5 +122,5 @@ never a mocked assessment API. Review keyboard navigation, mobile overflow, audi
 failed-save/deadline transitions, owner/binding checks and historical snapshots.
 Build/lint and API/real-browser results have separate meanings. The release still requires
 real Placement/baseline, exact refund-to-analysis delivery, approved content/media and
-staging/Windows acceptance. Learning Path creation and automatic projection delivery remain open.
+staging/Windows acceptance. Automatic Learning Path projection delivery remains open.
 The local handoff package includes dated verification results and Windows demo instructions.

@@ -29,7 +29,7 @@ function AssessmentResultContent({ data }: { data: AssessmentResult }) {
       <ol className="mt-5 space-y-4">{data.skills.map((skill, index) => <li key={skill.code} className="grid items-center gap-4 rounded-xl border border-learning-outline bg-background p-4 sm:grid-cols-[minmax(0,1fr)_auto]"><div><h3 className="font-semibold">{index + 1}. {skill.name}</h3><p className="mt-1 text-sm text-muted-foreground">{skill.example}</p></div><div className="sm:col-span-2"><p className="mb-2 text-sm">{skill.correct}/{skill.total} câu ({skill.percentage}%)</p><progress aria-label={skill.name} max={100} value={skill.percentage} className="h-2 w-full accent-primary" /></div><span className="rounded-lg border border-learning-outline bg-white p-2 text-center text-sm">{band[skill.band]}</span></li>)}</ol>
       {!data.fullAnalysis && <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-dashed border-learning-outline p-4"><div><h3 className="font-semibold">Còn {data.measuredSkills - data.skills.length} kỹ năng</h3><p className="mt-1 text-sm text-muted-foreground">Xem đủ khi có quyền Premium hoặc dùng thử.</p></div><Button asChild className="h-12"><Link to="/subscription">Xem gói học</Link></Button></div>}
     </AssessmentCard>
-    <AssessmentLearningPathRecommendation data={recommendation.data} error={recommendation.error?.message} retry={recommendation.refetch} />
+    <AssessmentLearningPathRecommendation assessmentAttemptId={data.id} data={recommendation.data} error={recommendation.error?.message} refreshing={recommendation.loading} retry={recommendation.refetch} />
     </div>
   </div>;
 }

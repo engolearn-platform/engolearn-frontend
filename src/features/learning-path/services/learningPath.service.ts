@@ -2,8 +2,9 @@ import type {
   LearningPathApiResponse,
   LearningPathListData,
   LearningPathListStatus,
-} from "../types/learning-path.types";
-import type { LearningPathDetailDto } from "../types/learning-path-detail.types";
+} from "@features/learning-path/types/learning-path.types";
+import type { LearningPathDetailDto } from "@features/learning-path/types/learning-path-detail.types";
+import { httpService } from "@shared/services/http.service";
 import type { DayResultDto, PracticeDayDto, SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
 
 const LEARNING_PATHS_ENDPOINT = "/api/learning-paths";
@@ -71,31 +72,12 @@ export const learningPathService = {
     pathId: string,
     signal: AbortSignal,
   ): Promise<LearningPathApiResponse<LearningPathDetailDto>> {
-    const userId = import.meta.env.VITE_LEARNING_PATH_USER_ID?.trim();
-
-    if (!userId) {
-      throw new Error("Thiếu VITE_LEARNING_PATH_USER_ID trong file .env.local.");
-    }
-
     if (!pathId) {
       throw new Error("Không tìm thấy mã Learning Path.");
     }
-
-    const params = new URLSearchParams({ userId });
-    const response = await fetch(
-      `${LEARNING_PATHS_ENDPOINT}/${encodeURIComponent(pathId)}?${params}`,
-      { signal, headers: { Accept: "application/json" } },
+    return httpService.get<LearningPathApiResponse<LearningPathDetailDto>>(
+      `${LEARNING_PATHS_ENDPOINT}/${encodeURIComponent(pathId)}`, { signal },
     );
-
-    if (!response.ok) {
-      const problem = (await response.json().catch(() => null)) as ProblemDetailResponse | null;
-      throw new Error(
-        problem?.detail ?? problem?.title ??
-          `Không tải được Learning Path (${response.status}).`,
-      );
-    }
-
-    return (await response.json()) as LearningPathApiResponse<LearningPathDetailDto>;
   },
 
   async list(

@@ -1,14 +1,35 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import { AssessmentCard, AssessmentError } from "@features/assessment/components/AssessmentCommon";
+import { AssessmentCard, AssessmentError, Confirmation } from "@features/assessment/components/AssessmentCommon";
+import { useCreateLearningPath } from "@features/assessment/hooks/useCreateLearningPath";
 import type { LearningPathRecommendation } from "@features/assessment/types/learning-path-recommendation.types";
 
 interface Props {
+  assessmentAttemptId: string;
   data: LearningPathRecommendation | null;
   error: string | undefined;
+  refreshing: boolean;
   retry: () => void;
 }
 
-export function AssessmentLearningPathRecommendation({ data, error, retry }: Props) {
+export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data, error, refreshing, retry }: Props) {
+  const navigate = useNavigate();
+  const creation = useCreateLearningPath();
+  const [confirmation, setConfirmation] = useState<LearningPathRecommendation | null>(null);
+  const confirmCreation = async () => {
+    if (!confirmation) return;
+    const result = await creation.create({
+      assessmentAttemptId, microSkills: confirmation.microSkills.map(skill => skill.name),
+    });
+    if (result?.kind === "busy") return;
+    if (result?.kind === "created") {
+      void navigate(`/learning-paths/${encodeURIComponent(result.pathId)}?week=1`);
+      return;
+    }
+    setConfirmation(null);
+    if (result?.kind === "conflict") retry();
+  };
   if (data?.state === "NO_WEAK_SKILLS") return null;
 
   return <AssessmentCard>
@@ -17,7 +38,8 @@ export function AssessmentLearningPathRecommendation({ data, error, retry }: Pro
       ? <div className="mt-4"><AssessmentError message={error} retry={retry} /></div>
       : <p className="mt-4 text-muted-foreground" role="status">Đang tải đề xuất lộ trình…</p>)}
     {data?.state === "NO_ELIGIBLE_SKILLS" && <p className="mt-4 text-muted-foreground" role="status">{data.message}</p>}
-    {data?.state === "ALREADY_CREATED" && <p className="mt-4 text-muted-foreground" role="status">Bạn đã có lộ trình học tập từ bài đánh giá này.</p>}
+    {data?.state === "ALREADY_CREATED" && <div className="mt-4 space-y-4"><p className="text-muted-foreground" role="status">Bạn đã có lộ trình học tập từ bài đánh giá này.</p>{data.existingPathId && <Button asChild className="h-12"><Link to={`/learning-paths/${encodeURIComponent(data.existingPathId)}?week=1`}>Xem lộ trình học tập</Link></Button>}</div>}
+    {creation.error && <div className="mt-4"><AssessmentError message={creation.error} /></div>}
     {data?.state === "AVAILABLE" && <>
       <p className="mt-3 text-muted-foreground">Dựa trên kết quả bài đánh giá, bạn có thể tập trung luyện thêm các kỹ năng sau.</p>
       <ol className="mt-5 space-y-4">{data.microSkills.map((skill, index) => <li key={skill.name} className="rounded-xl border border-learning-outline bg-background p-4">
@@ -34,7 +56,13 @@ export function AssessmentLearningPathRecommendation({ data, error, retry }: Pro
         <div><dt className="text-sm text-muted-foreground">Mỗi ngày</dt><dd className="mt-1 font-semibold text-primary">{data.questionsPerDay} câu hỏi</dd></div>
       </dl>
       <p className="mt-4 text-sm text-muted-foreground">Tổng cộng {data.durationWeeks * data.daysPerWeek * data.questionsPerDay} câu hỏi luyện tập.</p>
-      <Button type="button" disabled className="mt-5 h-12 w-full">Tạo lộ trình học tập</Button>
+      <Button type="button" disabled={creation.pending || refreshing} className="mt-5 h-12 w-full" onClick={() => {
+        creation.clearError();
+        setConfirmation(data);
+      }}>Tạo lộ trình học tập</Button>
     </>}
+    <Confirmation open={confirmation !== null} title="Tạo lộ trình học tập?"
+      description={confirmation ? `Bạn xác nhận tạo lộ trình ${confirmation.durationWeeks} tuần cho ${confirmation.microSkills.map(skill => skill.name).join(", ")}, với ${confirmation.daysPerWeek} ngày mỗi tuần và ${confirmation.questionsPerDay} câu hỏi mỗi ngày? Sau khi tạo, bạn sẽ được chuyển đến thông tin lộ trình ở tuần 1.` : ""}
+      busy={creation.pending} onCancel={() => setConfirmation(null)} onConfirm={() => { void confirmCreation(); }} />
   </AssessmentCard>;
 }

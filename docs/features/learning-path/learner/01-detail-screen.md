@@ -16,7 +16,7 @@ The three references are content states of one detail screen. Its navigation has
 - A collapsible overview shows creation date, status, level, micro-skill count, three-week workload, initial score per micro-skill, and answered/assigned progress.
 - Closed weeks remain selectable. Future weeks and Summary are locked until available. Summary becomes available when the path has terminal `COMPLETED` status, including when some questions were unanswered.
 - The overview and Summary badges show “Đã hoàn thành” in green only when the terminal path has answered every assigned question. A terminal path with unanswered questions shows “Đã kết thúc” on a light blue `tertiary-fixed` background with navy `on-tertiary-fixed` text, distinct from the neutral gray cancelled badge. Answer correctness does not affect this label.
-- The optional `week` query parameter selects an unlocked week when returning from that day's review; otherwise the usual current-week or Summary default applies.
+- The optional `week` query parameter selects an unlocked week when returning from that day's review or from Assessment creation (`?week=1`); otherwise the usual current-week or Summary default applies.
 - The confirmed micro-skill catalog in `AGENTS_learning_path.md` supplies names; outdated names in the Figma examples are replaced.
 
 ## Tab content
@@ -37,7 +37,15 @@ The three references are content states of one detail screen. Its navigation has
 
 ## Data source and states
 
-The screen loads `GET /api/learning-paths/:pathId?userId=…` through `useLearningPathDetail` and the Learning Path service. The `pathId` from the route selects the actual active or ended path; `VITE_LEARNING_PATH_USER_ID` supplies the local test user. Loading and request errors use the shared `Loading` and `EmptyState` components. The previous `preview=completed` detail switch is removed.
+The screen loads `GET /api/learning-paths/:pathId` through `useLearningPathDetail` and the
+Learning Path service's shared HTTP client, with the authenticated session cookie and bounded
+refresh. It does not read `VITE_LEARNING_PATH_USER_ID` or send a user override for detail.
+The `pathId` from the route selects the actual active or ended path. Guests return through
+login with their destination, and identity changes remount detail state and cancel pending
+loads/refreshes so another account cannot see stale data. Loading and request errors use the
+shared `Loading` and `EmptyState` components. The previous `preview=completed` detail switch
+is removed. Other Learning Path list/practice/result clients retain their existing behavior;
+this change migrates only the detail request needed after creation.
 
 The response supplies path configuration and progress, baseline scores, week/day statuses, closed-week statistics, and the final summary. Available backend Completion Rate, Practice Score, and improvement values are used directly and rounded for display; open progress is derived from answered/assigned counts. Date/time values are displayed in the Vietnam time zone. Locked weeks and the Summary tab stay unavailable until the backend status permits them.
 
