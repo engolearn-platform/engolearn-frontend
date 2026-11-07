@@ -6,9 +6,9 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 
 ## Route ownership
 
-- `src/router.tsx` is the sole composition owner for `/`; its nested home route renders the existing topic homepage.
+- `src/router.tsx` is the sole composition owner for `/`. Its nested home route renders `LearnerHomeRoute`, which supplies the data readers for the signed-in dashboard.
 - `src/features/landing-page/routes.ts` owns `/placement`.
-- The root view reads `useAuth` only to choose the guest landing page, a neutral session-loading state, a public-information page with retry after session errors, or the existing `TopicHomeView` wrapped in `LearningLayout` for any signed-in user.
+- The root view reads `useAuth` to choose the guest landing page, a neutral session-loading state, the public landing page with retry after session errors, or the learner dashboard wrapped in `LearningLayout` for a signed-in user.
 - `/placement` is a public placeholder with a clear Vietnamese explanation and a link home. Its path lives in `src/features/landing-page/paths.ts` and is intentionally isolated for replacement by the future placement team.
 - Login links use `/login`. Topic and grammar links use their existing public routes. Do not change auth guards, post-login redirects, roles, learner navigation, `/assessment`, or assessment behavior.
 
