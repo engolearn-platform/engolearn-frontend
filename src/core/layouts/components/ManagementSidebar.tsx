@@ -1,20 +1,15 @@
 import { cn } from "@shared/utils";
-import { Languages } from "lucide-react";
 import { NavLink } from "react-router";
 import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS } from "./managementNav";
+import BrandImage from "@shared/components/BrandImage";
 
 export default function ManagementSidebar() {
   return (
     <aside className="z-10 hidden h-full w-72 shrink-0 flex-col justify-between bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] lg:flex">
       <div className="flex flex-col">
         <div className="flex h-16 items-center gap-2 px-5">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary">
-            <Languages className="size-5 text-on-primary" aria-hidden="true" />
-          </span>
+          <BrandImage className="h-8 w-auto max-w-[9rem] object-contain" />
           <span className="flex flex-col leading-none">
-            <span className="text-headline-sm font-semibold tracking-tight text-on-surface">
-              EngoLearn
-            </span>
             <span className="text-label-sm font-semibold tracking-wide text-primary uppercase">
               Content Studio
             </span>
