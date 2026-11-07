@@ -31,7 +31,7 @@ export function SessionResultSummary({ session, celebrate, announce, onReplay, o
   announce: boolean;
   onReplay: () => void;
   onTranscript: () => void;
-  onTopic: () => void;
+  onTopic?: () => void;
 }) {
   const snapshot = toAchievementSnapshot(session);
   const summary = summarizeAchievements(snapshot);
@@ -69,7 +69,7 @@ export function SessionResultSummary({ session, celebrate, announce, onReplay, o
     </p>}
     <div className="mt-4 flex flex-wrap gap-2"><Button type="button" variant="outline" size="sm" onClick={onReplay}>Luyện lại</Button>
       <Button type="button" variant="outline" size="sm" onClick={onTranscript}>Xem hội thoại</Button>
-      <Button type="button" size="sm" onClick={onTopic}>Về nội dung item</Button>
+      {onTopic && <Button type="button" size="sm" onClick={onTopic}>Về chủ đề</Button>}
     </div>
   </section>;
 }

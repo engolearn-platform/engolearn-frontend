@@ -5,7 +5,7 @@
 ## Nguồn và route
 
 - Không có Stitch. Route tạm `/dev/speaking` dưới `LearningLayout`, tách khỏi tiến độ Context → Vocab → Expressions → Practice.
-- Baseline yêu cầu đăng nhập qua cookie auth chung. Route này vẫn dùng API demo cũ để đối chiếu; luồng Speaking chính dùng `/topics/:topicId/speaking` và `/speaking/history`.
+- Baseline yêu cầu đăng nhập qua cookie auth chung. Route này vẫn dùng API demo cũ để đối chiếu với [luồng Speaking chính](../../speaking-with-ai/README.md).
 - `GET /api/v1/speaking/demo-item` lấy item "At the Restaurant item 1" và mục tiêu mẫu từ backend dev profile.
 - Mở route chỉ đọc item và phiên hiện có; không tự tạo phiên.
 

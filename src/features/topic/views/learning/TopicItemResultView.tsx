@@ -1,12 +1,13 @@
 import { Link, Navigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, ArrowRight, BookOpen, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Mic, RotateCcw } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { TopicState } from "@features/topic/components/learning/catalog/TopicState";
 import { TopicResultScore } from "@features/topic/components/learning/attempt/TopicResultScore";
 import { TopicRetryDialog } from "@features/topic/components/learning/attempt/TopicRetryDialog";
 import { useItemResult, useNextTopicItem } from "@features/topic/hooks/useTopicResult";
 import { useTopicLaunch } from "@features/topic/hooks/useTopicLaunch";
-import { safeTopicOrigin, topicBlockMessage, topicDetailPath, topicErrorMessage, topicResultPath } from "@features/topic/utils/topic-catalog";
+import { speakingDemoEnabled } from "@features/topic/services/speaking.service";
+import { safeTopicOrigin, topicBlockMessage, topicDetailPath, topicErrorMessage, topicItemSpeakingPath, topicResultPath } from "@features/topic/utils/topic-catalog";
 
 function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId: string; origin: string }) {
   const loaded = useItemResult(topicId, attemptId);
@@ -33,6 +34,12 @@ function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId
             {!data.item?.actions.resumeRetry.allowed && data.item?.actions.retry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("retry", data.item)} className="min-h-12 rounded-xl"><RotateCcw className="size-5" aria-hidden="true" />Làm lại bài này</Button>}
             {data.item?.actions.resumeRetry.allowed && <Button type="button" variant="outline" disabled={next.busy || launch.busy} onClick={() => launch.choose("resumeRetry", data.item)} className="min-h-12 rounded-xl">Tiếp tục làm lại</Button>}
             <Button asChild variant="outline" className="min-h-12 rounded-xl"><Link to={detailPath}>Về chi tiết chủ đề</Link></Button>
+            {speakingDemoEnabled && <Button asChild variant="outline" className="min-h-12 rounded-xl">
+              <Link to={topicItemSpeakingPath(topicId, data.result.topicItemId, origin)} target="_blank" rel="noopener">
+                <Mic className="size-5" aria-hidden="true" />
+                Luyện nói với AI<span className="sr-only"> (mở trong tab mới)</span>
+              </Link>
+            </Button>}
           </div>
         </section>
       </>}

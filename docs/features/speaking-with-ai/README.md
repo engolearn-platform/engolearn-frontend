@@ -7,20 +7,20 @@
 
 - `/dev/speaking` is a development route using `MediaRecorder` and multipart upload per turn. It is not the target PCM/WebSocket contract.
 - `/dev/speaking-session` renders the current PCM/WebSocket `SpeakingView` directly and defaults to café item `691b00000000000000000003`. Use `?itemId=691b00000000000000000004` to try a learner-led opening. Level and predecessor checks still apply. The route looks up existing sessions and offers an explicit start action.
-- This DEV-only route requires cookie login and enables the existing diagnostics surface. It shows the authoritative session state, latest committed transcript/turn, connection/recording state, recent WebSocket lifecycle events (including `AI_AUDIO_READY` and `TTS_ERROR` when emitted), and optional ConversationManager `demoDecision` metadata for each committed turn.
+- This DEV-only route requires cookie login and uses the same session UI as the item route.
 
 Local backend setup uses the café opening configuration seed for the existing café Topic items in `engolearn_db`. Vite proxies `/api` and `/ws` to `http://localhost:8080` by default. Provider keys must be configured in the backend `.env` for live voice interaction.
 - The existing demo view and its types are retained for comparison. Opening the route does not create a session; it asks for microphone access before create; closing the route does not send End.
 - `src/features/topic/types/speaking.types.ts` mirrors the BE snapshot, turn, assessment and configuration response.
-- `SpeakingView` is available from the item Context tab at `/topics/:topicId/speaking`; `/speaking/history` lists all of the learner's non-deleted sessions, including sessions from hidden items, and is linked from the learner sidebar. Speaking stays outside Context → Vocabulary → Expressions → Practice progress.
+- When Speaking is enabled, **Luyện nói với AI** on the completed item result opens `/topics/:topicId/items/:itemId/speaking` in a new tab. The API receives the result's item ID, and **Về chủ đề** uses the topic ID. Opening the tab reads the existing session and item configuration. The learner chooses whether to start or resume. Old `/topics/:itemId/speaking` links still open the item.
+- `/speaking/history` lists the learner's non-deleted sessions, including sessions from hidden items, and is linked from the learner sidebar. Speaking stays outside Context → Vocabulary → Expressions → Practice progress.
 - `speaking.service.ts` uses the shared HTTP client and cookie session flow from `main`, including one refresh retry on 401. The view never submits a learner ID.
 - `useSpeakingStream` tracks connection separately from recording. It obtains a one-use socket ticket, sends 16 kHz mono PCM frames from `speaking-pcm-worklet.js`, shows interim text, and reloads the authoritative snapshot after connection or turn completion. It retries connection up to three times at roughly three-second intervals and drops uncommitted audio after disconnection. Microphone access is requested before session creation.
 - `AI_AUDIO_READY` refreshes the snapshot (the `TURN_RESULT` snapshot predates TTS, so `aiAudioAvailable` is still false there) and notifies the view so a `SUCCEEDED` reply can play automatically while the session is active. Each AI bubble with `aiAudioAvailable` keeps a “Nghe phản hồi AI” button that reuses the same short-lived `AI_REPLY` playback URL as learner replay. The view ignores audio-ready callbacks for turns without an authoritative `SUCCEEDED` state.
-- `demoDecision` is optional and event-local. The FE validates its shape before storing it by session/turn, clears diagnostic state when the session changes, and keeps normal snapshot/audio/achievement rendering unchanged when the field is absent or malformed.
 - A turn shows “Đang xử lý…” only while its evaluation state is `PENDING`. When assessment fails, the view shows a retry message instead of leaving the AI reply in a processing state.
 - `SpeakingTurn.evaluationState` accepts the v0.7 states plus `UNRESOLVED` and tolerates future string values. `UNRESOLVED` is rendered as a settled neutral notice that says the turn is still counted as finalized; the view suppresses any AI reply, audio control, or assessment evidence carried with that state. Once a terminal snapshot contains an unresolved turn, later snapshots must match its terminal semantics (status, end reason, counts, goal results, and turn assessments/evidence) or the whole incoming snapshot is rejected. Revision and playback-availability fields may still change on hydration. Unknown values use a neutral refresh notice and never fall through to pending, invalid, or failed messaging.
 - A finalized turn can have `transcript: null` while its external payload is not durable. `PENDING` displays “Nội dung lời nói tạm không khả dụng”; `UNAVAILABLE` displays “Đã ghi nhận lượt nói nhưng không thể khôi phục nội dung”. A null transcript with missing or unknown availability uses the general “Nội dung lời nói không khả dụng” message. An empty string uses the state-specific copy for `PENDING` or `UNAVAILABLE`; otherwise it retains “Không có lời nói được ghi nhận”. This does not change evaluation-state handling.
-- Session progress shows `committedTurnCount/30` as finalized slots alongside the separate valid-turn requirement count. On `TURN_EMPTY`, the stream clears recording state and hydrates the authoritative session snapshot when the event does not carry one, so the committed count and terminal slot-30 state come from the server.
+- On `TURN_EMPTY`, the stream clears recording state and hydrates the authoritative session snapshot when the event does not carry one.
 - [Achievement celebrations and finalized result summary](achievement-session-result.md) document the committed-turn adapter, deduplicated milestone behavior, final summary, UI-only finalizing state, and current verification/contract gaps.
 - The view supports create/replace/resume/end, item and account history, detail, 30-day recording availability, short-lived Cloudinary playback, deleting one session and deleting all. Closing the page stops local capture without sending End.
 
@@ -67,8 +67,8 @@ The old `/dev/speaking` route remains only as a comparison and still points at i
 
 1. Start MongoDB and the backend with the `dev` profile. The backend seeds the fixed Topic item and Speaking config at startup, including on an existing dev database.
 2. Set the provider keys and Cloudinary credentials in the backend's local `.env`, then start the frontend with `npm run dev`.
-3. Sign in through the shared auth flow, then open `http://localhost:3000/dev/speaking-session`. The route selects the fixture item and shows the normal session UI plus the dev diagnostics panel. Use the “Bắt đầu phiên mới” button to request microphone permission and create a session.
-4. With the backend manager demo flag enabled, complete a turn and confirm the panel shows the event lifecycle and `demoDecision`; with legacy/fallback events or a missing field, confirm the panel reports that no decision is available without hiding the session or turn.
+3. Sign in, finish a Topic item with published Speaking configuration, and select **Luyện nói với AI** on its result. The new tab shows the same item's Speaking scenario while the result stays open.
+4. Use **Bắt đầu phiên mới** to request microphone permission and create a session. For direct testing with the default dev item, open `http://localhost:3000/dev/speaking-session`.
 
 The fixture is available only with the backend `dev` profile; the route is excluded from production builds.
 
@@ -77,7 +77,6 @@ The fixture is available only with the backend `dev` profile; the route is exclu
 - `npm run lint`: exit 0, no errors; 72 warnings on the merged baseline.
 - `npm run build`: exit 0 after the Speaking integration; Vite reports the existing bundle-size warning.
 - Browser checks on current Chrome, Edge, and Safari, weak networks, microphone loss, two-tab handoff, and Cloudinary playback still require a running backend, MongoDB, and provider credentials. The dev fixture supplies the Topic item and Speaking configuration.
-- The diagnostics panel has not been live-browser verified in this worktree; provider, MongoDB, backend manager flag, microphone, and TTS credentials were not available during static verification.
 - The acceptance target for interim text and response latency has not been measured. The AudioWorklet/VAD threshold is taken from the demo and needs device/browser tuning.
 - Speaking routes require the shared `AuthProvider`/`useAuth` session. The legacy `/dev/speaking` comparison route still targets its old demo API and needs separate migration before use.
 

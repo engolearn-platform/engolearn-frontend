@@ -66,6 +66,7 @@ export const TopicStandaloneRoutes: RouteObject[] = [
       { path: ROUTES.TOPIC_ATTEMPT, Component: TopicAttemptEntryView },
       { path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView },
       { Component: AuthGuard, children: [
+        { path: ROUTES.TOPIC_ITEM_SPEAKING, Component: SpeakingView },
         { path: ROUTES.TOPIC_SPEAKING, Component: SpeakingView },
       ] },
     ],

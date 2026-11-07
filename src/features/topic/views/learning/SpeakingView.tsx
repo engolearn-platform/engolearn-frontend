@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Check, CircleAlert, Lightbulb, Mic, Play, RotateCcw, Square, Trash2, UserRound } from "lucide-react";
 import { ROUTES } from "@shared/constants";
 import { speakingDemoEnabled, speakingService } from "@features/topic/services/speaking.service";
-import { useSpeakingStream, type ConnectionState, type SpeakingSnapshotEvent, type SpeakingStreamLifecycleEvent } from "@features/topic/hooks/useSpeakingStream";
-import type { SpeakingAssessment, SpeakingDemoDecision, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
+import { safeTopicOrigin, topicDetailPath } from "@features/topic/utils/topic-catalog";
+import { useSpeakingStream, type SpeakingSnapshotEvent } from "@features/topic/hooks/useSpeakingStream";
+import type { SpeakingAssessment, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
 import { AchievementFireworks } from "./speaking-achievements/AchievementFireworks";
 import { AllGoalsMilestone } from "./speaking-achievements/AllGoalsMilestone";
 import { InlineMilestoneBanner } from "./speaking-achievements/InlineMilestoneBanner";
@@ -183,117 +184,16 @@ function LearnerMessage({ turn, playingTurn, onPlay }: {
   </div>;
 }
 
-function isSpeakingDiagnosticsLocation(state: unknown): boolean {
-  return typeof state === "object" && state !== null
-    && "speakingDiagnostics" in state
-    && state.speakingDiagnostics === true;
-}
-
-function diagnosticsDecisionKey(sessionId: string, turnId: string): string {
-  return `${sessionId}:${turnId}`;
-}
-
-function SpeakingDiagnostics({ session, connection, recording, interim, lifecycle, decisions }: {
-  session: SpeakingSession | null;
-  connection: ConnectionState;
-  recording: string;
-  interim: string;
-  lifecycle: SpeakingStreamLifecycleEvent[];
-  decisions: Record<string, SpeakingDemoDecision>;
-}) {
-  const decisionTurns = session ? [...session.turns]
-    .sort((a, b) => a.sequence - b.sequence)
-    .map(turn => ({ turn, decision: decisions[diagnosticsDecisionKey(session.id, turn.id)] })) : [];
-  const latestTurn = decisionTurns.length ? decisionTurns[decisionTurns.length - 1].turn : undefined;
-
-  return <section aria-label="Chẩn đoán phiên Speaking" className="rounded-2xl border border-primary/20 bg-primary-fixed/10 p-4 shadow-sm sm:p-5">
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Dev diagnostics</p>
-        <h2 className="mt-1 text-lg font-semibold">Conversation Manager demo</h2>
-      </div>
-      <span className="rounded-full border border-primary/20 bg-white px-2.5 py-1 text-xs font-semibold text-primary">Chỉ môi trường dev</span>
-    </div>
-
-    <div className="mt-4 grid gap-4 md:grid-cols-3">
-      <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Session state</p>
-        <dl className="mt-2 space-y-1 text-on-surface-variant">
-          <div className="flex justify-between gap-3"><dt>Status</dt><dd className="font-medium text-on-surface">{session?.status ?? "NO_SESSION"}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Revision</dt><dd className="font-medium text-on-surface">{session?.revision ?? "—"}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Turns</dt><dd className="font-medium text-on-surface">{session?.committedTurnCount ?? 0}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Valid</dt><dd className="font-medium text-on-surface">{session?.validTurnCount ?? 0}</dd></div>
-        </dl>
-      </div>
-
-      <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Latest turn</p>
-        {latestTurn ? <div className="mt-2 space-y-1 text-on-surface-variant">
-          <p><span className="font-medium text-on-surface">#{latestTurn.sequence}</span> · {latestTurn.evaluationState}</p>
-          <p><span className="font-medium text-on-surface">Transcript:</span> {latestTurn.transcript || "—"}</p>
-          <p><span className="font-medium text-on-surface">AI reply:</span> {latestTurn.aiReply || "—"}</p>
-          {interim && <p><span className="font-medium text-on-surface">Interim:</span> {interim}</p>}
-        </div> : <p className="mt-2 text-on-surface-variant">Chưa có lượt đã chốt.</p>}
-      </div>
-
-      <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Transport</p>
-        <dl className="mt-2 space-y-1 text-on-surface-variant">
-          <div className="flex justify-between gap-3"><dt>Connection</dt><dd className="font-medium text-on-surface">{connection}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Recording</dt><dd className="font-medium text-on-surface">{recording}</dd></div>
-          <div className="flex justify-between gap-3"><dt>Events kept</dt><dd className="font-medium text-on-surface">{lifecycle.length}</dd></div>
-        </dl>
-      </div>
-    </div>
-
-    <div className="mt-4 grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Conversation Manager decisions</p>
-        {decisionTurns.length ? <ol className="mt-2 max-h-64 space-y-2 overflow-auto text-on-surface-variant">
-          {decisionTurns.map(({ turn, decision }) => <li key={turn.id} className="rounded-lg bg-primary-fixed/10 px-3 py-2">
-            <p className="flex flex-wrap gap-x-2 gap-y-1">
-              <span className="font-semibold text-on-surface">Lượt #{turn.sequence}</span>
-              <span>{turn.evaluationState}</span>
-              {decision && <><span>· {decision.outcome}</span><span>· {decision.reasonCode}</span></>}
-            </p>
-            {decision ? <p className="mt-1 text-xs leading-5">
-              Act: <span className="font-medium text-on-surface">{decision.acceptedAct ?? "—"}</span>
-              {" · Status: "}<span className="font-medium text-on-surface">{decision.resultingStatus}</span>
-              {" · Finalized/valid: "}<span className="font-medium text-on-surface">{decision.finalizedTurnCount}/{decision.validTurnCount}</span>
-              {" · New goals: "}<span className="font-medium text-on-surface">{decision.newlyAchievedGoalIds.length}</span>
-              {" · Complete: "}<span className="font-medium text-on-surface">{decision.completionEligible ? "yes" : "no"}</span>
-              {" · Auto-end: "}<span className="font-medium text-on-surface">{decision.autoEndEligible ? "yes" : "no"}</span>
-            </p> : <p className="mt-1 text-xs">Chưa nhận demoDecision cho lượt này.</p>}
-          </li>)}
-        </ol> : <p className="mt-2 text-on-surface-variant">Chưa có lượt đã chốt.</p>}
-      </div>
-
-      <div className="rounded-xl border border-primary/10 bg-white p-3 text-sm">
-        <p className="font-semibold">Event / TTS lifecycle</p>
-        {lifecycle.length ? <ol className="mt-2 max-h-40 space-y-1 overflow-auto text-on-surface-variant">
-          {[...lifecycle].reverse().map(event => <li key={event.id} className="flex gap-2">
-            <time className="shrink-0 font-mono text-xs" dateTime={event.occurredAt}>{new Date(event.occurredAt).toLocaleTimeString("vi-VN")}</time>
-            <span className="font-medium text-on-surface">{event.type}</span>
-            {event.turnId && <span>· {event.turnId.slice(0, 8)}</span>}
-            {event.message && <span>· {event.message}</span>}
-          </li>)}
-        </ol> : <p className="mt-2 text-on-surface-variant">Chưa nhận event từ transport.</p>}
-      </div>
-    </div>
-  </section>;
-}
-
 export default function SpeakingView({ devSession = false }: { devSession?: boolean }) {
   const controlStorageKey = "speaking-controller";
-  const { topicId } = useParams();
-  const location = useLocation();
+  const { topicId, itemId: routeItemId } = useParams();
+  const [parameters] = useSearchParams();
   const isDevSession = import.meta.env.DEV && devSession;
   const itemId = isDevSession
-    ? new URLSearchParams(location.search).get("itemId") || "691b00000000000000000003"
-    : topicId;
+    ? parameters.get("itemId") || "691b00000000000000000003"
+    : routeItemId;
+  const topicPath = topicId ? topicDetailPath(topicId, safeTopicOrigin(parameters.get("from"))) : undefined;
   const navigate = useNavigate();
-  const diagnosticsEnabled = import.meta.env.DEV &&
-    (isDevSession || isSpeakingDiagnosticsLocation(location.state));
   const [session, setSession] = useState<SpeakingSession | null>(null);
   const [controller, setController] = useState(() => sessionStorage.getItem(controlStorageKey));
   const [config, setConfig] = useState<SpeakingItemConfig | null>(null);
@@ -308,7 +208,6 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   const [achievementEvents, setAchievementEvents] = useState<CelebrationDecision[]>([]);
   const [activeFireworkKey, setActiveFireworkKey] = useState<string | null>(null);
   const [endingSession, setEndingSession] = useState(false);
-  const [demoDecisions, setDemoDecisions] = useState<Record<string, SpeakingDemoDecision>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playTokenRef = useRef(0);
   const openingAutoplay = useRef(false);
@@ -326,21 +225,12 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
     setPlayingOpening(false);
     setAudioBusy(false);
   }, []);
-  const acceptDemoDecision = useCallback((sourceSessionId: string, turnId: string, decision: SpeakingDemoDecision) => {
-    const current = sessionRef.current;
-    if (!current || current.id !== sourceSessionId) return;
-    setDemoDecisions(existing => ({
-      ...existing,
-      [diagnosticsDecisionKey(current.id, turnId)]: decision,
-    }));
-  }, []);
   const acceptSnapshot = useCallback((next: SpeakingSession | null, event: SpeakingSnapshotEvent = { source: "HYDRATE" }) => {
     const previous = sessionRef.current;
     if (!next) {
       cancelOpeningAutoplay();
       sessionRef.current = null;
       setSession(null);
-      setDemoDecisions({});
       return;
     }
     if (previous && previous.id !== next.id && event.source !== "HYDRATE") return;
@@ -369,7 +259,6 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
       && previous?.id === next.id && previous.opening.status !== "READY"
       && next.status === "ACTIVE") openingAutoPlayRef.current(next.id);
     if (changedSession) {
-      setDemoDecisions({});
       playedAchievementKeys.current.clear();
       setAchievementEvents([]);
       setActiveFireworkKey(null);
@@ -403,9 +292,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   const currentIsThisItem = session?.content.topicItemId === itemId;
   const hasControl = !!session && controller === `${session.id}:${session.controllerEpoch}`;
   const visibleSession = session && (currentIsThisItem || !itemId) ? session : null;
-  const diagnosticsActive = diagnosticsEnabled && !showHistory && !!visibleSession
-    && (visibleSession.status === "ACTIVE" || visibleSession.status === "INTERRUPTED");
-  const { connection, recording, interim, lifecycle, startRecording, finishRecording } =
+  const { connection, recording, interim, startRecording, finishRecording } =
     useSpeakingStream(hasControl && currentIsThisItem ? session : null, acceptSnapshot, setError, turnId => {
       const current = sessionRef.current;
       if (!current || current.status !== "ACTIVE" || historyOpenRef.current) return;
@@ -413,7 +300,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
       const turn = current.turns.find(item => item.id === turnId);
       if (turn?.evaluationState !== "SUCCEEDED") return;
       void playAudio(current.id, turnId, "AI_REPLY", true);
-    }, diagnosticsEnabled ? acceptDemoDecision : undefined, diagnosticsActive, () => {
+    }, undefined, false, () => {
       sessionStorage.removeItem(controlStorageKey);
       setController(null);
       cancelOpeningAutoplay();
@@ -585,10 +472,6 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
   };
 
   const open = session?.status === "ACTIVE" || session?.status === "INTERRUPTED";
-  const requiredGoals = visibleSession?.content.goals.filter(goal => goal.priority === "REQUIRED") ?? [];
-  const requiredAchieved = requiredGoals.filter(goal =>
-    visibleSession?.achievedGoalIds.includes(goal.id)).length;
-  const legacySession = visibleSession?.content.completionPolicyVersion !== "REQUIRED_GOALS_V2";
   const limitFinalizing = visibleSession?.status === "ACTIVE" && !visibleSession.canStartTurn
     && (visibleSession.committedTurnCount >= 30 || new Date(visibleSession.expiresAt).getTime() <= Date.now());
   const finalizing = endingSession || limitFinalizing;
@@ -606,16 +489,14 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 text-on-surface sm:px-6 lg:py-8">
-      {diagnosticsEnabled && <SpeakingDiagnostics session={visibleSession} connection={connection} recording={recording}
-        interim={interim} lifecycle={lifecycle} decisions={demoDecisions} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">Thực hành hội thoại</p>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Luyện nói với AI</h1>
           <p className="text-sm text-on-surface-variant">Luyện thêm ngoài tiến độ bài học.</p>
         </div>
-        {itemId && <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium" onClick={() =>
-          navigate(ROUTES.TOPIC_CONTEXT.replace(":topicId", itemId))}>Nội dung item</button>}
+        {topicPath && <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium" onClick={() =>
+          navigate(topicPath)}>Về chủ đề</button>}
       </div>
 
       <nav aria-label="Speaking" className="flex gap-6 border-b border-slate-200 text-sm">
@@ -668,19 +549,6 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
               {open && hasControl && <button disabled={busy || finalizing} className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
                 onClick={() => void endSession(visibleSession)}>Kết thúc phiên</button>}
             </div>
-            <p className="mt-4 text-sm text-on-surface-variant">{legacySession
-              ? <strong className="text-on-surface">{visibleSession.requiredGoalsMet ? "Đã đạt" : "Chưa đạt"} điều kiện mục tiêu của phiên cũ</strong>
-              : <strong className="text-on-surface">{requiredAchieved}/{requiredGoals.length} mục tiêu Bắt buộc</strong>}
-              {" · "}<strong className="text-on-surface">{visibleSession.validTurnCount}/{visibleSession.content.minimumValidTurns}</strong> lượt hợp lệ tối thiểu
-              {" · "}<strong className="text-on-surface">{visibleSession.committedTurnCount}/30</strong> lượt đã chốt</p>
-            {open && visibleSession.requiredGoalsMet && <p className="mt-2 text-sm font-medium text-emerald-800">Đã đạt mục tiêu bắt buộc{visibleSession.completionEligible ? ". Bạn có thể kết thúc hoặc luyện thêm mục tiêu tùy chọn." : ". Hãy tiếp tục đến khi đủ lượt nói hợp lệ."}</p>}
-            <ul aria-label="Mục tiêu tình huống" className="mt-4 grid gap-2 sm:grid-cols-2">{visibleSession.content.goals.map(goal => {
-              const achieved = visibleSession.achievedGoalIds.includes(goal.id);
-              return <li key={goal.id} className={`rounded-xl border p-3 text-sm ${achieved ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}>
-                <p className="flex items-center gap-1.5 font-semibold">{achieved && <Check size={14} aria-hidden="true" />}{goal.title}
-                  <span className="text-xs font-normal">· {goal.priority === "REQUIRED" ? "Bắt buộc" : "Tùy chọn"}</span></p>
-              </li>;
-            })}</ul>
             {finalizing && <div role="status" className="mt-4 rounded-xl border border-primary-fixed-dim bg-primary-fixed/20 p-4 text-sm text-on-primary-fixed">
               <p className="font-semibold">Đang tổng kết phiên luyện nói…</p>
               <p className="mt-1 text-on-surface-variant">Không nhận lượt nói mới cho đến khi máy chủ xác nhận kết quả cuối.</p>
@@ -688,7 +556,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
             {visibleSession && isFinalizedSession(visibleSession) && <SessionResultSummary session={visibleSession}
               celebrate={finalDecision?.type === "FINAL_ALL_GOALS" && finalDecision.eventKey === activeFireworkKey} announce={Boolean(finalDecision)} onReplay={() => void create(false)}
               onTranscript={() => document.getElementById("speaking-transcript")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              onTopic={() => itemId && navigate(ROUTES.TOPIC_CONTEXT.replace(":topicId", itemId))} />}
+              onTopic={topicPath ? () => navigate(topicPath) : undefined} />}
           </div>
 
           <div id="speaking-transcript" className="space-y-5 p-4 sm:space-y-6 sm:p-6">

@@ -35,7 +35,7 @@ Catalog shell, topic viewer identity and guest handling are documented in [07-to
 
 ## Luồng legacy còn tồn tại
 
-Speaking dùng `/topics/:topicId/speaking` cho item đã mở và `/speaking/history` cho lịch sử. Route `/dev/speaking` chỉ có trong môi trường phát triển. Các API Speaking yêu cầu phiên đăng nhập chung.
+Nút **Luyện nói với AI** trên trang kết quả item mở [màn hình Speaking](../../speaking-with-ai/README.md) trong tab mới khi tính năng được bật. Các API Speaking yêu cầu phiên đăng nhập chung.
 
 Các route .../context, .../vocab/:vocabId, .../expressions và .../practice giữ nguyên để tránh sửa khung học trước checkpoint3.
 Các action ở ba màn mới không dẫn vào chúng. Khung mới đã dùng header progress, dropdown nav lồng cấp và nút quay về frontier theo thiết kế Từ vựng đã duyệt. Xem [08-attempt-learning.md](08-attempt-learning.md).

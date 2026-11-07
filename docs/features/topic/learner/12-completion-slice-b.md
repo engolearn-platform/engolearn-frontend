@@ -11,6 +11,7 @@ Implementation and live acceptance date: 2026-10-28. The parent integration run 
 - Both routes precede the parameterized topic/attempt entries in the topic route array. Existing attempt/review routes stay unchanged.
 - `TopicResultScore` displays server `firstTryCorrectCount/totalQuizCount` and `accuracyPercent`, with completion status. It never calculates a local score or averages item percentages.
 - Item result loads `getItemResult` plus fresh topic detail because ItemResultDto has no item action object. Current completedAttemptId/actions govern review/retry buttons. Superseded result references fail with RESULT_CHANGED.
+- When Speaking is enabled, **Luyện nói với AI** opens the completed result's `topicItemId` in a new tab. See the [Speaking entry point](../../speaking-with-ai/README.md).
 - Next item comes exclusively from `nextTopicItemId/nextItemAvailability`. The explicit button starts/resumes that item with a journaled POST; no index+1, no attempt creation by GET.
 - Topic result uses server aggregate counts and per-item results. Review/retry actions reuse the existing launch entry only when both result and current detail allow them; no Slice C view/session implementation is added.
 - A topic-result link appears in detail and item result only when the server detail marks the topic COMPLETED.
