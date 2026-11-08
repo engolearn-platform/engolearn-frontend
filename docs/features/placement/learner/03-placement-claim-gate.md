@@ -164,3 +164,7 @@ Không dùng các ID này trong service HTTP:
       claim error ở FE.
 - [ ] (Tuỳ chọn) render countdown từ `claimExpiresAt` + `serverNow`; khi hết hạn
       refetch 1 lần để backend trả `CLAIM_EXPIRED`.
+
+## Public navigation update — 2026-11-08
+
+Guest shells use the same shared PublicNavigation as home, including the submitted claim gate. This overrides the historical P01/Stitch marketing-header order above. The old PlacementPublicHeader remains for authenticated public-shell states. Attempt timer/header and signed-in learner shell stay unchanged. Public main has id=main-content and tabIndex=-1.

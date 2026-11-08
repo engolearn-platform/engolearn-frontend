@@ -1,3 +1,4 @@
+import PlacementPublicLayout from "@features/placement/components/learning/PlacementPublicLayout";
 import { PLACEMENT_ROUTES } from "@features/placement/constants";
 import { GraduationCap } from "lucide-react";
 import { Link, Outlet } from "react-router";
@@ -10,6 +11,7 @@ export default function PlacementResultLayout() {
   const { isLoading, isAuthenticated, isUser, identityGeneration } = useAuth();
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-surface"><Loading /></div>;
   if (isAuthenticated && isUser()) return <PlacementUserLayout />;
+  if (!isAuthenticated) return <PlacementPublicLayout />;
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-on-surface">

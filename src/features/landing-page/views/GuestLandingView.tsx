@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import PublicNavigation, { PublicBrand } from "@features/landing-page/components/PublicNavigation";
+import PublicNavigation, { PublicBrand } from "@shared/components/PublicNavigation";
 import { LANDING_PATHS } from "@features/landing-page/paths";
 import { ROUTES } from "@shared/constants";
 

@@ -34,3 +34,7 @@ On 2026-11-04, the real FE proxy + default-profile backend + isolated Mongo HTTP
 The frontend targets the MVP contract in `Note/authentication/02-fe-be-api-contract.md`: `/register`, `/login`, `/refresh`, `/me`, and `/logout`. Cross-tab refresh rotation behavior is backend dependent and is not verified by this client.
 
 Assessment/Placement merge integration (2026-11-08): GuestOnlyGuard alone uses `authReturnTo` and owns the post-authentication redirect; AuthForm retains a synchronous submission lock and preserves return-to state when switching between login/register. The legacy `getAuthReturnTo` export delegates to the same validator; network-path/backslash/control-character and login/register-loop targets fall back to `/`. Authentication mutations use the form's busy state rather than tearing down the form through the global session-bootstrap loading gate. A rejected login is a form-owned error; only session bootstrap failures block the gate. Real-browser acceptance for the current change is recorded separately from historical auth harness results.
+
+## Shared Guest navigation — 2026-11-08
+
+PublicNavigation now lives in shared/components (old landing path re-exports it for compatibility). Home, previews, Guest Placement start/submitted/result fallback and login/register use the same component. Auth navbar preserves the existing return-to state across login/register. The shared PUBLIC_PATHS constants retain the existing landing aliases; URLs do not change. Attempt and authenticated Placement layouts remain unchanged.

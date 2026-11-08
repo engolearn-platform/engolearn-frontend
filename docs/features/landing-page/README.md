@@ -37,3 +37,7 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 - [ ] Contrast, Vietnamese line height, and spacing follow the EngoLearn design tokens.
 
 Integration refresh: keep main's public resource layouts, Topic detail/My Topics split and Learning Path preview. PlacementRoutes exclusively owns /placement; the placeholder is not registered. Auth return-to and Placement shells are preserved.
+
+## Shared Guest navigation — 2026-11-08
+
+PublicNavigation now lives in shared/components (old landing path re-exports it for compatibility). Home, previews, Guest Placement start/submitted/result fallback and login/register use the same component. Auth navbar preserves the existing return-to state across login/register. The shared PUBLIC_PATHS constants retain the existing landing aliases; URLs do not change. Attempt and authenticated Placement layouts remain unchanged.

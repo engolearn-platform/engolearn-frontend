@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import BrandImage from "@shared/components/BrandImage";
+import PublicNavigation from "@shared/components/PublicNavigation";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
 
@@ -56,7 +57,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
     } finally { submissionPendingRef.current = false; setBusy(false); }
   }
 
-  return <main className="min-h-screen bg-surface px-5 py-12 text-on-surface">
+  return <><PublicNavigation key={location.pathname} /><main id="main-content" tabIndex={-1} className="min-h-screen bg-surface px-5 py-12 text-on-surface">
     <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-5xl items-center gap-12 lg:grid-cols-[1fr_420px]">
       <section className="max-w-xl">
         <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className="inline-flex min-h-12 items-center rounded-xl focus-visible:outline-2 focus-visible:outline-primary"><BrandImage className="h-9 w-auto object-contain" /></Link>
@@ -76,5 +77,5 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <p className="mt-6 text-center text-sm text-on-surface-variant">{isRegister ? "Already have an account?" : "New to Engo Learn?"} {" "}<Link className="font-semibold text-primary underline-offset-4 hover:underline" to={isRegister ? ROUTES.LOGIN : ROUTES.REGISTER} state={location.state}>{isRegister ? "Sign in" : "Create an account"}</Link></p>
       </section>
     </div>
-  </main>;
+  </main></>;
 }

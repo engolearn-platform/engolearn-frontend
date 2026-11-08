@@ -111,3 +111,7 @@
 - [x] Chốt shell P02: `PlacementAttemptLayout` (shell trung tính của feature,
       guest và user dùng chung) — xem `02-placement-attempt.md`.
 - [x] Cập nhật bảng `00-mock-api-status.md` + doc này cùng lúc.
+
+## Public navigation update — 2026-11-08
+
+Guest shells use the same shared PublicNavigation as home, including the submitted claim gate. This overrides the historical P01/Stitch marketing-header order above. The old PlacementPublicHeader remains for authenticated public-shell states. Attempt timer/header and signed-in learner shell stay unchanged. Public main has id=main-content and tabIndex=-1.
