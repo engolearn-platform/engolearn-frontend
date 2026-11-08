@@ -12,6 +12,15 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 - `/placement` is a public placeholder with a clear Vietnamese explanation and a link home. Its path lives in `src/features/landing-page/paths.ts` and is intentionally isolated for replacement by the future placement team.
 - Login links use `/login`. Topic and grammar links use their existing public routes. Do not change auth guards, post-login redirects, roles, learner navigation, `/assessment`, or assessment behavior.
 
+## Public resource previews
+
+- Landing and public resource previews share `PublicNavigation`. It keeps the existing top-level navigation and adds a **Tính năng** disclosure for Topic, Grammar, and the Learning Path preview. The feature overview and learning journey still link to their landing sections.
+- Guests visiting `/topics`, `/topics/:topicId`, or `/grammar` see the public header and the selected resource. Signed-in learners keep the existing catalog shell or standalone Topic Detail layout. The app router composes these layouts around the feature-owned routes.
+- Topic preview uses the existing published catalog and read-only detail. The detail sign-in link returns to the same local URL, including filters and origin information carried in the query string.
+- Grammar preview uses the existing sample roadmap's lesson titles and descriptions. It displays a sample label and omits personal progress, goals, and lesson-start actions.
+- `/preview/learning-path` shows an illustrative week and a sign-in entry to the learner's path list. Its content is static. The preview does not load a learner's path, assessment, or practice data.
+- Desktop supports pointer hover and click for the disclosure. Mobile supports touch. Keyboard users can tab through the links and close with Escape.
+
 ## Components and state
 
 - `GuestLandingView`: header and section navigation, hero, benefits, learning feature cards, three-step journey, illustrated final CTA and footer.

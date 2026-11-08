@@ -6,16 +6,13 @@ import {
   GraduationCap,
   Layers3,
   ListChecks,
-  Menu,
   MessageCircle,
   Route,
   TrendingUp,
-  X,
 } from "lucide-react";
-import { useState } from "react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import BrandImage from "@shared/components/BrandImage";
+import PublicNavigation, { PublicBrand } from "@features/landing-page/components/PublicNavigation";
 import { LANDING_PATHS } from "@features/landing-page/paths";
 import { ROUTES } from "@shared/constants";
 
@@ -42,7 +39,7 @@ const features = [
     eyebrow: "NẮM VỮNG NỀN TẢNG",
     description: "Ôn tập ngữ pháp theo lộ trình rõ ràng, dễ theo dõi.",
     to: ROUTES.GRAMMAR,
-    action: "Khám phá ngữ pháp",
+    action: "Xem trước ngữ pháp",
     color: "bg-learning-nav-active",
   },
   {
@@ -62,62 +59,19 @@ const journey = [
   { icon: TrendingUp, number: "03", title: "Theo dõi tiến bộ", description: "Nhìn lại hành trình và tiếp tục với bước học tiếp theo." },
 ];
 
-function Brand() {
-  return (
-    <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className="inline-flex min-h-12 items-center rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
-      <BrandImage className="h-9 w-auto object-contain" />
-    </Link>
-  );
-}
-
 export default function GuestLandingView({ sessionError, onRetry }: { sessionError?: boolean; onRetry?: () => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen overflow-hidden bg-surface text-on-surface">
-      <a href="#main-content" className="sr-only z-50 rounded-md bg-white p-3 text-primary focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Bỏ qua điều hướng</a>
       {sessionError && (
         <div role="alert" className="flex flex-wrap items-center justify-center gap-3 bg-learning-note px-5 py-3 text-center text-label-lg text-learning-note-ink">
           <span>Chưa kiểm tra được phiên đăng nhập. Bạn vẫn có thể khám phá các nội dung công khai.</span>
           {onRetry && <Button type="button" variant="outline" className="min-h-11 border-learning-note-ink text-learning-note-ink" onClick={onRetry}>Thử lại</Button>}
         </div>
       )}
-      <header className="relative z-20 border-b border-learning-outline bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex min-h-[4.5rem] max-w-7xl items-center justify-between gap-4 px-5">
-          <Brand />
-          <nav aria-label="Điều hướng chính" className="hidden items-center gap-1 lg:flex">
-            <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#main-content">Trang chủ</a>
-            <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#features">Tính năng</a>
-            <a className="min-h-11 rounded-xl px-4 py-3 text-label-lg font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#journey">Lộ trình học</a>
-          </nav>
-          <div className="hidden items-center gap-3 sm:flex">
-            <Button asChild variant="outline" className="min-h-12 rounded-xl border-learning-mint-border px-5">
-              <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
-            </Button>
-            <Button asChild className="min-h-12 rounded-xl px-5">
-              <Link to={LANDING_PATHS.PLACEMENT}>Kiểm tra trình độ <ArrowRight aria-hidden="true" /></Link>
-            </Button>
-          </div>
-          <button type="button" aria-label={menuOpen ? "Đóng điều hướng" : "Mở điều hướng"} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen((open) => !open)} className="grid size-12 place-items-center rounded-xl text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary lg:hidden">
-            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
-          </button>
-        </div>
-        {menuOpen && (
-          <nav id="mobile-navigation" aria-label="Điều hướng chính" className="grid gap-1 border-t border-learning-outline bg-white px-5 py-3 lg:hidden">
-            <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#main-content">Trang chủ</a>
-            <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#features">Tính năng</a>
-            <a onClick={() => setMenuOpen(false)} className="min-h-12 rounded-xl px-4 py-3 font-semibold hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary" href="#journey">Lộ trình học</a>
-            <Button asChild variant="outline" className="mt-2 min-h-12 rounded-xl">
-              <Link to={ROUTES.LOGIN}>Đăng nhập</Link>
-            </Button>
-            <Button asChild className="min-h-12 rounded-xl">
-              <Link to={LANDING_PATHS.PLACEMENT}>Kiểm tra trình độ <ArrowRight aria-hidden="true" /></Link>
-            </Button>
-          </nav>
-        )}
-      </header>
+      <PublicNavigation />
 
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-gradient-to-br from-learning-nav-active via-learning-mint to-white">
           <div aria-hidden="true" className="absolute -right-24 top-0 -z-10 size-96 rounded-full bg-white/40 blur-3xl" />
           <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 pb-10 pt-10 sm:pb-14 sm:pt-14 lg:grid-cols-[0.95fr_1.05fr] lg:gap-4 lg:pb-16 lg:pt-16">
@@ -210,7 +164,7 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
 
       <footer className="border-t border-learning-outline bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2"><Brand /><p className="text-label-lg text-on-surface-variant">Học tiếng Anh theo chuẩn CEFR.</p></div>
+          <div className="space-y-2"><PublicBrand /><p className="text-label-lg text-on-surface-variant">Học tiếng Anh theo chuẩn CEFR.</p></div>
           <div><h2 className="mb-3 font-bold">Sản phẩm</h2><ul className="space-y-2 text-label-lg text-on-surface-variant"><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.TOPICS}>Học theo chủ đề</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.GRAMMAR}>Ngữ pháp</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={LANDING_PATHS.PLACEMENT}>Kiểm tra trình độ</Link></li></ul></div>
           <div><h2 className="mb-3 font-bold">Hỗ trợ</h2><ul className="space-y-2 text-label-lg text-on-surface-variant"><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.LOGIN}>Đăng nhập</Link></li><li><Link className="rounded focus-visible:outline-2 focus-visible:outline-primary hover:text-primary" to={ROUTES.HOME}>Trang chủ</Link></li></ul></div>
           <div><h2 className="mb-3 font-bold">Bắt đầu học</h2><p className="mb-3 text-label-lg leading-5 text-on-surface-variant">Chọn một chủ đề và bắt đầu luyện tập tiếng Anh.</p><Link className="inline-flex min-h-11 items-center gap-2 font-semibold text-primary underline underline-offset-4" to={ROUTES.TOPICS}>Khám phá ngay<ArrowDownRight aria-hidden="true" className="size-4" /></Link></div>
