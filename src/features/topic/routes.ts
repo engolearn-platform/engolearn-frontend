@@ -28,10 +28,21 @@ function LegacyTopicRedirect() {
 export const TopicCatalogRoutes: RouteObject[] = [
   {
     Component: TopicViewerLayout,
-    children: [
-      { path: ROUTES.TOPICS, Component: TopicPage },
-      { path: ROUTES.MY_TOPICS, Component: MyTopicsView },
-    ],
+    children: [{ path: ROUTES.TOPICS, Component: TopicPage }],
+  },
+];
+
+export const MyTopicsRoutes: RouteObject[] = [
+  {
+    Component: TopicViewerLayout,
+    children: [{ path: ROUTES.MY_TOPICS, Component: MyTopicsView }],
+  },
+];
+
+export const TopicDetailRoutes: RouteObject[] = [
+  {
+    Component: TopicViewerLayout,
+    children: [{ path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView }],
   },
 ];
 
@@ -62,7 +73,6 @@ export const TopicStandaloneRoutes: RouteObject[] = [
       { path: ROUTES.TOPIC_RESULT, Component: TopicResultView },
       { path: ROUTES.TOPIC_ITEM_RESULT, Component: TopicItemResultView },
       { path: ROUTES.TOPIC_ATTEMPT, Component: TopicAttemptEntryView },
-      { path: ROUTES.TOPIC_DETAIL, Component: TopicDetailView },
       { Component: AuthGuard, children: [
         { path: ROUTES.TOPIC_ITEM_SPEAKING, Component: SpeakingView },
         { path: ROUTES.TOPIC_SPEAKING, Component: SpeakingView },
