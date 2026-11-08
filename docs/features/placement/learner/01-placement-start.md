@@ -119,3 +119,7 @@ Guest shells use the same shared PublicNavigation as home, including the submitt
 ## Placement User shell sync — 2026-11-08
 
 Authenticated Placement entry/result/review now reuse the core LearningLayout (shared sidebar, top bar, compact preference and mobile drawer). PlacementUserLayout is a thin identityGeneration-keyed adapter; legacy PlacementUserSidebar/TopBar are not mounted. The shared practice menu includes a distinct Kiểm tra đầu vào link matching /placement and its descendants. This supersedes the earlier custom Placement sidebar/240px/lg-breakpoint descriptions. Existing periodic-assessment entry remains separate. Guest public navigation and standalone attempt timer/layout are unchanged.
+
+## User resume state — 2026-11-08
+
+User entry reads GET /placement/attempts/current before offering start/resume/result. This GET does not create an attempt; BE may finalize an elapsed existing attempt. Persisted progress, lastSavedAt and original deadline drive the card. Continue opens the first unanswered page, or final page when all answered. A finished attempt opens result/claim; expired allows explicit start. Loading/error offers retry, not implicit start. Guest entry is unchanged; shared shell remains. See the resume plan for the new safe summary contract and verification ledger.

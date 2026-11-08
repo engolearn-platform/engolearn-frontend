@@ -28,3 +28,16 @@ export interface PlacementStartResult {
   deadlineAt: string;
   claimRequired: boolean;
 }
+
+export interface PlacementCurrentAttempt {
+  attemptId: string;
+  status: PlacementAttemptStatus;
+  deadlineAt: string;
+  serverNow: string;
+  totalQuestions: number;
+  answeredCount: number;
+  nextSection: "READING" | "LISTENING";
+  resumeOrder: number | null;
+  lastSavedAt: string | null;
+  claimRequired: boolean;
+}

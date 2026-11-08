@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { PLACEMENT_ROUTES, buildPlacementPages } from "@features/placement/constants";
 import { usePlacementAttemptContext } from "@features/placement/hooks/placement-attempt-context";
@@ -38,7 +38,12 @@ export default function PlacementAttemptView() {
     [attempt.questions],
   );
 
-  const [pageIndex, setPageIndex] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [pageIndex, setPageIndex] = useState(() => {
+    const order = Number(searchParams.get("resumeQuestion"));
+    const index = Number.isSafeInteger(order) ? pages.findIndex(candidate => order >= candidate.firstOrder && order <= candidate.lastOrder) : -1;
+    return Math.max(0, index);
+  });
   const listRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(false);
 

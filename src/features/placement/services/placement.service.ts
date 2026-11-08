@@ -1,4 +1,4 @@
-import type { PlacementStartResult } from "../types/placement.types";
+import type { PlacementCurrentAttempt, PlacementStartResult } from "../types/placement.types";
 import type {
   PlacementAttemptDetail,
   PlacementSubmitResult,
@@ -71,4 +71,8 @@ export async function getPlacementReview(
   return placementRequest<PlacementReview>(
     `/${encodeURIComponent(attemptId)}/review`, "GET", signal,
   );
+}
+
+export async function getCurrentPlacementAttempt(signal?: AbortSignal): Promise<PlacementCurrentAttempt | null> {
+  return placementRequest<PlacementCurrentAttempt | null>("/current", "GET", signal);
 }
