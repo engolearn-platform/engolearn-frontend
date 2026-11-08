@@ -115,3 +115,7 @@
 ## Public navigation update — 2026-11-08
 
 Guest shells use the same shared PublicNavigation as home, including the submitted claim gate. This overrides the historical P01/Stitch marketing-header order above. The old PlacementPublicHeader remains for authenticated public-shell states. Attempt timer/header and signed-in learner shell stay unchanged. Public main has id=main-content and tabIndex=-1.
+
+## Placement User shell sync — 2026-11-08
+
+Authenticated Placement entry/result/review now reuse the core LearningLayout (shared sidebar, top bar, compact preference and mobile drawer). PlacementUserLayout is a thin identityGeneration-keyed adapter; legacy PlacementUserSidebar/TopBar are not mounted. The shared practice menu includes a distinct Kiểm tra đầu vào link matching /placement and its descendants. This supersedes the earlier custom Placement sidebar/240px/lg-breakpoint descriptions. Existing periodic-assessment entry remains separate. Guest public navigation and standalone attempt timer/layout are unchanged.

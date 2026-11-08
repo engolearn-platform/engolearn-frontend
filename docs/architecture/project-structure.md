@@ -194,3 +194,7 @@ Feature components live in `src/features/<domain>/components/` — never in glob
 
 - This file is the authority on structure. Keep `AGENTS.md` to a summary + link; keep `README.md` to overview + examples + link.
 - Update this file whenever a new convention is adopted (new layout, guard strategy, `-admin` split). Do not let tribal knowledge live only in chat or PRs.
+
+## Placement User shell sync — 2026-11-08
+
+Authenticated Placement entry/result/review now reuse the core LearningLayout (shared sidebar, top bar, compact preference and mobile drawer). PlacementUserLayout is a thin identityGeneration-keyed adapter; legacy PlacementUserSidebar/TopBar are not mounted. The shared practice menu includes a distinct Kiểm tra đầu vào link matching /placement and its descendants. This supersedes the earlier custom Placement sidebar/240px/lg-breakpoint descriptions. Existing periodic-assessment entry remains separate. Guest public navigation and standalone attempt timer/layout are unchanged.

@@ -93,3 +93,7 @@ lệ trình bày từ score/20, không chấm điểm.
 - [ ] Nối CTA học khi có contract dùng `placementLevel`.
 - [x] Đấu API review thật; CTA P04 → P05 dùng `result.attemptId`.
 - [ ] Giữ không có result/review cho EXPIRED và Guest chưa claim.
+
+## Placement User shell sync — 2026-11-08
+
+Authenticated Placement entry/result/review now reuse the core LearningLayout (shared sidebar, top bar, compact preference and mobile drawer). PlacementUserLayout is a thin identityGeneration-keyed adapter; legacy PlacementUserSidebar/TopBar are not mounted. The shared practice menu includes a distinct Kiểm tra đầu vào link matching /placement and its descendants. This supersedes the earlier custom Placement sidebar/240px/lg-breakpoint descriptions. Existing periodic-assessment entry remains separate. Guest public navigation and standalone attempt timer/layout are unchanged.
