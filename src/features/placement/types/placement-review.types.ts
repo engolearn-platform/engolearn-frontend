@@ -20,6 +20,7 @@ export interface PlacementReviewQuestion {
   options: PlacementReviewOption[];
   selectedOptionId: string | null;
   correctOptionId: string;
+  explanation?: string | null;
   audio?: {
     url: string | null;
     durationSeconds: number;

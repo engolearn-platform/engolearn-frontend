@@ -20,8 +20,7 @@ Project `16234151544679864766`: frame đối chiếu
 prev/next, audio player, đúng/sai/bỏ trống và link về kết quả. Biến thể đặt
 CTA “Về kết quả” ở sidebar thay legend. Dashboard tên Hoàng là dữ liệu mẫu.
 Stitch gắn audio cho Câu 13–14 nhưng blueprint 1–14 Reading, 15–20 Listening:
-MVP chỉ render audio ở Listening 15–20. Stitch có box giải thích, nhưng MVP
-chủ động không triển khai explanation dù business hỗ trợ nếu có.
+MVP chỉ render audio ở Listening 15–20. Theo yêu cầu 2026-11-08, bật box giải thích khi snapshot của câu có nội dung.
 
 ## 3. Route
 
@@ -36,7 +35,7 @@ deep-link fetch bằng attemptId, không dùng router state/reviewId.
 Mỗi câu: `id`, `order`, `section`, `prompt`, `passage` cho Reading, bốn
 `options[]`, `selectedOptionId` (`null` nếu bỏ trống), `correctOptionId`,
 `audio` cho Listening.
-Không có `explanation`, `transcript`, resultId hoặc metadata admin.
+Có `explanation` tùy chọn/nullable từ snapshot đã gán; không có `transcript`, resultId hoặc metadata admin.
 
 ## 5. Security boundary
 
@@ -69,7 +68,7 @@ không tính lại score, level hoặc aggregate service đã trả.
 PlacementResultLayout
 └─ PlacementReviewView — breadcrumb/H1, loading/error, về kết quả
    ├─ PlacementReviewSummary — mini-strip dữ liệu service
-   ├─ PlacementReviewQuestionCard × tối đa 3 — passage Reading, options read-only, audio Listening
+   ├─ PlacementReviewQuestionCard × tối đa 3 — passage Reading, options read-only, audio Listening, explanation nếu có
    ├─ PlacementReviewPageNav — trang trước/tiếp + range
    └─ PlacementReviewQuestionGrid — 20 button + link Về kết quả + legend
 ```
@@ -122,3 +121,7 @@ audio button có aria-label. Nav/CTA là button/Link đúng ngữ nghĩa.
 - [x] Đọc audio URL từ snapshot (sample hiện null); production audio cần URL thật.
 - [x] Không đưa correct answer/review fields vào API Attempt đang làm.
 - [x] Nối Guest claim sau Login/Register đến đúng `resultAttemptId`.
+
+## Explanation enabled — 2026-11-08
+
+Authenticated owners of SUBMITTED/AUTO_SUBMITTED attempts see a Giải thích section below options when snapshot explanation is nonblank. Legacy snapshots without explanations omit the section. Render as escaped plain text with preserved newlines, not HTML. BE returns explanation only in authorized review; attempt/current/result/claim payloads remain unchanged. No transcript, grading, CTA destination or profile-level update is added in this change. Existing shared shell remains.
