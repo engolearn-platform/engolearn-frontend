@@ -7,13 +7,13 @@ The approved Word changes and design-system tokens govern this implementation.
 
 ## Routes and components
 
-| Route | Behavior |
-| --- | --- |
-| /assessment | Eligibility, quota/cooldown, audio check, rules confirmation and start |
-| /assessment/taking | Focused exam; in-memory document binding |
-| /assessment/history | Paginated terminal attempts; one “Xem kết quả” action for valid results |
-| /assessment/attempts/:attemptId/result | Shared summary; skills table and live Learning Path recommendation |
-| /assessment/attempts/:attemptId/review | Same summary; all fifty questions, filters and scroll navigator |
+| Route                                  | Behavior                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| /assessment                            | Eligibility, quota/cooldown, audio check, rules confirmation and start  |
+| /assessment/taking                     | Focused exam; in-memory document binding                                |
+| /assessment/history                    | Paginated terminal attempts; one “Xem kết quả” action for valid results |
+| /assessment/attempts/:attemptId/result | Shared summary; skills table and live Learning Path recommendation      |
+| /assessment/attempts/:attemptId/review | Same summary; all fifty questions, filters and scroll navigator         |
 
 `AssessmentLearningLayout` uses the shared LearningLayout, which supplies the desktop sidebar,
 mobile navigation and account header. Result/review share `AssessmentResultSummary`.
@@ -29,12 +29,12 @@ The server validates eligibility when a request is sent.
 
 ## Taking rules
 
-| Stage | Questions and interaction | Time |
-| --- | --- | --- |
-| Listening singles | 1–10, current only; Next saves/locks; no return | 30s including 2s preparation and audio |
-| Listening group 1 | 11–15 shown together; any answer editable | One 5-minute timer including 2s preparation and audio |
-| Listening group 2 | 16–20 shown together; any answer editable | One 5-minute timer including 2s preparation and audio |
-| Reading | Any question 21–50 selectable/editable; no Listening return | One 30-minute timer |
+| Stage             | Questions and interaction                                   | Time                                                  |
+| ----------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
+| Listening singles | 1–10, current only; Next saves/locks; no return             | 30s including 2s preparation and audio                |
+| Listening group 1 | 11–15 shown together; any answer editable                   | One 5-minute timer including 2s preparation and audio |
+| Listening group 2 | 16–20 shown together; any answer editable                   | One 5-minute timer including 2s preparation and audio |
+| Reading           | Any question 21–50 selectable/editable; no Listening return | One 30-minute timer                                   |
 
 The countdown runs during the two-second preparation and keeps the same server deadline
 when audio starts. Group finish opens confirmation and locks the group when accepted. Unused time never

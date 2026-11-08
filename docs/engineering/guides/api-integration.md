@@ -134,8 +134,18 @@ week statistics are available after closure. Cancelled paths cannot be opened.
 `useLearningPathDetail` calls `learningPathService.detail` with an abort signal.
 `learningPathDetail.mapper.ts` converts backend fields and timestamps into the view
 model, using the Vietnam time zone for dates. Closed-week and summary tabs display
-backend rates, scores, and improvements; open progress uses answered/assigned counts. The
-daily practice and result routes remain UI-only until their backend APIs exist.
+backend rates, scores, and improvements; open progress uses answered/assigned counts.
+
+Daily practice uses `POST /api/learning-paths/{pathId}/weeks/{weekNo}/days/{dayNo}/start`,
+`PUT .../questions/{questionId}/draft` with `{ selectedOptionId }`, and `POST .../submit`
+without a body. Daily review uses `GET .../result`. All four calls use shared HTTP and
+cookie authentication; the backend determines ownership. No environment user ID or `userId`
+query parameter is used. Their feature hooks keep existing DTO mapping and abort loads on
+unmount. Practice/result views guard authentication and remount on identity changes;
+practice also aborts outstanding mutations and ignores late responses before state updates
+or navigation. Browser cancellation cannot roll back a server-accepted write.
+See [daily practice](../../features/learning-path/learner/02-daily-practice-screen.md) and
+[daily result](../../features/learning-path/learner/03-daily-result-screen.md).
 
 ## Topic learning — target contract (2026-10-27)
 

@@ -12,7 +12,15 @@ The screen uses `LearningLayout` and a content container up to 1300px, matching 
 - Pressing **Nộp bài** always opens a confirmation dialog before submission. If any questions are unanswered, the dialog shows the chosen and unanswered counts in a yellow `learning-note` warning panel with an alert icon and dark `learning-note-ink` text; it explains that blank questions are recorded as unanswered. If all questions are answered, the same dialog uses a neutral `surface-container-low` panel and an information icon, confirming that all questions have been selected. Both variants explain that answers cannot be changed after submission. **Tiếp tục làm bài** returns to practice; **Vẫn nộp bài** confirms an incomplete submission and **Xác nhận nộp bài** confirms a fully answered submission.
 - A chosen answer uses the light teal background and teal border, with a “Đã chọn” label. The navigator uses teal circles for chosen answers, including answers on other pages, and highlights the current page in teal. Correct and wrong feedback appears only during review. There is no separate saved indicator or page lock before submission.
 - The page calls the backend start API and restores server-saved choices. Selecting an option saves that question through the draft API; choices are shown after the server confirms them, and an error prompts the learner to retry. Answer controls are disabled while a save is pending. The server-provided deadline disables editing when reached; the server remains authoritative for closure.
-- Audio passages play their returned URL. Reading questions may have no passage. User ID comes from `VITE_LEARNING_PATH_USER_ID`, as on the list and detail screens.
+- Audio passages play their returned URL. Reading questions may have no passage.
+
+Start, draft and submit requests use the shared HTTP client with the authenticated cookie
+and bounded refresh. The frontend does not configure a user ID or send a `userId` override;
+the backend checks ownership against the authenticated account. Guests return through login
+with their destination. Identity changes remount practice state and abort pending loads and
+mutations. Aborted mutations cannot update answers, show errors or navigate after unmount.
+Client cancellation does not undo a mutation the server already accepted; reopening practice
+reloads saved choices from the backend. The existing submit confirmation remains required.
 
 Questions and saved choices come from the backend. The API does not expose correct answers or explanations during practice.
 After a successful submit, the daily result route loads the server-calculated metrics and question review from the result API. An unsuccessful or uncertain submission keeps the learner on the practice screen with an error and guidance to check the path if it has closed.
