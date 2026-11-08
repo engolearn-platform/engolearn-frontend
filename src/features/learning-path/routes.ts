@@ -1,4 +1,3 @@
-import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import type { RouteObject } from "react-router";
 import LearningPathListView from "./views/learning/LearningPathListView";
@@ -9,9 +8,8 @@ import LearningPathDayResultView from "./views/learning/LearningPathDayResultVie
 export const LearningPathRoutes: RouteObject[] = [
   {
     path: ROUTES.LEARNING_PATHS,
-    Component: LearningLayout,
     children: [
-      { path: "", Component: LearningPathListView },
+      { index: true, Component: LearningPathListView },
       { path: ":pathId", Component: LearningPathDetailView },
       { path: ":pathId/weeks/:weekNo/days/:dayNo/practice", Component: LearningPathDailyPracticeView },
       { path: ":pathId/weeks/:weekNo/days/:dayNo/result", Component: LearningPathDayResultView },

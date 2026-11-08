@@ -176,3 +176,7 @@ export const PostRoutes = [
 import { PostRoutes } from "@features/Post/routes";
 export const appRoutes = [...PostRoutes, ...ProductRoutes];
 ```
+
+## Learner periodic assessment
+
+[F01/F02 routes, timing, UI and integration](docs/features/assessment/README.md). Uses the shared cookie-auth session and real backend API.

@@ -4,6 +4,7 @@ interface RequestOptions {
   headers?: Record<string, string>;
   params?: Record<string, string>;
   signal?: AbortSignal;
+  keepalive?: boolean;
   skipAuthRefresh?: boolean;
 }
 
@@ -69,7 +70,7 @@ class HttpService {
     const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json" });
     for (const [key, value] of Object.entries(options?.headers ?? {})) headers.set(key, value);
     const response = await this.fetchImpl(this.buildUrl(endpoint, options?.params), {
-      method, credentials: "same-origin", cache: "no-store", headers, signal: options?.signal,
+      method, credentials: "same-origin", cache: "no-store", headers, signal: options?.signal, keepalive: options?.keepalive,
       ...(body !== undefined && isUnsafe ? { body: JSON.stringify(body) } : {}),
     });
     if (response.status === 401 && retry && !options?.skipAuthRefresh && !isAuthEndpoint && !options?.signal?.aborted) {

@@ -26,6 +26,10 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
   const isEnded = path.status === "COMPLETED";
   const fullyAnswered = isEnded && isLearningPathFullyAnswered(path.progress?.answered, path.progress?.assigned);
   const detailUrl = ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(path.id));
+  const assessmentResultUrl = path.sourceAssessmentAttemptId
+    ? `/assessment/attempts/${encodeURIComponent(path.sourceAssessmentAttemptId)}/result`
+    : null;
+  const assessmentResultLabel = <><ExternalLink className="size-3.5 shrink-0 lg:size-3" aria-hidden="true" />Xem kết quả bài kiểm tra định kỳ tương ứng</>;
 
   const statusLabel =
     path.status === "NOT_STARTED"
@@ -62,16 +66,15 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
         </p>
       </div>
 
-      <span className="group mt-2.5 inline-flex w-fit max-w-full self-start rounded-md transition-shadow duration-150 hover:shadow-sm lg:mt-4 lg:pt-1">
+      <span title={assessmentResultUrl ? undefined : "Chưa có bài đánh giá liên kết"} className="group mt-2.5 inline-flex w-fit max-w-full self-start rounded-md transition-shadow duration-150 hover:shadow-sm lg:mt-4 lg:pt-1">
         <Button
-          disabled
+          asChild={!!assessmentResultUrl}
+          disabled={!assessmentResultUrl}
           variant="outline"
           size="sm"
-          title="Chức năng sẽ được kết nối khi màn hình kết quả bài kiểm tra định kì sẵn sàng."
           className="h-auto w-fit max-w-full whitespace-normal border-primary/30 bg-primary/5 px-2 has-[>svg]:px-2.5 py-1 text-left text-xs text-primary transition-colors duration-150 group-hover:border-primary/50 group-hover:bg-primary/10 group-hover:text-primary disabled:cursor-not-allowed disabled:bg-primary/5 disabled:text-primary disabled:opacity-100 lg:px-[13px] lg:has-[>svg]:px-[13px] lg:py-[6px] lg:text-[12px] lg:leading-[18px]"
         >
-          <ExternalLink className="size-3.5 shrink-0 lg:size-3" aria-hidden="true" />
-          Xem kết quả bài kiểm tra định kỳ tương ứng
+          {assessmentResultUrl ? <Link to={assessmentResultUrl}>{assessmentResultLabel}</Link> : assessmentResultLabel}
         </Button>
       </span>
 

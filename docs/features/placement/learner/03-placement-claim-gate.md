@@ -121,11 +121,11 @@ Không dùng các ID này trong service HTTP:
   P03 trong cùng browser navigation. AuthProvider giữ session bằng cookie HttpOnly;
   Placement không lưu credential/session. Reload trực tiếp trên màn Login trước
   khi submit sẽ mất navigation state return-to; không giả lập fallback claim.
-- Blocker tích hợp đã quan sát: Login/Register thật có thể về Home thay vì return-to P03
-  khi Auth loading/authenticated guard điều hướng trong lúc form đang hoàn tất.
-  Placement vẫn gửi `state.from`; không sửa Auth/shared hoặc giả lập claim để né.
-  Mở lại URL P03 trong cùng browser sau xác thực đã được kiểm chứng sẽ auto-claim
-  bằng cookie thật. Luồng tự quay lại vẫn cần được xử lý ở Auth trước khi coi E2E liền mạch PASS.
+- Merge integration (2026-11-08): AuthForm giữ pending UI và khóa submit riêng;
+  GuestOnlyGuard là nơi duy nhất điều hướng sau auth, dùng return-to đã validate.
+  P03 tiếp tục gửi `state.from` và auto-claim bằng cookie thật. Thay đổi xử lý
+  nguyên nhân điều hướng cạnh tranh ở code; cần kiểm chứng lại browser E2E với
+  backend thật trước khi đánh dấu luồng tự quay lại PASS.
 - Không gọi claim API giả (BR-F2.6 là auto-claim phía backend sau auth).
 - "Xem kết quả" trong status card vẫn disabled (không đổi visual); P03 sau
   khi AuthContext xác thực sẽ điều hướng theo `resultAttemptId` BE cấp. Không mặc
