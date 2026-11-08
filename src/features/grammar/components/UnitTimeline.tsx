@@ -3,9 +3,10 @@ import UnitCard from "./UnitCard";
 
 interface UnitTimelineProps {
   units: GrammarUnit[];
+  preview?: boolean;
 }
 
-export default function UnitTimeline({ units }: UnitTimelineProps) {
+export default function UnitTimeline({ units, preview }: UnitTimelineProps) {
   return (
     <div className="relative space-y-4">
       <div
@@ -14,7 +15,7 @@ export default function UnitTimeline({ units }: UnitTimelineProps) {
       />
       {units.map((unit) => (
         <div key={unit.id} className="relative z-10">
-          <UnitCard unit={unit} />
+          <UnitCard unit={unit} preview={preview} />
         </div>
       ))}
     </div>

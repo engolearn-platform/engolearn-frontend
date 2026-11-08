@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import { ROUTES } from "@shared/constants";
 import { TopicRetryDialog } from "@features/topic/components/learning/attempt/TopicRetryDialog";
 import { useTopicViewer } from "@features/topic/hooks/topic-viewer.context";
 import { useTopicDetail, useTopicProgress } from "@features/topic/hooks/useTopicDetail";
@@ -29,7 +30,7 @@ export default function TopicDetailView() {
     <header className="border-b border-outline-variant/50 bg-surface-container-lowest">
       <div className="mx-auto flex min-h-20 max-w-7xl items-center px-5 md:px-8"><Link to={origin} className="flex min-h-12 items-center gap-3 rounded-xl font-semibold text-primary focus-visible:outline-2 focus-visible:outline-primary"><ArrowLeft className="size-5 shrink-0" aria-hidden="true" /><span>Chủ đề{data ? " / " + data.titleVi : ""}</span></Link></div>
     </header>
-    <main className="mx-auto max-w-7xl px-5 py-6 md:px-8">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl px-5 py-6 md:px-8">
       {notice && <p role="status" className="mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-body-md">{notice}</p>}
       {!data ? <TopicState title={detail.error ? (detail.error.status === 404 ? "Không tìm thấy chủ đề" : "Không tải được chủ đề") : "Đang tải chủ đề…"} description={detail.error ? topicErrorMessage(detail.error) : undefined} loading={!detail.error} error={!!detail.error} onRetry={detail.error ? detail.refetch : undefined} /> :
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
@@ -49,7 +50,13 @@ export default function TopicDetailView() {
             {data.items.length ? <section aria-label="Các bài học tình huống" className="space-y-4">{data.items.map((item, index) => <TopicItemCard key={item.topicItemId} item={item} index={index} current={next?.topicItemId === item.topicItemId} learner={learner} busy={launch.busy} onAction={launch.choose} />)}</section> : <TopicState title="Chủ đề chưa có bài học hiển thị" description="Vui lòng quay lại sau để xem nội dung được cập nhật." />}
           </div>
           <aside className="space-y-4 lg:sticky lg:top-6 lg:col-span-4">
-            {!learner ? <TopicState title="Khám phá trước khi bắt đầu" description="Đăng nhập để học các tình huống và lưu tiến độ của bạn." /> :
+            {!learner ? <TopicState title="Khám phá trước khi bắt đầu" description="Đăng nhập để học các tình huống và lưu tiến độ của bạn.">
+              <Button asChild className="mt-5 min-h-12 rounded-xl">
+                <Link to={ROUTES.LOGIN} state={{ from: { pathname: location.pathname, search: location.search, hash: location.hash } }}>
+                  Đăng nhập để bắt đầu học
+                </Link>
+              </Button>
+            </TopicState> :
               <section className="space-y-5 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm">
                 <h2 className="text-headline-sm font-semibold">Tiến độ chủ đề</h2>
                 {progress.error ? <TopicState error title="Không tải được tiến độ" description={topicErrorMessage(progress.error)} onRetry={progress.refetch} /> : !progress.data ? <p role="status" className="text-body-md text-on-surface-variant">Đang tải tiến độ…</p> : <>

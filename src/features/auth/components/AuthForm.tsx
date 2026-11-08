@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
+import BrandImage from "@shared/components/BrandImage";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
 import { authReturnTo } from "@features/auth/utils/authReturnTo";
@@ -57,7 +58,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   return <main className="min-h-screen bg-surface px-5 py-12 text-on-surface">
     <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-5xl items-center gap-12 lg:grid-cols-[1fr_420px]">
       <section className="max-w-xl">
-        <Link to={ROUTES.HOME} className="text-lg font-bold text-primary focus-visible:outline-2 focus-visible:outline-primary">Engo Learn</Link>
+        <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className="inline-flex min-h-12 items-center rounded-xl focus-visible:outline-2 focus-visible:outline-primary"><BrandImage className="h-9 w-auto object-contain" /></Link>
         <h1 className="mt-10 text-3xl leading-tight font-bold sm:text-4xl">{isRegister ? "Start learning at your pace." : "Welcome back to your learning journey."}</h1>
         <p className="mt-4 max-w-lg text-base leading-7 text-on-surface-variant">{isRegister ? "Create an account to keep your learning progress together." : "Sign in to continue where you left off."}</p>
       </section>

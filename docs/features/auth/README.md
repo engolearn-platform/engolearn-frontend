@@ -7,6 +7,7 @@
 - Registration asks for a password of at least 8 characters and at most 72 UTF-8 bytes, matching the backend password constraints. Session bootstrap failures and unconfirmed logout offer retry actions.
 
 - `/login` and `/register` are public routes owned by `src/features/auth/`.
+- `/` has one app-composition owner. It uses the shared session state to show the guest landing page, a neutral pending state, public landing information with retry on session errors, or the existing signed-in learner homepage inside `LearningLayout`. Auth guards and post-login return destinations are unchanged.
 - `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state; authenticated users are redirected to a validated captured local destination, or `/`, with history replacement. Session errors show a retry action rather than a guest form. The profile test page refreshes shared identity after login/register/logout so this gate sees cookie-auth changes made there.
 - After successful authentication, the app returns to a safe local route captured by the guard, or `/`.
 - Admin topic and subscription management routes wait for session bootstrap and redirect guests to login. Topic learning routes remain public.

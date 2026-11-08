@@ -39,6 +39,10 @@ export function topicItemResultPath(topicId: string, attemptId: string, origin: 
   return ROUTES.TOPIC_ITEM_RESULT.replace(":topicId", encodeURIComponent(topicId)).replace(":attemptId", encodeURIComponent(attemptId)) +
     "?from=" + encodeURIComponent(safeTopicOrigin(origin));
 }
+export function topicItemSpeakingPath(topicId: string, itemId: string, origin: string): string {
+  return ROUTES.TOPIC_ITEM_SPEAKING.replace(":topicId", encodeURIComponent(topicId)).replace(":itemId", encodeURIComponent(itemId)) +
+    "?from=" + encodeURIComponent(safeTopicOrigin(origin));
+}
 export function topicResultPath(topicId: string, origin: string): string {
   return ROUTES.TOPIC_RESULT.replace(":topicId", encodeURIComponent(topicId)) + "?from=" + encodeURIComponent(safeTopicOrigin(origin));
 }
