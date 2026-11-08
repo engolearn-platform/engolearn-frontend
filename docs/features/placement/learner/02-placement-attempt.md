@@ -174,3 +174,18 @@ Hooks/services:
 - [ ] Bật audio thật (`url`) và bỏ nhánh mô phỏng trong `PlacementAudioPlayer`.
 - [x] Dùng `/login` + `/register` chung và quay lại P03 để claim.
 - [x] Cập nhật bảng `00-mock-api-status.md`.
+
+## Submission reconciliation — 2026-11-09
+
+If pending answers cannot flush, read the real attempt before deciding to block.
+When BE still reports IN_PROGRESS, keep the save error and do not submit unsaved
+work. When BE reports a terminal status (late PATCH after timeout or another tab
+already finished), call the idempotent submit endpoint and use its authoritative
+response to navigate; do not fabricate a submit result or trust the local clock.
+Network/ownership errors remain errors and keep the result unset for retry.
+
+The optional `node tools/placement/check-deadline-ui.mjs` regression uses a fresh
+headless Chrome profile, actual React hook and real FE proxy/BE/Mongo. It requires
+explicit `PLACEMENT_DEADLINE_UI_ALLOW_WRITES=1`; shortens only newly created Guest
+test attempt deadlines and retains those records. It never modifies stored papers,
+personal user attempts, or the user's browser profile. No mocked API responses.

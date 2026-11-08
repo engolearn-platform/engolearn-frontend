@@ -158,8 +158,12 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
     try {
       const flushed = await flushPendingAnswers(targetAttemptId);
       if (!flushed) {
-        setSubmitError(SAVE_ERROR_MESSAGE);
-        return;
+        // Late PATCHes are rejected after BE finalizes; reconcile its status before blocking on dirty answers.
+        const current = await getPlacementAttempt(targetAttemptId);
+        if (current.status === "IN_PROGRESS") {
+          setSubmitError(SAVE_ERROR_MESSAGE);
+          return;
+        }
       }
 
       const result = await submitPlacementAttempt(targetAttemptId);
