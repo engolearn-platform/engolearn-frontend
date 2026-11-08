@@ -97,3 +97,7 @@ lệ trình bày từ score/20, không chấm điểm.
 ## Placement User shell sync — 2026-11-08
 
 Authenticated Placement entry/result/review now reuse the core LearningLayout (shared sidebar, top bar, compact preference and mobile drawer). PlacementUserLayout is a thin identityGeneration-keyed adapter; legacy PlacementUserSidebar/TopBar are not mounted. The shared practice menu includes a distinct Kiểm tra đầu vào link matching /placement and its descendants. This supersedes the earlier custom Placement sidebar/240px/lg-breakpoint descriptions. Existing periodic-assessment entry remains separate. Guest public navigation and standalone attempt timer/layout are unchanged.
+
+## Start learning / profile level — 2026-11-08
+
+Bắt đầu học posts to the owner-scoped learning command before navigating to /topics; busy/double-click guard and retryable error preserve the result screen on failure. Backend promotes only upward from the persisted owned result; no client-selected level. Shared Topic services read the profile normally. Guest results must be claimed first. Historical results synchronize through this explicit POST, not a read-only result GET.

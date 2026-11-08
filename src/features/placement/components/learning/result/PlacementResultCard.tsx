@@ -1,8 +1,11 @@
 import { Button } from "@/core/components/shadcn/button";
 import { PLACEMENT_ROUTES } from "@features/placement/constants";
 import type { PlacementResult } from "@features/placement/types/placement-result.types";
-import { CheckCircle2, CircleX, PauseCircle, Sparkles } from "lucide-react";
-import { Link } from "react-router";
+import { CheckCircle2, CircleX, PauseCircle, Sparkles, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { ROUTES } from "@shared/constants";
+import { activatePlacementLearning } from "@features/placement/services/placement.service";
 
 interface PlacementResultCardProps {
   result: PlacementResult;
@@ -11,6 +14,29 @@ interface PlacementResultCardProps {
 export default function PlacementResultCard({ result }: PlacementResultCardProps) {
   // Presentation only: the service supplies score and level. No grading here.
   const percentage = Math.round((result.score / result.totalQuestions) * 100);
+  const navigate = useNavigate();
+  const [learningPending, setLearningPending] = useState(false);
+  const [learningError, setLearningError] = useState<string | null>(null);
+  const learningLock = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  const startLearning = async () => {
+    if (learningLock.current) return;
+    learningLock.current = true;
+    setLearningPending(true);
+    setLearningError(null);
+    try {
+      // Integration boundary: Topic reads User's profile, so await server promotion before entering the catalog.
+      await activatePlacementLearning(result.attemptId);
+      if (mounted.current) void navigate(ROUTES.TOPICS);
+    } catch {
+      if (mounted.current) setLearningError("Chưa thể cập nhật trình độ học. Vui lòng thử lại.");
+    } finally {
+      learningLock.current = false;
+      if (mounted.current) setLearningPending(false);
+    }
+  };
 
   return (
     <article className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-5 shadow-sm sm:p-8">
@@ -82,9 +108,11 @@ export default function PlacementResultCard({ result }: PlacementResultCardProps
           trình độ {result.placementLevel}.
         </p>
         <div className="mx-auto mt-6 flex max-w-xs flex-col items-stretch gap-3">
-          <Button type="button" size="lg" disabled title="Sắp ra mắt" className="rounded-xl">
-            Bắt đầu học
+          <Button type="button" size="lg" disabled={learningPending} onClick={startLearning} className="rounded-xl">
+            {learningPending && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+            {learningPending ? "Đang chuẩn bị…" : "Bắt đầu học"}
           </Button>
+          {learningError && <p role="alert" className="text-label-sm text-error">{learningError}</p>}
           <Button
             asChild
             size="lg"

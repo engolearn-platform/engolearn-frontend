@@ -76,3 +76,7 @@ export async function getPlacementReview(
 export async function getCurrentPlacementAttempt(signal?: AbortSignal): Promise<PlacementCurrentAttempt | null> {
   return placementRequest<PlacementCurrentAttempt | null>("/current", "GET", signal);
 }
+
+export async function activatePlacementLearning(attemptId: string): Promise<{ attemptId: string; profileLevel: string }> {
+  return placementRequest<{ attemptId: string; profileLevel: string }>(`/${encodeURIComponent(attemptId)}/learning`, "POST");
+}

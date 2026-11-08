@@ -98,7 +98,7 @@ tại mô phỏng playback (không có tệp audio thực). Không transcript.
 
 CTA “Xem chi tiết bài làm” trong P04 là Link tới
 `attemptReview(result.attemptId)`. P05 tự fetch, không nhận review bằng state.
-“Bắt đầu học” của P04 vẫn disabled chờ learning contract.
+“Bắt đầu học” của P04 gọi POST learning để đồng bộ level hồ sơ trước khi đến /topics (2026-11-08).
 
 ## 13. P05 → P04
 
