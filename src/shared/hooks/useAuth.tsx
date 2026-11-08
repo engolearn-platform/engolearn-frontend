@@ -84,7 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const authenticate = React.useCallback(async (path: "login" | "register", credentials: Credentials) => {
     const generation = beginIdentityChange();
-    setIsLoading(true);
+    // M3.6.1 - ORIGINAL
+    // setIsLoading(true);
+    // M3.6.1 - FIX: removed session-loading mutation; AuthForm keeps its own pending UI.
     setError(null);
     try {
       const result = await httpService.post<unknown>(`/api/v1/auth/${path}`, credentials, { skipAuthRefresh: true });
@@ -97,7 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return nextUser;
     } catch (err) {
       if (generation === requestGeneration.current) {
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        // M3.6.1 - ORIGINAL
+        // setError(err instanceof Error ? err.message : "Authentication failed");
+        // M3.6.1 - FIX: reject below to the form; do not mutate the session-check error.
         setIsLoading(false);
       }
       throw err;

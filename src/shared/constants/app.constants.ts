@@ -38,6 +38,7 @@ export const ROUTES = {
   ADMIN_TOPIC_EDIT_ITEMS: "/admin/topics/:topicId/edit/items",
   ADMIN_TOPIC_EDIT_ITEM_SECTION:
     "/admin/topics/:topicId/edit/items/:itemId/:sectionKey",
+  ADMIN_GRAMMAR: "/admin/grammar",
 } as const;
 
 export function learningPathDayPath(

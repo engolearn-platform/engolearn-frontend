@@ -1,28 +1,41 @@
-import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+// M3.6.1 - ORIGINAL
+// import { useState, type FormEvent } from "react";
+// import { Link, useLocation, useNavigate } from "react-router";
+// M3.6.1 - FIX
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useLocation } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
 
 interface AuthFormProps { mode: "login" | "register" }
-interface LocationState { from?: { pathname?: string; search?: string; hash?: string } }
+// M3.6.1 - ORIGINAL
+// interface LocationState { from?: { pathname?: string; search?: string; hash?: string } }
+// M3.6.1 - FIX: return-to shape validation moved to auth-return-to.ts; no local type needed.
 interface FieldError { field: string; message: string }
 
+/* M3.6.1 - ORIGINAL
 function safeReturnTo(state: unknown): string {
   const from = (state as LocationState | null)?.from;
   const target = `${from?.pathname ?? ""}${from?.search ?? ""}${from?.hash ?? ""}`;
   return target.startsWith("/") && !target.startsWith("//") && !target.startsWith("/login") && !target.startsWith("/register") ? target : ROUTES.HOME;
 }
+*/
+// M3.6.1 - FIX: getAuthReturnTo in auth-return-to.ts replaces this helper; GuestOnlyGuard alone uses it.
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const isRegister = mode === "register";
   const { login, register } = useAuth();
-  const navigate = useNavigate();
+  // M3.6.1 - ORIGINAL
+  // const navigate = useNavigate();
+  // M3.6.1 - FIX: no form navigator; GuestOnlyGuard performs the post-auth redirect.
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  // M3.6.1 - FIX: new synchronous submission lock complements the existing busy state.
+  const submissionPendingRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldError[]>([]);
   const emailError = fieldErrors.find(error => error.field.toLowerCase().includes("email"))?.message;
@@ -30,7 +43,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    // M3.6.1 - ORIGINAL
+    // if (busy) return;
+    // M3.6.1 - FIX
+    if (busy || submissionPendingRef.current) return;
     const normalizedEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || !password) {
       setFieldErrors([
@@ -46,10 +62,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
       setBusy(false);
       return;
     }
+    // M3.6.1 - FIX: acquire the new lock only after existing validation succeeds.
+    submissionPendingRef.current = true;
     try {
       const credentials = { email: normalizedEmail, password };
       if (isRegister) await register(credentials); else await login(credentials);
-      await navigate(safeReturnTo(location.state), { replace: true });
+      // M3.6.1 - ORIGINAL
+      // await navigate(safeReturnTo(location.state), { replace: true });
+      // M3.6.1 - FIX: removed competing navigation; GuestOnlyGuard owns this redirect.
     } catch (error) {
       const detail = error as Error & { code?: string; fieldErrors?: FieldError[] };
       setFieldErrors(detail.fieldErrors ?? []);
@@ -57,7 +77,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
       else if (detail.code === "EMAIL_ALREADY_EXISTS") setMessage("An account already uses this email. Sign in instead.");
       else if (detail.code === "ACCOUNT_LOCKED") setMessage("This account is locked. Contact support for help.");
       else setMessage(detail.message || "Could not complete your request. Try again.");
-    } finally { setBusy(false); }
+    // M3.6.1 - ORIGINAL
+    // } finally { setBusy(false); }
+    // M3.6.1 - FIX
+    } finally { submissionPendingRef.current = false; setBusy(false); }
   }
 
   return <main className="min-h-screen bg-surface px-5 py-12 text-on-surface">
