@@ -4,7 +4,12 @@ Route: `/learning-paths/:pathId/weeks/:weekNo/days/:dayNo/result`
 
 Design reference: Figma node `530:570`.
 
-The screen loads the closed day's result from `GET /api/learning-paths/{pathId}/weeks/{weekNo}/days/{dayNo}/result`, using `VITE_LEARNING_PATH_USER_ID`. It supports opening after submission, from a day card, or after a page refresh. Loading and API errors are shown with a retry action; an open day or cancelled path is rejected by the backend.
+The screen loads the closed day's result from `GET /api/learning-paths/{pathId}/weeks/{weekNo}/days/{dayNo}/result`
+through shared HTTP with the authenticated cookie and bounded refresh. No configured user ID
+or `userId` override is sent. Guests return through login with their destination; identity
+changes remount result state and abort pending result/detail requests. It supports opening
+after submission, from a day card, or after a page refresh. Loading and API errors are shown
+with a retry action; an open day, cancelled path or foreign owner is rejected by the backend.
 
 The screen uses the same 1300px content container and learner shell as daily practice. The result summary spans the content width; review cards and a 300px question navigator appear below in two columns on wide screens.
 

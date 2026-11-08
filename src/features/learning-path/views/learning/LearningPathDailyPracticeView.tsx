@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Clock3, Info, TriangleAlert } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES, learningPathDayPath } from "@shared/constants";
 import { cn } from "@shared/utils";
+import { useAuth } from "@shared/hooks/useAuth";
 import { useLearningPathDayPractice } from "@features/learning-path/hooks/useLearningPathDayPractice";
 import { useLearningPathDetail } from "@features/learning-path/hooks/useLearningPathDetail";
 import { learningPathService } from "@features/learning-path/services/learningPath.service";
@@ -53,12 +54,19 @@ function PracticeSession({
     () => Date.parse(day.autoCloseAt) <= Date.now(),
   );
   const savingRef = useRef(false);
+  const mutationControllerRef = useRef<AbortController | null>(null);
   const pageQuestions = questions.slice((page - 1) * 3, page * 3);
   const totalAnsweredCount = questions.filter(
     (question) => answers[question.number] !== undefined,
   ).length;
   const unansweredCount = questions.length - totalAnsweredCount;
   const hasUnansweredQuestions = unansweredCount > 0;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    mutationControllerRef.current = controller;
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const remaining = Date.parse(day.autoCloseAt) - Date.now();
@@ -68,7 +76,9 @@ function PracticeSession({
   }, [day.autoCloseAt]);
 
   const chooseAnswer = async (questionNumber: number, optionIndex: number) => {
+    const signal = mutationControllerRef.current?.signal;
     if (
+      !signal || signal.aborted ||
       savingRef.current ||
       closed ||
       Date.now() >= Date.parse(day.autoCloseAt)
@@ -89,12 +99,15 @@ function PracticeSession({
         String(day.dayNo),
         question.questionId,
         option.optionId,
+        signal,
       );
+      if (signal.aborted) return;
       setAnswers((current) => ({ ...current, [questionNumber]: optionIndex }));
       setFailedQuestions((current) =>
         current.filter((number) => number !== questionNumber),
       );
     } catch (cause) {
+      if (signal.aborted) return;
       setFailedQuestions((current) =>
         current.includes(questionNumber)
           ? current
@@ -105,12 +118,14 @@ function PracticeSession({
       );
     } finally {
       savingRef.current = false;
-      setSaving(false);
+      if (!signal.aborted) setSaving(false);
     }
   };
 
   const submitDay = async () => {
+    const signal = mutationControllerRef.current?.signal;
     if (
+      !signal || signal.aborted ||
       savingRef.current ||
       failedQuestions.length > 0 ||
       closed ||
@@ -121,18 +136,20 @@ function PracticeSession({
     setSubmitting(true);
     setError("");
     try {
-      await learningPathService.submitDay(day.pathId, day.weekNo, day.dayNo);
+      await learningPathService.submitDay(day.pathId, day.weekNo, day.dayNo, signal);
+      if (signal.aborted) return;
       navigate(
         learningPathDayPath(day.pathId, day.weekNo, day.dayNo, "result"),
         { replace: true },
       );
     } catch (cause) {
+      if (signal.aborted) return;
       setError(
         `${cause instanceof Error ? cause.message : "Không xác nhận được kết quả nộp bài."} Vui lòng kiểm tra lại lộ trình nếu bài đã được đóng.`,
       );
     } finally {
       savingRef.current = false;
-      setSubmitting(false);
+      if (!signal.aborted) setSubmitting(false);
     }
   };
 
@@ -365,9 +382,14 @@ function PracticeView({
 
 export default function LearningPathDailyPracticeView() {
   const { pathId = "", weekNo = "", dayNo = "" } = useParams();
+  const auth = useAuth();
+  const location = useLocation();
+  if (auth.isLoading) return <div className="p-5"><Loading size="lg" /></div>;
+  if (auth.error) return <div className="p-5"><EmptyState title="Không xác minh được tài khoản" description={auth.error} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
   return (
     <PracticeView
-      key={`${pathId}:${weekNo}:${dayNo}`}
+      key={`${pathId}:${weekNo}:${dayNo}:${auth.identityGeneration}`}
       pathId={pathId}
       weekNo={weekNo}
       dayNo={dayNo}

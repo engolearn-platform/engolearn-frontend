@@ -14,31 +14,30 @@
 
 | Item | Fact | Evidence |
 |---|---|---|
-| `.env.example` | documents exactly one variable: `STITCH_API_KEY` (Stitch MCP key for `.opencode/opencode.json`) | repo-root `.env.example` (1 variable) |
-| `.env` | same single variable; gitignored | `.gitignore:27` (`.env`) |
-| `VITE_LEARNING_PATH_USER_ID` | Read by the Learning Path list service as the current local test user's Mongo ObjectId; set it in ignored `.env.local` | `src/features/learning-path/services/learningPath.service.ts` |
+| `.env.example` | documents `STITCH_API_KEY` for tooling and optional `VITE_API_PROXY_TARGET` for the development API proxy | repo-root `.env.example`; `vite.config.ts` |
+| `.env` / `.env.local` | local configuration is gitignored; its presence and contents are machine-specific | `.gitignore` |
+| Learning Path identity | All requests use the authenticated cookie through shared HTTP; `VITE_LEARNING_PATH_USER_ID` is obsolete and can be removed from existing local files | `src/features/learning-path/services/learningPath.service.ts` |
 | Secrets in `src/` | none found (no key material in source) | verified search; keep it that way (`C-15`) |
 | Stitch key file | `.opencode/.stitch-key` exists and is gitignored | `.gitignore:28` |
-| API routing | Vite dev proxy forwards `/api` to `http://localhost:8080`; production routing remains deployment-specific | `vite.config.ts`; [api-integration.md](api-integration.md) §6 |
-| Shared HTTP base URL | none — a key reason `HttpService` is NOT USABLE | [api-integration.md](api-integration.md) §3 |
+| API routing | Vite dev proxy forwards `/api` to `VITE_API_PROXY_TARGET`, defaulting to `http://localhost:8080`; production routing remains deployment-specific | `vite.config.ts`; [api-integration.md](api-integration.md) §6 |
+| Shared HTTP base URL | Same browser origin; session cookies and bounded refresh are handled by the shared client | [http-service.md](http-service.md) |
 
 ## 2. Rules (`C-15`)
 
 - **MUST NOT** put keys, tokens, or passwords in `src/`, tracked config, or any doc. Key material
   is never reproduced in `docs/engineering/` (including this file).
-- Config that the client bundle reads must be Vite-prefixed (`VITE_*`). `VITE_LEARNING_PATH_USER_ID`
-  is a local integration setting, not a secret; set it in the ignored root `.env.local` file. Do
-  not put credentials or tokens in a `VITE_*` variable because Vite exposes it to browser code.
-- The repository's `.env.example` currently does not include `VITE_LEARNING_PATH_USER_ID`; its
-  attempted update was rejected during this task. Add the variable there only after explicit
-  authorization, then keep this guide synchronized.
+- Config that the client bundle reads must be Vite-prefixed (`VITE_*`). Do not put credentials
+  or tokens in a `VITE_*` variable because Vite exposes it to browser code. A configured user
+  ID does not establish an authenticated identity; Learning Path uses the signed-in session.
 
-## 3. When a real API base URL arrives
+## 3. API routing and authentication
 
-The Learning Path list currently relies on Vite's development proxy and a local test user ID.
-Production API routing and a frontend authentication/session source still need to be supplied.
-The shared `HttpService` remains unwired and other feature contracts remain **UNKNOWN**. See
-[api-integration.md](api-integration.md) §3 and §6.
+Learning Path list, search, detail, practice and result requests use same-origin `/api` URLs
+through shared HTTP. Development uses the Vite proxy; sign in with a real backend account.
+No Learning Path user-ID environment setting is required. Backend ownership and session
+checks remain authoritative. See [api-integration.md](api-integration.md) §3 and §6–7 and
+[HTTP authentication](http-service.md). Production must route `/api` to the backend; a
+cross-origin deployment requires an explicit cookie/CORS design.
 
 ## 4. UNKNOWN — MCP header delivery: file vs env (pending `D10`)
 
