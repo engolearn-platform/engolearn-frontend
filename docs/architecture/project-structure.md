@@ -125,7 +125,7 @@ Rules:
 ## 7. Routing
 
 - Each feature exports `RouteObject[]` from `routes.ts` (see `src/features/topic/routes.ts`, `src/features/Post/routes.ts`).
-- Feature route files own URL patterns and view declarations. `src/router.tsx` composes Home, catalog, grammar, learning path, and learner subscription routes under one pathless `LearningLayout` parent. Auth, standalone topic detail/attempt/results, and management routes remain outside that shared learner parent.
+- Feature route files own URL patterns and view declarations. `src/router.tsx` composes Home through the landing entry. Topic catalog and Grammar use a session-aware resource layout, which renders the public header for guests and `LearningLayout` for learners. My Topics, Learning Path and learner Subscription use a pathless `LearningLayout` parent.
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `AppRouter` calls `useRoutes(appRoutes)`.
 - Surface pattern inside one `routes.ts`:
 
@@ -136,13 +136,12 @@ export const TopicCatalogRoutes: RouteObject[] = [
     Component: TopicViewerLayout,
     children: [
       { path: "/topics", Component: LearnerTopicView },
-      { path: "/my-topics", Component: LearnerMyTopicsView },
     ],
   },
 ];
 ```
 
-`router.tsx` places `TopicCatalogRoutes` inside the shared pathless learner parent. The topic viewer provider remains feature-owned and wraps only topic routes that need viewer state. Standalone topic detail, attempt, result and review screens retain their focused presentation outside the shell. Topic management stays under its feature guard and management layout.
+`router.tsx` places `TopicCatalogRoutes` and `TopicDetailRoutes` under the session-aware resource layout. The topic viewer provider remains feature-owned and wraps routes that need viewer state. Topic Detail adds the public header for guests and retains its standalone presentation for learners. Attempt, result and review screens remain standalone. Topic management stays under its feature guard and management layout.
 
 Guards (auth/permission) wrap the route element or layout — never duplicate the feature folder to enforce permissions.
 

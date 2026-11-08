@@ -7,6 +7,7 @@ import {
   CreditCard,
   GraduationCap,
   Home,
+  Mic,
   RotateCcw,
   Search,
   ShoppingBag,
@@ -150,6 +151,15 @@ export const LEARNING_NAV_SECTIONS: readonly LearningNavSection[] = [
             ROUTES.LEARNING_PATH_DAY_PRACTICE,
             ROUTES.LEARNING_PATH_DAY_RESULT,
           ],
+        },
+      },
+      {
+        kind: "link",
+        item: {
+          id: "speaking-history",
+          label: "Lịch sử luyện nói",
+          icon: Mic,
+          to: ROUTES.SPEAKING_HISTORY,
         },
       },
       {

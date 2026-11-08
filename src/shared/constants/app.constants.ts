@@ -29,6 +29,11 @@ export const ROUTES = {
   // Practice (EXERCISES) screen has no Stitch UI yet — path reserved so
   // sidebar/footer navigation lands on a placeholder instead of blank.
   TOPIC_PRACTICE: "/topics/:topicId/practice",
+  TOPIC_ITEM_SPEAKING: "/topics/:topicId/items/:itemId/speaking",
+  TOPIC_SPEAKING: "/topics/:itemId/speaking",
+  SPEAKING_HISTORY: "/speaking/history",
+  SPEAKING_DEMO: "/dev/speaking",
+  SPEAKING_SESSION_DEV: "/dev/speaking-session",
   ADMIN_TOPICS: "/admin/topics",
   ADMIN_SUBSCRIPTION_PLANS: "/admin/subscription/plans",
   ADMIN_SUBSCRIPTION_QUOTAS: "/admin/subscription/quotas",

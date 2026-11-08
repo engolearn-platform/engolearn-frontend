@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, Navigate, useLocation, useParams } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES } from "@shared/constants";
+import { useAuth } from "@shared/hooks/useAuth";
 import DailyQuestionCard from "@features/learning-path/components/learning/daily/DailyQuestionCard";
 import DailyQuestionNavigator from "@features/learning-path/components/learning/daily/DailyQuestionNavigator";
 import DailyResultSummary from "@features/learning-path/components/learning/daily/DailyResultSummary";
@@ -50,5 +51,10 @@ function ResultPage({ pathId, weekNo, dayNo }: { pathId: string; weekNo: string;
 
 export default function LearningPathDayResultView() {
   const { pathId = "", weekNo = "", dayNo = "" } = useParams();
-  return <ResultPage key={`${pathId}:${weekNo}:${dayNo}`} pathId={pathId} weekNo={weekNo} dayNo={dayNo} />;
+  const auth = useAuth();
+  const location = useLocation();
+  if (auth.isLoading) return <div className="p-5"><Loading size="lg" /></div>;
+  if (auth.error) return <div className="p-5"><EmptyState title="Không xác minh được tài khoản" description={auth.error} /></div>;
+  if (!auth.isAuthenticated) return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+  return <ResultPage key={`${pathId}:${weekNo}:${dayNo}:${auth.identityGeneration}`} pathId={pathId} weekNo={weekNo} dayNo={dayNo} />;
 }

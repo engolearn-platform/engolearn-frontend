@@ -1,7 +1,7 @@
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { cn } from "@shared/utils";
-import { Check, Lock, Shapes, Star } from "lucide-react";
+import { BookOpenText, Check, Lock, Shapes, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import type { GrammarUnit } from "../types/grammar.types";
 import ProgressBar from "./ProgressBar";
@@ -9,10 +9,11 @@ import StatusBadge from "./StatusBadge";
 
 interface UnitCardProps {
   unit: GrammarUnit;
+  preview?: boolean;
   onContinue?: (unitId: string) => void;
 }
 
-export default function UnitCard({ unit, onContinue }: UnitCardProps) {
+export default function UnitCard({ unit, onContinue, preview }: UnitCardProps) {
   const navigate = useNavigate();
 
   const handleContinue = () => {
@@ -22,6 +23,20 @@ export default function UnitCard({ unit, onContinue }: UnitCardProps) {
     }
     void navigate(`${ROUTES.GRAMMAR}/${unit.id}`);
   };
+
+  if (preview) {
+    return (
+      <article className="flex items-start gap-4 rounded-2xl border border-learning-outline bg-surface-container-lowest p-5">
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-learning-mint text-primary">
+          <BookOpenText className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 space-y-2">
+          <h3 className="text-headline-sm font-semibold">{unit.title}</h3>
+          {unit.description && <p className="text-body-md text-on-surface-variant">{unit.description}</p>}
+        </div>
+      </article>
+    );
+  }
 
   if (unit.status === "completed") {
     return (

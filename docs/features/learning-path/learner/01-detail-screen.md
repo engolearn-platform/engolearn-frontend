@@ -44,8 +44,8 @@ The `pathId` from the route selects the actual active or ended path. Guests retu
 login with their destination, and identity changes remount detail state and cancel pending
 loads/refreshes so another account cannot see stale data. Loading and request errors use the
 shared `Loading` and `EmptyState` components. The previous `preview=completed` detail switch
-is removed. Other Learning Path list/practice/result clients retain their existing behavior;
-this change migrates only the detail request needed after creation.
+is removed. List, detail, daily practice and daily result clients all use shared HTTP and
+the authenticated session; no Learning Path client requires a configured local user ID.
 
 The response supplies path configuration and progress, baseline scores, week/day statuses, closed-week statistics, and the final summary. Available backend Completion Rate, Practice Score, and improvement values are used directly and rounded for display; open progress is derived from answered/assigned counts. Date/time values are displayed in the Vietnam time zone. Locked weeks and the Summary tab stay unavailable until the backend status permits them.
 

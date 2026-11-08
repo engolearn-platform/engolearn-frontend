@@ -22,6 +22,7 @@ Catalog shell, topic viewer identity and guest handling are documented in [07-to
 | 03-topic-vocab.md | Màn Vocab legacy | Giữ route cũ; entry mới dùng API theo 08 |
 | 04-learning-progress.md | Provider tiến độ legacy | Vẫn mock; không áp dụng catalog/detail mới |
 | 05-topic-expressions.md | Màn Expressions legacy | Giữ route cũ; entry mới dùng API theo 08 |
+| 06-speaking-demo.md | Speaking demo, lịch sử và session | Baseline tích hợp auth cookie |
 | 06-api-foundation.md | Contract + typed client | Chặng1 hoàn thành |
 | 07-topic-catalog.md | Catalog/viewer/state/routes chặng2 | Hoàn thành chặng2 |
 | 08-attempt-learning.md | Khung attempt, Context/Vocab/Expressions, advance | FE triển khai; BE integration chưa xác minh |
@@ -33,6 +34,8 @@ Catalog shell, topic viewer identity and guest handling are documented in [07-to
 | [15-homepage.md](15-homepage.md) | Learner homepage and recent Topic card | Uses the My Topics API |
 
 ## Luồng legacy còn tồn tại
+
+Nút **Luyện nói với AI** trên trang kết quả item mở [màn hình Speaking](../../speaking-with-ai/README.md) trong tab mới khi tính năng được bật. Các API Speaking yêu cầu phiên đăng nhập chung.
 
 Các route .../context, .../vocab/:vocabId, .../expressions và .../practice giữ nguyên để tránh sửa khung học trước checkpoint3.
 Các action ở ba màn mới không dẫn vào chúng. Khung mới đã dùng header progress, dropdown nav lồng cấp và nút quay về frontier theo thiết kế Từ vựng đã duyệt. Xem [08-attempt-learning.md](08-attempt-learning.md).

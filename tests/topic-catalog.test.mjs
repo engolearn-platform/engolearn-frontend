@@ -8,7 +8,7 @@ registerHooks({ resolve(specifier, context, next) {
   if (specifier === "@shared/constants") return { url: new URL("../src/shared/constants/app.constants.ts", import.meta.url).href, shortCircuit: true };
   return next(specifier, context);
 } });
-const { readTopicFilters, mergeTopicPages, safeTopicOrigin, topicDetailPath, topicAttemptPath, primaryTopicItem, topicErrorMessage } = await import("../src/features/topic/utils/topic-catalog.ts");
+const { readTopicFilters, mergeTopicPages, safeTopicOrigin, topicDetailPath, topicAttemptPath, topicItemSpeakingPath, primaryTopicItem, topicErrorMessage } = await import("../src/features/topic/utils/topic-catalog.ts");
 const signal = new AbortController().signal;
 const apiWith = data => createTopicCatalogService(createTopicApi({ fetchImpl: async () => Response.json({ data, timestamp: "2026-10-27T10:00:00Z" }) }));
 const page = (ids, next = null) => ({ items: ids.map(topicId => ({ topicId })), total: 10, hasMore: next !== null, nextCursor: next });
@@ -37,6 +37,10 @@ test("return destinations reject external/unrelated routes and preserve filters"
   const attempt = new URL(topicAttemptPath("t", "a/1", "/topics?q=food", "review"), "https://test.invalid");
   assert.equal(attempt.searchParams.get("mode"), "review");
   assert.equal(attempt.searchParams.get("from"), "/topics?q=food");
+});
+test("Speaking links keep the completed item distinct from its topic", () => {
+  const path = topicItemSpeakingPath("topic/1", "completed/2", "/my-topics?tab=completed");
+  assert.equal(path, "/topics/topic%2F1/items/completed%2F2/speaking?from=%2Fmy-topics%3Ftab%3Dcompleted");
 });
 test("primary action follows server eligibility and prioritizes resume", () => {
   const item = (id, resume, start) => ({ topicItemId: id, actions: { continue: { allowed: resume }, start: { allowed: start } }, learningAttempt: resume ? { attemptId: "a" } : null });
