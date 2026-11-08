@@ -20,7 +20,7 @@
 - [x] Confirm current navbar mismatch and baseline state.
 - [x] Move navigation/public paths to shared; wire Guest Placement and auth; update feature docs.
 - [x] Run build/lint and existing return-to checks. Browser: start, submit gate, login/register and mobile menu against real BE; preserve attempt header.
-- [ ] Review diff, commit locally, bring verified code to D: on a new local branch; no push.
+- [x] Review diff, commit locally, bring verified code to D: on a new local branch; no push.
 
 ## Verification record
 
@@ -29,3 +29,5 @@ Build pass; lint exit0 with 0 errors/72 existing warnings; auth-return4/4 pass. 
 Local test side effects: logged out the browser's existing account to inspect Guest UI; created navbar-check-1794142021154@example.test; claimed the existing browser Guest attempt7ec2e9b9-8363-4315-9879-e263120cd797 into that test account. Answers and score were not changed. Logged out the test account afterward. No seed import/replacement, BE source or YAML changes. Mongo/BE were restarted with read-only seed preflight. No new implementation-mirroring tests for this reversible UI reuse; actual UI and existing auth checks are the evidence.
 
 Evidence outside Git: workspace C navbar-build.log, navbar-lint-final.log, navbar-preflight.log, navbar-submitted-proof.png. No push commands used; main refs were not modified.
+
+Final local checkout: fix/placement-guest-navbar at D:/TrenLop/WWWJava/Nhom/EngoLearnApp/engolearn-frontend, implementation eba9e72. Browser rechecked actual3000/placement: shared navbar visible. FE main85043ea and origin/main59078cc unchanged; origin/merge remainsbf5a13d. BE HEAD49a3c08 unchanged, only pre-existing application.yaml unstaged.
