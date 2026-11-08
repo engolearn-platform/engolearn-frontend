@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { speakingService, SpeakingApiError, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
-import { parseSpeakingDemoDecision } from "@features/topic/hooks/speakingDemoDecision";
-import type { SpeakingDemoDecision, SpeakingSession } from "@features/topic/types/speaking.types";
+import { parseSpeakingDialogueDecision } from "@features/topic/hooks/speakingDialogueDecision";
+import type { SpeakingDialogueDecision, SpeakingSession } from "@features/topic/types/speaking.types";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
 export type RecordingState = "idle" | "recording" | "processing";
@@ -31,14 +31,14 @@ export interface SpeakingStreamLifecycleEvent {
   occurredAt: string;
 }
 
-type SpeakingDemoDecisionHandler = (sessionId: string, turnId: string, decision: SpeakingDemoDecision) => void;
+type SpeakingDialogueDecisionHandler = (sessionId: string, turnId: string, decision: SpeakingDialogueDecision) => void;
 
 export function useSpeakingStream(
   session: SpeakingSession | null,
   onSnapshot: (session: SpeakingSession, event: SpeakingSnapshotEvent) => void,
   onError: (message: string) => void,
   onAiAudioReady?: (turnId: string) => void,
-  onDemoDecision?: SpeakingDemoDecisionHandler,
+  onDialogueDecision?: SpeakingDialogueDecisionHandler,
   diagnosticsActive = true,
   onControlLost?: () => void,
 ) {
@@ -57,7 +57,7 @@ export function useSpeakingStream(
   const onSnapshotRef = useRef(onSnapshot);
   const onErrorRef = useRef(onError);
   const onAiAudioReadyRef = useRef(onAiAudioReady);
-  const onDemoDecisionRef = useRef(onDemoDecision);
+  const onDialogueDecisionRef = useRef(onDialogueDecision);
   const onControlLostRef = useRef(onControlLost);
   const diagnosticsActiveRef = useRef(diagnosticsActive);
   const lifecycleIdRef = useRef(0);
@@ -67,7 +67,7 @@ export function useSpeakingStream(
   onSnapshotRef.current = onSnapshot;
   onErrorRef.current = onError;
   onAiAudioReadyRef.current = onAiAudioReady;
-  onDemoDecisionRef.current = onDemoDecision;
+  onDialogueDecisionRef.current = onDialogueDecision;
   onControlLostRef.current = onControlLost;
   diagnosticsActiveRef.current = diagnosticsActive;
 
@@ -158,9 +158,9 @@ export function useSpeakingStream(
               onControlLostRef.current?.();
               return;
             }
-            const demoDecision = parseSpeakingDemoDecision(message.demoDecision);
-            if (turnId && demoDecision && diagnosticsActiveRef.current) {
-              onDemoDecisionRef.current?.(sessionId, turnId, demoDecision);
+            const dialogueDecision = parseSpeakingDialogueDecision(message.demoDecision);
+            if (turnId && dialogueDecision && diagnosticsActiveRef.current) {
+              onDialogueDecisionRef.current?.(sessionId, turnId, dialogueDecision);
             }
             if (type === "CONNECTED") {
               ready = true;

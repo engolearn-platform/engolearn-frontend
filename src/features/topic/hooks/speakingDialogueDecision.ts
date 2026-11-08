@@ -1,4 +1,4 @@
-import type { SpeakingDemoDecision } from "@features/topic/types/speaking.types";
+import type { SpeakingDialogueDecision } from "@features/topic/types/speaking.types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -12,7 +12,7 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(item => typeof item === "string");
 }
 
-export function parseSpeakingDemoDecision(value: unknown): SpeakingDemoDecision | null {
+export function parseSpeakingDialogueDecision(value: unknown): SpeakingDialogueDecision | null {
   if (!isRecord(value)
     || typeof value.outcome !== "string"
     || typeof value.reasonCode !== "string"

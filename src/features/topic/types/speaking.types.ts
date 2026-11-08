@@ -4,7 +4,7 @@ export type SpeakingSessionStatus =
   | "COMPLETED"
   | "INCOMPLETE";
 
-export interface SpeakingDemoDecision {
+export interface SpeakingDialogueDecision {
   outcome: string;
   reasonCode: string;
   acceptedAct: string | null;

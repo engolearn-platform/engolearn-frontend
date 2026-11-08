@@ -4,8 +4,10 @@ import type { ApiEnvelope, HttpError } from "@shared/services/http.service";
 
 const BASE = "/api/v1/speaking";
 export const SPEAKING_CONTRACT_VERSION = "0.8.3";
-export const speakingDemoEnabled = import.meta.env.DEV ||
-  import.meta.env.VITE_SPEAKING_DEMO_ENABLED === "true";
+const speakingEnabledFlag = import.meta.env.VITE_SPEAKING_ENABLED !== undefined
+  ? import.meta.env.VITE_SPEAKING_ENABLED
+  : import.meta.env.VITE_SPEAKING_DEMO_ENABLED;
+export const speakingEnabled = import.meta.env.DEV || speakingEnabledFlag === "true";
 
 export class SpeakingApiError extends Error {
   readonly code: string;

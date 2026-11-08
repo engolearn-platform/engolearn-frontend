@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Check, CircleAlert, Lightbulb, Mic, Play, RotateCcw, Square, Trash2, UserRound } from "lucide-react";
 import { ROUTES } from "@shared/constants";
-import { speakingDemoEnabled, speakingService } from "@features/topic/services/speaking.service";
+import { speakingEnabled, speakingService } from "@features/topic/services/speaking.service";
 import { safeTopicOrigin, topicDetailPath } from "@features/topic/utils/topic-catalog";
 import { useSpeakingStream, type SpeakingSnapshotEvent } from "@features/topic/hooks/useSpeakingStream";
 import type { SpeakingAssessment, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
@@ -319,7 +319,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
     }
   }, [acceptSnapshot, itemId]);
 
-  useEffect(() => { if (speakingDemoEnabled) void refresh(); }, [refresh]);
+  useEffect(() => { if (speakingEnabled) void refresh(); }, [refresh]);
   useEffect(() => () => {
     playTokenRef.current++;
     openingAutoplay.current = false;
@@ -482,7 +482,7 @@ export default function SpeakingView({ devSession = false }: { devSession?: bool
     return achievementEvents.find(event => event.sessionId === visibleSession?.id && event.anchorTurnId === turnId);
   }
 
-  if (!speakingDemoEnabled) return <main className="mx-auto max-w-3xl p-6">
+  if (!speakingEnabled) return <main className="mx-auto max-w-3xl p-6">
     <h1 className="text-2xl font-semibold">Luyện nói với AI</h1>
     <p className="mt-3">Tính năng đang chỉ mở ở môi trường thử nghiệm.</p>
   </main>;
