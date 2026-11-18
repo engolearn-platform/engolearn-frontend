@@ -6,7 +6,12 @@ import AssessmentTakingView from "@features/assessment/views/learning/Assessment
 import AssessmentHistoryView from "@features/assessment/views/learning/AssessmentHistoryView";
 import AssessmentResultView from "@features/assessment/views/learning/AssessmentResultView";
 import AssessmentReviewView from "@features/assessment/views/learning/AssessmentReviewView";
+import AssessmentManagementLayout from "./components/AssessmentManagementLayout";
+import DraftManagementView from "./views/management/DraftManagementView";
+
 export const AssessmentRoutes: RouteObject[] = [{
+  path: "/admin/assessment", Component: AssessmentManagementLayout, children: [{index: true, Component: DraftManagementView}],
+}, {
   Component: AssessmentGate,
   children: [{
     path: "/assessment", Component: AssessmentLearningLayout, children: [

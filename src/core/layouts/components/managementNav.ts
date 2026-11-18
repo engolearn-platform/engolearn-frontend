@@ -10,6 +10,7 @@ export interface ManagementNavItem {
 
 export const MANAGEMENT_CONTENT_NAV_ITEMS: ManagementNavItem[] = [
   { label: "Tổng quan", to: "/admin", icon: LayoutDashboard },
+  { label: "Đề đánh giá", to: "/admin/assessment", icon: BookOpenText },
   { label: "Quản lý Chủ đề", to: ROUTES.ADMIN_TOPICS, icon: BookOpenText },
   { label: "Quản lý Ngữ pháp", to: ROUTES.ADMIN_GRAMMAR, icon: SpellCheck },
   { label: "Thư viện Media", to: "/admin/media", icon: Images },

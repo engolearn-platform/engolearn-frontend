@@ -125,3 +125,7 @@ Build/lint and API/real-browser results have separate meanings. The release stil
 real Placement/baseline, exact refund-to-analysis delivery, approved content/media and
 staging/Windows acceptance. Automatic Learning Path projection delivery remains open.
 The local handoff package includes dated verification results and Windows demo instructions.
+
+## F03 — draft management
+
+`/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units. New audio, preview and publication belong to subsequent milestones.
