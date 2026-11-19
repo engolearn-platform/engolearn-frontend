@@ -15,6 +15,7 @@ export default function PlacementReviewQuestionCard({
   const stateLabel =
     state === "CORRECT" ? "Đúng" : state === "INCORRECT" ? "Sai" : "Chưa trả lời";
   const StateIcon = state === "CORRECT" ? Check : state === "INCORRECT" ? X : Minus;
+  const explanation = question.explanation?.trim();
 
   return (
     <article
@@ -116,10 +117,10 @@ export default function PlacementReviewQuestionCard({
           );
         })}
       </ol>
-      {question.explanation?.trim() ? (
+      {explanation ? (
         <section aria-labelledby={`review-explanation-${question.order}`} className="mt-5 space-y-2 rounded-xl border border-learning-mint-border bg-learning-nav-active p-4">
           <h3 id={`review-explanation-${question.order}`} className="text-label-lg font-semibold text-primary">Giải thích</h3>
-          <p className="whitespace-pre-line break-words text-body-md leading-relaxed text-on-surface-variant">{question.explanation}</p>
+          <p className="whitespace-pre-line break-words text-body-md leading-relaxed text-on-surface-variant">{explanation}</p>
         </section>
       ) : null}
     </article>

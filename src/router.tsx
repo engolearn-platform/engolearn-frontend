@@ -18,7 +18,7 @@ import {
 import { AuthRoutes } from "@features/auth/routes";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import LandingEntryView from "@features/landing-page/views/LandingEntryView";
-import { PlacementRoutes } from "@features/placement/routes";
+import { PlacementManagementRoutes, PlacementRoutes } from "@features/placement/routes";
 import { LandingPageRoutes } from "@features/landing-page/routes";
 import { PublicResourceLayout } from "@features/landing-page/views/PublicResourceLayout";
 import { ROUTES } from "@shared/constants";
@@ -56,6 +56,7 @@ export const appRoutes = [
   ...SubscriptionManagementRoutes,
   ...GrammarAdminRoutes,
   ...PlacementRoutes,
+  ...PlacementManagementRoutes,
 ];
 
 export const AppRouter = () => {

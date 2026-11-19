@@ -23,7 +23,7 @@ export default function PlacementStartCta({
         size="lg"
         onClick={onStart}
         disabled={starting}
-        className="h-12 w-full rounded-xl px-8 text-body-md font-semibold sm:w-auto"
+        className="h-12 w-full rounded-xl px-8 text-body-md font-semibold text-white sm:w-auto"
       >
         {label}
         {starting ? (
