@@ -1,5 +1,7 @@
 # Authentication
 
+See the [required authorization rules](../../architecture/security-authorization.md) and [role integration guide](role-authorization.md) for protected routes and role-dependent UI.
+
 ## Routes and behavior
 
 - `/profile` is a public real-cookie auth test page. It derives profile identity from its own server requests. After login/register/logout it asks AuthProvider to recheck the cookie session so other routes have current identity. Guests can register or sign in; authenticated users see only server-provided ID, email and role, with session check, explicit refresh, full-page reload and logout actions. Profile links are available in learning/management top bars.

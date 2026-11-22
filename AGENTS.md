@@ -9,10 +9,13 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 - `npm run dev` — dev server on port 3000 (see `vite.config.ts`).
 - `npm run build` — always `tsc -b && vite build`; type errors fail the build, fix them first.
 - `npm run lint` — `eslint .` (ignores `dist` only).
+- Auth authorization tests run with `npm run test:auth`.
 - Topic catalog/state tests: `npm run test:topic`. User instruction: never use mock/fixture verification; run the real FE proxy against the real BE. Historical mocked tests must not be used for this integration.
-- Topic API boundary tests: `npm run test:topic-api` (native Node22.18+, no added test dependency). Contract/type drift: `npm run topic:types:check`. No React/browser suite, CI or pre-commit configured. Always verify with `build` + `lint`; also run API tests when touching the topic client/contract.
+- Topic API boundary tests: `npm run test:topic-api` (native Node22.18+, no added test dependency). Contract/type drift: `npm run topic:types:check`. No browser E2E runner, CI or pre-commit configured. Always verify with `build` + `lint`; also run API tests when touching the topic client/contract.
 
 ## Routing / entrypoints
+
+- When creating or changing a protected route or role-dependent UI, developers and coding agents MUST read and follow [security authorization rules](docs/architecture/security-authorization.md).
 
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `src/router.tsx` aggregates feature routes via `useRoutes`. Import router from `"react-router"`, **not** `react-router-dom`.
 - When a feature owns routes, export its `RouteObject[]` from `src/features/<Name>/routes.ts` (layout `FullLayout` + `children` with `Component: <View>`) and register it in `src/router.tsx`. Learner catalog, grammar, learning-path and subscription routes share one pathless `LearningLayout` parent, while standalone topic learning and management flows keep their own layouts.

@@ -161,7 +161,7 @@ export const TopicCatalogRoutes: RouteObject[] = [
 
 `router.tsx` places `TopicCatalogRoutes` and `TopicDetailRoutes` under the session-aware resource layout. The topic viewer provider remains feature-owned and wraps routes that need viewer state. Topic Detail adds the public header for guests and retains its standalone presentation for learners. Attempt, result and review screens remain standalone. Topic management stays under its feature guard and management layout.
 
-Guards (auth/permission) wrap the route element or layout — never duplicate the feature folder to enforce permissions.
+Guards wrap the route element or layout. Keep permission boundaries inside the owning feature's route tree. Developers and coding agents MUST read and follow the [security authorization rules](security-authorization.md) when creating or changing protected routes or role-dependent UI.
 
 ## 8. Data fetching
 
@@ -206,7 +206,7 @@ Feature components live in `src/features/<domain>/components/` — never in glob
 4. Add `views/learning/` or `views/management/` when the feature owns those UI surfaces.
 5. When the feature owns routes, export its `RouteObject[]` and register it in `src/router.tsx`'s `appRoutes`.
 6. Reuse shadcn/shared UI; follow `docs/design-system/patterns.md` page shape.
-7. Verify: `npm run build` (tsc + vite) and `npm run lint` — no test runner/CI configured.
+7. Run `npm run build` (tsc + Vite), `npm run lint`, and the applicable feature tests. Use the [security authorization rules](security-authorization.md#verification) for authorization changes.
 
 ## 12. Maintenance
 
