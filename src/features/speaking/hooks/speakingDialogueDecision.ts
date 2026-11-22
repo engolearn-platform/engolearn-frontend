@@ -1,4 +1,4 @@
-import type { SpeakingDialogueDecision } from "@features/topic/types/speaking.types";
+import type { SpeakingDialogueDecision } from "@features/speaking/types/speaking.types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

@@ -1,6 +1,6 @@
 import { Check, CircleAlert, Clock3, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
-import type { SpeakingEndReason, SpeakingSession } from "@features/topic/types/speaking.types";
+import type { SpeakingEndReason, SpeakingSession } from "@features/speaking/contract";
 import { AchievementFireworks } from "./AchievementFireworks";
 import { toAchievementSnapshot } from "./speakingAchievementAdapter";
 import { summarizeAchievements } from "./speakingAchievementLogic";

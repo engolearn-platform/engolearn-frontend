@@ -6,7 +6,7 @@ import { TopicResultScore } from "@features/topic/components/learning/attempt/To
 import { TopicRetryDialog } from "@features/topic/components/learning/attempt/TopicRetryDialog";
 import { useItemResult, useNextTopicItem } from "@features/topic/hooks/useTopicResult";
 import { useTopicLaunch } from "@features/topic/hooks/useTopicLaunch";
-import { speakingEnabled } from "@features/topic/services/speaking.service";
+import { speakingEnabled } from "@features/speaking/contract";
 import { safeTopicOrigin, topicBlockMessage, topicDetailPath, topicErrorMessage, topicItemSpeakingPath, topicResultPath } from "@features/topic/utils/topic-catalog";
 
 function ItemResult({ topicId, attemptId, origin }: { topicId: string; attemptId: string; origin: string }) {

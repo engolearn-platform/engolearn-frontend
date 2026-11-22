@@ -1,4 +1,4 @@
-import type { SpeakingSession } from "@features/topic/types/speaking.types";
+import type { SpeakingSession } from "@features/speaking/contract";
 import type { AchievementSnapshot } from "./speakingAchievementLogic";
 
 /** Maps only fields persisted by the existing Speaking session response. */
