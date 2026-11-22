@@ -179,7 +179,8 @@ export const LEARNING_NAV_SECTIONS: readonly LearningNavSection[] = [
           id: "assessment",
           label: "Đánh giá trình độ",
           icon: ClipboardList,
-          disabled: true,
+          to: "/assessment",
+          patterns: ["/assessment", "/assessment/*"],
         },
       },
       {
