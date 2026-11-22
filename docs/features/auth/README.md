@@ -19,6 +19,8 @@
 
 The shared auth provider now uses only server-cookie identity. The profile test page keeps local identity state and asks the shared provider to reload after auth changes so login/register route gates respond to the current cookie identity.
 
+The shared `HttpService` keeps cookie authentication and its single refresh/retry on eligible 401 responses. Its regular request headers include `ngrok-skip-browser-warning: 1` for the ngrok proxy; operation-specific headers can override defaults. The automatic refresh request retains its existing configuration.
+
 ## Profile verification checklist
 
 1. Run the real backend plus frontend proxy.
