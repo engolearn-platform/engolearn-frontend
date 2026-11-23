@@ -1,6 +1,5 @@
 import { EmptyState, Loading } from "@shared/components";
 import { ROUTES, adminTopicBasicInfoPath, adminTopicReadPath } from "@shared/constants";
-import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useTopicList } from "@features/topic/hooks/useTopicList";
 import type { TopicManagementFilter } from "@features/topic/types/topic.types";
@@ -11,7 +10,6 @@ import TopicManagementPageHeader from "@features/topic/components/management/lis
 import TopicManagementPagination from "@features/topic/components/management/list/TopicManagementPagination";
 import TopicManagementStats from "@features/topic/components/management/list/TopicManagementStats";
 import TopicManagementTable from "@features/topic/components/management/list/TopicManagementTable";
-import UnpublishTopicDialog from "@features/topic/components/management/list/UnpublishTopicDialog";
 
 const DEFAULT_FILTER: TopicManagementFilter = {
   search: "",
@@ -23,7 +21,6 @@ const DEFAULT_FILTER: TopicManagementFilter = {
 export default function TopicManagementListView({ readOnly = false }: { readOnly?: boolean }) {
   const navigate = useNavigate();
   const { data, loading, error, params, setFilter, setPage } = useTopicList();
-  const [unpublishing, setUnpublishing] = useState<TopicManagementListItem | null>(null);
 
   const filter: TopicManagementFilter = {
     search: params.search ?? "",
@@ -110,7 +107,7 @@ export default function TopicManagementListView({ readOnly = false }: { readOnly
           />
         ) : (
           <>
-            <TopicManagementTable topics={items} onUnpublish={readOnly ? undefined : setUnpublishing} onEdit={handleEdit} readOnly={readOnly} />
+            <TopicManagementTable topics={items} onEdit={handleEdit} readOnly={readOnly} />
             <TopicManagementPagination
               page={currentPage}
               totalPages={totalPages}
@@ -121,11 +118,6 @@ export default function TopicManagementListView({ readOnly = false }: { readOnly
         )}
       </div>
 
-      {!readOnly && <UnpublishTopicDialog
-        topic={unpublishing}
-        onClose={() => setUnpublishing(null)}
-        onConfirm={() => setUnpublishing(null)}
-      />}
     </div>
   );
 }

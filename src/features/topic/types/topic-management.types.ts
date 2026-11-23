@@ -15,6 +15,7 @@ export interface TopicManagementListItem {
 
 export interface TopicManagementResponse {
   id: string;
+  revision: number;
   titleEn: string;
   titleVi: string;
   cefr?: CefrLevel;
@@ -66,6 +67,27 @@ export interface TopicItemManagementDetail extends TopicItemManagementSummary {
   quizzes: TopicQuizResource[];
 }
 
+export interface TopicItemMetadataInput {
+  title: string;
+  description?: string | null;
+  durationMinutes?: number | null;
+}
+
+export interface TopicItemMutationResult {
+  revision: number;
+  items: TopicItemManagementSummary[];
+}
+
+export interface TopicItemResourceMutationResult {
+  revision: number;
+  item: TopicItemManagementDetail;
+}
+
+export interface TopicReadinessResult {
+  ready: boolean;
+  violations: { path: string; code: string; message: string }[];
+}
+
 export interface TopicContextResource {
   prompt: string | null;
   scenarioDescription: string | null;
@@ -85,8 +107,29 @@ export interface TopicVocabularyResource {
   tips: string | null;
 }
 
+export type TopicExpressionGroupType = "BASIC" | "COMMON" | "PLACEHOLDER";
+export type TopicExpressionLabel = "COMMON" | "POLITE" | "SLOT_HINT";
+
+export interface TopicExpressionExampleResource {
+  type: string | null;
+  label?: TopicExpressionLabel | null;
+  textEn: string | null;
+  textVi: string | null;
+  usageNote: string | null;
+  audioUrl: string | null;
+  linkedVocabIds: string[] | null;
+}
+
+export interface TopicExpressionPurposeResource {
+  purposeEn: string | null;
+  purposeVi: string | null;
+  orderIndex: number | null;
+  groupType?: TopicExpressionGroupType | null;
+  examples: TopicExpressionExampleResource[];
+}
+
 export interface TopicExpressionResource {
-  purposes: { purposeEn: string | null; purposeVi: string | null; orderIndex: number | null; examples: { type: string | null; textEn: string | null; textVi: string | null; usageNote: string | null; audioUrl: string | null; linkedVocabIds: string[] | null }[] }[];
+  purposes: TopicExpressionPurposeResource[];
   tips: string | null;
 }
 
@@ -121,15 +164,18 @@ export interface TopicCreateRequest {
   category?: TopicCategory;
   description?: string;
   coverUrl?: string;
+  tags?: string[];
 }
 
 export interface TopicUpdateRequest {
+  revision: number;
   titleEn?: string;
   titleVi?: string;
   cefr?: CefrLevel | null;
   category?: TopicCategory | null;
   description?: string | null;
   coverUrl?: string | null;
+  tags?: string[];
 }
 
 export interface TopicManagementListQueryParams {

@@ -4,7 +4,7 @@ import type { TopicExpressionExample } from "@features/topic/types/topic-create.
 import ExpressionAudioChip from "./ExpressionAudioChip";
 
 interface ExpressionCardProps {
-  example: TopicExpressionExample;
+  example: Omit<TopicExpressionExample, "type"> & { type: TopicExpressionExample["type"] | null };
   vocabWords: string[];
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -13,11 +13,13 @@ interface ExpressionCardProps {
   readOnly?: boolean;
 }
 
-function typePill(type: TopicExpressionExample["type"]): {
+function typePill(type: ExpressionCardProps["example"]["type"]): {
   label: string;
   className: string;
 } {
   switch (type) {
+    case null:
+      return { label: "Chưa chọn loại", className: "bg-surface-container-low text-on-surface-variant" };
     case "BASIC_SUGGESTION":
       return {
         label: "Căn bản • Basic",

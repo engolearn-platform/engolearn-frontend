@@ -1,225 +1,98 @@
-import { ChevronDown, Drama, Lightbulb, PlusCircle, Timer } from "lucide-react";
-import { cn } from "@shared/utils";
-import type {
-  ContextDialogueTurn,
-  TopicItemContextDraft,
-} from "@features/topic/types/topic-create.types";
-import {
-  TOPIC_CONTEXT_DESCRIPTION_MAX,
-  TOPIC_CONTEXT_DURATION_OPTIONS,
-  TOPIC_CONTEXT_TITLE_MAX,
-} from "@features/topic/types/topic-create.types";
+import { useState } from "react";
+import { Drama, Lightbulb, PlusCircle } from "lucide-react";
+import { Button } from "@/core/components/shadcn/button";
+import type { TopicContextResource } from "@features/topic/types/topic-management.types";
 import ContextDialogueTurnRow from "./ContextDialogueTurnRow";
 
-interface TopicContextFormCardProps {
-  draft: TopicItemContextDraft;
-  showErrors: boolean;
-  onPatch: (patch: Partial<TopicItemContextDraft>) => void;
-  onUpdateTurn: (id: string, patch: Partial<ContextDialogueTurn>) => void;
-  onAddTurn: () => void;
-  onRemoveTurn: (id: string) => void;
-}
+const EMPTY_CONTEXT: TopicContextResource = { prompt: null, scenarioDescription: null, dialogue: [], durationSec: null, tips: null };
+const FIELD_CLASS = "w-full rounded-lg bg-surface-container-low px-4 py-3 text-body-md text-on-surface focus:ring-2 focus:ring-primary";
+type Dialogue = TopicContextResource["dialogue"][number];
 
-const FIELD_CLASS =
-  "w-full rounded-lg bg-surface-container-low px-4 py-3 text-body-md text-on-surface shadow-xs transition-all placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none";
+export default function TopicContextFormCard({ value, onChange, topicId, disabled = false }: {
+  value: TopicContextResource | null;
+  onChange: (value: TopicContextResource | null) => void;
+  disabled?: boolean;
+  topicId: string;
+}) {
+  const context = value ?? EMPTY_CONTEXT;
+  // Draft list keys belong to the editor, while the ordered array is committed with the Topic revision.
+  const [keys, setKeys] = useState(() => context.dialogue.map(() => crypto.randomUUID()));
 
-function RequiredMark() {
+  function patch(fields: Partial<TopicContextResource>) {
+    onChange({ ...context, ...fields });
+  }
+
+  function addTurn() {
+    setKeys([...keys, crypto.randomUUID()]);
+    patch({ dialogue: [...context.dialogue, { speaker: null, textEn: null, textVi: null, audioUrl: null }] });
+  }
+
+  function editTurn(index: number, fields: Partial<Dialogue>) {
+    patch({ dialogue: context.dialogue.map((turn, position) => position === index ? { ...turn, ...fields } : turn) });
+  }
+
+  function removeTurn(index: number) {
+    if (!window.confirm("Xóa dòng thoại khỏi bản nháp?")) return;
+    setKeys(keys.filter((_, position) => position !== index));
+    patch({ dialogue: context.dialogue.filter((_, position) => position !== index) });
+  }
+
+  function moveTurn(index: number, direction: number) {
+    const destination = index + direction;
+    const turns = [...context.dialogue];
+    const order = [...keys];
+    [turns[index], turns[destination]] = [turns[destination], turns[index]];
+    [order[index], order[destination]] = [order[destination], order[index]];
+    setKeys(order);
+    patch({ dialogue: turns });
+  }
+
   return (
-    <span className="text-error" aria-hidden="true">
-      *
-    </span>
-  );
-}
+    <fieldset disabled={disabled} className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-container pb-2">
+        <h2 className="flex items-center gap-2 text-headline-sm font-semibold"><Drama className="size-6 text-primary" /> Bối cảnh tình huống (Context)</h2>
+        {value && <Button type="button" variant="outline" onClick={() => {
+          if (window.confirm("Xóa toàn bộ bối cảnh khỏi bản nháp?")) {
+            setKeys([]);
+            onChange(null);
+          }
+        }}>Xóa bối cảnh</Button>}
+      </header>
 
-export default function TopicContextFormCard({
-  draft,
-  showErrors,
-  onPatch,
-  onUpdateTurn,
-  onAddTurn,
-  onRemoveTurn,
-}: TopicContextFormCardProps) {
-  const titleError = showErrors && draft.title.trim().length === 0;
-  const descriptionError = showErrors && draft.description.trim().length === 0;
-  const dialogueError =
-    showErrors &&
-    (draft.turns.length === 0 ||
-      draft.turns.some(
-        (turn) =>
-          turn.speaker.trim().length === 0 || turn.textEn.trim().length === 0,
-      ));
-
-  return (
-    <section className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-      <div className="flex items-center justify-between border-b border-surface-container pb-2">
-        <div className="flex items-center gap-2.5">
-          <Drama className="size-6 text-primary" aria-hidden="true" />
-          <h2 className="text-headline-sm font-semibold text-on-surface">
-            Bối cảnh tình huống (Context)
-          </h2>
-        </div>
-        <span className="text-label-sm font-medium text-error">* Trường bắt buộc</span>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <label
-            htmlFor="context-title"
-            className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
-          >
-            Tiêu đề bối cảnh (Context Title)
-            <RequiredMark />
-          </label>
-          <span className="text-label-sm text-on-surface-variant">
-            {draft.title.length} / {TOPIC_CONTEXT_TITLE_MAX} ký tự
-          </span>
-        </div>
-        <input
-          id="context-title"
-          type="text"
-          value={draft.title}
-          maxLength={TOPIC_CONTEXT_TITLE_MAX}
-          onChange={(event) => onPatch({ title: event.target.value })}
-          placeholder="VD: Gọi món tại bàn tiệc..."
-          aria-invalid={titleError}
-          className={cn(FIELD_CLASS, titleError && "ring-2 ring-error")}
-        />
-        {titleError ? (
-          <p className="text-label-sm text-error">Vui lòng nhập tiêu đề bối cảnh.</p>
-        ) : (
-          <p className="text-label-sm text-on-surface-variant">
-            Tên ngắn gọn mô tả hành động trực tiếp mà người học sẽ chuẩn bị ứng biến.
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="context-prompt"
-          className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
-        >
-          Câu hỏi gợi mở phản xạ (Communication Prompt)
-          <span className="rounded bg-secondary-fixed/40 px-2 py-0.5 text-label-sm font-medium text-on-secondary-fixed">
-            Gợi ý tư duy
-          </span>
-        </label>
-        <div className="flex items-start gap-2 bg-surface-container-low p-3 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary rounded-lg">
-          <Lightbulb
-            className="mt-0.5 size-5 shrink-0 text-primary"
-            aria-hidden="true"
-          />
-          <textarea
-            id="context-prompt"
-            rows={2}
-            value={draft.prompt}
-            onChange={(event) => onPatch({ prompt: event.target.value })}
-            placeholder="Đặt câu hỏi kích thích người học tự vấn cách họ sẽ đối thoại..."
-            className="w-full resize-none bg-transparent text-body-md text-on-surface outline-none placeholder:text-outline"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <label
-            htmlFor="context-desc"
-            className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
-          >
-            Mô tả bối cảnh tình huống (Scenario Description)
-            <RequiredMark />
-          </label>
-          <span className="text-label-sm text-on-surface-variant">
-            {draft.description.length} / {TOPIC_CONTEXT_DESCRIPTION_MAX} ký tự
-          </span>
-        </div>
-        <textarea
-          id="context-desc"
-          rows={4}
-          value={draft.description}
-          maxLength={TOPIC_CONTEXT_DESCRIPTION_MAX}
-          onChange={(event) => onPatch({ description: event.target.value })}
-          placeholder="Mô tả không gian, đối tượng xung quanh và áp lực giao tiếp tự nhiên..."
-          aria-invalid={descriptionError}
-          className={cn(
-            FIELD_CLASS,
-            "resize-none",
-            descriptionError && "ring-2 ring-error",
-          )}
-        />
-        {descriptionError ? (
-          <p className="text-label-sm text-error">Vui lòng nhập mô tả bối cảnh.</p>
-        ) : (
-          <p className="text-label-sm text-on-surface-variant">
-            Tạo dựng không gian (nơi chốn, cảm xúc, mục tiêu hành động).
-          </p>
-        )}
-      </div>
+      <label className="grid gap-2">
+        <span className="flex items-center gap-2 text-label-lg font-semibold"><Lightbulb className="size-5 text-primary" /> Câu hỏi gợi mở phản xạ</span>
+        <textarea rows={2} value={context.prompt ?? ""} onChange={(event) => patch({ prompt: event.target.value || null })} className={FIELD_CLASS} />
+      </label>
+      <label className="grid gap-2">
+        <span className="text-label-lg font-semibold">Mô tả bối cảnh tình huống</span>
+        <textarea rows={4} value={context.scenarioDescription ?? ""} onChange={(event) => patch({ scenarioDescription: event.target.value || null })} className={FIELD_CLASS} />
+      </label>
 
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-label-lg font-semibold text-on-surface">
-            Tình huống hội thoại mẫu ngắn (Context Dialogue)
-            <RequiredMark />
-          </span>
-          <button
-            type="button"
-            onClick={onAddTurn}
-            className="inline-flex items-center gap-1 text-label-sm font-medium text-primary hover:underline"
-          >
-            <PlusCircle className="size-4" aria-hidden="true" />
-            Thêm dòng thoại
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-label-lg font-semibold">Hội thoại mẫu</h3>
+          <Button type="button" variant="ghost" onClick={addTurn}><PlusCircle className="size-4" /> Thêm dòng thoại</Button>
         </div>
-        <div className="flex flex-col gap-3 rounded-xl bg-surface-container-low p-3 sm:p-4">
-          {draft.turns.map((turn) => (
-            <ContextDialogueTurnRow
-              key={turn.id}
-              turn={turn}
-              onChange={(turnPatch) => onUpdateTurn(turn.id, turnPatch)}
-              onRemove={() => onRemoveTurn(turn.id)}
-            />
+        {context.dialogue.length > 0 && <div className="flex flex-col gap-3 rounded-xl bg-surface-container-low p-3 sm:p-4">
+          {context.dialogue.map((turn, index) => (
+            <ContextDialogueTurnRow key={keys[index]} turn={turn} topicId={topicId}
+              onChange={(fields) => editTurn(index, fields)} onRemove={() => removeTurn(index)}
+              onUp={index > 0 ? () => moveTurn(index, -1) : undefined}
+              onDown={index + 1 < context.dialogue.length ? () => moveTurn(index, 1) : undefined} />
           ))}
-        </div>
-        {dialogueError && (
-          <p className="text-label-sm text-error">
-            Mỗi dòng thoại cần có tên người nói và câu tiếng Anh.
-          </p>
-        )}
+        </div>}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <label
-          htmlFor="context-duration"
-          className="flex items-center gap-2 text-label-lg font-semibold text-on-surface"
-        >
-          Thời lượng tiếp thu dự kiến
-        </label>
-        <div className="relative">
-          <Timer
-            className="pointer-events-none absolute top-3.5 left-3.5 size-5 text-tertiary"
-            aria-hidden="true"
-          />
-          <select
-            id="context-duration"
-            value={draft.duration}
-            onChange={(event) => onPatch({ duration: event.target.value })}
-            className={cn(FIELD_CLASS, "cursor-pointer appearance-none pr-10 pl-11")}
-          >
-            {TOPIC_CONTEXT_DURATION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute top-3.5 right-3.5 size-5 text-on-surface-variant"
-            aria-hidden="true"
-          />
-        </div>
-        <p className="text-label-sm text-on-surface-variant">
-          Ước lượng thời gian người học đọc và cảm nhận bối cảnh.
-        </p>
-      </div>
-    </section>
+      <label className="grid gap-2">
+        <span className="text-label-lg font-semibold">Thời lượng bối cảnh (giây)</span>
+        <input type="number" min={0} step={1} value={context.durationSec ?? ""}
+          onChange={(event) => patch({ durationSec: event.target.value === "" ? null : event.target.valueAsNumber })}
+          className={FIELD_CLASS} />
+      </label>
+      <label className="grid gap-2">
+        <span className="text-label-lg font-semibold">Mẹo cho người học</span>
+        <textarea value={context.tips ?? ""} onChange={(event) => patch({ tips: event.target.value || null })} className={FIELD_CLASS} />
+      </label>
+    </fieldset>
   );
 }

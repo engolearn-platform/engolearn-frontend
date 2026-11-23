@@ -10,7 +10,7 @@ interface TopicUpsertWizardHeaderProps {
 export default function TopicUpsertWizardHeader({
   title = "Bước 1: Thông tin cơ bản của Chủ đề",
   draftLabel = "Bản nháp (Draft)",
-  autosaveText = "Tự động lưu cách đây 1 phút",
+  autosaveText,
   readOnly = false,
 }: TopicUpsertWizardHeaderProps) {
   return (
@@ -28,10 +28,10 @@ export default function TopicUpsertWizardHeader({
           <span className="size-2 rounded-full bg-secondary-container" aria-hidden="true" />
           {draftLabel}
         </span>
-        <span className="inline-flex items-center gap-1 text-label-sm text-on-surface-variant">
+        {autosaveText && <span className="inline-flex items-center gap-1 text-label-sm text-on-surface-variant">
           <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
           {autosaveText}
-        </span>
+        </span>}
       </div>}
     </div>
   );

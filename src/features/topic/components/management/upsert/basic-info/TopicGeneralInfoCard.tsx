@@ -137,6 +137,8 @@ export default function TopicGeneralInfoCard({
           options={TOPIC_CREATE_CEFR_OPTIONS}
           onChange={onCefrChange}
         />
+        {draft.cefr && <button type="button" className="self-start text-label-sm text-primary" onClick={() => onPatch({ cefr: "" })}>Bỏ chọn CEFR</button>}
+        {fieldErrors.cefr && <p className="text-label-sm text-error">{fieldErrors.cefr}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-6 pt-2 md:grid-cols-2">
@@ -151,9 +153,10 @@ export default function TopicGeneralInfoCard({
             <select
               id="topic-category"
               value={draft.category}
-              onChange={(event) => onPatch({ category: event.target.value })}
+              onChange={(event) => onPatch({ category: categories.find((category) => category.value === event.target.value)?.value ?? "" })}
               className={cn(FIELD_CLASS, "cursor-pointer appearance-none pr-10")}
             >
+              <option value="">Chưa chọn danh mục</option>
               {categories.map((category) => (
                 <option key={category.value} value={category.value}>
                   {category.label}
@@ -165,6 +168,7 @@ export default function TopicGeneralInfoCard({
               aria-hidden="true"
             />
           </div>
+          {fieldErrors.category && <p className="text-label-sm text-error">{fieldErrors.category}</p>}
           <p className="text-label-sm text-on-surface-variant">
             Giúp học viên lọc chủ đề theo nhu cầu thực tế trên ứng dụng di động.
           </p>
@@ -218,6 +222,7 @@ export default function TopicGeneralInfoCard({
           placeholder="Mô tả mục tiêu người học sẽ đạt được sau khi hoàn thành chuỗi bài..."
           className={cn(FIELD_CLASS, "resize-none")}
         />
+        {fieldErrors.description && <p className="text-label-sm text-error">{fieldErrors.description}</p>}
       </div>
     </section>
   );

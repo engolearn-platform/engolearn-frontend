@@ -1,18 +1,13 @@
 import {
-  Copy,
-  Eye,
-  EyeOff,
   MoreVertical,
   Pencil,
   PencilLine,
-  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
 
 interface TopicManagementTableProps {
   topics: TopicManagementListItem[];
-  onUnpublish?: (topic: TopicManagementListItem) => void;
   onEdit: (topic: TopicManagementListItem) => void;
   readOnly?: boolean;
 }
@@ -42,7 +37,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   HEALTH: "Khám bệnh & Y tế",
 };
 
-export default function TopicManagementTable({ topics, onUnpublish, onEdit, readOnly = false }: TopicManagementTableProps) {
+export default function TopicManagementTable({ topics, onEdit, readOnly = false }: TopicManagementTableProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   return (
@@ -155,39 +150,6 @@ export default function TopicManagementTable({ topics, onUnpublish, onEdit, read
                           >
                             <Pencil className="size-[18px] text-primary" aria-hidden="true" />
                             Mở chỉnh sửa (Bước 2)
-                          </button>
-                          <button
-                            type="button"
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm text-on-surface transition-colors hover:bg-surface-container-low"
-                          >
-                            <Eye className="size-[18px] text-tertiary" aria-hidden="true" />
-                            Xem trước (Learner view)
-                          </button>
-                          <button
-                            type="button"
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm text-on-surface transition-colors hover:bg-surface-container-low"
-                          >
-                            <Copy className="size-[18px] text-on-surface-variant" aria-hidden="true" />
-                            Nhân bản chủ đề (Duplicate)
-                          </button>
-                          <div className="my-1 h-px bg-surface-container" aria-hidden="true" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOpenMenuId(null);
-                              onUnpublish?.(topic);
-                            }}
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm text-on-surface transition-colors hover:bg-surface-container-low"
-                          >
-                            <EyeOff className="size-[18px] text-on-secondary-container" aria-hidden="true" />
-                            Gỡ xuất bản (Draft)
-                          </button>
-                          <button
-                            type="button"
-                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm font-semibold text-error transition-colors hover:bg-error-container/20"
-                          >
-                            <Trash2 className="size-[18px] text-error" aria-hidden="true" />
-                            Xóa chủ đề
                           </button>
                         </div>
                       )}

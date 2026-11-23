@@ -64,6 +64,7 @@ const FIELD_LABELS: Record<string, string> = {
   purposes: "Nhóm mẫu câu",
   purposeEn: "Tên nhóm tiếng Anh",
   purposeVi: "Tên nhóm tiếng Việt",
+  groupType: "Loại nhóm",
   examples: "Mẫu câu",
   type: "Nhãn",
   usageNote: "Cách dùng",
@@ -184,7 +185,7 @@ function ResourceTab({ item, section }: { item: TopicItemManagementDetail; secti
     return <ResourcePanel title="Mẫu câu" empty={item.expressions.length === 0}>
       {purposes === null ? <ResourceValue value={item.expressions} /> : <div className="space-y-6">{item.expressions.map((group, groupIndex) => <article key={groupIndex} className="space-y-4 rounded-xl border border-outline-variant/50 p-4"><ResourceValue value={{ groupOrder: groupIndex }} />{(group.purposes ?? []).map((sourcePurpose, purposeIndex) => {
         const purpose = purposes.find((candidate) => candidate.purposeEn === (sourcePurpose.purposeEn ?? "") && candidate.purposeVi === (sourcePurpose.purposeVi ?? "") && candidate.orderIndex === (sourcePurpose.orderIndex ?? purposeIndex));
-        return purpose ? <div key={`${groupIndex}-${purposeIndex}`} className="space-y-3"><PurposeGroupSection purpose={purpose} groupIndex={purposeIndex} vocabWordById={vocabWordById} onEdit={() => undefined} onDelete={() => undefined} onDuplicate={() => undefined} onPreviewAudio={() => undefined} readOnly /><ResourceValue value={{ tips: group.tips, purposeOrderIndex: sourcePurpose.orderIndex, linkedVocabIds: purpose.examples.map((example) => example.linkedVocabIds) }} /></div> : <ResourceValue key={`${groupIndex}-${purposeIndex}`} value={sourcePurpose} />;
+        return purpose ? <div key={`${groupIndex}-${purposeIndex}`} className="space-y-3"><PurposeGroupSection purpose={purpose} groupIndex={purposeIndex} vocabWordById={vocabWordById} onEdit={() => undefined} onDelete={() => undefined} onDuplicate={() => undefined} onPreviewAudio={() => undefined} readOnly /><ResourceValue value={{ tips: group.tips, purposeOrderIndex: sourcePurpose.orderIndex, ...(sourcePurpose.groupType ? { groupType: sourcePurpose.groupType } : {}), ...(sourcePurpose.examples.some((example) => example.label) ? { label: sourcePurpose.examples.map((example) => example.label) } : {}), linkedVocabIds: purpose.examples.map((example) => example.linkedVocabIds) }} /></div> : <ResourceValue key={`${groupIndex}-${purposeIndex}`} value={sourcePurpose} />;
       })}{(group.purposes ?? []).length === 0 && <ResourceValue value={{ tips: group.tips }} />}</article>)}</div>}
     </ResourcePanel>;
   }
