@@ -1,8 +1,9 @@
-import { Navigate, Outlet, useLocation } from "react-router";
+import { matchPath, Navigate, Outlet, useLocation } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
+import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
 import { authReturnTo } from "@features/auth/utils/authReturnTo";
-import { ROUTES } from "@shared/constants";
+import { hasRequiredRole } from "@features/auth/utils/role-policy";
 
 export default function GuestOnlyGuard() {
   const { user, isAuthenticated, isLoading, error, refetch } = useAuth();
@@ -16,12 +17,9 @@ export default function GuestOnlyGuard() {
   }
   if (isAuthenticated) {
     const returnTo = authReturnTo(location.state);
-    // Keep requested protected pages, with a role-specific entry for an ordinary login.
-    const destination = returnTo === ROUTES.HOME
-      ? user?.role === "ADMIN" ? "/admin/placement/test-sets"
-        : user?.role === "CONTENT_MANAGER" ? ROUTES.ADMIN_GRAMMAR : returnTo
-      : returnTo;
-    return <Navigate to={destination} replace />;
+    const canManageContent = hasRequiredRole(user?.role ?? null, ["CONTENT_MANAGER"]);
+    const isTopicManagement = matchPath(`${ROUTES.ADMIN_TOPICS}/*`, returnTo.split(/[?#]/, 1)[0]);
+    return <Navigate to={canManageContent && !isTopicManagement ? ROUTES.ADMIN_TOPICS : returnTo} replace />;
   }
   return <Outlet />;
 }

@@ -2,11 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Check, CircleAlert, Lightbulb, Mic, Play, RotateCcw, Square, Trash2, UserRound } from "lucide-react";
+import { speakingEnabled, speakingService, useSpeakingStream } from "@features/speaking/contract";
+import type {
+  SpeakingAssessment,
+  SpeakingGoal,
+  SpeakingItemConfig,
+  SpeakingSession,
+  SpeakingSnapshotEvent,
+  SpeakingTurn,
+} from "@features/speaking/contract";
 import { ROUTES } from "@shared/constants";
-import { speakingEnabled, speakingService } from "@features/topic/services/speaking.service";
 import { safeTopicOrigin, topicDetailPath } from "@features/topic/utils/topic-catalog";
-import { useSpeakingStream, type SpeakingSnapshotEvent } from "@features/topic/hooks/useSpeakingStream";
-import type { SpeakingAssessment, SpeakingGoal, SpeakingItemConfig, SpeakingSession, SpeakingTurn } from "@features/topic/types/speaking.types";
 import { AchievementFireworks } from "./speaking-achievements/AchievementFireworks";
 import { AllGoalsMilestone } from "./speaking-achievements/AllGoalsMilestone";
 import { InlineMilestoneBanner } from "./speaking-achievements/InlineMilestoneBanner";

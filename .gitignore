@@ -26,3 +26,4 @@ dist-ssr
 
 .env
 .opencode/.stitch-key
+.codegraph/

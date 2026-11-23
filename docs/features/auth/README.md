@@ -1,5 +1,7 @@
 # Authentication
 
+See the [required authorization rules](../../architecture/security-authorization.md) and [role integration guide](role-authorization.md) for protected routes and role-dependent UI.
+
 ## Routes and behavior
 
 - `/profile` is a public real-cookie auth test page. It derives profile identity from its own server requests. After login/register/logout it asks AuthProvider to recheck the cookie session so other routes have current identity. Guests can register or sign in; authenticated users see only server-provided ID, email and role, with session check, explicit refresh, full-page reload and logout actions. Profile links are available in learning/management top bars.
@@ -7,9 +9,9 @@
 - Registration asks for a password of at least 8 characters and at most 72 UTF-8 bytes, matching the backend password constraints. Session bootstrap failures and unconfirmed logout offer retry actions.
 
 - `/login` and `/register` are public routes owned by `src/features/auth/`.
-- `/` has one app-composition owner. It uses the shared session state to show the guest landing page, a neutral pending state, public landing information with retry on session errors, or the existing signed-in learner homepage inside `LearningLayout`. Auth guards and post-login return destinations are unchanged.
-- `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state; authenticated users are redirected to a validated captured local destination, or `/`, with history replacement. Session errors show a retry action rather than a guest form. The profile test page refreshes shared identity after login/register/logout so this gate sees cookie-auth changes made there.
-- After successful authentication, the app returns to a safe local route captured by the guard, or `/`.
+- `/` has one app-composition owner. It uses the shared session state to show the guest landing page, a neutral pending state, public landing information with retry on session errors, or the signed-in learner homepage inside `LearningLayout`.
+- `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state or a retry action. With a confirmed identity, the gate replaces the history entry and redirects based on the server role.
+- `ADMIN` and `CONTENT_MANAGER` land in `ManagementLayout` at `/admin/topics`. A valid captured URL within Topic management retains its path, query, and fragment. `USER` returns to a validated local destination or `/`. The `/profile` diagnostic page keeps its own in-page flow.
 - Admin topic and subscription management routes wait for session bootstrap and redirect guests to login. Topic learning routes remain public.
 - Learning and management top bars expose sign out. Local identity is cleared even when server revocation cannot be confirmed; the provider retains an error describing that outcome.
 
@@ -18,6 +20,8 @@
 `AuthProvider` continues to own shared application auth. Separately, the `/profile` test page calls `/api/v1/auth/me`; if `/me` returns 401 it posts `/refresh` once and retries `/me` once. Login, register, refresh and logout use same-origin requests with browser-managed cookies. User and role come from the server response. Access and refresh cookies are browser managed; the frontend never reads them or stores them in web storage. A refresh 401 means guest; network and server failures remain visible with a retry action. Auth mutations use the browser Web Locks API when available to serialize across tabs.
 
 The shared auth provider now uses only server-cookie identity. The profile test page keeps local identity state and asks the shared provider to reload after auth changes so login/register route gates respond to the current cookie identity.
+
+The shared `HttpService` keeps cookie authentication and its single refresh/retry on eligible 401 responses. Its regular request headers include `ngrok-skip-browser-warning: 1` for the ngrok proxy; operation-specific headers can override defaults. The automatic refresh request retains its existing configuration.
 
 ## Profile verification checklist
 

@@ -17,6 +17,8 @@ The existing `SpeakingView` shell, transcript order, sticky microphone control a
 
 The selector is deliberately not a completion-policy implementation. It only interprets server-confirmed `requiredGoalsMet`, `completionEligible`, status, and goal results.
 
+The achievement adapter, selector, and presentation components belong to Topic. Topic consumes the session types and stream hook through the [Speaking contract](../../../src/features/speaking/contract/index.ts); the provider hook is [useSpeakingStream](../../../src/features/speaking/hooks/useSpeakingStream.ts).
+
 ## Existing transport-to-UI mapping
 
 | UI input | Current authoritative field/event | UI use |
@@ -27,7 +29,7 @@ The selector is deliberately not a completion-policy implementation. It only int
 | Final summary | `SESSION_ENDED.snapshot` or successful `POST /sessions/{id}/end`; terminal `status`, `endReason`, `endedAt`, `revision` | Immutable summary and a single final animation where eligible. |
 | Hydrate/reconnect/history | `GET /sessions/current`, `GET /sessions/{id}`, history selection, and post-event refresh | Settled chips and summary only—no animations. |
 
-`useSpeakingStream` labels snapshots by source, so a provisional transcript, `PENDING`, `INVALID`, failed assessment, refresh, reconnect, and history view cannot trigger a celebration. A socket event carrying its own authoritative snapshot no longer causes a competing REST refresh. When a reconnect refresh reaches the same revision just before a live `TURN_RESULT`, the first goal evidence in that committed turn restores its one-time UI effect. Event keys use the backend session id, turn id (where present), goal ids, and terminal revision. A stale live event for a different active session is ignored.
+The Speaking provider's `useSpeakingStream` labels snapshots by source, so a provisional transcript, `PENDING`, `INVALID`, failed assessment, refresh, reconnect, and history view cannot trigger a celebration. A socket event carrying its own authoritative snapshot no longer causes a competing REST refresh. When a reconnect refresh reaches the same revision just before a live `TURN_RESULT`, the first goal evidence in that committed turn restores its one-time UI effect. Event keys use the backend session id, turn id (where present), goal ids, and terminal revision. A stale live event for a different active session is ignored.
 
 ## Finalization and UI actions
 
