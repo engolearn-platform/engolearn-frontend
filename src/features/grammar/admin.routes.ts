@@ -1,3 +1,5 @@
+import { createElement } from "react";
+import { ProtectedRoute } from "@features/auth/contract";
 import type { RouteObject } from "react-router";
 import GrammarAdminGuard from "./components/admin/GrammarAdminGuard";
 import { grammarPaths } from "./constants/admin-paths";
@@ -8,6 +10,8 @@ import {
   GrammarLessonFormView, GrammarLessonListView, GrammarTopicFormView, GrammarTopicListView,
 } from "./views/admin/GrammarTopicViews";
 export const GrammarAdminRoutes: RouteObject[] = [{
+  element: createElement(ProtectedRoute, { allowedRoles: ["CONTENT_MANAGER"] }),
+  children: [{
   path: grammarPaths.root,
   Component: GrammarAdminGuard,
   children: [
@@ -23,4 +27,5 @@ export const GrammarAdminRoutes: RouteObject[] = [{
     { path: ":topicId/lessons/:lessonId/review", Component: GrammarLessonReviewView },
     { path: ":topicId/publish", Component: GrammarTopicPublishView },
   ],
+  }],
 }];

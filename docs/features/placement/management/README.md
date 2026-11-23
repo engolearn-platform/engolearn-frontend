@@ -35,3 +35,7 @@ xem trước từng lưu trong trình duyệt nằm ngoài luồng quản trị 
 - Danh sách và chi tiết lượt làm chỉ đọc. Xem trước bộ đề không tạo lượt làm.
 - Các màn dùng lại ManagementLayout, Auth và thành phần của EngoLearn. Nút xác
   nhận rời nháp dùng cho các đường dẫn nội bộ và nút quay lại của trình soạn.
+
+## Team dev integration — 23/11/2026
+
+See [shared authorization and audio integration](../../grammar/04-team-dev-integration.md) for current route guards, ADMIN WAV upload, real playback errors and verification. Existing team layouts are retained.

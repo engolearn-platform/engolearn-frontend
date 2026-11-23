@@ -1,3 +1,6 @@
+import { useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { HasRole } from "@features/auth/contract";
 import { useFetch } from "@shared/hooks";
 import { usePlacementManagement } from "@features/placement/hooks/placement-management-context";
 import type { ManagementQuestionDraft } from "@features/placement/types/placement-management.types";
@@ -6,8 +9,8 @@ import { ManagementButton, ManagementCard, ManagementField, managementInputClass
 
 import { safeQuestionAudioUrl } from "@features/placement/utils/placement-management";
 
-export function PlacementQuestionFields({ draft, onChange, editing }: { draft: ManagementQuestionDraft; onChange: (draft: ManagementQuestionDraft) => void; editing: boolean }) {
-  const update = <K extends keyof ManagementQuestionDraft>(key: K, value: ManagementQuestionDraft[K]) => onChange({ ...draft, [key]: value });
+export function PlacementQuestionFields({ draft, onChange, editing }: { draft: ManagementQuestionDraft; onChange: Dispatch<SetStateAction<ManagementQuestionDraft>>; editing: boolean }) {
+  const update = <K extends keyof ManagementQuestionDraft>(key: K, value: ManagementQuestionDraft[K]) => onChange(previous => ({ ...previous, [key]: value }));
   return <>
     <ManagementCard className="grid gap-4 sm:grid-cols-3">
       <ManagementField label="Mã câu hỏi *"><input className={managementInputClass} required value={draft.code} onChange={(event) => update("code", event.target.value)} autoComplete="off" /></ManagementField>
@@ -36,7 +39,29 @@ function QuestionAudioPicker({ value, onChange }: { value: string; onChange: (va
   const { service } = usePlacementManagement();
   const { data, loading, error, refetch } = useFetch(service.listAudio);
   const audioUrl = safeQuestionAudioUrl(value);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const upload = async (file?: File) => {
+    if (!file || uploading) return;
+    if (file.size > 25 * 1024 * 1024) { setUploadError("Audio tối đa 25 MiB."); return; }
+    setUploading(true);
+    setUploadError("");
+    try {
+      const audio = await service.uploadAudio(file);
+      onChange(audio.audioUrl);
+      refetch();
+    } catch (failure) { setUploadError(failure instanceof Error ? failure.message : "Không thể tải audio lên."); }
+    finally { setUploading(false); }
+  };
   return <>
+    <HasRole allowedRoles={["ADMIN"]}>
+      <ManagementField label="Tải audio WAV" hint="Lưu qua kho Media dùng chung. Tối đa 25 MiB; bản thu phải khớp transcript.">
+        <input type="file" accept=".wav,audio/wav,audio/x-wav" disabled={uploading} className={managementInputClass}
+          onChange={event => { void upload(event.target.files?.[0]); event.target.value = ""; }} />
+      </ManagementField>
+      {uploading && <p role="status">Đang tải audio…</p>}
+      {uploadError && <p role="alert" className="text-error">{uploadError}</p>}
+    </HasRole>
     <ManagementField label="Audio có sẵn" hint="Chọn đúng audio cho transcript và nghe thử trước khi lưu.">
       <select className={managementInputClass} value={value} onChange={event => onChange(event.target.value)} disabled={loading || !!error}>
         <option value="">Chưa chọn audio</option>

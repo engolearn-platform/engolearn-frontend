@@ -67,3 +67,7 @@ Thiết kế được chủ dự án chốt: [01-user-v4-design.md](01-user-v4-d
 - Summary chỉ mở từ chủ đề completed, gọi getTopic rồi getTheory của từng bài xuất bản; không gọi seen/startPractice và không có bản tóm tắt giả trong DB.
 
 Lưu ý khi chạy local: nội dung Nháp không xuất hiện ở learner. Ngày 22/11/2026 chủ dự án cho phép xuất bản riêng mẫu A1 Thì hiện tại đơn (3 bài); các chủ đề còn lại giữ Nháp. Trạng thái thực tế và kết quả kiểm tra ở [báo cáo triển khai](02-user-v4-result.md).
+
+## Team dev integration — 23/11/2026
+
+See [shared authorization and audio integration](04-team-dev-integration.md) for current route guards, ADMIN WAV upload, real playback errors and verification. Existing team layouts are retained.

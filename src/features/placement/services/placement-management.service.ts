@@ -50,6 +50,21 @@ export const placementManagementService: PlacementManagementService = {
   async getSetPreview(id, signal) {
     return (await httpService.get<ApiEnvelope<ManagementTestSet>>(`${byId(sets, id)}/preview`, { signal })).data;
   },
+  async uploadAudio(file) {
+    const send = async () => {
+      const body = new FormData();
+      body.append("file", file);
+      return fetch(`${questions}/media`, { method: "POST", body, credentials: "same-origin", cache: "no-store" });
+    };
+    let response = await send();
+    if (response.status === 401) {
+      await httpService.get("/api/v1/auth/me");
+      response = await send();
+    }
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || "Không thể tải audio lên.");
+    return (result as ApiEnvelope<ManagementAudio>).data;
+  },
   async listAudio(signal) {
     return (await httpService.get<ApiEnvelope<{ items: ManagementAudio[] }>>(`${questions}/media`, { signal })).data.items;
   },

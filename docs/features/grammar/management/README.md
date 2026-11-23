@@ -8,3 +8,7 @@ Admin đăng nhập từ trang chung được đưa vào Bộ đề Placement. C
 - [Luồng học viên và hướng dẫn chạy](../00-grammar-learning.md)
 
 Kiểm tra tích hợp ngày 20/11/2026 trên bản ổ D: cùng phiên ADMIN đăng nhập từ trang chủ vào Placement, đọc được Bộ đề, 320 câu ngân hàng và danh sách kết quả; chuyển sang Grammar bằng menu ở chiều rộng 900px. Chủ đề nháp “Thì hiện tại đơn” và một bài học nháp được lưu qua API thật rồi tải lại, chưa xuất bản. Thanh quản trị ở màn hình hẹp chia hai hàng để giữ nút tài khoản đọc được.
+
+## Team dev integration — 23/11/2026
+
+See [shared authorization and audio integration](../04-team-dev-integration.md) for current route guards, ADMIN WAV upload, real playback errors and verification. Existing team layouts are retained.

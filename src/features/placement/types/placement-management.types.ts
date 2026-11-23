@@ -40,6 +40,7 @@ export interface PlacementManagementService {
   listAttempts(filters: ManagementAttemptFilters, page: number, size: number, signal?: AbortSignal): Promise<ManagementPage<ManagementAttemptSummary>>;
   getAttempt(id: string, signal?: AbortSignal): Promise<ManagementAttempt>;
   getSetPreview(id: string, signal?: AbortSignal): Promise<ManagementTestSet>;
+  uploadAudio(file: File): Promise<ManagementAudio>;
   listAudio(signal?: AbortSignal): Promise<ManagementAudio[]>;
   findQuestions(filters: ManagementQuestionFilters, signal?: AbortSignal): Promise<ManagementQuestion[]>;
   saveQuestion(draft: ManagementQuestionDraft, question?: ManagementQuestion): Promise<ManagementQuestion>;
