@@ -3,7 +3,7 @@
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "https://distrust-hyperlink-unmoral.ngrok-free.dev/api/$1",
+            "dest": "https://engolearn-backend-deploy.onrender.com/api/$1",
             "transforms": [
                 {
                     "type": "request.headers",
