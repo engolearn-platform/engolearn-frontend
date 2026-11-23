@@ -10,6 +10,7 @@ interface ExpressionCardProps {
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
 function typePill(type: TopicExpressionExample["type"]): {
@@ -58,6 +59,7 @@ export default function ExpressionCard({
   onDelete,
   onDuplicate,
   onPreviewAudio,
+  readOnly = false,
 }: ExpressionCardProps) {
   const pill = typePill(example.type);
 
@@ -73,7 +75,7 @@ export default function ExpressionCard({
           >
             {pill.label}
           </span>
-          <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+          {!readOnly && <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
             <button
               type="button"
               onClick={() => onEdit(example.id)}
@@ -101,7 +103,7 @@ export default function ExpressionCard({
             >
               <Trash2 className="size-[18px]" aria-hidden="true" />
             </button>
-          </div>
+          </div>}
         </div>
         <div className="mb-3">
           <h3 className="mb-1 text-headline-sm tracking-tight text-on-surface">
@@ -122,6 +124,7 @@ export default function ExpressionCard({
         <ExpressionAudioChip
           audioFile={example.audioFile}
           onPreview={onPreviewAudio}
+          readOnly={readOnly}
         />
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-label-sm text-on-surface-variant">

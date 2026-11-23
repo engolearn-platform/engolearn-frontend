@@ -12,8 +12,9 @@ import type { TopicManagementListItem } from "@features/topic/types/topic-manage
 
 interface TopicManagementTableProps {
   topics: TopicManagementListItem[];
-  onUnpublish: (topic: TopicManagementListItem) => void;
+  onUnpublish?: (topic: TopicManagementListItem) => void;
   onEdit: (topic: TopicManagementListItem) => void;
+  readOnly?: boolean;
 }
 
 function CefrBadge({ cefr }: { cefr?: TopicManagementListItem["cefr"] }) {
@@ -41,7 +42,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   HEALTH: "Khám bệnh & Y tế",
 };
 
-export default function TopicManagementTable({ topics, onUnpublish, onEdit }: TopicManagementTableProps) {
+export default function TopicManagementTable({ topics, onUnpublish, onEdit, readOnly = false }: TopicManagementTableProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   return (
@@ -115,11 +116,16 @@ export default function TopicManagementTable({ topics, onUnpublish, onEdit }: To
                 </td>
                 <td className="px-3 py-3">
                   <span className="text-label-sm text-on-surface-variant">
-                    {topic.updatedAt}
+                    {topic.updatedAt ?? (readOnly ? "Chưa có dữ liệu" : "")}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-1">
+                    {readOnly ? (
+                      <button type="button" onClick={() => onEdit(topic)} className="rounded-lg px-3 py-2 text-label-sm font-semibold text-primary hover:bg-surface-container-low">
+                        Xem chi tiết
+                      </button>
+                    ) : (
                     <div className="relative">
                       <button
                         type="button"
@@ -169,7 +175,7 @@ export default function TopicManagementTable({ topics, onUnpublish, onEdit }: To
                             type="button"
                             onClick={() => {
                               setOpenMenuId(null);
-                              onUnpublish(topic);
+                              onUnpublish?.(topic);
                             }}
                             className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-label-sm text-on-surface transition-colors hover:bg-surface-container-low"
                           >
@@ -186,6 +192,7 @@ export default function TopicManagementTable({ topics, onUnpublish, onEdit }: To
                         </div>
                       )}
                     </div>
+                    )}
                   </div>
                 </td>
               </tr>

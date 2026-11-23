@@ -5,6 +5,8 @@ import type {
   TopicManagementListQueryParams,
   TopicManagementListResponse,
   TopicManagementResponse,
+  TopicItemManagementDetail,
+  TopicItemManagementSummary,
   TopicUpdateRequest,
 } from "../types/topic-management.types";
 
@@ -105,6 +107,44 @@ export async function fetchTopicById(
   return envelope.data;
 }
 
+export async function fetchTopicItems(
+  topicId: string,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemManagementSummary[]> {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/items`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  }
+
+  const envelope = (await response.json()) as ApiResponse<TopicItemManagementSummary[]>;
+  return envelope.data;
+}
+
+export async function fetchTopicItemById(
+  topicId: string,
+  itemId: string,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemManagementDetail> {
+  const response = await fetchImpl(
+    `/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}`,
+    { method: "GET", headers: { "Content-Type": "application/json" }, signal },
+  );
+
+  if (!response.ok) {
+    throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  }
+
+  const envelope = (await response.json()) as ApiResponse<TopicItemManagementDetail>;
+  return envelope.data;
+}
+
 export async function createTopic(
   body: TopicCreateRequest,
   signal?: AbortSignal,
@@ -153,6 +193,8 @@ export async function updateTopic(
 export const topicManagementService = {
   fetchTopicList,
   fetchTopicById,
+  fetchTopicItems,
+  fetchTopicItemById,
   createTopic,
   updateTopic,
 };

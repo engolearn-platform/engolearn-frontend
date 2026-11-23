@@ -6,6 +6,8 @@
 > `/admin/topics/:topicId/edit...`. Chỉ const/type còn giữ tên `Create` (xem §4.2).
 > Khi cần sửa / debug / gắn API thật: đọc README này trước, rồi nhảy đúng file con + component.
 
+Luồng quản trị chỉ đọc F05–F08 được mô tả ở [read-only-flow.md](./read-only-flow.md). Luồng này dùng GET contract và không đọc fixture nội dung.
+
 ## 1. Sơ đồ luồng
 
 ```

@@ -1,12 +1,12 @@
 interface TopicItemEditorBreadcrumbProps {
   topicTitleEn: string;
-  itemOrder: number;
+  itemOrder: number | null;
   itemTitleEn: string;
   onBackToList: () => void;
 }
 
-function formatOrder(order: number): string {
-  return order.toString().padStart(2, "0");
+function formatOrder(order: number | null): string {
+  return order === null ? "—" : order.toString().padStart(2, "0");
 }
 
 export default function TopicItemEditorBreadcrumb({
