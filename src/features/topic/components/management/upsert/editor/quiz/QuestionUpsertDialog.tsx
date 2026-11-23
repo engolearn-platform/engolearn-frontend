@@ -1,3 +1,4 @@
+import TopicMediaUpload from "@features/topic/components/management/upsert/TopicMediaUpload";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -20,9 +21,11 @@ import type { QuizQuestionUpsert } from "@features/topic/hooks/useTopicItemQuizF
 
 interface QuestionUpsertDialogProps {
   open: boolean;
+  topicId: string;
   mode: "add" | "edit";
   presetType: QuizType;
   initial?: QuizQuestionUpsert;
+  allowIncomplete?: boolean;
   onClose: () => void;
   onSubmit: (draft: QuizQuestionUpsert) => void;
 }
@@ -64,6 +67,8 @@ export default function QuestionUpsertDialog({
   mode,
   presetType,
   initial,
+  allowIncomplete = false,
+  topicId,
   onClose,
   onSubmit,
 }: QuestionUpsertDialogProps) {
@@ -71,7 +76,7 @@ export default function QuestionUpsertDialog({
   const [prompt, setPrompt] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [optionTexts, setOptionTexts] = useState<string[]>(["", ""]);
-  const [correctIndex, setCorrectIndex] = useState(0);
+  const [correctIndex, setCorrectIndex] = useState(-1);
   const [explanationOk, setExplanationOk] = useState("");
   const [explanationNg, setExplanationNg] = useState("");
   const [textEn, setTextEn] = useState("");
@@ -99,11 +104,12 @@ export default function QuestionUpsertDialog({
       setCorrectIndex(initial.correctIndex);
       setExplanationOk(initial.explanationOk);
       setExplanationNg(initial.explanationNg);
+      setExplanation(initial.explanation ?? "");
     } else {
       setPrompt("");
       setAudioUrl("");
       setOptionTexts(["", ""]);
-      setCorrectIndex(0);
+      setCorrectIndex(-1);
       setExplanationOk("");
       setExplanationNg("");
     }
@@ -176,29 +182,30 @@ export default function QuestionUpsertDialog({
       const correctPos = entries.findIndex(
         (entry) => entry.index === correctIndex,
       );
-      if (
+      if (!allowIncomplete && (
         prompt.trim().length === 0 ||
         entries.length < 2 ||
         correctPos === -1 ||
         explanationOk.trim().length === 0 ||
         explanationNg.trim().length === 0
-      ) {
+      )) {
         return;
       }
       onSubmit({
         kind: "SITUATIONAL_CHOICE",
         prompt: prompt.trim(),
         audioUrl: audioUrl.trim() ? audioUrl.trim() : null,
-        optionTexts: entries.map((entry) => entry.text),
-        correctIndex: correctPos,
+        optionTexts: allowIncomplete ? optionTexts : entries.map((entry) => entry.text),
+        correctIndex: allowIncomplete ? correctIndex : correctPos,
         explanationOk: explanationOk.trim(),
         explanationNg: explanationNg.trim(),
+        explanation: explanation.trim(),
       });
       return;
     }
     const bank = parseWordBank(wordBankText);
     const correct = correctOption.trim();
-    if (
+    if (!allowIncomplete && (
       textEn.trim().length === 0 ||
       meaningVi.trim().length === 0 ||
       !sentenceWithBlank.includes("___") ||
@@ -206,7 +213,7 @@ export default function QuestionUpsertDialog({
       correct.length === 0 ||
       !bank.includes(correct) ||
       tips.trim().length > TOPIC_QUIZ_TIPS_MAX
-    ) {
+    )) {
       return;
     }
     onSubmit({
@@ -215,7 +222,7 @@ export default function QuestionUpsertDialog({
       meaningVi: meaningVi.trim(),
       audioUrl: audioUrl.trim() ? audioUrl.trim() : null,
       sentenceWithBlank: sentenceWithBlank.trim(),
-      wordBank: bank,
+      wordBank: allowIncomplete ? wordBankText.split(",").map((word) => word.trim()) : bank,
       correctOption: correct,
       explanation: explanation.trim() ? explanation.trim() : null,
       tips: tips.trim(),
@@ -315,6 +322,7 @@ export default function QuestionUpsertDialog({
                   placeholder="https://cdn.engolearn.vn/audio/quiz_sit_01.mp3"
                   className={FIELD_CLASS}
                 />
+                <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioUrl} />
                 <p className="mt-1 text-label-sm text-on-surface-variant">
                   UI-only · để trống vẫn lưu nháp được.
                 </p>
@@ -402,6 +410,7 @@ export default function QuestionUpsertDialog({
                   )
                 )}
               </div>
+              {!allowIncomplete && <>
               <div>
                 <label
                   htmlFor="quiz-explanation-ok"
@@ -453,6 +462,13 @@ export default function QuestionUpsertDialog({
                     Vui lòng nhập giải thích khi học viên trả lời sai.
                   </p>
                 )}
+              </div>
+              </>}
+              <div>
+                <label htmlFor="quiz-explanation" className="mb-1 block text-label-sm font-semibold text-on-surface">
+                  Giải thích chung
+                </label>
+                <textarea id="quiz-explanation" rows={2} value={explanation} onChange={(event) => setExplanation(event.target.value)} className={cn(FIELD_CLASS, "resize-none")} />
               </div>
             </section>
           ) : (
@@ -595,6 +611,7 @@ export default function QuestionUpsertDialog({
                   placeholder="https://cdn.engolearn.vn/audio/quiz_fib_01.mp3"
                   className={FIELD_CLASS}
                 />
+                <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioUrl} />
                 <p className="mt-1 text-label-sm text-on-surface-variant">
                   UI-only · để trống vẫn lưu nháp được.
                 </p>

@@ -6,13 +6,14 @@ import VocabularyCollocationsBox from "./VocabularyCollocationsBox";
 import VocabularyExamplesBlock from "./VocabularyExamplesBlock";
 
 interface VocabularyCardProps {
-  item: TopicVocabularyItem;
+  item: Omit<TopicVocabularyItem, "pos"> & { pos: string };
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
-function posPillClass(pos: TopicVocabularyItem["pos"]): string {
+function posPillClass(pos: string): string {
   switch (pos) {
     case "verb":
       return "bg-secondary-fixed/40 text-on-secondary-fixed";
@@ -28,18 +29,19 @@ export default function VocabularyCard({
   onEdit,
   onDelete,
   onPreviewAudio,
+  readOnly = false,
 }: VocabularyCardProps) {
   return (
     <article className="group rounded-2xl bg-surface-container-lowest p-5 shadow-sm transition-all hover:shadow-md">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 items-start gap-3">
-          <div
+          {!readOnly && <div
             className="mt-1 flex cursor-grab items-center justify-center rounded p-1 text-outline-variant transition-colors hover:bg-surface-container hover:text-primary active:cursor-grabbing"
             title="Kéo thả sắp xếp thứ tự"
             aria-hidden="true"
           >
             <GripVertical className="size-6" />
-          </div>
+          </div>}
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="text-headline-md font-bold tracking-tight text-on-surface">
@@ -66,10 +68,11 @@ export default function VocabularyCard({
               fileName={item.audioFile}
               uploaded={item.audioUploaded}
               onPreview={onPreviewAudio}
+              readOnly={readOnly}
             />
           </div>
         </div>
-        <div className="flex items-center gap-1 self-end lg:self-start">
+        {!readOnly && <div className="flex items-center gap-1 self-end lg:self-start">
           <button
             type="button"
             onClick={() => onEdit(item.id)}
@@ -87,7 +90,7 @@ export default function VocabularyCard({
             <Trash2 className="size-[18px]" aria-hidden="true" />
             Xóa
           </button>
-        </div>
+        </div>}
       </div>
       <div className="mt-4 grid grid-cols-1 gap-4 rounded-2xl bg-surface-container-low/60 p-4 pt-4 lg:ml-10 xl:grid-cols-12">
         <div className="xl:col-span-8">

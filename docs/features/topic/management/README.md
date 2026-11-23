@@ -6,6 +6,17 @@
 > `/admin/topics/:topicId/edit...`. Chỉ const/type còn giữ tên `Create` (xem §4.2).
 > Khi cần sửa / debug / gắn API thật: đọc README này trước, rồi nhảy đúng file con + component.
 
+Luồng quản trị chỉ đọc F05–F08 được mô tả ở [read-only-flow.md](./read-only-flow.md). Luồng này dùng GET contract và không đọc fixture nội dung.
+
+Luồng authoring hiện hành có các bước sau.
+
+1. [Thông tin cơ bản](./01-basic-info-upsert.md) tạo Topic tối thiểu với hai tiêu đề, mở URL chỉnh sửa có ID đã lưu và giữ revision mới khi PATCH.
+2. [Danh sách Item](./02-topic-items-overview.md) tạo, sửa, sắp xếp nháp và thực hiện thao tác ẩn/hiện hoặc xóa khi đủ điều kiện.
+3. [Context](./03-topic-item-context-editor.md), [Vocabulary](./04-vocabulary-manager.md), [Expressions](./05-expressions-editor.md) và [Quiz](./06-quiz-manager.md) dùng chung shell Item và ghi từng section vào bản nháp. Mỗi tài nguyên tải từ API và dùng revision của Topic khi lưu.
+4. Kiểm tra điều kiện xuất bản từ danh sách Item hiển thị lỗi theo trường. Việc publish và sửa bản phát hành qua MINOR/MAJOR thuộc F09/F10.
+
+Xem [ma trận và kiểm chứng](./authoring-verification.md) để biết dữ liệu đã chạy trên MongoDB thật. Các mục 1–8 dưới đây mô tả thiết kế Stitch và luồng cũ trước khi gắn các mutation F06–F08.
+
 ## 1. Sơ đồ luồng
 
 ```
@@ -53,7 +64,7 @@ Route editor áp dụng cho cả 2 mode: `/admin/topics/create/items/:itemId/:se
 | Tạo mới | List header / empty state → [01] | `goToCreate` trong `TopicManagementListView.tsx` → `navigate(ROUTES.ADMIN_TOPIC_CREATE)` |
 | Cập nhật | URL trực tiếp → [01] | `useTopicUpsertContext` đọc `:topicId`; nạp E2 `GET /api/management/topics/{id}` qua service + `useFetch` |
 | Cập nhật từ danh sách | Row click trên mục / "Mở chỉnh sửa (Bước 2)" → [01] update | `onEdit` trong `TopicManagementTable` → `navigate(adminTopicBasicInfoPath(topic.id))` (AC-17) |
-| [01] → [02] | "Tiếp tục" khi `isValid` | `handleContinue` trong `TopicUpsertBasicInfoView` → `adminTopicItemsPath(topicId)` |
+| [01] → [02] | "Tiếp tục" khi `isValid` | Lưu qua API rồi chuyển đến `adminTopicItemsPath(saved.id)` |
 | [02] → [01] | "Quay lại" | `navigate(adminTopicBasicInfoPath(topicId))` |
 | [02] → Editor | "Sửa / Khởi tạo nội dung" | `onEdit`/`onInit` trong `TopicUpsertItemsView` → `topicItemSectionPath(id, "context", topicId)` |
 | Editor Back | Context → [02]; Vocabulary → context; Expressions → vocabulary | explicit navigate (an toàn deep-link), xem V1 mỗi màn |
@@ -68,7 +79,7 @@ Route editor áp dụng cho cả 2 mode: `/admin/topics/create/items/:itemId/:se
 |-----------|------|--------|
 | `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` | [01] default title B1; [02]/[03]/[04] truyền `title` override; mode update truyền `title`/`draftLabel` |
 | `TopicUpsertStepper` | `components/management/upsert/basic-info/TopicUpsertStepper.tsx` | [01] `activeStep=0`; [02]/[03]/[04] `activeStep=1`; dùng chung `TOPIC_CREATE_STEPS` |
-| `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | Mọi màn; `onSaveDraft` hiện **chưa truyền ở đâu** (chờ endpoint); mode update truyền `saveLabel`/`continueLabel` |
+| `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | Mọi màn; `onSaveDraft` gọi lệnh lưu tại form F05; mode update truyền `saveLabel`/`continueLabel` |
 | `TopicItemSectionTabRail` | `components/management/upsert/editor/TopicItemSectionTabRail.tsx` | [03]/[04]/[05]/[06]; 4 tabs `context/vocabulary/expressions/quiz` |
 | `TopicItemEditorBreadcrumb` | `components/management/upsert/editor/TopicItemEditorBreadcrumb.tsx` | [03]/[04] |
 | `ExpressionAudioChip` | `components/management/upsert/editor/expressions/ExpressionAudioChip.tsx` | [05] + [06] (quiz reuse cross-folder, chỉ render khi có audio) |
@@ -172,7 +183,7 @@ Lưu ý quan trọng:
 | Pill trạng thái item hiển thị sai | [02] §4 | `resolveVisual` trong `TopicItemStatusPill.tsx`, không sửa union `publicationStatus` |
 | Click card "Sửa" không vào editor | [02] §5.3 → [03] §2 | `onEdit`/`onInit` trong `TopicUpsertItemsView` phải `navigate(topicItemSectionPath(id, "context", topicId))`, dispatcher `TopicItemEditorView` |
 | Deep-link `/items/:id/:section` trắng trang | Dispatcher + [03] §3-V1 | guard `isTopicItemSectionKey` trong `TopicItemEditorView` (key lạ → context) + lookup `TOPIC_ITEMS_OVERVIEW_MOCK` → `EmptyState` |
-| Mở `/admin/topics/:id/edit` báo "Không tìm thấy chủ đề" | [01] §4 | `getTopicUpsertSnapshot` + `TOPIC_UPSERT_MOCK_SNAPSHOTS` (hiện chỉ `ordering-food`) |
+| Mở `/admin/topics/:id/edit` báo "Không tìm thấy chủ đề" | [01] §4 | GET topic detail qua `useTopicUpsertContext` |
 | Dialog quiz không lưu / đáp án đúng lệch | [06] §4 | `QuestionUpsertDialog` (normalize options + `correctIndex`) + `addQuestionOfType`/`patchQuestion` (gán label A/B… + `isCorrect`) |
 | Layout vỡ mobile | §7 mỗi file | rail `overflow-x-auto`, footer `flex-col-reverse`, bento `xl:grid-cols-12` ([02]), cột `max-w-[940px]` ([03]/[04]/[05]/[06]) |
 | Dialog vocab không lưu / validate lạ | [04] §4 | `VocabularyUpsertDialog` + `addItem`/`patchItem` (chặn `>= TOPIC_VOCAB_MAX`) |
@@ -186,64 +197,9 @@ Lưu ý quan trọng:
 - [ ] Không màu/font/spacing/radius tuỳ tiện — đối chiếu `docs/design-system/*` (primary `#006565`, Hanken Grotesk, Learning Card `rounded-2xl` + padding 20px).
 - [ ] Đổi route/prop/state → cập nhật doc file con tương ứng **trong cùng change** (quy tắc docs-first trong `AGENTS.md`).
 
-## 9. Ghi chú contract BE cho feature này (F05 — đã đóng băng, design r7 / FRC v1.2)
+## 9. Contract khi soạn thảo
 
-> Ghi ngày **2026-10-23**. Nguồn: `.opencode/workflow/artifacts/topic-management-f05-design.md` r7 + FRC `FRC-topic-management-f05` v1.2 (APPROVED). §4 = contract đã đóng băng.
-> **Trạng thái:** FE đang thiết kế wiring (chưa implement code — xem kế hoạch implement của FE lead). Mục đích mục này: FE biết phải bỏ/đổi gì khi gắn API, tránh gửi field không tồn tại (BE trả 400).
-> Đây là **ghi chú cross-project, không phải code FE** — task gắn API ở FE là change riêng.
-
-### 9.1 Base path & endpoint
-
-- Base path: **`/api/management/topics`**. Prefix theo **bề mặt quản trị**, không theo vai trò — cả Admin và Content Manager đều quản trị topic nên không dùng `/admin/...`.
-- Route **UI** của FE (`/admin/topics/...`, `ROUTES.ADMIN_TOPIC_*`) **không đổi**; tầng service của FE map UI navigation → API path.
-- Mọi thành công trả về **đóng gói `ApiResponse<T>{data, timestamp}`**: HTTP body là `{"data": <payload nội dung>, "timestamp": "<ISO>"}`. FE **phải unwrap `.data`** trước khi dùng. E1 POST trả **201** + header `Location` (ngoài body) + body đóng gói. E2/E3/E4 trả **200** + body đóng gói.
-- Lỗi **không** được đóng gói: `{ "code", "message", "fieldErrors"? }` — `VALIDATION_ERROR` → 400, `RESOURCE_NOT_FOUND` → 404. `message` tiếng Anh (dành dev) → FE localize theo `code` + `field`, không dịch `message`.
-
-| Màn | Method + path | Kết quả |
-|---|---|---|
-| Tạo topic | `POST /api/management/topics` | `201` + header `Location` + `ApiResponse<TopicManagementResponse>` |
-| Mở topic để sửa | `GET /api/management/topics/{id}` | `200` `ApiResponse<TopicManagementResponse>` |
-| Lưu thay đổi | `PATCH /api/management/topics/{id}` | `200` `ApiResponse<TopicManagementResponse>` |
-| Danh sách topic | `GET /api/management/topics` | `200` `ApiResponse<TopicManagementListResponse>` |
-
-### 9.2 Field nào **không** có trong API (phải bỏ khỏi payload)
-
-| Field ở FE | Xử lý khi gắn API |
-|---|---|
-| `tags` (`TopicBasicInfoDraft.tags`) | Không gửi — không có luật nghiệp vụ về tag topic. Có thể giữ là state UI hoặc bỏ hẳn input. |
-| `duration` (text "Khoảng 45 phút học…") | Không gửi — thời lượng topic do hệ thống tính, read-only. Render từ `durationMinutes` của response. |
-| `coverName` | Đổi thành `coverUrl` (chỉ là **reference** tới ảnh; upload thật thuộc F08). |
-| `coverMeta` | Không gửi — chuỗi mô tả hiển thị, không có ý nghĩa nghiệp vụ. |
-| `code`, `itemsLabel`, `progress`, `thumbnail` (type `Topic`) | Field mock — format client-side từ `itemCount` / `durationMinutes`. `progress` là tiến độ người học (feature khác). |
-| `inProgress` (`TopicManagementStats`) | Bỏ — BE chỉ trả `total` / `published` / `draft`. |
-
-### 9.3 Field & giá trị trên wire
-
-- Request create/update: `titleEn`*, `titleVi`*, `cefr`?, `category`?, `description`?, `coverUrl`?  (`*` = bắt buộc)
-- `cefr`: `A1 | A2 | B1 | B2` — gửi `C1`/`C2` sẽ bị **400**.
-- `category`: **`DINING | TRAVEL | BUSINESS | DAILY | HEALTH`** → cần **re-key** `TOPIC_CREATE_CATEGORY_OPTIONS` (đang dùng slug `dining-food`, `travel-hospitality`, `business-work`, `daily-social`, `health-emergency`); **label hiển thị giữ nguyên**.
-- `status`: `draft | published` (không có `BETA` trong scope này).
-- Response có thêm 2 field **tính sẵn**: `durationMinutes` (read-only) và `itemCount`.
-- `description` tối đa 250 ký tự (khớp `TOPIC_CREATE_MAX_DESCRIPTION`).
-- **Envelope thành công:** mỗi response là `{"data": <payload trên>, "timestamp": "..."}`. FE unwrap `.data` rồi mới dùng các field ở trên. `id` có trong `data` (cần thiết để `AC-17` mở edit từ list).
-
-### 9.4 Hành vi API cần biết
-
-- **PATCH, không PUT.** Ngữ nghĩa gộp: field **vắng** = giữ nguyên · `null` = **xoá** (chỉ field optional) · `titleEn`/`titleVi` rỗng → **400** (tên luôn phải có).
-- **Field lạ trong body → 400.** Phải bỏ `tags`/`duration`/`coverMeta` trước khi gửi, nếu không request sẽ bị từ chối.
-- **Envelope lỗi**: `{ "code": string, "message": string, "fieldErrors"?: [{ "field": string, "message": string }] }` — `VALIDATION_ERROR` → 400, `RESOURCE_NOT_FOUND` → 404. `message` tiếng Anh (developer-facing) → **FE tự localize theo `code` + `field`**, không dịch `message`. Lỗi thành công thì **đóng gói** `{"data", "timestamp"}` (xem §9.3), lỗi thì **không**.
-- **List**: `?search=&cefr=&category=&status=&page=0&size=20` — `page` **0-based**, `size` 1..100, **không có param sort** (thứ tự cố định `updatedAt DESC`). Filter **AND** với nhau. `search` khớp **substring** không phân biệt hoa thường trên `titleEn` **hoặc** `titleVi`. Giá trị `"ALL"` của bộ lọc **bỏ qua** (không gửi param).
-- **`counters` tính trên toàn bộ topic quản trị, KHÔNG theo filter** (`total` / `published` / `draft`).
-- Item trong list: `id`, `titleEn`, `titleVi`, `cefr`, `category`, `status`, `itemCount`, `updatedAt`.
-- Rỗng vẫn trả **200** với `items: []`; phân biệt "không có kết quả" vs "chưa có topic nào" bằng `counters.total === 0`.
-- Topic ở trạng thái nháp **không bao giờ** xuất hiện ở bề mặt người học (`/api/topics` — F01, chưa có).
-
-### 9.5 Validate của FE cần nới theo luật nháp
-
-- `useTopicBasicInfoForm.isValid` hiện yêu cầu `titleEn` + `titleVi` + `category` + `duration` + `description`. Theo luật nghiệp vụ, **nháp chỉ cần `titleEn` + `titleVi`**; `category` / `description` / `coverUrl` / `cefr` để trống ở nháp và **bắt buộc khi publish** (F09 — ngoài scope contract này). → Nới `isValid` về 2 field tên.
-- Input `duration` trong `TopicGeneralInfoCard` → chuyển thành **hiển thị read-only** lấy từ `durationMinutes`.
-- Input `coverName` / `coverMeta` → `coverUrl` (upload thật để F08).
-
-### 9.6 Ngoài scope của contract này
-
-Publish + publish gate (F09), quản lý topic item (F06), tài nguyên học tập — bối cảnh / từ vựng / mẫu câu / quiz (F07), MINOR–MAJOR + gỡ publish (F10), chặn ghi đè khi phiên khác đã sửa (F08), upload ảnh (F08), danh sách topic cho người học (UC01), và **auth / phân quyền** (BE chưa có security; sẽ gắn sau mà không đổi contract này).
+- F05 dùng GET detail, POST tạo nháp và PATCH chỉnh sửa từ `topicManagementService`.
+- Body thành công có `data` và `timestamp`. POST trả thêm header `Location`.
+- PATCH gửi `revision` và các trường đã thay đổi. Giá trị `null` xóa trường tùy chọn. Tags lưu vào data model hiện hành. Duration, trạng thái và version pointers do Backend quản lý.
+- HTTP 409 yêu cầu tải lại và đối chiếu bản mới trước khi tiếp tục. Xem [F05](./01-basic-info-upsert.md) và [báo cáo kiểm chứng](./authoring-verification.md).
