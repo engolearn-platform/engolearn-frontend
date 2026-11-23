@@ -7,7 +7,7 @@ import BrandImage from "@shared/components/BrandImage";
 export default function ManagementSidebar() {
   const { isAdmin } = useAuth();
   return (
-    <aside className="z-10 hidden h-full w-72 shrink-0 flex-col justify-between bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] lg:flex">
+    <aside className="z-10 hidden h-full w-72 shrink-0 flex-col justify-between overflow-y-auto bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] lg:flex">
       <div className="flex flex-col">
         <div className="flex h-16 items-center gap-2 px-5">
           <BrandImage className="h-8 w-auto max-w-[9rem] object-contain" />

@@ -1,5 +1,7 @@
 # Quản trị Placement
 
+Admin đăng nhập từ trang chung vào Bộ đề Placement; các đường dẫn quay lại sau đăng nhập vẫn được giữ. Dùng sidebar hoặc lựa chọn Chuyển mục quản trị trên màn hình nhỏ để đổi giữa Placement và Grammar.
+
 Admin Placement dùng phiên đăng nhập hiện có để gọi API `/api/v1/placement/admin`.
 API lưu câu hỏi, bộ đề và lượt làm trong MongoDB theo cấu hình của BE. Dữ liệu
 xem trước từng lưu trong trình duyệt nằm ngoài luồng quản trị hiện tại.
