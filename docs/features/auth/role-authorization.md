@@ -22,7 +22,7 @@ export const exampleRoutes: RouteObject[] = [
 
 For an authenticated-only route, set `Component: ProtectedRoute` and provide the child routes as in the example.
 
-The guard shows pending UI while the session loads and a retry action if bootstrap fails. Guests go to login with the local route, query, and fragment preserved for the existing return-to validation. An authenticated user without the listed role or an inherited role sees the 403 view. Authorized callers render the child route through the outlet.
+The guard shows pending UI while the session loads and a retry action if bootstrap fails. Guests go to login with the local route, query, and fragment preserved for [role-aware post-login routing](README.md#routes-and-behavior). An authenticated user without the listed role or an inherited role sees the 403 view. Authorized callers render the child route through the outlet.
 
 ## Share a screen across roles
 

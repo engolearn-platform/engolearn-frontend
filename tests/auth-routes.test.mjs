@@ -25,7 +25,7 @@ before(async () => {
       name: "auth-test-router",
       resolveId: id => id === routerModule ? id : undefined,
       load: id => id === routerModule
-        ? 'export { createMemoryRouter, Outlet, RouterProvider } from "react-router";'
+        ? 'export { createMemoryRouter, matchRoutes, Outlet, RouterProvider } from "react-router";'
         : undefined,
     }],
   });
@@ -50,7 +50,9 @@ after(async () => {
 const identity = role => Response.json({ data: { id: "account-1", email: "learner@example.test", role } });
 const expired = () => Response.json({ detail: "Authentication is required" }, { status: 401 });
 
-async function mount(t, { role = null, required = ["CONTENT_MANAGER"], initial = directUrl, legacy = false } = {}) {
+async function mount(t, {
+  role = null, loginRole = "USER", required = ["CONTENT_MANAGER"], initial = directUrl, legacy = false,
+} = {}) {
   const { AuthProvider, useAuth, ProtectedRoute, HasRole, AuthGuard, GuestOnlyGuard,
     createMemoryRouter, Outlet, RouterProvider } = components;
   let accountRole = role;
@@ -73,7 +75,7 @@ async function mount(t, { role = null, required = ["CONTENT_MANAGER"], initial =
         accessExpired = false;
         return new Response(null, { status: 204 });
       case "/api/v1/auth/login":
-        accountRole = "ADMIN";
+        accountRole = loginRole;
         return identity(accountRole);
       case "/api/v1/auth/logout":
         accountRole = null;
@@ -97,6 +99,7 @@ async function mount(t, { role = null, required = ["CONTENT_MANAGER"], initial =
     Component: Shell,
     children: [
       { path: "/", element: h("h1", null, "Home") },
+      { path: "/admin/topics", element: h("h1", null, "Manage Topics") },
       { path: "/optional", element: roleContent() },
       {
         element: legacy ? h(AuthGuard) : h(ProtectedRoute, required === null ? {} : { allowedRoles: required }),
@@ -153,8 +156,8 @@ test("direct protected URL waits for bootstrap, then retries a session error", a
   assert.match(app.container.textContent, /Restricted lesson/);
 });
 
-test("guest login returns to the nested route with its query and fragment", async t => {
-  const app = await mount(t);
+test("learner login returns to the nested route with its query and fragment", async t => {
+  const app = await mount(t, { required: null });
   await app.settle();
   assert.equal(app.router.state.location.pathname, "/login");
   assert.equal(app.router.state.historyAction, "REPLACE");
@@ -163,6 +166,51 @@ test("guest login returns to the nested route with its query and fragment", asyn
   const { pathname, search, hash } = app.router.state.location;
   assert.equal(pathname + search + hash, directUrl);
   assert.match(app.container.textContent, /Restricted lesson/);
+});
+
+test("ADMIN and CONTENT_MANAGER sign in to Topic management", async t => {
+  for (const role of ["ADMIN", "CONTENT_MANAGER"]) {
+    await t.test(role, async child => {
+      const app = await mount(child, { initial: "/login", loginRole: role });
+      await app.settle();
+      assert.match(app.container.textContent, /Sign in/);
+      await app.login();
+      assert.equal(app.router.state.location.pathname, "/admin/topics");
+      assert.match(app.container.textContent, /Manage Topics/);
+    });
+  }
+});
+
+test("management login selects management over a learner return-to", async t => {
+  const app = await mount(t, { loginRole: "CONTENT_MANAGER" });
+  await app.settle();
+  await app.login();
+  assert.equal(app.router.state.location.pathname, "/admin/topics");
+});
+
+test("management login retains a safe Topic management return-to", async t => {
+  const initial = { pathname: "/login", state: { from: { pathname: "/admin/topics", search: "?tab=drafts" } } };
+  const app = await mount(t, { initial, loginRole: "ADMIN" });
+  await app.settle();
+  await app.login();
+  assert.equal(app.router.state.location.pathname + app.router.state.location.search, "/admin/topics?tab=drafts");
+});
+
+test("content manager login does not land in the separate subscription workspace", async t => {
+  const initial = { pathname: "/login", state: { from: { pathname: "/admin/subscription/plans" } } };
+  const app = await mount(t, { initial, loginRole: "CONTENT_MANAGER" });
+  await app.settle();
+  await app.login();
+  assert.equal(app.router.state.location.pathname, "/admin/topics");
+});
+
+test("the management landing URL mounts the existing ManagementLayout in the app router", async () => {
+  const [{ appRoutes }, { default: ManagementLayout }] = await Promise.all([
+    vite.ssrLoadModule("/src/router.tsx"),
+    vite.ssrLoadModule("/src/core/layouts/ManagementLayout.tsx"),
+  ]);
+  const matches = components.matchRoutes(appRoutes, "/admin/topics");
+  assert.ok(matches?.some(({ route }) => route.Component === ManagementLayout));
 });
 
 test("an insufficient role shows a 403 with local navigation", async t => {
