@@ -23,6 +23,7 @@ export default function ManagementSidebar() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-4 rounded-xl px-5 py-2 text-label-lg transition-all",
