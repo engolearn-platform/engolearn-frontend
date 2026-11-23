@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import { EmptyState, Loading } from "@shared/components";
 import { useFetch } from "@shared/hooks";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -20,9 +21,9 @@ import type { PlacementClaimGate } from "@features/placement/types/placement-cla
 export default function PlacementClaimGateView() {
   const { attemptId = "" } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading, isUser, identityGeneration } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, identityGeneration } = useAuth();
   const location = useLocation();
-  const learner = isAuthenticated && isUser();
+  const learner = usePlacementLearnerAccess();
   const fetchClaimGate = useCallback(
     (signal: AbortSignal) => getPlacementClaimStatus(attemptId, signal),
     [attemptId],
@@ -85,7 +86,7 @@ export default function PlacementClaimGateView() {
   }
 
   if (isAuthenticated && !learner) {
-    return <div className="mx-auto max-w-[520px] px-5 py-16"><EmptyState title="Không có quyền làm Placement" description="Chỉ tài khoản User được nhận kết quả Placement." /></div>;
+    return <div className="mx-auto max-w-[520px] px-5 py-16"><EmptyState title="Không có quyền làm Placement" description="Tài khoản hiện tại không có quyền nhận kết quả Placement." /></div>;
   }
 
   if (activeAttemptConflict) {

@@ -1,4 +1,4 @@
-import type { GrammarBlock, GrammarLevel, GrammarQuestionType } from "./grammar-admin.types";
+import type { GrammarBlock, GrammarLevel, GrammarQuestionType } from "./grammar-content.types";
 
 export type GrammarStudyStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
 

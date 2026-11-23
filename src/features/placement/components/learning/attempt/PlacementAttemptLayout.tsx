@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import { EmptyState, Loading } from "@shared/components";
 import { GraduationCap } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -64,10 +65,11 @@ function AttemptHeader({
 
 function PlacementAttemptSession() {
   const { attemptId = "" } = useParams();
-  const { isAuthenticated, isLoading: authLoading, isUser } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const learner = usePlacementLearnerAccess();
   const navigate = useNavigate();
   const autoSubmitAttemptedRef = useRef(false);
-  const allowed = !isAuthenticated || isUser();
+  const allowed = !isAuthenticated || learner;
   const attempt = usePlacementAttempt(attemptId, !authLoading && allowed);
   const {
     data,

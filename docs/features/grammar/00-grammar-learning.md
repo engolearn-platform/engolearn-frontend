@@ -1,3 +1,7 @@
+> Quy tắc mở cấp cập nhật 23/11/2026: hoàn thành tối thiểu70% chủ đề đủ điều kiện của cấp trước, làm tròn lên bằng số nguyên. Chủ đề phải hoàn thành đủ tất cả bài Published; mỗi bài vẫn3/5. Giữ mọi unlock đã lưu và quyền từ profile; không tự nâng level User. Xem [thiết kế và kiểm chứng](09-unlock-70-review.md).
+
+> Cập nhật tích hợp level 23/11/2026: Grammar đọc UserLevelLookup, mở cấp đến level hồ sơ (C1/C2 giới hạn B2), không tự hoàn thành bài hoặc nâng level User. MVP dùng cefr_level chỉ tăng; hai trường latest/max riêng vẫn hoãn. Ghi chú mặc định A1/hoãn toàn bộ tích hợp bên dưới là lịch sử. Xem tài liệu grammar-placement-level-integration.md ở BE và 06-placement-level-integration.md ở FE.
+
 # Grammar Learning
 
 **Mục tiêu.** Hoàn thành GRM-UC-001 đến GRM-UC-004 từ roadmap, chi tiết chủ đề và lý thuyết đến Practice và kết quả.
@@ -71,3 +75,7 @@ Lưu ý khi chạy local: nội dung Nháp không xuất hiện ở learner. Ng�
 ## Team dev integration — 23/11/2026
 
 See [shared authorization and audio integration](04-team-dev-integration.md) for current route guards, ADMIN WAV upload, real playback errors and verification. Existing team layouts are retained.
+
+## Hỗ trợ học và điều hướng
+
+Lời nhắc nhẹ cạnh nút luyện tập; review có đường về danh sách bài, bảng có nút Kiểm tra. Không thêm Ready toggle hoặc chặn theo thao tác đọc. Xem [thiết kế điều hướng](07-learning-management-navigation.md).

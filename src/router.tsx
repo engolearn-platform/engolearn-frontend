@@ -2,7 +2,7 @@ import { AssessmentRoutes } from "@features/assessment/routes";
 import { PostRoutes } from "@features/Post/routes";
 import { useRoutes } from "react-router";
 import { ProducsRoute } from "@/features/Product/routes";
-import { GrammarAdminRoutes, GrammarRoutes } from "@features/grammar/routes";
+import { GrammarManagementRoutes, GrammarRoutes } from "@features/grammar/routes";
 import {
   TopicCatalogRoutes,
   TopicDetailRoutes,
@@ -54,7 +54,7 @@ export const appRoutes = [
   ...TopicStandaloneRoutes,
   ...TopicManagementRoutes,
   ...SubscriptionManagementRoutes,
-  ...GrammarAdminRoutes,
+  ...GrammarManagementRoutes,
   ...PlacementRoutes,
   ...PlacementManagementRoutes,
 ];

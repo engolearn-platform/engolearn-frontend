@@ -1,3 +1,5 @@
+import { HasRole } from "@features/auth/contract";
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import PlacementChecklist from "@features/placement/components/learning/PlacementChecklist";
 import PlacementGuestNotice from "@features/placement/components/learning/PlacementGuestNotice";
 import PlacementInfoGrid from "@features/placement/components/learning/PlacementInfoGrid";
@@ -16,11 +18,12 @@ import { useNavigate } from "react-router";
 
 export default function PlacementStartView() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading, isUser } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const learner = usePlacementLearnerAccess();
   const { start, starting, error } = usePlacementStart();
 
   const handleStart = async () => {
-    if (isLoading || (isAuthenticated && !isUser())) return;
+    if (isLoading || (isAuthenticated && !learner)) return;
     const attempt = await start();
     if (!attempt) return;
     if (attempt.status === "IN_PROGRESS") {
@@ -36,8 +39,8 @@ export default function PlacementStartView() {
 
   if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loading /></div>;
 
-  if (isAuthenticated && isUser()) {
-    return <PlacementUserStartContent onStart={handleStart} starting={starting} error={error} />;
+  if (learner) {
+    return <HasRole allowedRoles={["USER"]}><PlacementUserStartContent onStart={handleStart} starting={starting} error={error} /></HasRole>;
   }
 
   return (
@@ -71,9 +74,9 @@ export default function PlacementStartView() {
           <PlacementGuestNotice message="Bạn chưa cần đăng nhập. Hoàn thành bài kiểm tra trước, sau đó đăng nhập hoặc tạo tài khoản để xem kết quả." />
         ) : null}
 
-        {isAuthenticated && !isUser() ? (
+        {isAuthenticated && !learner ? (
           <p role="status" className="text-label-lg text-on-surface-variant">
-            Chỉ tài khoản User được làm bài đánh giá đầu vào.
+            Tài khoản hiện tại không có quyền làm bài đánh giá đầu vào.
           </p>
         ) : (
           <PlacementStartCta

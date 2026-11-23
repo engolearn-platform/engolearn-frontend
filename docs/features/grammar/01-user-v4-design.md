@@ -9,7 +9,7 @@ Ngày 22/11/2026. Người dùng chốt phương án giữ nghiệp vụ hiện 
 
 ## Màn và dữ liệu
 
-- Roadmap `/grammar`: bốn thẻ cấp có trạng thái chọn/khóa/tiến độ; mọi Topic PUBLISHED của cấp mở đều chọn được; tách nhóm chưa hoàn thành/đã hoàn thành mà giữ order trong từng nhóm. Không gợi ý sai chủ đề tiếp theo, không thẻ Tiếp tục học. Dùng số lượng API.
+- Roadmap `/grammar`: bốn thẻ cấp có trạng thái chọn/khóa/tiến độ; mọi Topic PUBLISHED của cấp mở đều chọn được; tách nhóm chưa hoàn thành/đã hoàn thành mà giữ order trong từng nhóm. Không gợi ý sai chủ đề tiếp theo, không thẻ Tiếp tục học. Dùng số lượng API. Nhãn liên kết trên từng card: IN_PROGRESS → “Tiếp tục học”, NOT_STARTED → “Xem chủ đề”, COMPLETED → “Ôn lại chủ đề”. Tên truy cập của liên kết khớp nhãn và tên chủ đề. Tất cả vẫn dẫn vào danh sách bài của đúng chủ đề, không chọn bài theo điểm hoặc tự tạo thẻ tiếp tục riêng.
 - Topic `/grammar/topics/:topicId`: card tiến độ, tên song ngữ, lesson rows gồm mục tiêu, trạng thái, điểm cao nhất và nhãn cập nhật. Giữ khóa tuần tự và trạng thái rỗng/lỗi.
 - Theory đường dẫn Lesson hiện có: các khối dùng details/summary, đọc theo thứ tự nhưng mở tự do; công thức còn thấy khi thu gọn; ví dụ bấm hiện nghĩa. Không theo dõi Đã hiểu, không lưu vị trí đọc. Giữ useGrammarSeen chỉ ghi nhận khi thật sự hiển thị; nút Practice sau khối cuối.
 - Practice route/session hiện có: thanh năm bước có ký hiệu đúng/sai; FIB nhập vào ____ và Enter; MCQ gửi option ID; phản hồi giữ câu vừa nộp đến khi bấm tiếp; Dialog xem lại lời giải/quy tắc dùng thành phần chung. Không lộ đáp án chưa nộp, không gán cứng giải thích mẫu. Thông báo phiên 30 phút đúng Practice.

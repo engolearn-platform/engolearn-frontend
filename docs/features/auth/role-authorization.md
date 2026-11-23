@@ -51,3 +51,7 @@ Content Managers and Admins see **Edit Topic**. Admins also see **Admin Settings
 2. Enter the protected URL directly as a guest. Sign in and confirm the return destination includes the original query and fragment. Reload the page and exercise the pending, retry, and forbidden states.
 3. Compare the same page across the applicable roles. Confirm that a successful refresh reflecting a role change and a completed logout remove any controls or pages the caller can no longer access.
 4. Verify the protected operation against the actual backend with the relevant roles. Run `npm run build` and `npm run lint`.
+
+## Capability checks before data requests
+
+The public contract also exports the existing pure `hasRequiredRole(currentRole, allowedRoles)` policy. Placement uses it through its feature hook to gate learner API requests and select the proper shell; it does not define another hierarchy. Continue using ProtectedRoute for protected routes and HasRole for role-dependent controls. Global useAuth.isUser retains its exact account-role meaning.

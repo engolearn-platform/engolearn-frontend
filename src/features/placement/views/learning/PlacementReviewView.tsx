@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import PlacementReviewPageNav from "@features/placement/components/learning/review/PlacementReviewPageNav";
 import PlacementReviewQuestionCard from "@features/placement/components/learning/review/PlacementReviewQuestionCard";
 import PlacementReviewQuestionGrid from "@features/placement/components/learning/review/PlacementReviewQuestionGrid";
@@ -14,8 +15,8 @@ import { Link, useParams } from "react-router";
 
 export default function PlacementReviewView() {
   const { attemptId = "" } = useParams();
-  const { isAuthenticated, isLoading: authLoading, isUser } = useAuth();
-  const learner = isAuthenticated && isUser();
+  const { isLoading: authLoading } = useAuth();
+  const learner = usePlacementLearnerAccess();
   const fetchReview = useCallback(
     (signal: AbortSignal) => getPlacementReview(attemptId, signal),
     [attemptId],

@@ -109,14 +109,14 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
 
   const setAnswer = useCallback(
     (questionId: string, optionId: string) => {
-      if (isExpired) return;
+      if (isExpired || submittingRef.current || submitResult || data?.status !== "IN_PROGRESS") return;
 
       setAnswers((previous) => ({
         ...previous,
         [questionId]: previous[questionId] === optionId ? null : optionId,
       }));
     },
-    [isExpired],
+    [isExpired, submitResult, data?.status],
   );
 
   /** Waits for pending saves, retries unsaved answers once, then reports. */

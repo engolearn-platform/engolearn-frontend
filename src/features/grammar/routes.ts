@@ -1,11 +1,11 @@
 import type { RouteObject } from "react-router";
 import { ROUTES } from "@shared/constants";
-import GrammarLearnerGuard from "@features/grammar/components/GrammarLearnerGuard";
-import GrammarRoadmapView from "@features/grammar/views/GrammarRoadmapView";
-import GrammarTopicView from "@features/grammar/views/GrammarTopicView";
-import GrammarTopicSummaryView from "@features/grammar/views/GrammarTopicSummaryView";
-import GrammarTheoryView from "@features/grammar/views/GrammarTheoryView";
-import GrammarPracticeView from "@features/grammar/views/GrammarPracticeView";
+import GrammarLearnerGuard from "@features/grammar/components/learning/GrammarLearnerGuard";
+import GrammarRoadmapView from "@features/grammar/views/learning/GrammarRoadmapView";
+import GrammarTopicView from "@features/grammar/views/learning/GrammarTopicView";
+import GrammarTopicSummaryView from "@features/grammar/views/learning/GrammarTopicSummaryView";
+import GrammarTheoryView from "@features/grammar/views/learning/GrammarTheoryView";
+import GrammarPracticeView from "@features/grammar/views/learning/GrammarPracticeView";
 
 export const GrammarRoutes: RouteObject[] = [
   {
@@ -24,4 +24,4 @@ export const GrammarRoutes: RouteObject[] = [
   },
 ];
 
-export { GrammarAdminRoutes } from "./admin.routes";
+export { GrammarManagementRoutes } from "@features/grammar/management.routes";

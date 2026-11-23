@@ -16,7 +16,7 @@
 | 09. Kiểm tra bài học | `/admin/grammar/:topicId/lessons/:lessonId/review` | `GrammarLessonReviewView` |
 | 10. Kiểm tra và xuất bản | `/admin/grammar/:topicId/publish` | `GrammarTopicPublishView` |
 
-Màn 01–04 được xuất qua `views/admin/GrammarTopicViews.tsx`, màn 05–10 qua `views/admin/GrammarAuthoringViews.tsx`. Stepper chủ đề dẫn sang danh sách bài học và bước kiểm tra xuất bản. Khi có mã bài học, stepper bài học dẫn sang Nội dung, Luyện tập và Kiểm tra & hoàn thiện.
+Màn 01–04 được xuất qua `views/management/GrammarTopicViews.tsx`, màn 05–10 qua `views/management/GrammarAuthoringViews.tsx`. Stepper chủ đề dẫn sang danh sách bài học và bước kiểm tra xuất bản. Khi có mã bài học, stepper bài học dẫn sang Nội dung, Luyện tập và Kiểm tra & hoàn thiện.
 
 ## Đối chiếu thiết kế
 
@@ -30,7 +30,7 @@ Màn 01–04 được xuất qua `views/admin/GrammarTopicViews.tsx`, màn 05–
 
 ## Dữ liệu và thao tác
 
-- `grammarAdmin` gọi `/api/v1/grammar/admin/topics`. Máy chủ xử lý tìm theo tên Việt, tên Anh hoặc mã, lọc theo CEFR và trạng thái, phân trang, đếm thống kê và trả tiến độ mỗi chủ đề. Xuất CSV lấy toàn bộ kết quả khớp bộ lọc hiện tại.
+- `grammarManagement` gọi `/api/v1/grammar/admin/topics`. Máy chủ xử lý tìm theo tên Việt, tên Anh hoặc mã, lọc theo CEFR và trạng thái, phân trang, đếm thống kê và trả tiến độ mỗi chủ đề. Xuất CSV lấy toàn bộ kết quả khớp bộ lọc hiện tại.
 - Biểu mẫu chủ đề lưu tên Việt, tên Anh, trình độ, mô tả và vị trí lộ trình. Tên giới hạn 120 ký tự mỗi trường. Mô tả nháp từ 1 đến 250 ký tự, giới hạn tối thiểu là 80 ký tự ở chủ đề đã xuất bản và trong bước kiểm tra xuất bản. Trình độ được khóa sau lần xuất bản đầu tiên. Mã chủ đề chỉ đọc và có nút sao chép.
 - Danh sách bài học dùng dữ liệu từ chi tiết chủ đề, hiển thị thứ tự, tên song ngữ, mục tiêu, số và loại khối, số câu luyện tập và tình trạng bài học. Đổi thứ tự bằng kéo thả, phím mũi tên trên tay nắm hoặc lệnh Di chuyển lên và Di chuyển xuống. Giao diện làm mới danh sách sau khi máy chủ xác nhận. Chủ đề có thể có tối đa 10 bài đang hoạt động.
 - Biểu mẫu bài học lưu tên song ngữ (tối đa 150 ký tự mỗi trường), mục tiêu (tối đa 300 ký tự) và thẻ. Khi thêm bài, có thể chọn vị trí hoặc để hệ thống đặt ở cuối. Mã bài chỉ đọc. Bài đã xuất bản có thay đổi đang soạn hiển thị nhãn “Có thay đổi chưa xuất bản”.
@@ -41,3 +41,7 @@ Màn 01–04 được xuất qua `views/admin/GrammarTopicViews.tsx`, màn 05–
 
 - Bảng hỗ trợ cuộn ngang bằng bàn phím. Form xếp thành một cột khi màn hình hẹp và hai cột rộng khi đủ chỗ cho bảng kiểm.
 - Có trạng thái tải, rỗng, lỗi và phản hồi thao tác. Trường bắt buộc có kiểm tra đầu vào. Lỗi tại trường từ máy chủ được đặt cạnh trường liên quan. Trạng thái tự lưu có thông báo cho trình đọc màn hình.
+
+## Hỗ trợ học và điều hướng
+
+Lời nhắc nhẹ cạnh nút luyện tập; review có đường về danh sách bài, bảng có nút Kiểm tra. Không thêm Ready toggle hoặc chặn theo thao tác đọc. Xem [thiết kế điều hướng](../07-learning-management-navigation.md).

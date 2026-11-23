@@ -1,3 +1,5 @@
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # Learner — Giới thiệu bài kiểm tra (P01 Guest / User)
 
 > Tài liệu workflow cho màn giới thiệu Placement Test — điểm vào của luồng

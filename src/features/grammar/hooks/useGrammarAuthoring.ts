@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { useFetch } from "@shared/hooks/useFetch";
-import { grammarPaths } from "@features/grammar/constants/admin-paths";
-import { grammarAdmin } from "@features/grammar/services/grammar-admin.service";
-import type { GrammarLesson, GrammarLessonInput, GrammarTopic } from "@features/grammar/types/grammar-admin.types";
+import { grammarPaths } from "@features/grammar/constants/management-paths";
+import { grammarManagement } from "@features/grammar/services/grammar-management.service";
+import type { GrammarLesson, GrammarLessonInput, GrammarTopic } from "@features/grammar/types/grammar-content.types";
 
 export type LessonContext = { topic: GrammarTopic; lesson: GrammarLesson; refresh?: () => void };
 export type AuthoringStep = { label: string; to: string };
@@ -19,8 +19,8 @@ export function lessonSteps(topicId: string, lessonId: string): AuthoringStep[] 
 export function useLessonAuthoring(topicId: string, lessonId: string) {
   return useFetch(useCallback(async (signal: AbortSignal): Promise<LessonContext> => {
     const [topic, lesson] = await Promise.all([
-      grammarAdmin.getTopic(topicId, signal),
-      grammarAdmin.getLesson(topicId, lessonId, signal),
+      grammarManagement.getTopic(topicId, signal),
+      grammarManagement.getLesson(topicId, lessonId, signal),
     ]);
     return { topic, lesson };
   }, [topicId, lessonId]));
@@ -64,7 +64,7 @@ export function savedAtLabel(auto = false) {
 }
 
 export function saveLessonContent(lesson: GrammarLesson, topicId: string, changes: Partial<Pick<GrammarLessonInput, "blocks" | "questions">>) {
-  return grammarAdmin.saveLesson(topicId, lesson.id, {
+  return grammarManagement.saveLesson(topicId, lesson.id, {
     titleVi: lesson.titleVi,
     titleEn: lesson.titleEn,
     objective: lesson.objective,

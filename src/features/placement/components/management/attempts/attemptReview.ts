@@ -1,7 +1,7 @@
 import type { ManagementAttempt, ManagementQuestion } from "@features/placement/types/placement-management.types";
 
 export type AnswerResult = "correct" | "wrong" | "blank";
-export const ANSWER_RESULT_LABEL: Record<AnswerResult, string> = { correct: "Đúng", wrong: "Sai", blank: "Bỏ trống" };
+export const ANSWER_RESULT_LABEL: Record<AnswerResult, string> = { correct: "Đúng", wrong: "Sai", blank: "Sai" };
 export function isFinalAttempt(attempt: ManagementAttempt) {
   return attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED";
 }

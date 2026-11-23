@@ -144,7 +144,7 @@ export default function PlacementAttemptView() {
                 key={question.id}
                 question={question}
                 selectedOptionId={answers[question.id] ?? null}
-                disabled={isExpired}
+                disabled={isExpired || submitting}
                 onSelect={(optionId) => setAnswer(question.id, optionId)}
               />
             ))}

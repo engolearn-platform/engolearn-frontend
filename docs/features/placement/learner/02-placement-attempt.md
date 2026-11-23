@@ -1,3 +1,9 @@
+> Khóa đáp án khi nộp (23/11/2026): từ lúc bắt đầu flush/autosave đến khi submit kết thúc, thẻ câu hỏi disabled và setAnswer chặn đồng bộ bằng submittingRef. Sau thành công không nhận thay đổi nữa; nếu lỗi khi vẫn IN_PROGRESS thì mở lại để sửa/thử lại. Test placement-submit-lock.integration.test.mjs giữ chậm request thật, không giả lập response BE; đã tái hiện RED trước sửa.
+
+> Nhãn câu hỏi (23/11/2026): Guest và User dùng chung PlacementQuestionCard. Header chỉ hiện số câu và Reading/Listening theo section; không hiển thị question.label (nhãn biên soạn như “A1 listening 8 — compact”). Giữ label trong contract/dữ liệu quản trị, không sửa schema hay nội dung câu hỏi. Cách kiểm tra: mở lượt làm Guest/User thật qua FE proxy, xem câu ở cả hai kỹ năng; header không có mã/level/nhãn biên soạn.
+
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # 02 — Làm bài Placement (`/placement/attempts/:attemptId`)
 
 > Màn **P02-READING / P02-LISTENING** của Placement Test phía người học.

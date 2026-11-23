@@ -64,7 +64,7 @@ export default function PlacementAttemptDetailView() {
       {final && attempt.snapshot.length > 0 && <><ManagementCard><h2 className="text-title-md font-semibold">Kết quả theo trình độ</h2><div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">{MANAGEMENT_LEVELS.map(level => {
         const questions = attempt.snapshot.filter(question => question.level === level);
         return <div key={level} className="rounded-xl border border-outline-variant p-4"><p className="text-label-lg text-on-surface-variant">{level}</p><p className="mt-2 text-title-lg font-semibold">{countAnswers(questions, attempt.answers).correct}/{questions.length}</p></div>;
-      })}</div><p className="mt-4 text-label-sm text-on-surface-variant">{counts.correct} đúng · {counts.wrong} sai · {counts.blank} bỏ trống · Tổng {total} câu.</p></ManagementCard><PlacementAttemptReview key={attempt.id} attempt={attempt} /></>}
+      })}</div><p className="mt-4 text-label-sm text-on-surface-variant">{counts.correct} đúng · {counts.wrong + counts.blank} sai · Tổng {total} câu.</p></ManagementCard><PlacementAttemptReview key={attempt.id} attempt={attempt} /></>}
     </div>
   </>;
 }

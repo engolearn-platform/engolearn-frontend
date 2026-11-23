@@ -53,24 +53,24 @@ OQ tích hợp current_level/max_achieved_level từ hồ sơ/Placement là gi�
 
 FE (14 file, toàn bộ trong `src/features/grammar/`):
 
-- `src/features/grammar/components/CefrTabs.tsx`
-- `src/features/grammar/views/GrammarRoadmapView.tsx`
-- `src/features/grammar/components/GrammarTheoryBlock.tsx`
-- `src/features/grammar/components/GrammarPracticeSteps.tsx`
-- `src/features/grammar/components/GrammarPracticeQuestion.tsx`
-- `src/features/grammar/components/GrammarPracticeResultCard.tsx`
-- `src/features/grammar/views/GrammarTopicView.tsx`
-- `src/features/grammar/views/GrammarTopicSummaryView.tsx`
-- `src/features/grammar/views/GrammarTheoryView.tsx`
+- `src/features/grammar/components/learning/CefrTabs.tsx`
+- `src/features/grammar/views/learning/GrammarRoadmapView.tsx`
+- `src/features/grammar/components/learning/GrammarTheoryBlock.tsx`
+- `src/features/grammar/components/learning/GrammarPracticeSteps.tsx`
+- `src/features/grammar/components/learning/GrammarPracticeQuestion.tsx`
+- `src/features/grammar/components/learning/GrammarPracticeResultCard.tsx`
+- `src/features/grammar/views/learning/GrammarTopicView.tsx`
+- `src/features/grammar/views/learning/GrammarTopicSummaryView.tsx`
+- `src/features/grammar/views/learning/GrammarTheoryView.tsx`
 - `src/features/grammar/types/grammar.types.ts`
 - `src/features/grammar/services/grammar-learning.service.ts`
 - `src/features/grammar/hooks/useGrammarLearning.ts`
 - `src/features/grammar/routes.ts`
-- `src/features/grammar/views/GrammarPracticeView.tsx`
+- `src/features/grammar/views/learning/GrammarPracticeView.tsx`
 
 BE (2 file, toàn bộ trong package Grammar):
 
-- `src/main/java/fit/iuh/engolearn/grammar/dto/GrammarLearnerResponses.java`
+- `src/main/java/fit/iuh/engolearn/grammar/dto/response/ (individual Grammar*Response records)`
 - `src/main/java/fit/iuh/engolearn/grammar/mapper/GrammarPracticeMapper.java`
 
 Tài liệu FE: `00-grammar-learning.md`, `01-user-v4-design.md`, `02-user-v4-result.md`, `docs/superpowers/plans/2026-11-22-grammar-user-v4.md`. Tài liệu BE: `grammar-v2-runtime.md`, `grammar-user-v4-result.md` và ghi chú trạng thái mới trong `grammar-curriculum-load-result.md`.
