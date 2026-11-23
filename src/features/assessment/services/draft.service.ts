@@ -1,20 +1,52 @@
 import { httpService, type ApiEnvelope } from "@shared/services/http.service";
-import type { AssessmentDraft, DraftSummary } from "@features/assessment/types/draft";
+import type { Media } from "@features/assessment/types/assessment.types";
+import type { AssessmentDraft, DraftSummary, ManagedAssessmentPaper } from "@features/assessment/types/draft";
 
-const endpoint = "/api/v1/assessment/admin/drafts";
+const admin = "/api/v1/assessment/admin";
+const endpoint = admin + "/drafts";
+const draftPath = (series: string) => endpoint + "/" + encodeURIComponent(series);
+
 export const draftService = {
   async list(page: number, signal: AbortSignal) {
-    return (await httpService.get<ApiEnvelope<DraftSummary[]>>(endpoint, { params: {page: String(page)}, signal })).data;
+    return (await httpService.get<ApiEnvelope<DraftSummary[]>>(endpoint, { params: { page: String(page) }, signal })).data;
   },
   async open(series: string) {
-    return (await httpService.get<ApiEnvelope<AssessmentDraft>>(endpoint + "/" + encodeURIComponent(series))).data;
+    return (await httpService.get<ApiEnvelope<AssessmentDraft>>(draftPath(series))).data;
   },
   async create(series: string, name: string) {
-    return (await httpService.post<ApiEnvelope<AssessmentDraft>>(endpoint, {series, name})).data;
+    return (await httpService.post<ApiEnvelope<AssessmentDraft>>(endpoint, { series, name })).data;
   },
   async save(draft: AssessmentDraft) {
     const { series, revision, name, skills, units } = draft;
-    return (await httpService.put<ApiEnvelope<AssessmentDraft>>(endpoint + "/" + encodeURIComponent(series),
-      {revision, name, skills, units})).data;
+    return (await httpService.put<ApiEnvelope<AssessmentDraft>>(draftPath(series), { revision, name, skills, units })).data;
+  },
+  async upload(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return (await httpService.post<ApiEnvelope<{ sha256: string }>>(admin + "/media", form)).data.sha256;
+  },
+  async preview({ series, revision }: AssessmentDraft) {
+    return (await httpService.post<ApiEnvelope<AssessmentDraft>>(draftPath(series) + "/preview", { revision })).data;
+  },
+  async previewAudio({ series, revision }: AssessmentDraft, unit: number) {
+    return (await httpService.get<ApiEnvelope<Media>>(draftPath(series) + "/preview/audio/" + unit,
+      { params: { revision } })).data;
+  },
+  review({ series, revision }: AssessmentDraft) {
+    return httpService.post<void>(draftPath(series) + "/review", { revision });
+  },
+  async publish({ series, revision }: AssessmentDraft) {
+    return (await httpService.post<ApiEnvelope<ManagedAssessmentPaper>>(draftPath(series) + "/publish", { revision })).data;
+  },
+  remove({ series, revision }: AssessmentDraft) {
+    return httpService.delete<void>(draftPath(series), { params: { revision } });
+  },
+  async papers(page: number, signal: AbortSignal) {
+    return (await httpService.get<ApiEnvelope<ManagedAssessmentPaper[]>>(admin + "/papers",
+      { params: { page: String(page) }, signal })).data;
+  },
+  async archive({ series, version }: ManagedAssessmentPaper) {
+    return (await httpService.post<ApiEnvelope<ManagedAssessmentPaper>>(
+      admin + "/papers/" + encodeURIComponent(series) + "/" + version + "/archive", {})).data;
   },
 };

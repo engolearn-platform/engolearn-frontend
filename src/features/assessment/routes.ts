@@ -1,4 +1,7 @@
+import { createElement } from "react";
 import type { RouteObject } from "react-router";
+import { ProtectedRoute } from "@features/auth/contract";
+import { ROUTES } from "@shared/constants";
 import AssessmentLearningLayout from "@features/assessment/components/AssessmentLearningLayout";
 import { AssessmentGate } from "@features/assessment/components/AssessmentCommon";
 import AssessmentPreparationView from "@features/assessment/views/learning/AssessmentPreparationView";
@@ -10,7 +13,9 @@ import AssessmentManagementLayout from "./components/AssessmentManagementLayout"
 import DraftManagementView from "./views/management/DraftManagementView";
 
 export const AssessmentRoutes: RouteObject[] = [{
-  path: "/admin/assessment", Component: AssessmentManagementLayout, children: [{index: true, Component: DraftManagementView}],
+  element: createElement(ProtectedRoute, { allowedRoles: ["CONTENT_MANAGER"] }),
+  children: [{ path: ROUTES.ADMIN_ASSESSMENT, Component: AssessmentManagementLayout,
+    children: [{ index: true, Component: DraftManagementView }] }],
 }, {
   Component: AssessmentGate,
   children: [{

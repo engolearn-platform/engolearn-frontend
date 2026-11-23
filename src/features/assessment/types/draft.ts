@@ -23,6 +23,7 @@ export interface DraftUnit {
   kind: keyof typeof unitLabels | null;
   passage: string | null;
   sourceAudioUnit: number | null;
+  audioSha256?: string | null;
   questions: DraftQuestion[];
 }
 export interface DraftSummary { series: string; name: string; version: number }
@@ -30,4 +31,9 @@ export interface AssessmentDraft extends DraftSummary {
   revision: string;
   skills: DraftSkill[];
   units: DraftUnit[];
+}
+
+export interface ManagedAssessmentPaper extends DraftSummary {
+  id: string;
+  published: boolean;
 }

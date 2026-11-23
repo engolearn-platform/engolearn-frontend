@@ -5,6 +5,7 @@ import { unitLabels, type AssessmentDraft, type DraftSkill, type DraftUnit, type
 import type { HttpError } from "@shared/services/http.service";
 import { DraftSelect, DraftText } from "./DraftFields";
 import DraftQuestionEditor from "./DraftQuestionEditor";
+import { DraftPreview } from "./DraftPreview";
 
 function replacing<T>(items: T[], at: number, value: T) { return items.map((old,i) => i === at ? value : old); }
 function newQuestion(): DraftQuestion {
@@ -18,6 +19,8 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
+  const [preview, setPreview] = useState<AssessmentDraft | null>(null);
+  const [reviewed, setReviewed] = useState(false);
   const dirty = draft !== saved;
   useEffect(() => {
     if (!dirty) return;
@@ -26,7 +29,7 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  const change = (patch: Partial<AssessmentDraft>) => { setDraft({...draft, ...patch}); setMessage(""); };
+  const change = (patch: Partial<AssessmentDraft>) => { setDraft({...draft, ...patch}); setPreview(null); setReviewed(false); setMessage(""); };
   const changeUnit = (i: number, unit: DraftUnit) => change({units: replacing(draft.units, i, unit)});
   const changeSkill = (i: number, patch: Partial<DraftSkill>) => change({skills: replacing(draft.skills,i,{...draft.skills[i], ...patch})});
   const mayDiscard = () => !dirty || window.confirm("Bỏ các chỉnh sửa chưa lưu?");
@@ -35,12 +38,34 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
     setBusy(true); setError(""); setMessage("");
     try {
       const result = reload ? await draftService.open(draft.series) : await draftService.save(draft);
-      setSaved(result); setDraft(result); setConflict(false); setMessage(reload ? "Đã tải bản mới nhất." : "Đã lưu bản nháp.");
+      setSaved(result); setDraft(result); setPreview(null); setReviewed(false); setConflict(false); setMessage(reload ? "Đã tải bản mới nhất." : "Đã lưu bản nháp.");
     } catch (cause) {
       const failure = cause as HttpError;
       setConflict(failure.code === "STALE_DRAFT" || conflict);
       setError([failure.message, ...(failure.fieldErrors ?? []).map(f => f.field + " — " + f.message)].join("\n"));
     } finally { setBusy(false); }
+  }
+
+  async function handle(action: () => Promise<void>) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await action();
+    } catch (cause) {
+      const failure = cause as HttpError;
+      if (failure.code === "STALE_DRAFT") {
+        setConflict(true); setPreview(null); setReviewed(false);
+      }
+      setError(failure.message);
+    } finally { setBusy(false); }
+  }
+
+  function upload(index: number, unit: DraftUnit, file?: File) {
+    if (!file) return;
+    void handle(async () => {
+      const audioSha256 = await draftService.upload(file);
+      changeUnit(index, { ...unit, sourceAudioUnit: null, audioSha256 });
+      setMessage("Đã tải WAV. Lưu nháp để gắn vào phần này.");
+    });
   }
 
   return <fieldset disabled={busy} className="min-w-0 space-y-5">
@@ -67,6 +92,15 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
           {Object.entries(unitLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</DraftSelect>
         <DraftText label="Đoạn dùng chung" long max={12000} value={u.passage} onChange={passage => changeUnit(i,{...u,passage})}/>
         {u.sourceAudioUnit != null && <p>Giữ audio từ phần {u.sourceAudioUnit+1} của đề nguồn.</p>}
+        {u.kind?.startsWith("LISTENING") && <div className="space-y-2">
+          <label className="block">Tải WAV cho phần {i + 1}
+            <input className="block max-w-full" type="file" accept=".wav,audio/wav"
+              onChange={e => { upload(i, u, e.currentTarget.files?.[0]); e.currentTarget.value = ""; }} />
+          </label>
+          {u.audioSha256 && <p className="text-sm">Đã chọn audio tải lên.</p>}
+          {(u.audioSha256 || u.sourceAudioUnit != null) && <Button variant="outline"
+            onClick={() => changeUnit(i, { ...u, sourceAudioUnit: null, audioSha256: null })}>Bỏ audio khỏi phần này</Button>}
+        </div>}
         {u.questions.map((q,j) => <fieldset key={j} className="space-y-2 border-t py-3">
           <legend className="font-semibold">Câu {j+1} trong phần {i+1}</legend>
           <DraftQuestionEditor question={q} skills={draft.skills} listening={!!u.kind?.startsWith("LISTENING")}
@@ -84,11 +118,30 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
       <Button variant="outline" disabled={draft.units.length >= 30} onClick={() => change({units:[...draft.units,
         {kind:null,passage:"",sourceAudioUnit:null,questions:[]}]})}>Thêm phần</Button>
     </section>
+    {preview && <DraftPreview key={preview.revision} draft={preview} onClose={() => setPreview(null)}
+      onReview={() => void handle(async () => {
+        await draftService.review(preview);
+        setReviewed(true);
+        setPreview(null);
+        setMessage("Đã xác nhận kiểm tra phiên bản này.");
+      })} />}
     <div className="sticky bottom-0 space-y-2 border-t bg-background py-3">
       {error && <p role="alert" className="whitespace-pre-line text-destructive">{error}</p>}
       <p role="status">{message || (dirty ? "Có thay đổi chưa lưu." : "")}</p>
-      <div className="flex gap-3"><Button disabled={!dirty || conflict} onClick={() => void persist(false)}>Lưu nháp</Button>
-      {conflict && <Button variant="outline" onClick={() => void persist(true)}>Tải lại bản trên máy chủ</Button>}</div>
+      <div className="flex flex-wrap gap-3">
+        <Button disabled={!dirty || conflict} onClick={() => void persist(false)}>Lưu nháp</Button>
+        <Button variant="outline" disabled={dirty || conflict}
+          onClick={() => void handle(async () => setPreview(await draftService.preview(saved)))}>Kiểm tra và xem thử</Button>
+        <Button disabled={dirty || conflict || !reviewed} onClick={() => {
+          if (window.confirm("Xuất bản phiên bản này cho lượt mới?"))
+            void handle(async () => { await draftService.publish(saved); close(); });
+        }}>Xuất bản</Button>
+        <Button variant="outline" disabled={dirty || conflict} onClick={() => {
+          if (window.confirm("Xóa bản nháp? Các lượt đã cấp sẽ được giữ nguyên."))
+            void handle(async () => { await draftService.remove(saved); close(); });
+        }}>Xóa bản nháp</Button>
+        {conflict && <Button variant="outline" onClick={() => void persist(true)}>Tải lại bản trên máy chủ</Button>}
+      </div>
     </div>
   </fieldset>;
 }

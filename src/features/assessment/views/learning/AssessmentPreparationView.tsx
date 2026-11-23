@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { useAuth } from "@shared/hooks/useAuth";
-import { assessmentApi, mediaUrl, abandonOnLeave, leaveHeaders } from "@features/assessment/services/assessmentApi";
+import { assessmentApi, mediaUrl, revokeAudioUrl, abandonOnLeave, leaveHeaders } from "@features/assessment/services/assessmentApi";
 import { pendingSession, currentSession } from "@features/assessment/services/assessmentSession";
 import { useAssessmentQuery } from "@features/assessment/hooks/useAssessmentQuery";
 import { AssessmentCard, AssessmentError, Confirmation, DevelopmentNotice } from "@features/assessment/components/AssessmentCommon";
@@ -20,7 +20,7 @@ export default function AssessmentPreparationView() {
   const mounted = useRef(true);
   const soundElement = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {mounted.current = true; return () => {mounted.current = false;};}, []);
-  useEffect(() => {const audio = soundElement.current; return () => {audio?.pause();if (sound) URL.revokeObjectURL(sound);};}, [sound]);
+  useEffect(() => {const audio = soundElement.current; return () => {audio?.pause();if (sound) revokeAudioUrl(sound);};}, [sound]);
   const prepareSound = async () => {
     setBusy(true); setError(null);
     try { const media = await assessmentApi.sound(); if (mounted.current) setSound(mediaUrl(media)); }

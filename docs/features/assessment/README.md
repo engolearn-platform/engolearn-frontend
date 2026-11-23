@@ -129,3 +129,14 @@ The local handoff package includes dated verification results and Windows demo i
 ## F03 — draft management
 
 `/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units. New audio, preview and publication belong to subsequent milestones.
+
+## Paper management (F03)
+
+Content Managers and Admins enter `/admin/assessment` through the shared
+`ProtectedRoute`. Editors upload validated WAV files through Assessment, save
+the draft, open the validated preview, confirm review of that revision and
+publish it. A successful save requires review of the new revision. Archive is
+scoped to one published version and does not remove media needed by existing
+attempts. Learner media responses can contain a temporary URL in prod or a WAV
+payload for local development. Review playback can request a fresh URL after
+a failed load. Taking preserves the current issue ID on a transport retry.

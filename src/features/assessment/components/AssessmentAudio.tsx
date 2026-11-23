@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
-import { mediaUrl } from "@features/assessment/services/assessmentApi";
+import { mediaUrl, revokeAudioUrl } from "@features/assessment/services/assessmentApi";
 import type { Media } from "@features/assessment/types/assessment.types";
 
 export function AssessmentAudio({load, review = false, onFailure, startAt}: {startAt?: number; load: () => Promise<Media>; review?: boolean; onFailure?: (reason: "LOAD_FAILED" | "PLAYBACK_FAILED" | "AUTOPLAY_BLOCKED") => void}) {
@@ -15,9 +15,9 @@ export function AssessmentAudio({load, review = false, onFailure, startAt}: {sta
     let active = true, objectUrl: string | null = null;
     void load().then(media => {
       objectUrl = mediaUrl(media);
-      if (active) setUrl(objectUrl); else URL.revokeObjectURL(objectUrl);
+      if (active) setUrl(objectUrl); else revokeAudioUrl(objectUrl);
     }).catch(e => {if (active) {setError((e as Error).message);onFailure?.("LOAD_FAILED");}});
-    return () => {active = false; if (objectUrl) URL.revokeObjectURL(objectUrl);};
+    return () => {active = false; if (objectUrl) revokeAudioUrl(objectUrl);};
   }, [load, retry, onFailure]);
   const play = () => {
     const audio = ref.current;
@@ -40,10 +40,10 @@ export function AssessmentAudio({load, review = false, onFailure, startAt}: {sta
     <audio ref={ref} src={url ?? undefined} controls={review} preload="auto" controlsList="nodownload noplaybackrate"
       className={review ? "w-full" : "hidden"} onTimeUpdate={e => setPosition(e.currentTarget.currentTime)}
       onLoadedMetadata={e => setDuration(e.currentTarget.duration)} onEnded={() => setEnded(true)}
-      onError={() => {if (url) {setError("Không phát được âm thanh. Giờ vẫn chạy; bạn có thể nộp phần đã làm hoặc thoát.");onFailure?.("PLAYBACK_FAILED");}}} />
+      onError={() => {if (url) {setError(review ? "Không phát được âm thanh. Hãy tải lại." : "Không phát được âm thanh. Giờ vẫn chạy; bạn có thể nộp phần đã làm hoặc thoát.");onFailure?.("PLAYBACK_FAILED");}}} />
     {!review && <><progress className="h-2 w-full accent-primary" aria-label="Tiến độ phát âm thanh" max={duration || 1} value={position} /><div className="flex justify-between text-sm"><span>{Math.floor(position)} giây</span><span>{ended ? "Đã phát xong" : started ? "Đang phát" : url ? "Sẵn sàng" : "Đang tải…"}</span><span>{Math.ceil(duration)} giây</span></div></>}
     {blocked && !started && !error && <div className="rounded-xl bg-learning-note p-3 text-learning-note-ink"><p>Trình duyệt đang chặn phát tự động. Đồng hồ vẫn chạy.</p><Button className="mt-3 h-12" onClick={play}>Kích hoạt âm thanh</Button></div>}
     {error && <p role="alert" className="text-error">{error}</p>}
-    {error && !started && <Button className="h-12" variant="outline" onClick={() => {setError(null);setRetry(r => r + 1);}}>Thử tải âm thanh lại</Button>}
+    {error && (!started || review) && <Button className="h-12" variant="outline" onClick={() => {setError(null);setUrl(null);setEnded(false);setRetry(r => r + 1);}}>Thử tải âm thanh lại</Button>}
   </div>;
 }

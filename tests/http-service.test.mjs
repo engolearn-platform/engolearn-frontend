@@ -53,3 +53,21 @@ test("GET appends params and forwards the abort signal", async () => {
   });
   await service.get("/api/v1/items", { params: { status: "ACTIVE" }, signal: controller.signal });
 });
+
+test("multipart upload preserves browser-generated boundaries during session refresh", async () => {
+  const calls = [];
+  const form = new FormData();
+  form.append("file", new Blob(["WAV"]), "audio.wav");
+  const service = new HttpService("http://localhost", async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith("/auth/refresh")) return new Response(null, { status: 200 });
+    assert.equal(init.headers.has("Content-Type"), false);
+    assert.equal(init.body, form);
+    const request = new Request(url, init);
+    assert.match(request.headers.get("Content-Type"), /^multipart\/form-data; boundary=/);
+    assert.equal(await (await request.formData()).get("file").text(), "WAV");
+    return calls.length === 1 ? new Response(null, { status: 401 }) : Response.json({ data: 1 });
+  });
+  assert.deepEqual(await service.post("/api/v1/assessment/admin/media", form), { data: 1 });
+  assert.equal(calls.length, 3);
+});

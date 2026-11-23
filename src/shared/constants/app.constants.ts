@@ -35,6 +35,7 @@ export const ROUTES = {
   SPEAKING_DEMO: "/dev/speaking",
   SPEAKING_SESSION_DEV: "/dev/speaking-session",
   ADMIN_TOPICS: "/admin/topics",
+  ADMIN_ASSESSMENT: "/admin/assessment",
   ADMIN_SUBSCRIPTION_PLANS: "/admin/subscription/plans",
   ADMIN_SUBSCRIPTION_QUOTAS: "/admin/subscription/quotas",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",

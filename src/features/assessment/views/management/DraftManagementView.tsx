@@ -2,13 +2,15 @@ import { useCallback, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
 import { useFetch } from "@shared/hooks";
 import { draftService } from "@features/assessment/services/draft.service";
-import type { AssessmentDraft } from "@features/assessment/types/draft";
+import type { AssessmentDraft, ManagedAssessmentPaper } from "@features/assessment/types/draft";
 import DraftEditor from "@features/assessment/components/DraftEditor";
 import { DraftText } from "@features/assessment/components/DraftFields";
 
 export default function DraftManagementView() {
   const [page,setPage] = useState(0);
   const list = useFetch(useCallback((signal: AbortSignal) => draftService.list(page,signal),[page]));
+  const [paperPage, setPaperPage] = useState(0);
+  const papers = useFetch(useCallback((signal: AbortSignal) => draftService.papers(paperPage, signal), [paperPage]));
   const [editor,setEditor] = useState<AssessmentDraft | null>(null);
   const [series,setSeries] = useState("");
   const [name,setName] = useState("");
@@ -20,8 +22,16 @@ export default function DraftManagementView() {
     catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
+  async function archive(paper: ManagedAssessmentPaper) {
+    if (!window.confirm("Ngừng cấp bộ đề này cho lượt mới? Lượt cũ vẫn xem lại được.")) return;
+    setBusy(true); setError("");
+    try { await draftService.archive(paper); papers.refetch(); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
+  }
+
   return <section className="mx-auto w-full max-w-4xl space-y-5 p-5">
-    {editor ? <DraftEditor key={editor.series} initial={editor} close={() => {setEditor(null); list.refetch();}}/> :
+    {editor ? <DraftEditor key={editor.series} initial={editor} close={() => {setEditor(null); list.refetch(); papers.refetch();}}/> :
       <><h1 className="text-2xl font-bold">Đề đánh giá định kỳ</h1>
         <form className="space-y-3 rounded-2xl border p-5" onSubmit={e => {e.preventDefault(); void open(series.trim(),true);}}>
           <h2 className="text-xl font-semibold">Tạo bản nháp</h2>
@@ -40,6 +50,24 @@ export default function DraftManagementView() {
         <div className="flex items-center gap-3"><Button variant="outline" disabled={busy || page === 0}
           onClick={() => setPage(page-1)}>Trang trước</Button><span>Trang {page+1}</span>
           <Button variant="outline" disabled={busy || list.loading || list.data?.length !== 25}
-          onClick={() => setPage(page+1)}>Trang sau</Button></div></>}
+          onClick={() => setPage(page+1)}>Trang sau</Button></div>
+        <h2 className="text-xl font-semibold">Phiên bản đã xuất bản</h2>
+        {papers.loading ? <p role="status">Đang tải phiên bản…</p> : papers.error
+          ? <div role="alert">{papers.error.message} <Button variant="outline" onClick={papers.refetch}>Thử lại</Button></div>
+          : <ul className="divide-y">{papers.data?.length ? papers.data.map(paper => <li key={paper.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div><strong>{paper.name || paper.series}</strong>
+                <p className="text-sm">{paper.series} · v{paper.version} · {paper.published ? "Đang dùng" : "Đã ngừng dùng"}</p>
+              </div>
+              {paper.published && <Button variant="outline" disabled={busy}
+                onClick={() => void archive(paper)}>Ngừng sử dụng</Button>}
+            </li>) : <li className="py-3">Trang này chưa có phiên bản.</li>}</ul>}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" disabled={paperPage === 0 || papers.loading} onClick={() => setPaperPage(paperPage - 1)}>Trang trước</Button>
+          <span>Trang {paperPage + 1}</span>
+          <Button variant="outline" disabled={papers.loading || papers.data?.length !== 25}
+            onClick={() => setPaperPage(paperPage + 1)}>Trang sau</Button>
+        </div>
+      </>}
   </section>;
 }
