@@ -5,12 +5,16 @@ import { SubscriptionPurchasesView, SubscriptionPurchaseDetailView, Subscription
 import { ROUTES } from "@shared/constants";
 import SubscriptionManagementLayout from "@features/subscription/components/management/SubscriptionManagementLayout";
 import { SubscriptionPlanManagementView, SubscriptionQuotaManagementView } from "@features/subscription/views/management/SubscriptionManagementView";
+import SubscriptionProductsManagementView from "@features/subscription/views/management/SubscriptionProductsManagementView";
+import SubscriptionProductManagementDetailView from "@features/subscription/views/management/SubscriptionProductManagementDetailView";
+import SubscriptionPlanDetailView from "@features/subscription/views/learning/SubscriptionPlanDetailView";
 import AuthGuard from "@features/auth/components/AuthGuard";
 
 export const SubscriptionLearnerRoutes: RouteObject[] = [{
   path: ROUTES.SUBSCRIPTION,
   children: [
     { index: true, Component: SubscriptionPlansView },
+    { path: "plans/:planCode", Component: SubscriptionPlanDetailView },
     { path: "usage", Component: SubscriptionUsageView },
     { path: "purchases", Component: SubscriptionPurchasesView },
     { path: "purchases/:reference", Component: SubscriptionPurchaseDetailView },
@@ -26,6 +30,8 @@ export const SubscriptionManagementRoutes: RouteObject[] = [{
   children: [
     { path: "plans", Component: SubscriptionPlanManagementView },
     { path: "quotas", Component: SubscriptionQuotaManagementView },
+    { path: "products", Component: SubscriptionProductsManagementView },
+    { path: "products/:planCode", Component: SubscriptionProductManagementDetailView },
   ],
   }],
 }];

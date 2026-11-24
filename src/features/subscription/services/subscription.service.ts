@@ -19,6 +19,20 @@ function benefits(value: unknown): asserts value is PlanBenefit[] {
     seen.add(b.code);
   }
 }
+function planCard(value: unknown): PlanCard {
+  const p = record(value);
+  if (!text(p.planCode) || !text(p.displayName) || (p.description !== undefined && p.description !== null && typeof p.description !== "string")) invalid();
+  benefits(p.benefits);
+  if (!Array.isArray(p.billingOptions)) invalid();
+  for (const entry of p.billingOptions) {
+    const b = record(entry);
+    if (!["MONTHLY", "ANNUAL"].includes(String(b.billingPeriod)) || !integer(b.amount) || typeof b.currency !== "string" || !/^[A-Z]{3}$/.test(b.currency)) invalid();
+    try { new Intl.NumberFormat("vi-VN", { style: "currency", currency: b.currency }); } catch { invalid(); }
+  }
+  if (p.version !== undefined && (!integer(p.version) || p.version === 0)) invalid();
+  if (p.saleStatus !== undefined && !["ON_SALE", "STOPPED"].includes(String(p.saleStatus))) invalid();
+  return p as unknown as PlanCard;
+}
 function envelope<T>(value: unknown, validate: (data: Record<string, unknown>) => void): ApiEnvelope<T> {
   const result = record(value);
   if (!instant(result.timestamp)) invalid();
@@ -28,6 +42,9 @@ function envelope<T>(value: unknown, validate: (data: Record<string, unknown>) =
 function purchase(data: Record<string, unknown>) {
   if (data.devResetAllowed !== undefined && typeof data.devResetAllowed !== "boolean") invalid();
   if (data.devResetAt !== undefined && data.devResetAt !== null && !instant(data.devResetAt)) invalid();
+  if (data.planDisplayName !== undefined && !text(data.planDisplayName)) invalid();
+  if (data.planVersion !== undefined && (!integer(data.planVersion) || data.planVersion === 0)) invalid();
+  if ((data.planDisplayName === undefined) !== (data.planVersion === undefined)) invalid();
   if (!text(data.purchaseReference) || !["PAYMENT_SETUP_PENDING", "PAYMENT_PENDING", "PAYMENT_SETUP_FAILED", "PAYMENT_FAILED", "PAYMENT_EXPIRED", "ACTIVE", "REQUIRES_REVIEW", "REFUND_PENDING", "REFUNDED"].includes(String(data.status)) ||
       !["MONTHLY", "ANNUAL"].includes(String(data.billingPeriod)) || !integer(data.amountVnd) || data.currency !== "VND" || !instant(data.createdAt) || !instant(data.expiresAt)) invalid();
   for (const key of ["paymentId", "periodId", "failureCode", "refundReference", "refundId"]) if (data[key] !== null && !text(data[key])) invalid();
@@ -45,8 +62,8 @@ export const subscriptionService = {
       if (!text(data.purchaseReference) || !instant(data.resetAt)) invalid();
     });
   },
-  async createPurchase(billingPeriod: BillingPeriod, key: string, signal: AbortSignal) {
-    return envelope<Purchase>(await httpService.post<unknown>("/api/v1/subscription/me/purchases", { planCode: "PREMIUM", billingPeriod }, { signal, headers: { "Idempotency-Key": key } }), purchase);
+  async createPurchase(planCode: string, billingPeriod: BillingPeriod, expectedVersion: number, key: string, signal: AbortSignal) {
+    return envelope<Purchase>(await httpService.post<unknown>("/api/v1/subscription/me/purchases", { planCode, billingPeriod, expectedVersion }, { signal, headers: { "Idempotency-Key": key } }), purchase);
   },
   async purchase(reference: string, signal: AbortSignal) {
     return envelope<Purchase>(await httpService.get<unknown>(`/api/v1/subscription/me/purchases/${encodeURIComponent(reference)}`, { signal }), purchase);
@@ -67,28 +84,28 @@ export const subscriptionService = {
       if (!Array.isArray(data.items)) invalid();
       const seen = new Set<string>();
       for (const entry of data.items) {
-        const p = record(entry);
-        if (!text(p.planCode) || seen.has(p.planCode) || !text(p.displayName) || (p.description !== undefined && p.description !== null && typeof p.description !== "string")) invalid();
+        const p = planCard(entry);
+        if (seen.has(p.planCode)) invalid();
         seen.add(p.planCode);
-        benefits(p.benefits);
-        if (!Array.isArray(p.billingOptions)) invalid();
-        for (const entry of p.billingOptions) {
-          const b = record(entry);
-          if (!["MONTHLY", "ANNUAL"].includes(String(b.billingPeriod)) || !integer(b.amount) || typeof b.currency !== "string" || !/^[A-Z]{3}$/.test(b.currency)) invalid();
-          try { new Intl.NumberFormat("vi-VN", { style: "currency", currency: b.currency }); } catch { invalid(); }
-        }
       }
+    });
+  },
+  async plan(planCode: string, signal: AbortSignal) {
+    return envelope<PlanCard>(await httpService.get<unknown>(`/api/v1/subscription/plans/${encodeURIComponent(planCode)}`, { signal }), data => {
+      const plan = planCard(data);
+      if (!plan.version || !plan.saleStatus) invalid();
     });
   },
   async me(signal: AbortSignal) {
     return envelope<MySubscriptionSummary>(await httpService.get<unknown>("/api/v1/subscription/me", { signal }), d => {
       if (!["FREE", "PREMIUM"].includes(String(d.tier)) || !["FREE", "TRIAL", "ACTIVE", "EXPIRED", "REFUNDED"].includes(String(d.status)) || typeof d.trialEligible !== "boolean") invalid();
+      if (d.currentPlanCode !== undefined && !text(d.currentPlanCode)) invalid();
       if (!(d.periodStartAt === null || instant(d.periodStartAt)) || !(d.periodEndAt === null || instant(d.periodEndAt))) invalid();
       if ((d.periodStartAt === null) !== (d.periodEndAt === null)) invalid();
       if (d.periodStartAt && d.periodEndAt && Date.parse(String(d.periodStartAt)) >= Date.parse(String(d.periodEndAt))) invalid();
       if (![null, "ALREADY_USED", "ACTIVE_PREMIUM"].includes(d.trialIneligibilityReason as null)) invalid();
       const b = record(d.currentBenefits);
-      if (b.planCode !== d.tier || !text(b.displayName) || !text(b.policySnapshotId)) invalid();
+      if (b.planCode !== (d.currentPlanCode ?? d.tier) || !text(b.displayName) || !text(b.policySnapshotId)) invalid();
       if ((d.status === "TRIAL" || d.status === "ACTIVE") && (d.tier !== "PREMIUM" || !d.periodEndAt)) invalid();
       if (d.trialEligible ? d.trialIneligibilityReason !== null || d.tier !== "FREE" : d.trialIneligibilityReason === null) invalid();
       benefits(b.benefits);
