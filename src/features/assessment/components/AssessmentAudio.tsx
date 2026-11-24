@@ -9,6 +9,7 @@ export function AssessmentAudio({load, review = false, onFailure, startAt}: {sta
   const [blocked, setBlocked] = useState(false), [started, setStarted] = useState(false), [ended, setEnded] = useState(false);
   const [position, setPosition] = useState(0), [duration, setDuration] = useState(0);
   const startedRef = useRef(false);
+  const resumePosition = useRef(0);
   const [retry, setRetry] = useState(0);
   useEffect(() => {const audio = ref.current; return () => {audio?.pause();};}, []);
   useEffect(() => {
@@ -39,11 +40,20 @@ export function AssessmentAudio({load, review = false, onFailure, startAt}: {sta
     <div className="flex flex-wrap justify-between gap-2"><strong>{review ? "Âm thanh bài đã làm" : "Đoạn nghe"}</strong>{!review && <span className="text-sm text-primary">Chỉ nghe một lần</span>}</div>
     <audio ref={ref} src={url ?? undefined} controls={review} preload="auto" controlsList="nodownload noplaybackrate"
       className={review ? "w-full" : "hidden"} onTimeUpdate={e => setPosition(e.currentTarget.currentTime)}
-      onLoadedMetadata={e => setDuration(e.currentTarget.duration)} onEnded={() => setEnded(true)}
+      onLoadedMetadata={e => {
+        const audio = e.currentTarget;
+        setDuration(audio.duration);
+        if (review && resumePosition.current > 0 && resumePosition.current < audio.duration)
+          audio.currentTime = resumePosition.current;
+        resumePosition.current = 0;
+      }} onEnded={() => setEnded(true)}
       onError={() => {if (url) {setError(review ? "Không phát được âm thanh. Hãy tải lại." : "Không phát được âm thanh. Giờ vẫn chạy; bạn có thể nộp phần đã làm hoặc thoát.");onFailure?.("PLAYBACK_FAILED");}}} />
     {!review && <><progress className="h-2 w-full accent-primary" aria-label="Tiến độ phát âm thanh" max={duration || 1} value={position} /><div className="flex justify-between text-sm"><span>{Math.floor(position)} giây</span><span>{ended ? "Đã phát xong" : started ? "Đang phát" : url ? "Sẵn sàng" : "Đang tải…"}</span><span>{Math.ceil(duration)} giây</span></div></>}
     {blocked && !started && !error && <div className="rounded-xl bg-learning-note p-3 text-learning-note-ink"><p>Trình duyệt đang chặn phát tự động. Đồng hồ vẫn chạy.</p><Button className="mt-3 h-12" onClick={play}>Kích hoạt âm thanh</Button></div>}
     {error && <p role="alert" className="text-error">{error}</p>}
-    {error && (!started || review) && <Button className="h-12" variant="outline" onClick={() => {setError(null);setUrl(null);setEnded(false);setRetry(r => r + 1);}}>Thử tải âm thanh lại</Button>}
+    {error && (!started || review) && <Button className="h-12" variant="outline" onClick={() => {
+      if (review) resumePosition.current = position;
+      setError(null);setUrl(null);setEnded(false);setRetry(r => r + 1);
+    }}>Thử tải âm thanh lại</Button>}
   </div>;
 }

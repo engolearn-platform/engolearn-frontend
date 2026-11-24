@@ -140,3 +140,11 @@ scoped to one published version and does not remove media needed by existing
 attempts. Learner media responses can contain a temporary URL in prod or a WAV
 payload for local development. Review playback can request a fresh URL after
 a failed load. Taking preserves the current issue ID on a transport retry.
+
+
+Danh sách kỹ năng của editor lấy từ API `/api/v1/assessment/admin/drafts/skill-catalog`.
+Trong xem thử, người soạn có thể chọn đáp án và mở lời giải; đáp án thử nằm trong bộ
+nhớ của giao diện. Nút xác nhận mở khi đã xem qua cả 26 phần. Backend chỉ nhận xác
+nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.
+
+Khi xem lại và phải tải URL phát mới, player giữ vị trí nghe trước đó nếu còn trong tệp.

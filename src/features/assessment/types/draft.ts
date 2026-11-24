@@ -1,3 +1,8 @@
+export interface DraftSkillOption {
+  code: string;
+  label: string;
+  section: "LISTENING" | "READING";
+}
 export interface DraftSkill {
   code: string | null;
   name: string | null;

@@ -1,12 +1,15 @@
 import { httpService, type ApiEnvelope } from "@shared/services/http.service";
 import type { Media } from "@features/assessment/types/assessment.types";
-import type { AssessmentDraft, DraftSummary, ManagedAssessmentPaper } from "@features/assessment/types/draft";
+import type { AssessmentDraft, DraftSkillOption, DraftSummary, ManagedAssessmentPaper } from "@features/assessment/types/draft";
 
 const admin = "/api/v1/assessment/admin";
 const endpoint = admin + "/drafts";
 const draftPath = (series: string) => endpoint + "/" + encodeURIComponent(series);
 
 export const draftService = {
+  async skillCatalog(signal: AbortSignal) {
+    return (await httpService.get<ApiEnvelope<DraftSkillOption[]>>(endpoint + "/skill-catalog", { signal })).data;
+  },
   async list(page: number, signal: AbortSignal) {
     return (await httpService.get<ApiEnvelope<DraftSummary[]>>(endpoint, { params: { page: String(page) }, signal })).data;
   },

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
 import { draftService } from "@features/assessment/services/draft.service";
 import { unitLabels, type AssessmentDraft, type DraftSkill, type DraftUnit, type DraftQuestion } from "@features/assessment/types/draft";
+import { useFetch } from "@shared/hooks/useFetch";
 import type { HttpError } from "@shared/services/http.service";
 import { DraftSelect, DraftText } from "./DraftFields";
 import DraftQuestionEditor from "./DraftQuestionEditor";
@@ -22,6 +23,7 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
   const [preview, setPreview] = useState<AssessmentDraft | null>(null);
   const [reviewed, setReviewed] = useState(false);
   const dirty = draft !== saved;
+  const catalog = useFetch(draftService.skillCatalog);
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -73,12 +75,23 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
     <h1 className="text-2xl font-bold">{draft.series} · Nháp v{draft.version}</h1>
     <DraftText label="Tên bộ đề" max={180} value={draft.name} onChange={name => change({name})}/>
     <section className="space-y-3"><h2 className="text-xl font-semibold">Kỹ năng của đề</h2>
+      {catalog.loading && <p role="status">Đang tải danh mục kỹ năng…</p>}
+      {catalog.error && <div>
+        <p role="alert">{catalog.error.message}</p>
+        <Button variant="outline" onClick={() => void catalog.refetch()}>Tải lại danh mục kỹ năng</Button>
+      </div>}
       {draft.skills.map((s,i) => <fieldset key={i} className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2">
         <legend>Kỹ năng {i+1}</legend>
-        <DraftText label="Mã kỹ năng" value={s.code} max={32} onChange={code => changeSkill(i,{code})}/>
-        <DraftText label="Tên kỹ năng" value={s.name} max={180} onChange={name => changeSkill(i,{name})}/>
-        <DraftSelect label="Phần thi" value={s.section} onChange={v => changeSkill(i,{section: v as DraftSkill["section"] || null})}>
-          <option value="LISTENING">Nghe</option><option value="READING">Đọc</option></DraftSelect>
+        <DraftSelect label="Kỹ năng" value={s.code} onChange={code => {
+          const option = catalog.data?.find(item => item.code === code);
+          changeSkill(i, {code: option?.code ?? null, name: option?.label ?? null, section: option?.section ?? null});
+        }}>
+          {s.code && !catalog.data?.some(option => option.code === s.code) &&
+            <option value={s.code}>{s.code} · {s.name}</option>}
+          {catalog.data?.map(option => <option key={option.code} value={option.code}>
+            {option.code} · {option.label}
+          </option>)}
+        </DraftSelect>
         <DraftText label="Ví dụ" value={s.example} max={1000} onChange={example => changeSkill(i,{example})}/>
         <Button variant="outline" onClick={() => change({skills: draft.skills.filter((_,n) => n !== i)})}>Bỏ kỹ năng {i+1}</Button>
       </fieldset>)}
