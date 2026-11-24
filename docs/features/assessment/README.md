@@ -27,7 +27,9 @@ existing Button/Card/Dialog and the Hanken Grotesk/primary/learning design token
 The start button accepts clicks when preparation data is ready. It lists unmet conditions
 near the button, including rules acknowledgement, sample playback and confirmation,
 and ineligible account or exam states. Missing conditions prevent a start API request.
-The server validates eligibility when a request is sent.
+The server validates eligibility when a request is sent. The preparation page links to
+Placement when the account has no qualifying result. A missing published Periodic
+Assessment paper appears separately and offers a refresh action.
 
 ## Taking rules
 
@@ -94,10 +96,9 @@ Both newly created and already-existing success responses navigate using the ret
 and opens the unlocked Week 1 tab. `ALREADY_CREATED` also provides a link to that owned path.
 Creation writes actual path/question snapshots; the Assessment result stays unchanged.
 
-The backend adapter currently requires imported Learning Path projections, keyed by
-`assessment_source_attempt_id`. Newly submitted assessments without a projection return
-404 with retry feedback. Automatic projection delivery remains separate work; the frontend
-does not fabricate missing recommendations or use native IDs as ObjectIds.
+The integrated backend reads the learner's native READY Assessment result by attempt ID.
+A recommendation can use the result immediately when the required Learning Path pools are
+available. The frontend retains the native ID through recommendation and path creation.
 
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe

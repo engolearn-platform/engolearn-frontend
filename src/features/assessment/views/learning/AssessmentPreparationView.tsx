@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { useAuth } from "@shared/hooks/useAuth";
+import { PUBLIC_PATHS } from "@shared/constants/public-paths";
 import { assessmentApi, mediaUrl, revokeAudioUrl, abandonOnLeave, leaveHeaders } from "@features/assessment/services/assessmentApi";
 import { pendingSession, currentSession } from "@features/assessment/services/assessmentSession";
 import { useAssessmentQuery } from "@features/assessment/hooks/useAssessmentQuery";
@@ -68,7 +69,28 @@ export default function AssessmentPreparationView() {
     {data.activeAttemptId ? <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Bạn đang có một bài chưa kết thúc</h2><p className="my-4">Hãy quay về trang đã bắt đầu bài. Trang mới không khôi phục tiến trình. Nếu bỏ bài cũ, lượt đã dùng không được hoàn.</p><Button className="h-12" variant="outline" onClick={() => setAbandon(true)}>Bỏ bài cũ</Button>{rules && heard && currentSession()?.owner === user?.id && currentSession()?.state === null && <Button className="ml-3 h-12" disabled={busy} onClick={() => void start()}>Thử lại yêu cầu bắt đầu</Button>}</AssessmentCard> : null}
     <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Cấu trúc bài đánh giá</h2><p className="mt-3">50 câu · Nghe 20 · Đọc 30 · Tối đa 45 phút</p><p className="mt-2 text-sm text-muted-foreground">Nghe trước. Mỗi câu đơn có 30 giây và mỗi nhóm có 5 phút, đều tính cả 2 giây đệm trước audio. Reading có chung 30 phút. Thời gian thừa phần Nghe không cộng sang phần sau.</p></AssessmentCard>
     <div className="grid gap-5 md:grid-cols-2">
-      <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Điều kiện làm bài</h2><ul className="mt-4 space-y-3"><li>{data.baselineValid ? "✓ Có kết quả đầu vào hoặc định kỳ hợp lệ" : "Cần hoàn thành đánh giá đầu vào trước"}</li><li>{data.cooldownSatisfied ? "✓ Đã đủ thời gian chờ" : `Có thể làm từ ${data.eligibleAt ? vietnamTime(data.eligibleAt) : "ngày đủ điều kiện"}`}</li><li>{data.quota ? `Còn ${data.quota.remaining}/${data.quota.limit} lượt tháng này` : "Xử lý bài đang mở trước khi xét lượt mới"}</li><li>{data.paperAvailable ? "✓ Có bộ đề đang sử dụng" : "Chưa có bộ đề đang sử dụng"}</li></ul></AssessmentCard>
+      <AssessmentCard>
+        <h2 className="text-[22px] leading-7 font-semibold">Điều kiện làm bài</h2>
+        <ul className="mt-4 space-y-3">
+          <li>
+            {data.baselineValid ? "✓ Có kết quả đầu vào hoặc định kỳ hợp lệ" : (
+              <Link to={PUBLIC_PATHS.PLACEMENT} className="font-semibold text-primary underline">
+                Hoàn thành đánh giá đầu vào
+              </Link>
+            )}
+          </li>
+          <li>{data.cooldownSatisfied ? "✓ Đã đủ thời gian chờ" : `Có thể làm từ ${data.eligibleAt ? vietnamTime(data.eligibleAt) : "ngày đủ điều kiện"}`}</li>
+          <li>{data.quota ? `Còn ${data.quota.remaining}/${data.quota.limit} lượt tháng này` : "Xử lý bài đang mở trước khi xét lượt mới"}</li>
+          <li>
+            {data.paperAvailable ? "✓ Có bộ đề định kỳ đang sử dụng" : "Chưa có bộ đề định kỳ được xuất bản cho môi trường này."}
+          </li>
+        </ul>
+        {!data.paperAvailable && (
+          <Button type="button" variant="outline" className="mt-4 h-12" disabled={query.loading} onClick={query.refetch}>
+            Kiểm tra lại bộ đề
+          </Button>
+        )}
+      </AssessmentCard>
       <AssessmentCard><h2 className="text-[22px] leading-7 font-semibold">Thử âm thanh</h2><p className="my-3">Kiểm tra loa hoặc tai nghe trước khi vào bài. Chưa tính lượt.</p>{sound ? <audio ref={soundElement} controls src={sound} onPlaying={() => setPlayed(true)} onError={() => {setHeard(false);setPlayed(false);setSound(null);setError("Không phát được âm thanh mẫu.");}} className="w-full" /> : <Button className="h-12" variant="outline" disabled={busy} onClick={() => void prepareSound()}>Nghe thử</Button>}<label className="mt-4 flex min-h-12 items-center gap-3"><input type="checkbox" checked={heard} disabled={!played} onChange={e => setHeard(e.target.checked)} />Tôi nghe rõ âm thanh mẫu</label></AssessmentCard>
     </div>
     <AssessmentCard>

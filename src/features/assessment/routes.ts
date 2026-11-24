@@ -19,7 +19,7 @@ export const AssessmentRoutes: RouteObject[] = [{
 }, {
   Component: AssessmentGate,
   children: [{
-    path: "/assessment", Component: AssessmentLearningLayout, children: [
+    path: ROUTES.ASSESSMENT, Component: AssessmentLearningLayout, children: [
       {index: true, Component: AssessmentPreparationView},
       {path: "history", Component: AssessmentHistoryView},
       {path: "attempts/:attemptId/result", Component: AssessmentResultView},

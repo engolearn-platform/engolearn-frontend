@@ -109,6 +109,9 @@ export default function PlacementResultCard({ result }: PlacementResultCardProps
             {learningPending ? "Đang chuẩn bị…" : "Bắt đầu học"}
           </Button>
           {learningError && <p role="alert" className="text-label-sm text-error">{learningError}</p>}
+          <Button asChild size="lg" variant="outline" className="rounded-xl">
+            <Link to={ROUTES.ASSESSMENT}>Đến đánh giá định kỳ</Link>
+          </Button>
           <Button
             asChild
             size="lg"
