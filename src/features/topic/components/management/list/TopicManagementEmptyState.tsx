@@ -5,7 +5,8 @@ import { CircleHelp, FolderX, Plus, RotateCcw } from "lucide-react";
 interface TopicManagementEmptyStateProps {
   keyword: string;
   onClear: () => void;
-  onCreate: () => void;
+  onCreate?: () => void;
+  readOnly?: boolean;
   title?: string;
   description?: string;
 }
@@ -14,6 +15,7 @@ export default function TopicManagementEmptyState({
   keyword,
   onClear,
   onCreate,
+  readOnly = false,
   title,
   description,
 }: TopicManagementEmptyStateProps) {
@@ -50,14 +52,14 @@ export default function TopicManagementEmptyState({
           <RotateCcw className="size-[18px]" aria-hidden="true" />
           Xóa tất cả bộ lọc
         </Button>
-        <Button
+        {!readOnly && <Button
           type="button"
           onClick={onCreate}
           className="rounded-xl bg-primary text-on-primary shadow-sm hover:bg-primary-container"
         >
           <Plus className="size-[18px]" aria-hidden="true" />
           {keyword ? `Tạo chủ đề "${keyword}"` : "Tạo chủ đề mới"}
-        </Button>
+        </Button>}
       </div>
       <div className="mt-10 flex flex-wrap items-center justify-center gap-6 border-t border-surface-container pt-6 text-label-sm text-on-surface-variant">
         <span className="flex items-center gap-1.5">

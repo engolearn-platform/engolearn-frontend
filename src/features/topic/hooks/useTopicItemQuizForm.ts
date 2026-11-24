@@ -41,6 +41,7 @@ export interface SituationalQuestionUpsert {
   correctIndex: number;
   explanationOk: string;
   explanationNg: string;
+  explanation?: string;
 }
 
 /** Draft upsert câu fill-blank từ dialog (chỉ thông tin của question). */
@@ -65,9 +66,8 @@ export function toQuestionUpsert(
   question: TopicQuizQuestion,
 ): QuizQuestionUpsert {
   if (question.kind === "SITUATIONAL_CHOICE") {
-    const correctIndex = Math.max(
-      0,
-      question.options.findIndex((option) => option.label === question.correct),
+    const correctIndex = question.options.findIndex(
+      (option) => option.label === question.correct && option.isCorrect,
     );
     return {
       kind: "SITUATIONAL_CHOICE",
@@ -77,6 +77,7 @@ export function toQuestionUpsert(
       correctIndex,
       explanationOk: question.explanationOk,
       explanationNg: question.explanationNg,
+      explanation: question.explanation ?? question.explanationOk,
     };
   }
   return {

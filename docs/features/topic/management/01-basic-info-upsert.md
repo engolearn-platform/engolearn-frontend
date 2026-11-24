@@ -32,11 +32,11 @@
 
 | ID | Component | File | Ghi chú |
 |----|-----------|------|---------|
-| C1 | `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` | Eyebrow + H1 + pill Draft + autosave (static). Props optional có default. |
+| C1 | `TopicUpsertWizardHeader` | `components/management/upsert/basic-info/TopicUpsertWizardHeader.tsx` | Eyebrow + H1 + pill trạng thái và lần cập nhật từ API. Props optional có default. |
 | C2 | `TopicUpsertStepper` | `components/management/upsert/basic-info/TopicUpsertStepper.tsx` | Stepper 3 bước, `activeStep = 0`. Reuse được cho step 2-3 qua prop `steps`/`activeStep`. |
 | C3 | `TopicGeneralInfoCard` | `components/management/upsert/basic-info/TopicGeneralInfoCard.tsx` | Card form chính: EN/VI + CEFR + category + duration + description + counter. Controlled hoàn toàn qua `draft`/`onPatch`. |
 | C4 | `CefrLevelSelector` | `components/management/upsert/basic-info/CefrLevelSelector.tsx` | 4 pill A1–B2, single-select, `role="radiogroup"`, icon `Check` của `lucide-react`. |
-| C5 | `TopicCoverCard` | `components/management/upsert/basic-info/TopicCoverCard.tsx` | Cover 16:9 **placeholder local** (xem §5) + nút "Thay đổi ảnh"/"Xóa" (UI-only). Dùng lại shadcn `Button`. |
+| C5 | `TopicCoverCard` | `components/management/upsert/basic-info/TopicCoverCard.tsx` | Preview bìa từ tham chiếu đã có và control nhập/xóa URL. Dùng lại shadcn `Button`. |
 | C6 | `TopicTagsInput` | `components/management/upsert/basic-info/TopicTagsInput.tsx` | Tag pill closable + input Enter-để-thêm, chuẩn hóa (trim, bỏ `#` đầu, chống trùng/rỗng). |
 | C7 | `TopicUpsertTipsCallout` | `components/management/upsert/basic-info/TopicUpsertTipsCallout.tsx` | Callout mẹo, presentational, props có default. |
 | C8 | `TopicUpsertFooterBar` | `components/management/upsert/basic-info/TopicUpsertFooterBar.tsx` | "Quay lại" / "Lưu nháp" / "Tiếp tục". Mode update truyền `saveLabel="Lưu thay đổi"`; back create `navigate(-1)`, update về danh sách topic. |
@@ -44,60 +44,22 @@
 | — | `TopicBasicInfoForm` (private, cùng file view) | `views/management/TopicUpsertBasicInfoView.tsx` | Form thật của bước 1: `useTopicBasicInfoForm(snapshot?.basicInfo)` + validate "Tiếp tục" + `POST`/`PATCH`. |
 | — | `useTopicUpsertContext` | `hooks/useTopicUpsertContext.ts` | Resolve `mode` (`create`/`update`), `topicId`, `snapshot`, `isMissing` từ route param; snapshot E2 được `useMemo` theo `data` để giữ identity ổn định giữa các render. |
 | — | `useTopicBasicInfoForm` | `hooks/useTopicBasicInfoForm.ts` | State `draft`, `patch`, `setCefr`, `addTag`, `removeTag`, `descriptionCount`, `isValid`; nhận `initial` (snapshot ở mode update). |
-| — | types & consts | `types/topic-create.types.ts` | `TopicBasicInfoDraft`, option lists, `TOPIC_CREATE_STEPS`, `TOPIC_CREATE_MAX_DESCRIPTION = 250`, default draft Stitch, `TopicUpsertMode`, `TopicUpsertSnapshot`, `TOPIC_UPSERT_MOCK_SNAPSHOTS`, `getTopicUpsertSteps`. |
+| — | types & consts | `types/topic-create.types.ts` | `TopicBasicInfoDraft`, option lists, `TOPIC_CREATE_STEPS`, `TOPIC_CREATE_MAX_DESCRIPTION = 250`, default draft Stitch, `TopicUpsertMode`, `TopicUpsertSnapshot`, ``getTopicUpsertSteps`. |
 
-## 4. State & validation hiện tại
+## 4. State và lưu nháp
 
-- View dùng chung cho 2 mode; `useTopicUpsertContext` đọc `topicId` từ route:
-  - **create** (không có `topicId`): draft khởi tạo từ `TOPIC_CREATE_DEFAULT_DRAFT`
-    (rỗng: `cefr = A1`, `category = DINING`, các field khác trống).
-  - **update** (`/admin/topics/:topicId/edit`): draft nạp từ
-    `snapshot.basicInfo`; header đổi title "Cập nhật thông tin cơ bản của Chủ đề",
-    badge "Đang cập nhật", autosave lấy `snapshot.updatedNote`; footer "Lưu thay đổi".
-  - `topicId` không tồn tại (E2 `404`) → `EmptyState` + "Quay lại danh sách".
-- Mọi field controlled từ `useTopicBasicInfoForm`, `initial` chỉ được đọc ở lần mount.
-  Vì E2 là async, view **không** mount form khi `snapshot` chưa có: `TopicUpsertBasicInfoView`
-  gate theo `loading`/`isMissing` rồi render `TopicBasicInfoForm` với `key={topicId ?? "create"}`.
-  Nhờ vậy draft được nạp từ `snapshot.basicInfo` ngay sau khi fetch xong, và form remount
-  (nạp lại draft) khi mở topic khác. Không đồng bộ `initial` bằng effect trong hook.
-- Nút "Tiếp tục" validate UI tại chỗ: nếu `!isValid` → `showErrors = true`
-  (hiện viền `ring-error` + câu báo lỗi dưới field trống); hợp lệ → navigate sang
-  bước 2 cùng mode (`adminTopicItemsPath(topicId)`).
-- `description` giới hạn `maxLength = 250`, counter `x / 250 ký tự` cập nhật theo state.
-- Stepper dùng `getTopicUpsertSteps(mode, itemCount)` để đổi note
-  (update: bước 1 "Đang cập nhật", bước 2 "`n` bài học hiện có") mà không nhân bản component.
+- Form tạo mới yêu cầu tiêu đề EN và VI. CEFR, category, mô tả, cover và tags có thể để trống.
+- Form chỉnh sửa khởi tạo từ GET detail và dùng `topicId` làm React key. Khi API trả lỗi, hiển thị trạng thái lỗi và cho thử lại.
+- “Lưu nháp” gọi POST một lần rồi chuyển sang URL chỉnh sửa của Topic đã tạo. “Tiếp tục” lưu trước khi mở danh sách bài học của đúng Topic.
+- “Lưu thay đổi” gọi PATCH với revision và các trường đã đổi. Backend kiểm tra revision và trả về bản lưu để form tiếp tục chỉnh sửa.
+- HTTP 409 giữ nội dung đang nhập. “Tải lại chủ đề” yêu cầu xác nhận trước khi bỏ thay đổi cục bộ. Form cảnh báo khi tải lại hoặc rời trang, khi dùng link điều hướng hoặc nút Quay lại.
+- Thời lượng Topic chỉ đọc. Máy chủ tính theo dữ liệu Item hiện hành.
 
-## 5. Các điểm UI-only (cần gắn thật khi refactor)
+## 5. Contract và media
 
-1. **Snapshot mode update:** `getTopicUpsertSnapshot(topicId)` đọc
-   `TOPIC_UPSERT_MOCK_SNAPSHOTS` (hiện có `ordering-food`). Khi có API: thay bằng
-   `topicManagementService.fetchTopicById` + `useFetch` với callback
-   `(signal: AbortSignal) => Promise<T>`, xử lý `loading` (`Loading`) /
-   `isMissing` (E2 404 → `EmptyState`) / `error` theo pattern `TopicManagementListView`.
-   Create mode = draft rỗng đồng bộ (cefr `A1`, category `DINING`, các field khác
-   trống) — không gọi API.
-2. **Cover:** placeholder CSS local (icon + badge "1200 x 675 px") — chưa upload/preview
-   ảnh thật, chưa gọi API. Khi làm thật: thêm `<input type="file" accept="image/*">`,
-   validate 16:9 / ≤2MB, preview object URL, lưu vào `draft.cover*` hoặc upload sớm.
-   `coverName` là FE-local, không gửi lên API; map sang `coverUrl` chỉ khi có giá trị.
-3. **Lưu nháp / Tiếp tục:** chưa persist (chưa có endpoint). Khi có API:
-   `topicManagementService` trong `src/features/topic/services/` (feature service, **không**
-   dùng `httpService` vì `baseUrl` là `""` — xem `api-integration.md` §3) với `fetch`
-   trực tiếp qua Vite proxy `/api` → BE. Dùng `POST` cho tạo mới (E1), `PATCH` cho
-   cập nhật (E3). `onSaveDraft` của footer được gắn:
-   - Tạo mới: "Tiếp tục" → `isValid` → `POST` → thành công → `navigate(adminTopicItemsPath(newId))`;
-     "Lưu nháp" → `POST` → stay, thông báo thành công.
-   - Cập nhật: "Lưu thay đổi" → `PATCH` → stay, thông báo thành công; "Tiếp tục" → `PATCH`
-     thành công → `navigate(adminTopicItemsPath(topicId))`.
-   Loading/disabled khi submit; lỗi `400` map `fieldErrors` lên từng field, `404` → `EmptyState`,
-   `500` → thông báo chung.
-   > **Contract BE đã đóng băng** (F05, design r7 / FRC v1.2): `POST/GET/PATCH /api/management/topics[/{id}]`,
-   > thành công đóng gói `{"data", "timestamp"}` → FE **unwrap `.data`**; field & giá trị trên wire,
-   > field phải bỏ (`tags`, `duration`, `coverMeta`), envelope lỗi, và phần validate cần nới —
-   > xem [README §9](./README.md#9-ghi-chú-contract-be-cho-feature-này-f05--đã-đóng-băng).
-4. **Step 2-3:** `TopicUpsertStepper` đã hỗ trợ `activeStep`/`steps`; step 3
-   (`Kiểm tra & Xuất bản`) chưa có view. Khi triển khai wizard đa bước: nâng state
-   draft lên route cha hoặc store.
+- Backend trả `{data, timestamp}`. Tạo trả 201 và Location. PATCH phân biệt trường bỏ qua với `null` để xóa giá trị tùy chọn.
+- Form cho nhập đường dẫn bìa đã có hoặc tải JPG, PNG, WebP tối đa 5 MB qua MediaManagement sau khi đã lưu Topic. Sau upload, bấm lưu để gắn tham chiếu vào Topic.
+- Xem [ma trận và kiểm chứng](./authoring-verification.md) để đối chiếu phạm vi authoring đã chạy.
 
 ## 6. Khác biệt có chủ ý so với HTML Stitch
 
@@ -121,21 +83,9 @@
 - `lg:` — page gutter `px-5 → lg:px-8`.
 - Mobile: nút footer full-width stack ("Tiếp tục" trên cùng qua `flex-col-reverse`).
 
-## 8. Checklist refactor (khi gắn dữ liệu thật)
+## 8. Kiểm chứng
 
-- [x] View dùng chung create/update (`TopicUpsertBasicInfoView`) + route edit.
-- [x] Mode update nạp draft từ E2 `GET /api/management/topics/{id}` qua service + `useFetch`;
-      `loading` → `Loading`, `404` → `isMissing`/`EmptyState`, `500` → thông báo chung.
-- [x] Copy mode update (header/badge/footer) + stepper note theo mode.
-- [x] Thay default draft bằng draft rỗng khi tạo mới thật (cefr `A1`, category `DINING`, các field khác trống).
-- [x] Thay `TOPIC_UPSERT_MOCK_SNAPSHOTS` bằng service + `useFetch` cho upsert (create/update)/save-draft;
-      xử lý `loading` (`Loading`) và `error` (`EmptyState`) theo pattern `TopicManagementListView`.
-- [x] Nối entry "Mở chỉnh sửa (Bước 2)" từ `TopicManagementTable` vào `ROUTES.ADMIN_TOPIC_EDIT`
-      (row click + menu item → `adminTopicBasicInfoPath(topic.id)`, `AC-17`).
-- [ ] Upload cover thật (§5.2); tag gợi ý/autocomplete nếu backend hỗ trợ (F08).
-- [ ] Dựng step 3 (Review & Publish) + nâng state wizard lên route cha/store.
-- [x] Gắn API theo contract BE F05 (README §9): dùng `POST`/`PATCH`/`GET /api/management/topics`,
-      bỏ `tags`/`duration`/`coverMeta` khỏi payload, `coverName` → `coverUrl`, re-key `category`
-      sang `DINING|TRAVEL|BUSINESS|DAILY|HEALTH`, và **nới `isValid` về chỉ `titleEn` + `titleVi`**
-      (nháp không bắt buộc category/duration/description).
-- [ ] Chạy `npm run lint` (0 errors) + `npm run build` sau mỗi thay đổi.
+- [x] POST nháp tối thiểu, PATCH và tải lại qua Vite → Spring Boot → MongoDB.
+- [x] Hai phiên sửa đồng thời trả 409 cho revision cũ và giữ dữ liệu đang nhập.
+- [x] Kiểm tra giá trị DB trực tiếp sau PATCH và mở lại chế độ chỉ đọc.
+- [x] Có control upload bìa qua MediaManagement. Xem báo cáo kiểm chứng để biết tình trạng kiểm tra với provider.

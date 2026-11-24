@@ -5,11 +5,12 @@ import { ROUTES } from "@shared/constants";
 export interface ManagementNavItem {
   label: string;
   to: string;
+  end?: boolean;
   icon: LucideIcon;
 }
 
 export const MANAGEMENT_CONTENT_NAV_ITEMS: ManagementNavItem[] = [
-  { label: "Tổng quan", to: "/admin", icon: LayoutDashboard },
+  { label: "Tổng quan", to: "/admin", end: true, icon: LayoutDashboard },
   { label: "Quản lý Chủ đề", to: ROUTES.ADMIN_TOPICS, icon: BookOpenText },
   { label: "Quản lý Ngữ pháp", to: ROUTES.ADMIN_GRAMMAR, icon: SpellCheck },
   { label: "Thư viện Media", to: "/admin/media", icon: Images },

@@ -1,5 +1,11 @@
 # Topic — Bước 2: Biên soạn Mẫu câu giao tiếp (Expressions Editor)
 
+## Luồng hiện hành
+
+Tab Expressions chỉnh nhóm và mẫu câu từ Item detail. Loại nhóm, loại mẫu câu và nhãn là ba giá trị riêng. Form hỗ trợ EN/VI, ghi chú, audio, từ vựng liên kết, sắp xếp và xóa có xác nhận. Danh sách từ vựng liên kết dựa trên ID hiện có. Nút Lưu nháp gửi `PUT /expressions` với revision. Sửa Item đã phát hành phụ thuộc F10.
+
+Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
+
 > Tài liệu workflow cho màn editor Mẫu câu của 1 Topic Item trong luồng tạo topic
 > (Stitch: "Admin — 5. Biên soạn Mẫu câu giao tiếp (Expressions Editor)").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, persist, audio).

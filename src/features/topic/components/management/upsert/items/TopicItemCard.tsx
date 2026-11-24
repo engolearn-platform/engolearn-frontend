@@ -1,4 +1,4 @@
-import { GripVertical, ListPlus, SquarePen, Trash2, TriangleAlert } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import type { TopicItemOverview } from "@features/topic/types/topic-create.types";
@@ -11,8 +11,12 @@ interface TopicItemCardProps {
   selected: boolean;
   onSelect: (id: string) => void;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-  onInit: (id: string) => void;
+  onDelete?: () => void;
+  onMetadata?: () => void;
+  onVisibility?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  disabled?: boolean;
 }
 
 function formatOrder(order: number): string {
@@ -25,11 +29,14 @@ export default function TopicItemCard({
   onSelect,
   onEdit,
   onDelete,
-  onInit,
+  onMetadata,
+  onVisibility,
+  onMoveUp,
+  onMoveDown,
+  disabled,
 }: TopicItemCardProps) {
   const completeness = getTopicItemCompleteness(item.steps);
   const hasAnyContent = item.steps.length > 0;
-  const isEmpty = completeness === "empty" && !hasAnyContent;
 
   return (
     <article
@@ -47,14 +54,7 @@ export default function TopicItemCard({
       )}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="flex shrink-0 items-center gap-2 sm:flex-col">
-          <button
-            type="button"
-            title="Kéo thả để đổi thứ tự"
-            onClick={(event) => event.stopPropagation()}
-            className="cursor-grab rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface active:cursor-grabbing"
-          >
-            <GripVertical className="size-[22px]" aria-hidden="true" />
-          </button>
+          {onMoveUp && <Button type="button" variant="ghost" size="sm" aria-label={`Đưa ${item.titleEn} lên`} disabled={disabled} onClick={onMoveUp}><ArrowUp aria-hidden="true" /></Button>}
           <div
             className={cn(
               "flex size-8 items-center justify-center rounded-lg text-headline-sm font-bold",
@@ -66,6 +66,7 @@ export default function TopicItemCard({
           >
             {formatOrder(item.order)}
           </div>
+          {onMoveDown && <Button type="button" variant="ghost" size="sm" aria-label={`Đưa ${item.titleEn} xuống`} disabled={disabled} onClick={onMoveDown}><ArrowDown aria-hidden="true" /></Button>}
         </div>
 
         <div className="min-w-0 flex-1 space-y-3">
@@ -92,16 +93,8 @@ export default function TopicItemCard({
           <p className="text-body-md text-on-surface-variant">
             {item.description}
           </p>
-          {hasAnyContent ? (
-            <TopicItemStepPills steps={item.steps} />
-          ) : (
-            <div className="flex items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1 rounded-md bg-secondary-fixed/30 px-2.5 py-1 text-label-sm text-on-secondary-fixed">
-                <TriangleAlert className="size-[15px]" aria-hidden="true" />
-                Chưa thiết lập nội dung bài học
-              </span>
-            </div>
-          )}
+          {hasAnyContent && <TopicItemStepPills steps={item.steps} />}
+          {item.durationMinutes != null && <p className="text-label-sm text-on-surface-variant">{item.durationMinutes} phút</p>}
         </div>
       </div>
 
@@ -111,49 +104,11 @@ export default function TopicItemCard({
             {item.updatedNote}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1">
-          {isEmpty ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                onInit(item.id);
-              }}
-              className="font-semibold text-primary hover:bg-primary-fixed/20 hover:text-primary"
-            >
-              <ListPlus className="size-[18px]" aria-hidden="true" />
-              Khởi tạo nội dung
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                onEdit(item.id);
-              }}
-              className="text-on-surface hover:bg-surface-container"
-            >
-              <SquarePen className="size-[18px]" aria-hidden="true" />
-              Sửa nội dung
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(item.id);
-            }}
-            className="text-error hover:bg-error-container/40 hover:text-error"
-          >
-            <Trash2 className="size-[18px]" aria-hidden="true" />
-            Xóa
-          </Button>
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={() => onEdit(item.id)}><Eye aria-hidden="true" /> Nội dung</Button>
+          {onMetadata && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onMetadata}><Pencil aria-hidden="true" /> Sửa thông tin</Button>}
+          {onVisibility && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onVisibility}>{item.publicationStatus === "HIDDEN" ? "Hiện bài học" : "Ẩn bài học"}</Button>}
+          {onDelete && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onDelete} className="text-error"><Trash2 aria-hidden="true" /> Xóa</Button>}
         </div>
       </div>
     </article>

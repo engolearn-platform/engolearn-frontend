@@ -9,6 +9,7 @@ interface FillBlankQuestionCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
 function renderSentenceWithBlank(sentenceWithBlank: string, answer: string) {
@@ -31,6 +32,7 @@ export default function FillBlankQuestionCard({
   onEdit,
   onDelete,
   onPreviewAudio,
+  readOnly = false,
 }: FillBlankQuestionCardProps) {
   const explanation = question.explanation?.trim() ?? "";
 
@@ -46,10 +48,11 @@ export default function FillBlankQuestionCard({
               <ExpressionAudioChip
                 audioFile={question.sentence.audioUrl}
                 onPreview={onPreviewAudio}
+                readOnly={readOnly}
               />
             )}
           </div>
-          <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+          {!readOnly && <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
             <button
               type="button"
               onClick={() => onEdit(question.id)}
@@ -68,7 +71,7 @@ export default function FillBlankQuestionCard({
             >
               <Trash2 className="size-[18px]" aria-hidden="true" />
             </button>
-          </div>
+          </div>}
         </div>
         <div className="mb-2 rounded-lg bg-surface-container-low p-3 text-body-lg text-on-surface">
           {renderSentenceWithBlank(
