@@ -1,6 +1,6 @@
 import type { PlacementReviewQuestion } from "@features/placement/types/placement-review.types";
 import { cn } from "@shared/utils";
-import { Check, Minus, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Link } from "react-router";
 import { getReviewAnswerState } from "./reviewState";
 
@@ -27,8 +27,8 @@ export default function PlacementReviewQuestionGrid({
         {questions.map((question) => {
           const state = getReviewAnswerState(question);
           const label =
-            state === "CORRECT" ? "Đúng" : state === "INCORRECT" ? "Sai" : "Chưa trả lời";
-          const Icon = state === "CORRECT" ? Check : state === "INCORRECT" ? X : Minus;
+            state === "CORRECT" ? "Đúng" : "Sai";
+          const Icon = state === "CORRECT" ? Check : X;
 
           return (
             <button
@@ -41,9 +41,7 @@ export default function PlacementReviewQuestionGrid({
                 "flex min-h-11 items-center justify-center gap-1 rounded-xl border text-label-lg font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
                 state === "CORRECT"
                   ? "border-primary/30 bg-primary-fixed/40 text-on-primary-fixed"
-                  : state === "INCORRECT"
-                    ? "border-error/30 bg-error-container text-on-error-container"
-                    : "border-outline-variant bg-surface-container-highest text-on-surface-variant",
+                  : "border-error/30 bg-error-container text-on-error-container",
                 currentOrder === question.order ? "ring-2 ring-primary ring-offset-2" : "",
               )}
             >
@@ -62,9 +60,6 @@ export default function PlacementReviewQuestionGrid({
         </li>
         <li className="inline-flex items-center gap-1 text-error">
           <X className="size-4" aria-hidden="true" /> Sai
-        </li>
-        <li className="inline-flex items-center gap-1 text-on-surface-variant">
-          <Minus className="size-4" aria-hidden="true" /> Chưa trả lời
         </li>
       </ul>
     </nav>

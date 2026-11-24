@@ -1,105 +1,53 @@
-# GA-00 — Grammar — Danh sách chủ đề ngữ pháp
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../README.md). Existing routes, roles and business transitions are retained.
 
-> Màn danh sách chủ đề ngữ pháp trong Content Studio.
-> Nguồn thiết kế: Stitch `projects/16234151544679864766/screens/98daf5cacfa64556a05ad825a35a41db` (desktop 2560×2412).
+# Quản lý ngữ pháp — Màn 01–10
 
-## 1. Stitch → Route
+Đối chiếu phần nội dung với 10 PNG và HTML trong `EngoLearn_Admin_UI_v2.zip`. Vỏ ứng dụng dùng `ManagementLayout`, sidebar và topbar hiện có của nhóm. Hanken Grotesk và các token màu lấy từ hệ thiết kế của repo. Quy tắc nghiệp vụ theo GRM-UC-005 đến GRM-UC-013.
 
-| Stitch | Route | View | Layout |
-|--------|-------|------|--------|
-| GA-00 — Grammar — Danh sách chủ đề ngữ pháp | `/admin/grammar` (`ROUTES.ADMIN_GRAMMAR`) | `views/admin/GrammarTopicListView.tsx` | `ManagementLayout` (shell dùng chung) |
+## Điều hướng
 
-Stitch vẽ nguyên shell Content Studio (sidebar + topbar) — **không clone**. Chỉ dựng phần page content.
+| Màn | Route | View |
+| --- | --- | --- |
+| 01. Chủ đề ngữ pháp | `/admin/grammar` | `GrammarTopicListView` |
+| 02. Thông tin chủ đề | `/admin/grammar/new`, `/admin/grammar/:topicId` | `GrammarTopicFormView` |
+| 03. Danh sách bài học | `/admin/grammar/:topicId/lessons` | `GrammarLessonListView` |
+| 04. Thông tin bài học | `/admin/grammar/:topicId/lessons/new`, `/admin/grammar/:topicId/lessons/:lessonId` | `GrammarLessonFormView` |
+| 05. Nội dung bài học | `/admin/grammar/:topicId/lessons/:lessonId/blocks` | `GrammarBlocksView` |
+| 06. Câu luyện tập | `/admin/grammar/:topicId/lessons/:lessonId/questions` | `GrammarQuestionsView` |
+| 07–08. Soạn trắc nghiệm và điền chỗ trống | `/admin/grammar/:topicId/lessons/:lessonId/questions/:questionId` | `GrammarQuestionFormView` |
+| 09. Kiểm tra bài học | `/admin/grammar/:topicId/lessons/:lessonId/review` | `GrammarLessonReviewView` |
+| 10. Kiểm tra và xuất bản | `/admin/grammar/:topicId/publish` | `GrammarTopicPublishView` |
 
-## 2. Bản đồ component
+Màn 01–04 được xuất qua `views/management/GrammarTopicViews.tsx`, màn 05–10 qua `views/management/GrammarAuthoringViews.tsx`. Stepper chủ đề dẫn sang danh sách bài học và bước kiểm tra xuất bản. Khi có mã bài học, stepper bài học dẫn sang Nội dung, Luyện tập và Kiểm tra & hoàn thiện.
 
-```
-GrammarTopicListView                 views/admin/GrammarTopicListView.tsx
-├─ ManagementPageHeader              @shared/components/management  (title, exportLabel, createDisabled)
-├─ GrammarTopicStatsGrid             components/admin/GrammarTopicStatsGrid.tsx
-├─ GrammarTopicFilterBar             components/admin/GrammarTopicFilterBar.tsx
-│   └─ CefrSelect                    @shared/components/management
-├─ EmptyState                        @shared/components  (khi filter rỗng)
-├─ Loading                           @shared/components  (khi loading)
-└─ card bg-surface-container-lowest
-    ├─ GrammarTopicTable             components/admin/GrammarTopicTable.tsx
-    │   ├─ GrammarTopicCefrBadge      components/admin/GrammarTopicCefrBadge.tsx
-    │   ├─ GrammarTopicProgressCell  components/admin/GrammarTopicProgressCell.tsx
-    │   └─ GrammarTopicStatusPill    components/admin/GrammarTopicStatusPill.tsx
-    └─ ListPagination                @shared/components/management  (controlled)
-```
+## Đối chiếu thiết kế
 
-Data: `hooks/useGrammarTopicManagement.ts` → `useFetch` trong `@shared/hooks`.
-Types: `types/grammar-topic-management.types.ts`.
+- Màn 01 dùng một bảng trắng, tên và mã cùng ô, vị trí lộ trình cùng dòng thông tin phụ. Giữ đủ năm bộ lọc trạng thái theo GRM-UC-005.
+- Màn 02 và 04 dùng một hàng tên song ngữ ở desktop, gộp thông tin mã và thứ tự vào dải tóm tắt, checklist ở cột phải. Vị trí chủ đề có thao tác chỉnh riêng ngay dưới dải tóm tắt.
+- Màn 03 đặt tóm tắt chủ đề trên stepper và dùng một dòng phụ cho tên tiếng Anh và mục tiêu bài học. Số và loại khối vẫn hiển thị theo GRM-UC-008.
+- Màn 05 và 06 dùng danh sách thẻ viền mảnh, thanh thao tác cùng vị trí với thiết kế và nút sửa cạnh menu. Ô câu chưa đủ dùng nhãn và hành động soạn theo số câu. Có đường dẫn xem trước trong trình biên soạn theo GRM-UC-011.
+- Màn 07 và 08 luôn có cột xem trước và checklist. Nút chọn đáp án trắc nghiệm nằm bên trái. Đáp án chính và biến thể điền chỗ trống nằm chung một nhóm nhập dạng thẻ.
+- Màn 09 dùng các hàng kiểm tra gọn, mở chi tiết theo nhóm khi cần. Màn 10 hiển thị một tiến độ xuất bản, checklist bên phải và lý do nút bị khóa cạnh nút xuất bản. Tổng và chi tiết checklist lấy từ BE.
+- Các màn biên soạn dùng chung thanh cuối trang với ba vùng quay lại, trạng thái lưu và tiếp tục. Khi màn hình hẹp, hai cột xếp dọc và bảng cuộn ngang.
 
-## 3. Bản đồ props
+## Dữ liệu và thao tác
 
-| Component | Props | Ghi chú |
-|-----------|-------|---------|
-| `ManagementPageHeader` | `title`, `description`, `exportLabel`, `exportButtonClassName`, `createLabel`, `createDisabled`, `createButtonClassName` | Không truyền `onExport`/`onCreate`; không truyền `badge` (Stitch không có) |
-| `GrammarTopicStatsGrid` | `stats: GrammarTopicStats` | 4 ô, `grid-cols-2 lg:grid-cols-4` |
-| `GrammarTopicFilterBar` | `filter`, `onChange`, `onClear` | Không nhận danh sách category (Grammar không có category) |
-| `CefrSelect` | `value`, `onChange`, `options`, `className`, `chevronClassName` | `options` khác Topic: Grammar dùng nhãn `A1 - Sơ cấp … B2 - Trung cao` |
-| `GrammarTopicTable` | `topics` | Nhận **slice trang hiện tại**, không tự phân trang |
-| `GrammarTopicCefrBadge` | `level: ManagementCefrLevel` | A1→A2→B1→B2 mở dần độ đậm |
-| `GrammarTopicProgressCell` | `done`, `total` | 2 segment: đã học + còn lại |
-| `GrammarTopicStatusPill` | `status: GrammarTopicStatus` | `published` / `in_progress` / `draft` |
-| `ListPagination` | `total`, `from`, `to`, `itemNoun`, `pageSize`, `page`, `onPageChange`, `onPageSizeChange` | Controlled; không truyền `pageCount` → tự tính. Mũi tên trước/sau chỉ hoạt động khi có `onPageChange` (giữ đúng hành vi cũ của Topic ở chế độ uncontrolled) |
+- `grammarManagement` gọi `/api/v1/grammar/admin/topics`. Máy chủ xử lý tìm theo tên Việt, tên Anh hoặc mã, lọc theo CEFR và trạng thái, phân trang, đếm thống kê và trả tiến độ mỗi chủ đề. Xuất CSV lấy toàn bộ kết quả khớp bộ lọc hiện tại.
+- Biểu mẫu chủ đề lưu tên Việt, tên Anh, trình độ, mô tả và vị trí lộ trình. Tên giới hạn 120 ký tự mỗi trường. Mô tả nháp từ 1 đến 250 ký tự, giới hạn tối thiểu là 80 ký tự ở chủ đề đã xuất bản và trong bước kiểm tra xuất bản. Trình độ được khóa sau lần xuất bản đầu tiên. Mã chủ đề chỉ đọc và có nút sao chép.
+- Danh sách bài học dùng dữ liệu từ chi tiết chủ đề, hiển thị thứ tự, tên song ngữ, mục tiêu, số và loại khối, số câu luyện tập và tình trạng bài học. Đổi thứ tự bằng kéo thả, phím mũi tên trên tay nắm hoặc lệnh Di chuyển lên và Di chuyển xuống. Giao diện làm mới danh sách sau khi máy chủ xác nhận. Chủ đề có thể có tối đa 10 bài đang hoạt động.
+- Biểu mẫu bài học lưu tên song ngữ (tối đa 150 ký tự mỗi trường), mục tiêu (tối đa 300 ký tự) và thẻ. Khi thêm bài, có thể chọn vị trí hoặc để hệ thống đặt ở cuối. Mã bài chỉ đọc. Bài đã xuất bản có thay đổi đang soạn hiển thị nhãn “Có thay đổi chưa xuất bản”.
+- Xóa, ngừng xuất bản và khôi phục có hộp xác nhận. Chủ đề chưa từng xuất bản có thể xóa. Chủ đề đang xuất bản có thể ngừng xuất bản, chủ đề lưu trữ có thể khôi phục về nháp. Bài học từng xuất bản được lưu trữ. Muốn lưu trữ bài đã xuất bản cuối cùng, trước tiên phải ngừng xuất bản chủ đề. Chủ đề hoặc bài học lưu trữ hiển thị ở chế độ chỉ xem.
+- Bản ghi mới lưu khi chọn Tiếp tục. Bản ghi hiện có tự lưu sau 750 ms khi dữ liệu hợp lệ và có thay đổi. Khi chuyển bước trong biểu mẫu, giao diện đợi máy chủ xác nhận các thay đổi. Mỗi lần ghi sử dụng phiên bản trả về từ máy chủ. Xung đột phiên bản hiển thị yêu cầu tải lại.
 
-## 4. Bản đồ state
+## Trạng thái giao diện
 
-| State | Kiểu | Mặc định | Nơi đổi |
-|-------|------|----------|----------|
-| `filter` | `GrammarTopicFilter` | `{ search: "", cefr: "ALL", status: "ALL" }` | `patchFilter` / `clearFilter` |
-| `page` | `number` | `1` | `onPageChange`; reset khi đổi `pageSize` |
-| `pageSize` | `number` | `6` | select "Mỗi trang" (6/10/20/50) |
-| data | `GrammarTopicManagementData \| null` | — | `useGrammarTopicManagement` |
+- Bảng hỗ trợ cuộn ngang bằng bàn phím. Form xếp thành một cột khi màn hình hẹp và hai cột rộng khi đủ chỗ cho bảng kiểm.
+- Có trạng thái tải, rỗng, lỗi và phản hồi thao tác. Trường bắt buộc có kiểm tra đầu vào. Lỗi tại trường từ máy chủ được đặt cạnh trường liên quan. Trạng thái tự lưu có thông báo cho trình đọc màn hình.
 
-Lọc client-side bằng `matchesFilter`: `search` khớp `titleVi`/`titleEn`/`code` (không phân biệt hoa thường),
-`cefr` và `status` khớp đúng. `currentPage = Math.min(page, pageCount)` — sau khi lọc còn 1 trang mà
-`page = 3` thì tự về trang 1, không cần `useEffect` đồng bộ.
+## Hỗ trợ học và điều hướng
 
-## 5. Data (mock)
+Lời nhắc nhẹ cạnh nút luyện tập; review có đường về danh sách bài, bảng có nút Kiểm tra. Không thêm Ready toggle hoặc chặn theo thao tác đọc. Xem [thiết kế điều hướng](../07-learning-management-navigation.md).
 
-`MOCK_TOPICS` — 7 dòng `GRM-01 … GRM-07` (Present Simple, Present Continuous, Past Simple,
-Modal Verbs, First Conditional, Relative Clauses, Comparatives/Superlatives), mỗi dòng có
-`code`, `titleVi`, `titleEn`, `description`, `cefr`, `lessonDone`/`lessonTotal`, `status`, `updatedLabel`.
+## UX24/11/2026
 
-`MOCK_STATS` — `{ total: 24, published: 17, inProgress: 3, draft: 4 }`.
-
-**Hai nguồn độc lập, cố ý không liên kết.** KPI trong Stitch mô tả cả thư viện 24 chủ đề, còn bảng chỉ
-render 7 dòng mẫu để khớp chiều cao thiết kế. Nếu tính KPI bằng `reduce` trên `MOCK_TOPICS` sẽ ra
-`7 / 4 / 2 / 1` — sai. Vì vậy phân trang của bảng dùng `filteredTopics.length` (tối đa 7), còn KPI
-giữ 24. Khi gắn API thật, hai con số này sẽ khớp nhau.
-
-## 6. UI-only & khác biệt Stitch
-
-| Việc | Trạng thái |
-|------|-----------|
-| Nút "Tạo chủ đề ngữ pháp" | **Disabled thật** (`createDisabled`). Chưa có màn GA-01 nên không `onClick`, không `navigate`, không tạo route giả `/admin/grammar/create` |
-| Nút "Xuất CSV" | Render đúng Stitch, chưa có handler |
-| Row action "Chỉnh sửa" + "…" | Render đúng Stitch, chưa có handler (GA-01/GA-02) |
-| Icon | Material Symbols → `lucide-react`: `download`→`Download`, `add`→`Plus`, `search`→`Search`, `expand_more`→`ChevronDown`, `filter_alt_off`→`FilterX`, `book`→`BookOpenText`, `check_circle`→`CircleCheck`, `schedule`→`Clock`, `edit_note`→`NotebookPen`, `more_vert`→`EllipsisVertical` |
-| Nút Stitch là `<button>` thuần | Dùng shadcn `Button` (đã có `disabled` + focus ring đúng hệ) với `h-10 rounded-xl px-4 text-label-lg` cho khớp chiều cao ~40px |
-| Icon "Xuất CSV" màu `text-tertiary` | Không tái hiện — sẽ tô cả chữ theo màu icon |
-| Bảng | 7 cột nội dung (Mã, Tên, Mô tả, Trình độ, Bài học, Trạng thái, Cập nhật) + 1 cột thao tác |
-| Số trang | `ListPagination` suy ra từ `filtered.length`; Stitch hard-code `1–6 / 24` |
-| Sidebar dưới `lg` | Ẩn — hành vi có sẵn của `ManagementLayout`, không đổi trong màn này |
-
-## 7. Responsive
-
-- KPI: `grid-cols-2` → `lg:grid-cols-4`.
-- Filter bar: xếp dọc → `xl:flex-row xl:items-center`; nhóm select `flex-wrap`.
-- Bảng: bọc `overflow-x-auto`; cột "Mô tả" `max-w-[280px]` để không giãn hết bảng.
-- Pagination: xếp dọc → `sm:flex-row`.
-- Page: `max-w-7xl px-5 pb-16 lg:px-8`.
-
-## 8. Checklist refactor
-
-- [ ] `npm run lint` + `npm run build` — 0 error.
-- [ ] Import qua alias `@features/grammar/...`, `@shared/...` (relative 2+ cấp bị warn).
-- [ ] Chỉ dùng token trong `src/core/assets/css/App.css`; không màu/font/radius tuỳ tiện.
-- [ ] KPI không được `reduce` từ `MOCK_TOPICS` (§5).
-- [ ] Nút "Tạo chủ đề ngữ pháp" vẫn phải disabled cho tới khi có GA-01.
-- [ ] Không tạo feature `grammarAdmin`; mọi file management nằm trong `src/features/grammar/`.
-- [ ] Cập nhật file doc này **trong cùng change** mỗi khi đổi route/prop/state.
+Danh sách giữ tên Việt/Anh, CEFR, trạng thái và số bài; ẩn mã/vị trí dưới tên. Cột Thao tác hiển thị tiêu đề (không sr-only); Sửa và Kiểm tra và xuất bản ở ngoài, menu Khác giữ tác vụ ít dùng. Phân trang dùng ListPagination compact: nút48px, cửa sổ số trang giới hạn có dấu …, mobile hiển thị Trangx/y; không lặp dòng Hiển thị. Tìm kiếm API hỗ trợ không dấu và không phân biệt hoa/thường theo literal, không tự sửa lỗi chính tả. Bảng bài học bỏ mã/cấp và tổng kết lặp; nội dung hiện bằng số nội dung thực. Trình soạn giải thích rõ giới hạn7 nội dung, không ép5 loại thành5 khối; bỏ kéo thả khối và giữ Di chuyển lên/xuống trong menu Khác để không phá trình tự đã soạn.

@@ -9,7 +9,7 @@ interface PlacementQuestionCardProps {
   onSelect: (optionId: string) => void;
 }
 
-const SECTION_FALLBACK_LABEL = {
+const SECTION_LABEL = {
   READING: "Reading",
   LISTENING: "Listening",
 } as const;
@@ -20,7 +20,7 @@ export default function PlacementQuestionCard({
   disabled = false,
   onSelect,
 }: PlacementQuestionCardProps) {
-  const skillLabel = question.label ?? SECTION_FALLBACK_LABEL[question.section];
+  const skillLabel = SECTION_LABEL[question.section];
 
   return (
     <article className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">

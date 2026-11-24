@@ -1,4 +1,4 @@
-import { BookOpenText, Images, LayoutDashboard, Settings, SpellCheck } from "lucide-react";
+import { BookOpenText, Images, LayoutDashboard, Settings, SpellCheck, ClipboardList, Library, ListChecks } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ROUTES } from "@shared/constants";
 
@@ -20,4 +20,11 @@ export const MANAGEMENT_SYSTEM_NAV_ITEMS: ManagementNavItem[] = [
   { label: "Gói học & quyền lợi", to: ROUTES.ADMIN_SUBSCRIPTION_PLANS, icon: BookOpenText },
   { label: "Cấu hình hạn mức", to: ROUTES.ADMIN_SUBSCRIPTION_QUOTAS, icon: Settings },
   { label: "Cài đặt hệ thống", to: "/admin/settings", icon: Settings },
+];
+
+// Placement owns the route implementation; shell navigation only links to its management surface.
+export const MANAGEMENT_PLACEMENT_NAV_ITEMS: ManagementNavItem[] = [
+  { label: "Bộ đề", to: "/admin/placement/test-sets", icon: ClipboardList },
+  { label: "Ngân hàng câu hỏi", to: "/admin/placement/questions", icon: Library },
+  { label: "Kết quả", to: "/admin/placement/attempts", icon: ListChecks },
 ];

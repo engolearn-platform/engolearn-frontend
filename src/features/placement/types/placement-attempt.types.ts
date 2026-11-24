@@ -23,7 +23,7 @@ export interface PlacementQuestion {
   order: number;
   section: PlacementSection;
   level: PlacementLevel;
-  /** Reading skill/label, e.g. "Ngữ pháp cơ bản". Listening has none. */
+  /** Internal authoring label from the API; not displayed in the learner question header. */
   label?: string | null;
   prompt: string;
   /** Reading-only stimulus; null/absent for Listening. */

@@ -1,3 +1,7 @@
+> Presentation cập nhật23/11/2026: sau nộp chỉ hiển thị Đúng/Sai; Sai gồm incorrectCount+unansweredCount. Bỏ trống dùng màu Sai, selectedOptionId vẫn null, không tô đáp án người dùng chọn; chi tiết giải thích không trả lời. Trạng thái đang làm không đổi. Xem09-final-answer-states.md; các số liệu/legend3nhóm ở bản Stitch bên dưới là lịch sử.
+
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # 04 — Kết quả đánh giá đầu vào (P04-USER-RESULT)
 
 > Khung triển khai P04 đã duyệt. Chỉ dành cho User có quyền xem kết quả hợp lệ.

@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ChangeEvent } from "react";
 
 interface ListPaginationProps {
+  /** Opt-in compact controls for Grammar/Placement; existing consumers retain their layout. */
+  compact?: boolean;
   total: number;
   to: number;
   from?: number;
@@ -21,6 +23,7 @@ const DEFAULT_PAGE_SIZE_OPTIONS = [6, 10, 20, 50];
 
 export function ListPagination({
   total,
+  compact = false,
   to,
   from = 1,
   itemNoun = "chủ đề",
@@ -51,6 +54,40 @@ export function ListPagination({
   const handlePageSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     onPageSizeChange?.(Number(event.target.value));
   };
+
+  if (compact) {
+    const count = Math.max(1, resolvedPageCount);
+    const current = Math.min(count, Math.max(1, activePage));
+    const start = Math.min(Math.max(2, current - 1), Math.max(2, count - 3));
+    const end = Math.min(count - 1, start + 2);
+    const visible: (number | "before" | "after")[] = count <= 7
+      ? Array.from({ length: count }, (_, index) => index + 1)
+      : [1, ...(start > 2 ? ["before" as const] : []),
+        ...Array.from({ length: end - start + 1 }, (_, index) => start + index),
+        ...(end < count - 1 ? ["after" as const] : []), count];
+    const controlClass = "inline-flex size-12 shrink-0 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest text-label-lg font-semibold text-primary hover:bg-learning-mint focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40";
+    return <div className="flex flex-col items-center justify-between gap-4 border-t border-outline-variant bg-surface-container-low/40 p-4 lg:flex-row">
+      <label className="flex items-center gap-3 text-label-lg text-on-surface-variant">
+        <span>Số dòng mỗi trang</span>
+        <select aria-label="Số dòng mỗi trang" className="min-h-12 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 text-label-lg text-on-surface focus-visible:outline-2 focus-visible:outline-primary"
+          value={pageSize} onChange={handlePageSizeChange}>
+          {pageSizeOptions.map(option => <option key={option} value={option}>{option}</option>)}
+        </select>
+      </label>
+      <nav aria-label="Phân trang" className="flex items-center justify-center gap-1">
+        <button type="button" className={controlClass} aria-label="Trang trước" disabled={!hasPagingControl || current <= 1} onClick={() => selectPage(current - 1)}><ChevronLeft className="size-5" aria-hidden="true" /></button>
+        <span className="px-3 text-label-lg font-semibold text-on-surface sm:hidden" aria-live="polite">Trang {current}/{count}</span>
+        <div className="hidden items-center gap-1 sm:flex">
+          {visible.map(item => typeof item === "number"
+            ? <button key={item} type="button" aria-label={`Trang ${item}`} aria-current={item === current ? "page" : undefined}
+              className={cn(controlClass, item === current && "border-primary bg-primary text-on-primary hover:bg-primary-container")}
+              onClick={() => selectPage(item)}>{item}</button>
+            : <span key={item} className="grid size-8 place-items-center text-on-surface-variant" aria-hidden="true">…</span>)}
+        </div>
+        <button type="button" className={controlClass} aria-label="Trang sau" disabled={!hasPagingControl || current >= count} onClick={() => selectPage(current + 1)}><ChevronRight className="size-5" aria-hidden="true" /></button>
+      </nav>
+    </div>;
+  }
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 bg-surface-container-low/40 p-4 sm:flex-row">

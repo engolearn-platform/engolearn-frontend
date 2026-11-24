@@ -2,7 +2,7 @@ import { AssessmentRoutes } from "@features/assessment/routes";
 import { PostRoutes } from "@features/Post/routes";
 import { useRoutes } from "react-router";
 import { ProducsRoute } from "@/features/Product/routes";
-import { GrammarAdminRoutes, GrammarRoutes } from "@features/grammar/routes";
+import { GrammarManagementRoutes, GrammarRoutes } from "@features/grammar/routes";
 import {
   TopicCatalogRoutes,
   TopicDetailRoutes,
@@ -18,7 +18,7 @@ import {
 import { AuthRoutes } from "@features/auth/routes";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import LandingEntryView from "@features/landing-page/views/LandingEntryView";
-import { PlacementRoutes } from "@features/placement/routes";
+import { PlacementManagementRoutes, PlacementRoutes } from "@features/placement/routes";
 import { LandingPageRoutes } from "@features/landing-page/routes";
 import { PublicResourceLayout } from "@features/landing-page/views/PublicResourceLayout";
 import { ROUTES } from "@shared/constants";
@@ -54,8 +54,9 @@ export const appRoutes = [
   ...TopicStandaloneRoutes,
   ...TopicManagementRoutes,
   ...SubscriptionManagementRoutes,
-  ...GrammarAdminRoutes,
+  ...GrammarManagementRoutes,
   ...PlacementRoutes,
+  ...PlacementManagementRoutes,
 ];
 
 export const AppRouter = () => {

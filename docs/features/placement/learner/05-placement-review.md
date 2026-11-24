@@ -1,3 +1,7 @@
+> Presentation cập nhật23/11/2026: sau nộp chỉ hiển thị Đúng/Sai; Sai gồm incorrectCount+unansweredCount. Bỏ trống dùng màu Sai, selectedOptionId vẫn null, không tô đáp án người dùng chọn; chi tiết giải thích không trả lời. Trạng thái đang làm không đổi. Xem09-final-answer-states.md; các số liệu/legend3nhóm ở bản Stitch bên dưới là lịch sử.
+
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # 05 — Xem chi tiết bài làm Placement (P05-USER-REVIEW)
 
 > Review chỉ đọc cho User sở hữu Attempt hợp lệ. Route:
@@ -50,7 +54,7 @@ Unknown/không có quyền → EmptyState; không fallback fixture.
 |---|---|---|
 | Chọn đúng | Đúng | Option đã chọn: “Bạn chọn · Đáp án đúng”; còn lại trung tính |
 | Chọn sai | Sai | Option đã chọn: “Bạn đã chọn”; option đúng: “Đáp án đúng” |
-| Bỏ trống | Chưa trả lời | Thông báo chưa trả lời; option đúng: “Đáp án đúng” |
+| Bỏ trống | Sai | “Bạn không trả lời câu này”; không có option đã chọn, option đúng: “Đáp án đúng” |
 
 Chỉ presentation-derive trạng thái từ `selectedOptionId`/`correctOptionId`;
 không tính lại score, level hoặc aggregate service đã trả.

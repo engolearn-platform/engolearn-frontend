@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import PlacementResultCard from "@features/placement/components/learning/result/PlacementResultCard";
 import { PLACEMENT_ROUTES } from "@features/placement/constants";
 import { getPlacementResult } from "@features/placement/services/placement.service";
@@ -9,8 +10,8 @@ import { Link, useParams } from "react-router";
 
 export default function PlacementResultView() {
   const { attemptId = "" } = useParams();
-  const { isAuthenticated, isLoading: authLoading, isUser } = useAuth();
-  const learner = isAuthenticated && isUser();
+  const { isLoading: authLoading } = useAuth();
+  const learner = usePlacementLearnerAccess();
   const fetchResult = useCallback(
     (signal: AbortSignal) => getPlacementResult(attemptId, signal),
     [attemptId],

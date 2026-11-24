@@ -1,12 +1,11 @@
 import type { PlacementReviewQuestion } from "@features/placement/types/placement-review.types";
 
-export type ReviewAnswerState = "CORRECT" | "INCORRECT" | "UNANSWERED";
+export type ReviewAnswerState = "CORRECT" | "INCORRECT";
 
 /** Display state only — never used to recompute the saved score or level. */
 export function getReviewAnswerState(
   question: PlacementReviewQuestion,
 ): ReviewAnswerState {
-  if (question.selectedOptionId === null) return "UNANSWERED";
   return question.selectedOptionId === question.correctOptionId
     ? "CORRECT"
     : "INCORRECT";

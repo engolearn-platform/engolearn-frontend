@@ -1,3 +1,5 @@
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # Learner — Giới thiệu bài kiểm tra (P01 Guest / User)
 
 > Tài liệu workflow cho màn giới thiệu Placement Test — điểm vào của luồng
@@ -122,4 +124,4 @@ Authenticated Placement entry/result/review now reuse the core LearningLayout (s
 
 ## User resume state — 2026-11-08
 
-User entry reads GET /placement/attempts/current before offering start/resume/result. This GET does not create an attempt; BE may finalize an elapsed existing attempt. Persisted progress, lastSavedAt and original deadline drive the card. Continue opens the first unanswered page, or final page when all answered. A finished attempt opens result/claim; expired allows explicit start. Loading/error offers retry, not implicit start. Guest entry is unchanged; shared shell remains. See the resume plan for the new safe summary contract and verification ledger.
+User entry reads GET /placement/attempts/current before offering start/resume/result. This GET does not create an attempt; BE may finalize an elapsed existing attempt. Persisted progress, lastSavedAt and original deadline drive the card. Continue opens the first unanswered page, or final page when all answered. A finished attempt opens result/claim; expired allows explicit start. Loading/error offers retry, not implicit start. Guest entry is unchanged; shared shell remains. See the current Placement learner entry for the safe summary contract; historical verification remains in Git history.
