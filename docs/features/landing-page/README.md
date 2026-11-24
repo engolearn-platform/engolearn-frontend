@@ -7,9 +7,9 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 ## Route ownership
 
 - `src/router.tsx` is the sole composition owner for `/`. Its nested home route renders `LearnerHomeRoute`, which supplies the data readers for the signed-in dashboard.
-- `src/features/landing-page/routes.ts` owns `/placement`.
+- `src/features/placement/routes.ts` exclusively owns `/placement` and its attempt/submitted/result/review routes. Placement stays outside the shared learner layout and selects its own Guest/User shell.
 - The root view reads `useAuth` to choose the guest landing page, a neutral session-loading state, the public landing page with retry after session errors, or the learner dashboard wrapped in `LearningLayout` for a signed-in user.
-- `/placement` is a public placeholder with a clear Vietnamese explanation and a link home. Its path lives in `src/features/landing-page/paths.ts` and is intentionally isolated for replacement by the future placement team.
+- Landing CTAs use `/placement` from `src/features/landing-page/paths.ts` and open the real Placement start page. No placeholder route is registered; the landing feature does not import another feature.
 - Login links use `/login`. Topic and grammar links use their existing public routes. Do not change auth guards, post-login redirects, roles, learner navigation, `/assessment`, or assessment behavior.
 
 ## Public resource previews
@@ -25,7 +25,6 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 
 - `GuestLandingView`: header and section navigation, hero, benefits, learning feature cards, three-step journey, illustrated final CTA and footer.
 - `LandingEntryView`: root session routing and accessible pending/error states.
-- `PlacementPlaceholderView`: replaceable public placeholder route.
 - State is UI-only and derived from `useAuth`; retry calls `refetch`. No new API calls or auth mutations.
 
 ## Responsive and accessibility checklist
@@ -36,3 +35,9 @@ Follow the supplied EngoLearn landing screenshot: teal and mint palette, penguin
 - [ ] Decorative artwork and icons are hidden from assistive technology; headings and landmarks are semantic.
 - [ ] Pending state is announced; session retry is an actionable button.
 - [ ] Contrast, Vietnamese line height, and spacing follow the EngoLearn design tokens.
+
+Integration refresh: keep main's public resource layouts, Topic detail/My Topics split and Learning Path preview. PlacementRoutes exclusively owns /placement; the placeholder is not registered. Auth return-to and Placement shells are preserved.
+
+## Shared Guest navigation — 2026-11-08
+
+PublicNavigation now lives in shared/components (old landing path re-exports it for compatibility). Home, previews, Guest Placement start/submitted/result fallback and login/register use the same component. Auth navbar preserves the existing return-to state across login/register. The shared PUBLIC_PATHS constants retain the existing landing aliases; URLs do not change. Attempt and authenticated Placement layouts remain unchanged.

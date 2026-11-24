@@ -1,4 +1,1 @@
-export const LANDING_PATHS = {
-  PLACEMENT: "/placement",
-  LEARNING_PATH_PREVIEW: "/preview/learning-path",
-} as const;
+export { PUBLIC_PATHS as LANDING_PATHS } from "@shared/constants/public-paths";

@@ -5,35 +5,27 @@ import type {
   TopicUpsertMode,
   TopicUpsertSnapshot,
 } from "../types/topic-create.types";
-import { getTopicUpsertSnapshot } from "../types/topic-create.types";
 import { topicManagementService } from "../services/topic-management.service";
 import type { TopicManagementResponse } from "../types/topic-management.types";
+import { topicDraftFromResponse } from "@features/topic/utils/topic-basic-info.adapter";
+import type { NormalizedError } from "@shared/hooks/useFetch";
 
 export interface TopicUpsertContext {
   mode: TopicUpsertMode;
   topicId?: string;
   /** Dữ liệu hiện có — chỉ có ở mode update. */
   snapshot?: TopicUpsertSnapshot;
-  /** Route update nhưng không tìm thấy snapshot (UI-only mock). */
   isMissing: boolean;
   loading?: boolean;
-  error?: unknown;
+  error?: NormalizedError;
+  response?: TopicManagementResponse;
+  reload: () => void;
 }
 
 function mapResponseToSnapshot(response: TopicManagementResponse): TopicUpsertSnapshot {
   return {
     topicId: response.id,
-    basicInfo: {
-      titleEn: response.titleEn ?? "",
-      titleVi: response.titleVi ?? "",
-      cefr: response.cefr ?? "A1",
-      category: response.category ?? "DINING",
-      duration: response.durationMinutes ? `${response.durationMinutes} phút` : "—",
-      description: response.description ?? "",
-      tags: [],
-      coverName: response.coverUrl ?? "",
-      coverMeta: "",
-    },
+    basicInfo: topicDraftFromResponse(response),
     items: [],
     quality: {
       score: 0,
@@ -63,7 +55,7 @@ export function useTopicUpsertContext(): TopicUpsertContext {
     [topicId],
   );
 
-  const { data, loading, error } = useFetch<TopicManagementResponse>(fetchSnapshot, !!topicId);
+  const { data, loading, error, refetch } = useFetch<TopicManagementResponse>(fetchSnapshot, !!topicId);
 
   // Stable identity per response so consumers (form state hydration) don't see
   // a brand-new snapshot object on every render.
@@ -73,40 +65,28 @@ export function useTopicUpsertContext(): TopicUpsertContext {
   );
 
   if (!topicId) {
-    return { mode: "create", isMissing: false };
-  }
-
-  if (loading) {
-    return { mode: "update", topicId, isMissing: false, loading: true };
+    return { mode: "create", isMissing: false, reload: refetch };
   }
 
   if (error) {
-    const status = (error as { status?: number }).status;
-    if (status === 404) {
-      return { mode: "update", topicId, isMissing: true, error };
-    }
-    // Fallback to mock if available
-    const mockSnapshot = getTopicUpsertSnapshot(topicId);
-    if (mockSnapshot) {
-      return { mode: "update", topicId, snapshot: mockSnapshot, isMissing: false, error };
-    }
-    return { mode: "update", topicId, isMissing: true, error };
+    return { mode: "update", topicId, isMissing: error.status === 404, error, reload: refetch };
   }
-
-  if (data) {
+  if (data?.id === topicId) {
     return {
       mode: "update",
       topicId,
       snapshot: fetchedSnapshot,
       isMissing: false,
+      response: data,
+      reload: refetch,
     };
   }
 
-  const mockSnapshot = getTopicUpsertSnapshot(topicId);
   return {
     mode: "update",
     topicId,
-    snapshot: mockSnapshot,
-    isMissing: !mockSnapshot,
+    isMissing: false,
+    loading: loading || !data || data.id !== topicId,
+    reload: refetch,
   };
 }

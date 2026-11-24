@@ -1,6 +1,6 @@
 # Speaking với AI — luồng người dùng FE
 
-Nguồn nghiệp vụ: [module](../../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/00-module.md), [F01 phiên luyện nói](../../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f01-speaking-session/README.md), [F02 lịch sử](../../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f02-speaking-history/README.md), [F03 cấu hình](../../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f03-speaking-configuration/README.md). Đối chiếu backend ở [ánh xạ nghiệp vụ BE](../../../../speaking-ai-baseline-backend/docs/features/speaking-with-ai/README.md).
+Nguồn nghiệp vụ: [module](../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/00-module.md), [F01 phiên luyện nói](../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f01-speaking-session/README.md), [F02 lịch sử](../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f02-speaking-history/README.md), [F03 cấu hình](../../../../docs/engolearn-business-doc/docs/usecase_spec/speaking-with-AI/f03-speaking-configuration/README.md). Đối chiếu triển khai backend ở [tổng quan Speaking BE](../../../../engolearn-backend/docs/features/speaking-with-ai/README.md).
 
 ## Màn hình và mã sở hữu
 
@@ -8,7 +8,7 @@ Nguồn nghiệp vụ: [module](../../../../../docs/engolearn-business-doc/docs/
 | --- | --- |
 | Kết quả bài học → `/topics/:topicId/items/:itemId/speaking` | [TopicItemResultView](../../../src/features/topic/views/learning/TopicItemResultView.tsx) mở tab mới khi cờ FE bật. Route cũ `/topics/:itemId/speaking` vẫn dùng cùng view. |
 | Trang luyện nói và `/speaking/history` | [SpeakingView](../../../src/features/topic/views/learning/SpeakingView.tsx) quản lý phiên, lịch sử, audio, chuyển điều khiển và tổng kết. Route lịch sử bắt đầu ở tab **Lịch sử** và dùng phạm vi tài khoản; route item lọc lịch sử theo item. |
-| Lượt nói trực tiếp | [useSpeakingStream](../../../src/features/topic/hooks/useSpeakingStream.ts) quản lý kết nối riêng với trạng thái ghi âm, mic/AudioWorklet, các lệnh socket và nguồn snapshot. [speaking.service.ts](../../../src/features/topic/services/speaking.service.ts) gọi REST qua HTTP client dùng chung. |
+| Lượt nói trực tiếp | [SpeakingView](../../../src/features/topic/views/learning/SpeakingView.tsx) của Topic dùng `useSpeakingStream` và `speakingService` qua [hợp đồng công khai Speaking](../../../src/features/speaking/contract/index.ts). Speaking quản lý WebSocket, mic/AudioWorklet, lệnh socket, yêu cầu REST và sự kiện snapshot. |
 
 ## F01 — Phiên luyện nói
 
@@ -33,4 +33,4 @@ Lời mở đầu AI hiển thị một lần trước lượt đầu và có th
 
 SPK-UC-008/009/010 dành cho Content Manager: **chưa có** màn hình soạn cấu hình nháp, chặn publish theo lỗi Speaking, hoặc sửa cấu hình sau publish theo MINOR/MAJOR. FE chỉ đọc cấu hình đã publish để mở phiên và dùng snapshot đã ghim để xem lại. Seed ở BE phục vụ thử nghiệm, không phải luồng quản trị.
 
-Xem [hợp đồng API](api-contract.md) và [cách chạy thử](README.md#chạy-thử-bằng-dữ-liệu-thật-của-môi-trường-local).
+Xem [hợp đồng API](api-contract.md) và [cấu hình và cách chạy thử](README.md#availability-and-local-setup).

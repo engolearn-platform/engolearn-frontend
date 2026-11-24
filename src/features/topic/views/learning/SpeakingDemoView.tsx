@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, Square, RotateCcw, LogOut } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { Card } from "@shared/components";
-import { SpeakingApiError, speakingDemoService } from "@features/topic/services/speaking-demo.service";
+import { SpeakingDemoApiError as SpeakingApiError, speakingDemoService } from "@features/speaking/contract";
 import type {
   DemoSpeakingItem,
-  SpeakingSession,
-} from "@features/topic/types/speaking-demo.types";
+  DemoSpeakingSession as SpeakingSession,
+} from "@features/speaking/contract";
 
 const LAST_SESSION_KEY = "speaking-demo-last-session";
 

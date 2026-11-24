@@ -2,7 +2,7 @@ import type {
   DemoSpeakingItem,
   SpeakingSession,
   SpeakingTurnResult,
-} from "@features/topic/types/speaking-demo.types";
+} from "@features/speaking/types/speaking-demo.types";
 
 const BASE = "/api/v1/speaking";
 

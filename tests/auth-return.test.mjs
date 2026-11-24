@@ -20,3 +20,18 @@ test("return destination rejects external redirects, control characters and auth
   assert.equal(authReturnTo(null), "/");
   assert.equal(authReturnTo({ from: { pathname: 7 } }), "/");
 });
+
+test("placement claim return destination survives login and register", () => {
+  const pathname = "/placement/attempts/guest-attempt/submitted";
+  assert.equal(authReturnTo({ from: { pathname } }), pathname);
+  assert.equal(authReturnTo({ from: { pathname, search: "?source=guest", hash: "#claim" } }), pathname + "?source=guest#claim");
+});
+
+test("encoded unsafe destinations and malformed return-to state fall back home", () => {
+  for (const pathname of ["/%2f%2foutside.test", "/%5coutside.test", "/%0aout", "/%7fout", "/%6cogin", "/x/%2e%2e/register", "/%", "/LOGIN"]) {
+    assert.equal(authReturnTo({ from: { pathname } }), "/", pathname);
+  }
+  for (const from of [[], { pathname: "/placement", search: "bad" }, { pathname: "/placement", hash: "bad" }, { pathname: "/placement", search: 7 }]) {
+    assert.equal(authReturnTo({ from }), "/");
+  }
+});

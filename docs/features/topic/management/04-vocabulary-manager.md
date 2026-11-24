@@ -1,5 +1,11 @@
 # Topic — Bước 2: Quản lý Từ vựng (Vocabulary Manager)
 
+## Luồng hiện hành
+
+Tab Vocabulary đọc từ Item detail và lấy bản nháp chỉ khi Item đang ở DRAFT. Dialog chỉnh mục từ, Dictionary IDs, phiên âm, nghĩa, URL/audio tải lên, mẫu câu ví dụ, collocation và Quick Check. Dialog áp dụng thay đổi vào form. Nút Lưu nháp gửi `PUT /vocabulary` kèm revision, cập nhật UI từ phản hồi MongoDB. Có thể lưu mục từ thiếu thông tin và sắp xếp các mục trong nháp. Giới hạn publish được kiểm tra khi yêu cầu Kiểm tra điều kiện xuất bản.
+
+Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
+
 > Tài liệu workflow cho màn editor Từ vựng của 1 Topic Item trong luồng tạo topic
 > (Stitch: "Admin — 4. Quản lý Từ vựng (Vocabulary Manager)").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, persist, audio).

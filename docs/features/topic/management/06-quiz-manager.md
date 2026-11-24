@@ -1,5 +1,11 @@
 # Topic — Bước 2: Biên soạn Bài tập & Quiz (Quiz Manager)
 
+## Luồng hiện hành
+
+Tab Quiz chỉnh module và câu hỏi từ Item detail. Module hỗ trợ FILL_BLANK và SITUATIONAL_CHOICE. Nút Lưu nháp gửi `PUT /quizzes` kèm revision. Một lời giải thích chung dùng cho từng câu hỏi. Với FILL_BLANK, form dùng `___` để đánh dấu chỗ trống và lưu câu đầy đủ kèm đáp án sau khi đã có đủ dữ liệu. Word bank và lựa chọn dùng mảng options. Backend bật cờ đúng trên lựa chọn và kiểm tra cấu trúc. Điều kiện đủ câu hỏi mỗi loại được kiểm tra khi yêu cầu publish readiness.
+
+Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
+
 > Tài liệu workflow cho màn editor Quiz của 1 Topic Item trong luồng tạo topic
 > (Stitch: "Admin — 6. Quản lý Quizzes (Nhóm Quiz & Thẻ câu hỏi)").
 > Dùng làm cơ sở khi update / refactor / gắn dữ liệu thật (API, persist, audio).

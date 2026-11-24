@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { Palette } from "lucide-react";
 import { EmptyState, Loading } from "@shared/components";
-import { ROUTES, adminTopicItemsPath } from "@shared/constants";
+import { ROUTES, adminTopicBasicInfoPath, adminTopicItemsPath } from "@shared/constants";
 import { Button } from "@/core/components/shadcn/button";
 import { useTopicBasicInfoForm } from "@features/topic/hooks/useTopicBasicInfoForm";
+import { useTopicUnsavedChanges } from "@features/topic/hooks/useTopicUnsavedChanges";
 import { useTopicUpsertContext } from "@features/topic/hooks/useTopicUpsertContext";
 import {
   getTopicUpsertSteps,
@@ -26,128 +27,101 @@ import {
   TopicApiError,
   createTopic,
   updateTopic,
+  fetchTopicById,
 } from "@features/topic/services/topic-management.service";
-import type {
-  TopicCreateRequest,
-  TopicUpdateRequest,
-} from "@features/topic/types/topic-management.types";
+import type { TopicManagementResponse } from "@features/topic/types/topic-management.types";
+import { topicCreateBody, topicDraftFromResponse, topicUpdateBody } from "@features/topic/utils/topic-basic-info.adapter";
 
 interface TopicBasicInfoFormProps {
   mode: TopicUpsertMode;
-  topicId?: string;
   snapshot?: TopicUpsertSnapshot;
+  response?: TopicManagementResponse;
 }
 
-/**
- * Form thật của bước 1. Chỉ được mount khi `snapshot` đã sẵn sàng (xem
- * `TopicUpsertBasicInfoView`) vì `useTopicBasicInfoForm` chỉ đọc `initial`
- * ở lần mount.
- */
-function TopicBasicInfoForm({ mode, topicId, snapshot }: TopicBasicInfoFormProps) {
+function TopicBasicInfoForm({ mode, snapshot, response }: TopicBasicInfoFormProps) {
   const navigate = useNavigate();
-  const { draft, patch, setCefr, addTag, removeTag, isValid } =
+  const location = useLocation();
+  const { draft, setDraft, patch, setCefr, addTag, removeTag, isValid } =
     useTopicBasicInfoForm(snapshot?.basicInfo);
+  const [original, setOriginal] = useState(draft);
+  const [savedTopic, setSavedTopic] = useState(response);
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState<string | null>(null);
-
+  const [feedback, setFeedback] = useState<string | null>(location.state?.topicCreated ? "Đã lưu nháp." : null);
+  const [conflict, setConflict] = useState(false);
+  const requestPending = useRef(false);
   const isUpdate = mode === "update";
-  const handleBack = () =>
-    isUpdate ? navigate(ROUTES.ADMIN_TOPICS) : navigate(-1);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original);
 
-  const buildCreateBody = (): TopicCreateRequest => {
-    const body: TopicCreateRequest = {
-      titleEn: draft.titleEn.trim(),
-      titleVi: draft.titleVi.trim(),
-    };
-    if (draft.cefr) body.cefr = draft.cefr;
-    if (draft.category) body.category = draft.category as TopicCreateRequest["category"];
-    if (draft.description.trim()) body.description = draft.description.trim();
-    if (draft.coverName.trim()) body.coverUrl = draft.coverName.trim();
-    return body;
+  useTopicUnsavedChanges(dirty, submitting);
+
+  const handleBack = () => {
+    if (requestPending.current || (dirty && !window.confirm("Bỏ các thay đổi chưa lưu?"))) return;
+    if (isUpdate) navigate(ROUTES.ADMIN_TOPICS);
+    else navigate(-1);
   };
 
-  const buildUpdateBody = (): TopicUpdateRequest => {
-    const body: TopicUpdateRequest = {
-      titleEn: draft.titleEn.trim(),
-      titleVi: draft.titleVi.trim(),
-    };
-    if (draft.cefr) body.cefr = draft.cefr;
-    if (draft.category) body.category = draft.category as TopicUpdateRequest["category"];
-    if (draft.description.trim()) body.description = draft.description.trim();
-    else body.description = null;
-    if (draft.coverName.trim()) body.coverUrl = draft.coverName.trim();
-    else body.coverUrl = null;
-    return body;
-  };
+  function acceptSaved(topic: TopicManagementResponse) {
+    const savedDraft = topicDraftFromResponse(topic);
+    setDraft(savedDraft);
+    setOriginal(savedDraft);
+    setSavedTopic(topic);
+    setConflict(false);
+  }
 
-  const handleApiError = (err: unknown) => {
-    if (err instanceof TopicApiError) {
-      if (err.fieldErrors && err.fieldErrors.length > 0) {
-        const mapped: Record<string, string> = {};
-        for (const fe of err.fieldErrors) {
-          if (fe.field) mapped[fe.field] = fe.message;
-        }
-        setFieldErrors(mapped);
-        setShowErrors(true);
-        return;
-      }
-      setFeedback(err.message || "Đã xảy ra lỗi khi lưu chủ đề.");
-      return;
-    }
-    setFeedback("Đã xảy ra lỗi khi lưu chủ đề.");
-  };
-
-  const handleContinue = async () => {
-    if (!isValid) {
-      setShowErrors(true);
-      setFieldErrors({});
-      return;
-    }
-    setShowErrors(false);
+  async function save(continueToItems: boolean) {
+    if (requestPending.current || conflict) return;
     setFieldErrors({});
     setFeedback(null);
-    setSubmitting(true);
-    try {
-      if (isUpdate && topicId) {
-        await updateTopic(topicId, buildUpdateBody());
-        navigate(adminTopicItemsPath(topicId));
-        return;
-      }
-      const created = await createTopic(buildCreateBody());
-      navigate(adminTopicItemsPath(created.id));
-    } catch (err) {
-      handleApiError(err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    setShowErrors(!isValid);
+    if (!isValid) return;
 
-  const handleSaveDraft = async () => {
-    if (!isValid) {
-      setShowErrors(true);
-      setFieldErrors({});
-      return;
-    }
-    setShowErrors(false);
-    setFieldErrors({});
-    setFeedback(null);
+    requestPending.current = true;
     setSubmitting(true);
     try {
-      if (isUpdate && topicId) {
-        await updateTopic(topicId, buildUpdateBody());
-        setFeedback("Đã lưu thay đổi.");
-        return;
+      const saved = savedTopic
+        ? await updateTopic(savedTopic.id, topicUpdateBody(original, draft, savedTopic.revision))
+        : await createTopic(topicCreateBody(draft));
+      acceptSaved(saved);
+      setFeedback(savedTopic ? "Đã lưu thay đổi." : "Đã lưu nháp.");
+      if (continueToItems) {
+        navigate(adminTopicItemsPath(saved.id), { replace: !isUpdate });
+      } else if (!isUpdate) {
+        navigate(adminTopicBasicInfoPath(saved.id), { replace: true, state: { topicCreated: true } });
       }
-      await createTopic(buildCreateBody());
-      setFeedback("Đã lưu nháp.");
-    } catch (err) {
-      handleApiError(err);
+    } catch (error) {
+      if (error instanceof TopicApiError && error.status === 409) {
+        setConflict(true);
+        setFeedback("Chủ đề đã thay đổi ở phiên khác. Tải lại dữ liệu trước khi lưu tiếp.");
+      } else if (error instanceof TopicApiError && error.fieldErrors?.length) {
+        setFieldErrors(Object.fromEntries(error.fieldErrors.map(({ field, message }) => [field, message])));
+        setFeedback(error.message);
+      } else {
+        setFeedback(error instanceof TopicApiError ? error.message : "Không thể lưu chủ đề. Vui lòng thử lại.");
+      }
     } finally {
+      requestPending.current = false;
       setSubmitting(false);
     }
-  };
+  }
+
+  async function reload() {
+    if (!savedTopic || requestPending.current || (dirty && !window.confirm("Bỏ thay đổi chưa lưu và tải bản mới nhất?"))) return;
+    requestPending.current = true;
+    setSubmitting(true);
+    try {
+      acceptSaved(await fetchTopicById(savedTopic.id));
+      setFeedback("Đã tải bản mới nhất.");
+      setFieldErrors({});
+      setShowErrors(false);
+    } catch {
+      setFeedback("Không thể tải lại chủ đề. Nội dung đang nhập vẫn còn.");
+    } finally {
+      requestPending.current = false;
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
@@ -161,51 +135,56 @@ function TopicBasicInfoForm({ mode, topicId, snapshot }: TopicBasicInfoFormProps
             }
             draftLabel={isUpdate ? "Đang cập nhật" : undefined}
             autosaveText={
-              isUpdate ? (snapshot?.updatedNote ?? "Chế độ cập nhật") : undefined
+              savedTopic?.updatedAt ? `Cập nhật lần cuối: ${new Date(savedTopic.updatedAt).toLocaleString("vi-VN")}` : undefined
             }
           />
           <TopicUpsertStepper
-            steps={getTopicUpsertSteps(mode, snapshot?.items.length ?? 0)}
+            steps={getTopicUpsertSteps(mode, savedTopic?.itemCount ?? 0)}
           />
         </div>
 
-        <form className="flex flex-col gap-6" onSubmit={(event) => event.preventDefault()}>
-          <TopicGeneralInfoCard
-            draft={draft}
-            categories={TOPIC_CREATE_CATEGORY_OPTIONS}
-            maxDescription={TOPIC_CREATE_MAX_DESCRIPTION}
-            showErrors={showErrors}
-            onPatch={patch}
-            onCefrChange={setCefr}
-            fieldErrors={fieldErrors}
-          />
+        <form onSubmit={(event) => event.preventDefault()}>
+          <fieldset disabled={submitting} className="flex flex-col gap-6">
+            <TopicGeneralInfoCard
+              draft={draft}
+              categories={TOPIC_CREATE_CATEGORY_OPTIONS}
+              maxDescription={TOPIC_CREATE_MAX_DESCRIPTION}
+              showErrors={showErrors}
+              onPatch={patch}
+              onCefrChange={setCefr}
+              fieldErrors={fieldErrors}
+            />
 
-          <section className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-8">
-            <div className="flex items-center gap-2.5 border-b border-surface-container pb-2">
-              <Palette className="size-6 text-primary" aria-hidden="true" />
-              <h2 className="text-headline-sm font-semibold text-on-surface">
-                Hình ảnh & Nhãn phân loại
-              </h2>
-            </div>
-            <TopicCoverCard coverName={draft.coverName} coverMeta={draft.coverMeta} />
-            <TopicTagsInput tags={draft.tags} onAdd={addTag} onRemove={removeTag} />
-          </section>
+            <section className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-8">
+              <div className="flex items-center gap-2.5 border-b border-surface-container pb-2">
+                <Palette className="size-6 text-primary" aria-hidden="true" />
+                <h2 className="text-headline-sm font-semibold text-on-surface">
+                  Hình ảnh & Nhãn phân loại
+                </h2>
+              </div>
+              <TopicCoverCard coverName={draft.coverName} topicId={savedTopic?.id} onChange={(coverName) => patch({ coverName })} error={fieldErrors.coverUrl} />
+              <TopicTagsInput tags={draft.tags} onAdd={addTag} onRemove={removeTag} />
+              {fieldErrors.tags && <p className="text-label-sm text-error">{fieldErrors.tags}</p>}
+            </section>
 
-          <TopicUpsertTipsCallout />
+            <TopicUpsertTipsCallout />
+          </fieldset>
         </form>
 
         {feedback ? (
-          <div className="rounded-xl bg-surface-container-lowest p-3 text-label-sm text-on-surface">
+          <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-surface-container-lowest p-3 text-label-sm text-on-surface">
             {feedback}
+            {conflict && <Button type="button" variant="outline" disabled={submitting} onClick={reload}>Tải lại chủ đề</Button>}
           </div>
         ) : null}
 
         <TopicUpsertFooterBar
           onBack={handleBack}
           saveLabel={isUpdate ? "Lưu thay đổi" : "Lưu nháp"}
-          onSaveDraft={handleSaveDraft}
-          onContinue={handleContinue}
+          onSaveDraft={() => void save(false)}
+          onContinue={() => void save(true)}
           disabled={submitting}
+          saveDisabled={conflict}
         />
       </div>
     </div>
@@ -214,7 +193,7 @@ function TopicBasicInfoForm({ mode, topicId, snapshot }: TopicBasicInfoFormProps
 
 export default function TopicUpsertBasicInfoView() {
   const navigate = useNavigate();
-  const { mode, topicId, snapshot, isMissing, loading } = useTopicUpsertContext();
+  const { mode, topicId, snapshot, response, isMissing, loading, error, reload } = useTopicUpsertContext();
 
   if (loading) {
     return (
@@ -226,14 +205,15 @@ export default function TopicUpsertBasicInfoView() {
     );
   }
 
-  if (isMissing) {
+  if (error || isMissing) {
     return (
       <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
         <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
           <EmptyState
-            title="Không tìm thấy chủ đề"
-            description="Chủ đề này không tồn tại trong dữ liệu hiện tại."
+            title={isMissing ? "Không tìm thấy chủ đề" : "Không thể tải chủ đề"}
+            description={isMissing ? "Chủ đề này không tồn tại trong dữ liệu hiện tại." : error?.message}
           />
+          {!isMissing && <Button type="button" variant="outline" onClick={reload}>Thử lại</Button>}
           <Button
             type="button"
             variant="outline"
@@ -252,7 +232,7 @@ export default function TopicUpsertBasicInfoView() {
       // `topicId` là key để form remount (nạp lại draft) khi mở topic khác.
       key={topicId ?? "create"}
       mode={mode}
-      topicId={topicId}
+      response={response}
       snapshot={snapshot}
     />
   );

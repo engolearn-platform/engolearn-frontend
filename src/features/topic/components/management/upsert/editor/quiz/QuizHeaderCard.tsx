@@ -6,6 +6,7 @@ interface QuizHeaderCardProps {
   totalQuestions: number;
   groupCount: number;
   onQuickAdd: () => void;
+  disabled?: boolean;
 }
 
 export default function QuizHeaderCard({
@@ -13,6 +14,7 @@ export default function QuizHeaderCard({
   totalQuestions,
   groupCount,
   onQuickAdd,
+  disabled = false,
 }: QuizHeaderCardProps) {
   return (
     <section className="flex flex-col gap-6 rounded-2xl bg-surface-container-lowest p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -40,6 +42,7 @@ export default function QuizHeaderCard({
         </div>
         <Button
           type="button"
+          disabled={disabled}
           onClick={onQuickAdd}
           className="w-full rounded-xl bg-primary-container text-on-primary hover:bg-primary sm:w-auto"
         >

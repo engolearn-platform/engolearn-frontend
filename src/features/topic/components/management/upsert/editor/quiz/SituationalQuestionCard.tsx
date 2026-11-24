@@ -9,6 +9,7 @@ interface SituationalQuestionCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
 export default function SituationalQuestionCard({
@@ -17,6 +18,7 @@ export default function SituationalQuestionCard({
   onEdit,
   onDelete,
   onPreviewAudio,
+  readOnly = false,
 }: SituationalQuestionCardProps) {
   return (
     <article className="group flex flex-col justify-between rounded-2xl bg-surface-container-lowest p-5 shadow-sm transition-shadow hover:shadow-md">
@@ -30,10 +32,11 @@ export default function SituationalQuestionCard({
               <ExpressionAudioChip
                 audioFile={question.audioUrl}
                 onPreview={onPreviewAudio}
+                readOnly={readOnly}
               />
             )}
           </div>
-          <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+          {!readOnly && <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
             <button
               type="button"
               onClick={() => onEdit(question.id)}
@@ -52,7 +55,7 @@ export default function SituationalQuestionCard({
             >
               <Trash2 className="size-[18px]" aria-hidden="true" />
             </button>
-          </div>
+          </div>}
         </div>
         <p className="mb-3 text-body-md text-on-surface">
           <strong className="text-on-surface">Tình huống: </strong>

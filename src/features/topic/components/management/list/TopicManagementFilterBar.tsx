@@ -1,4 +1,5 @@
 import { ChevronDown, FilterX, Search } from "lucide-react";
+import { CefrSelect } from "@shared/components/management";
 import type { TopicManagementFilter } from "@features/topic/types/topic.types";
 import type { TopicCategory } from "@features/topic/types/topic-management.types";
 
@@ -45,26 +46,7 @@ export default function TopicManagementFilterBar({
         />
       </div>
       <div className="flex flex-wrap items-center gap-2.5">
-        <label className="relative">
-          <span className="sr-only">Lọc theo trình độ CEFR</span>
-          <select
-            value={filter.cefr}
-            onChange={(event) =>
-              onChange({ cefr: event.target.value as TopicManagementFilter["cefr"] })
-            }
-            className="cursor-pointer appearance-none rounded-xl bg-surface-container-low py-2 pr-8 pl-3 text-label-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:outline-none"
-          >
-            <option value="ALL">Tất cả trình độ (CEFR)</option>
-            <option value="A1">A1 - Mới bắt đầu</option>
-            <option value="A2">A2 - Sơ cấp</option>
-            <option value="B1">B1 - Trung cấp</option>
-            <option value="B2">B2 - Trung cao cấp</option>
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute top-1/2 right-2.5 size-[18px] -translate-y-1/2 text-outline-variant"
-            aria-hidden="true"
-          />
-        </label>
+        <CefrSelect value={filter.cefr} onChange={(cefr) => onChange({ cefr })} />
         <label className="relative">
           <span className="sr-only">Lọc theo danh mục</span>
           <select

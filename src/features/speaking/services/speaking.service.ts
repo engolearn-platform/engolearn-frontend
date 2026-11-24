@@ -1,4 +1,4 @@
-import type { SpeakingItemConfig, SpeakingSession } from "@features/topic/types/speaking.types";
+import type { SpeakingItemConfig, SpeakingSession } from "@features/speaking/types/speaking.types";
 import { httpService } from "@shared/services/http.service";
 import type { ApiEnvelope, HttpError } from "@shared/services/http.service";
 

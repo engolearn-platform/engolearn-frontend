@@ -1,5 +1,5 @@
 import { Bell, ChevronRight, User } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
 
@@ -13,11 +13,13 @@ interface ManagementTopBarProps {
 export default function ManagementTopBar({
   userName = "Thảo Nguyễn",
   userRole = "Lead Author",
-  title = "Quản lý chủ đề",
+  title,
   brand = "Môi trường biên tập",
 }: ManagementTopBarProps) {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const sectionLabel = pathname.startsWith(ROUTES.ADMIN_GRAMMAR) ? "Quản lý Ngữ pháp" : "Quản lý chủ đề";
   async function handleSignOut() {
     await auth.logout();
     await navigate(ROUTES.LOGIN, { replace: true });
@@ -30,7 +32,7 @@ export default function ManagementTopBar({
         </span>
         <ChevronRight className="size-4 shrink-0 text-outline-variant" aria-hidden="true" />
         <span className="truncate text-label-lg font-semibold text-on-surface">
-          {title}
+          {title ?? sectionLabel}
         </span>
       </div>
       <div className="flex items-center gap-4">

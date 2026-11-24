@@ -45,7 +45,7 @@ src/
 
 ### `features/`
 
-**Purpose**: Self-contained, independently maintainable feature modules. Each feature encapsulates everything it needs.
+**Purpose**: Independently maintainable modules that own capabilities within a business domain. Each feature encapsulates its implementation and may publish a contract for other features that consume its capabilities.
 
 **Structure of a feature:**
 
@@ -53,6 +53,7 @@ src/
 features/
 └── FeatureName/
     ├── components/      # UI components specific to this feature
+    ├── contract/        # Optional public capability API
     ├── hooks/           # Custom hooks for this feature's logic
     ├── types/           # TypeScript interfaces and types
     ├── views/           # Page-level components
@@ -60,10 +61,11 @@ features/
 ```
 
 **Key principles:**
-- Each feature is isolated and self-contained
-- Features should not directly import from other features
-- Features can import from `shared/` and `core/`
-- Easy to add, remove, or refactor features independently
+- Cross-feature capability dependencies use only the provider's public `contract/index.ts` entry point.
+- Consumers must not import another feature's internal implementation. Providers must not depend on consumer implementations or form dependency cycles.
+- Use `shared/` for generic, feature-neutral functionality without a single business-domain owner. Keep domain-specific capabilities in their owning feature.
+- Features can import appropriate shared functionality and app-shell infrastructure from `core/`.
+- Feature views and routes depend on the capability surface the module owns.
 
 ---
 
@@ -80,7 +82,7 @@ features/
 | `constants/` | Application-wide constants (API URLs, routes) |
 | `types/` | Shared TypeScript interfaces |
 
-**When to use**: When code is used by multiple features or doesn't belong to any specific feature.
+**When to use**: For generic, feature-neutral functionality without a single business-domain owner. Reuse across features alone does not make domain-specific capability shared code.
 
 ---
 
@@ -91,9 +93,10 @@ The project includes path aliases for cleaner imports:
 ```tsx
 import { useFetch } from "@shared/hooks";
 import { Card } from "@shared/components";
-import PostView from "@features/Post/views/PostView";
 import FullLayout from "@/core/layouts/FullLayout";
 ```
+
+`@features/<provider>/contract` resolves to that feature's `contract/index.ts`. A feature publishes a contract when another feature needs its domain capability. Keep generic reusable functionality in `shared/` when no feature owns it. See [the project structure guide](docs/architecture/project-structure.md) for detailed boundaries and import examples.
 
 | Alias | Path |
 |-------|------|

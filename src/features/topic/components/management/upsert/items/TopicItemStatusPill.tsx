@@ -27,18 +27,19 @@ function resolveVisual(
   completeness: TopicItemCompleteness,
   hasAnyContent: boolean,
 ): StatusVisual {
+  if (publicationStatus === "HIDDEN") {
+    return { label: "Đang ẩn", className: "bg-surface-container-high text-on-surface-variant", Icon: Circle };
+  }
+  if (!hasAnyContent) {
+    return publicationStatus === "DRAFT"
+      ? { label: "Bản nháp", className: "bg-secondary-fixed text-on-secondary-fixed", Icon: PenLine }
+      : { label: "Đã xuất bản", className: "bg-primary/10 text-primary", Icon: CircleCheck };
+  }
   if (publicationStatus === "PUBLISHED" && completeness === "complete") {
     return {
       label: "Hoàn tất",
       className: "bg-primary/10 text-primary",
       Icon: CircleCheck,
-    };
-  }
-  if (completeness === "empty" && !hasAnyContent) {
-    return {
-      label: "Chưa có dữ liệu",
-      className: "bg-surface-container-high text-on-surface-variant",
-      Icon: Circle,
     };
   }
   if (completeness === "empty") {

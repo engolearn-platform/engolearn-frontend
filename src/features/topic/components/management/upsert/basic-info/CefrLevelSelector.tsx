@@ -4,7 +4,7 @@ import type { CefrLevel } from "@features/topic/types/topic.types";
 import type { TopicCreateCefrOption } from "@features/topic/types/topic-create.types";
 
 interface CefrLevelSelectorProps {
-  value: CefrLevel;
+  value: CefrLevel | "";
   options: TopicCreateCefrOption[];
   onChange: (cefr: CefrLevel) => void;
 }

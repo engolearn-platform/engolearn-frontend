@@ -1,0 +1,25 @@
+{
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "https://engolearn-backend-deploy.onrender.com/api/$1",
+            "transforms": [
+                {
+                    "type": "request.headers",
+                    "op": "set",
+                    "target": {
+                        "key": "ngrok-skip-browser-warning"
+                    },
+                    "args": "1"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

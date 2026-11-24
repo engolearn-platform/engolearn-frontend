@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:auth": "node --test tests/auth-role-policy.test.mjs tests/auth-routes.test.mjs",
     "preview": "vite preview",
     "topic:types": "node scripts/generate-topic-api-types.mjs",
     "topic:types:check": "node scripts/generate-topic-api-types.mjs --check",
     "test:topic-api": "npm run topic:types:check && node --test tests/topic-api.test.mjs",
+    "test:topic-management-read": "node --test tests/topic-management-read.test.mjs",
     "test:topic": "npm run topic:types:check && node --test tests/topic-api.test.mjs tests/topic-catalog.test.mjs tests/topic-lesson.test.mjs"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "jsdom": "26.1.0",
     "tw-animate-css": "^1.3.8",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",

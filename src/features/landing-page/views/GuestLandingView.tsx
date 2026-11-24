@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import PublicNavigation, { PublicBrand } from "@features/landing-page/components/PublicNavigation";
+import PublicNavigation, { PublicBrand } from "@shared/components/PublicNavigation";
 import { LANDING_PATHS } from "@features/landing-page/paths";
 import { ROUTES } from "@shared/constants";
 
@@ -46,9 +46,9 @@ const features = [
     icon: ListChecks,
     title: "Kiểm tra trình độ",
     eyebrow: "TÌM MỨC HỌC PHÙ HỢP",
-    description: "Tính năng kiểm tra trình độ đang được chuẩn bị.",
+    description: "Khám phá trình độ hiện tại qua bài kiểm tra đầu vào.",
     to: LANDING_PATHS.PLACEMENT,
-    action: "Tìm hiểu thêm",
+    action: "Bắt đầu kiểm tra",
     color: "bg-learning-note",
   },
 ];
@@ -89,7 +89,7 @@ export default function GuestLandingView({ sessionError, onRetry }: { sessionErr
                   <Link to={ROUTES.LOGIN}><GraduationCap aria-hidden="true" />Đăng nhập để học tiếp</Link>
                 </Button>
               </div>
-              <p className="flex items-start gap-2 text-label-lg text-on-surface-variant"><CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />Tính năng kiểm tra trình độ đang được chuẩn bị. Bạn có thể bắt đầu với chủ đề và ngữ pháp.</p>
+              <p className="flex items-start gap-2 text-label-lg text-on-surface-variant"><CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />Làm bài khi chưa đăng nhập. Đăng nhập sau khi nộp bài để xem kết quả.</p>
             </div>
             <div aria-hidden="true" className="relative mx-auto w-full max-w-2xl">
               <div className="absolute inset-x-10 bottom-3 top-8 rounded-[2rem] bg-white/55 blur-2xl" />

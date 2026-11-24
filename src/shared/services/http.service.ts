@@ -67,7 +67,7 @@ class HttpService {
   private async request<T>(method: HttpMethod, endpoint: string, options?: RequestOptions, body?: unknown, retry = true): Promise<T> {
     const isUnsafe = method !== "GET";
     const isAuthEndpoint = /\/api\/v1\/auth\/(login|register|refresh|logout)$/.test(endpoint);
-    const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json" });
+    const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" });
     for (const [key, value] of Object.entries(options?.headers ?? {})) headers.set(key, value);
     const response = await this.fetchImpl(this.buildUrl(endpoint, options?.params), {
       method, credentials: "same-origin", cache: "no-store", headers, signal: options?.signal, keepalive: options?.keepalive,

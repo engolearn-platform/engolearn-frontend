@@ -9,6 +9,7 @@ interface PurposeGroupSectionProps {
   onDelete: (exampleId: string) => void;
   onDuplicate: (exampleId: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
 const GROUP_BADGES = ["A", "B", "C"];
@@ -21,6 +22,7 @@ export default function PurposeGroupSection({
   onDelete,
   onDuplicate,
   onPreviewAudio,
+  readOnly = false,
 }: PurposeGroupSectionProps) {
   return (
     <section className="space-y-4">
@@ -54,6 +56,7 @@ export default function PurposeGroupSection({
             onDelete={onDelete}
             onDuplicate={onDuplicate}
             onPreviewAudio={onPreviewAudio}
+            readOnly={readOnly}
           />
         ))}
       </div>

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ROUTES } from "@shared/constants";
+import { PUBLIC_PATHS } from "@shared/constants/public-paths";
 import { matchPath } from "react-router";
 
 export interface LearningNavLink {
@@ -141,6 +142,16 @@ export const LEARNING_NAV_SECTIONS: readonly LearningNavSection[] = [
       {
         kind: "link",
         item: {
+          id: "placement",
+          label: "Kiểm tra đầu vào",
+          icon: GraduationCap,
+          to: PUBLIC_PATHS.PLACEMENT,
+          patterns: [PUBLIC_PATHS.PLACEMENT, `${PUBLIC_PATHS.PLACEMENT}/*`],
+        },
+      },
+      {
+        kind: "link",
+        item: {
           id: "learning-paths",
           label: "Luyện tập micro-skill",
           icon: Target,
@@ -168,7 +179,8 @@ export const LEARNING_NAV_SECTIONS: readonly LearningNavSection[] = [
           id: "assessment",
           label: "Đánh giá trình độ",
           icon: ClipboardList,
-          disabled: true,
+          to: "/assessment",
+          patterns: ["/assessment", "/assessment/*"],
         },
       },
       {

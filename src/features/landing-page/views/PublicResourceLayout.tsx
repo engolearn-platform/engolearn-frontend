@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router";
 import LearningLayout from "@/core/layouts/LearningLayout";
-import PublicNavigation from "@features/landing-page/components/PublicNavigation";
+import PublicNavigation from "@shared/components/PublicNavigation";
 import { useAuth } from "@shared/hooks";
 
 export function PublicResourceLayout({ standalone = false }: { standalone?: boolean }) {

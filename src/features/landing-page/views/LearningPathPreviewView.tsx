@@ -1,7 +1,7 @@
 import { ArrowRight, BookOpenText, Headphones, Route, ScanText } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
-import PublicNavigation from "@features/landing-page/components/PublicNavigation";
+import PublicNavigation from "@shared/components/PublicNavigation";
 import { Card } from "@shared/components";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";

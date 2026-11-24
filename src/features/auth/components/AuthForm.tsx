@@ -1,23 +1,24 @@
-import { useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useRef, useState, type FormEvent } from "react";
+import { Link, useLocation } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import BrandImage from "@shared/components/BrandImage";
+import PublicNavigation from "@shared/components/PublicNavigation";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
-import { authReturnTo } from "@features/auth/utils/authReturnTo";
 
 interface AuthFormProps { mode: "login" | "register" }
 interface FieldError { field: string; message: string }
 
+
 export default function AuthForm({ mode }: AuthFormProps) {
   const isRegister = mode === "register";
   const { login, register } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const submissionPendingRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldError[]>([]);
   const emailError = fieldErrors.find(error => error.field.toLowerCase().includes("email"))?.message;
@@ -25,7 +26,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || submissionPendingRef.current) return;
     const normalizedEmail = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || !password) {
       setFieldErrors([
@@ -41,10 +42,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
       setBusy(false);
       return;
     }
+    submissionPendingRef.current = true;
     try {
       const credentials = { email: normalizedEmail, password };
       if (isRegister) await register(credentials); else await login(credentials);
-      await navigate(authReturnTo(location.state), { replace: true });
+      // GuestOnlyGuard owns the post-authentication redirect.
     } catch (error) {
       const detail = error as Error & { code?: string; fieldErrors?: FieldError[] };
       setFieldErrors(detail.fieldErrors ?? []);
@@ -52,10 +54,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
       else if (detail.code === "EMAIL_ALREADY_EXISTS") setMessage("An account already uses this email. Sign in instead.");
       else if (detail.code === "ACCOUNT_LOCKED") setMessage("This account is locked. Contact support for help.");
       else setMessage(detail.message || "Could not complete your request. Try again.");
-    } finally { setBusy(false); }
+    } finally { submissionPendingRef.current = false; setBusy(false); }
   }
 
-  return <main className="min-h-screen bg-surface px-5 py-12 text-on-surface">
+  return <><PublicNavigation key={location.pathname} /><main id="main-content" tabIndex={-1} className="min-h-screen bg-surface px-5 py-12 text-on-surface">
     <div className="mx-auto grid min-h-[calc(100vh-6rem)] max-w-5xl items-center gap-12 lg:grid-cols-[1fr_420px]">
       <section className="max-w-xl">
         <Link to={ROUTES.HOME} aria-label="EngoLearn — Trang chủ" className="inline-flex min-h-12 items-center rounded-xl focus-visible:outline-2 focus-visible:outline-primary"><BrandImage className="h-9 w-auto object-contain" /></Link>
@@ -75,5 +77,5 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <p className="mt-6 text-center text-sm text-on-surface-variant">{isRegister ? "Already have an account?" : "New to Engo Learn?"} {" "}<Link className="font-semibold text-primary underline-offset-4 hover:underline" to={isRegister ? ROUTES.LOGIN : ROUTES.REGISTER} state={location.state}>{isRegister ? "Sign in" : "Create an account"}</Link></p>
       </section>
     </div>
-  </main>;
+  </main></>;
 }

@@ -9,17 +9,21 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 - `npm run dev` — dev server on port 3000 (see `vite.config.ts`).
 - `npm run build` — always `tsc -b && vite build`; type errors fail the build, fix them first.
 - `npm run lint` — `eslint .` (ignores `dist` only).
+- Auth authorization tests run with `npm run test:auth`.
 - Topic catalog/state tests: `npm run test:topic`. User instruction: never use mock/fixture verification; run the real FE proxy against the real BE. Historical mocked tests must not be used for this integration.
-- Topic API boundary tests: `npm run test:topic-api` (native Node22.18+, no added test dependency). Contract/type drift: `npm run topic:types:check`. No React/browser suite, CI or pre-commit configured. Always verify with `build` + `lint`; also run API tests when touching the topic client/contract.
+- Topic API boundary tests: `npm run test:topic-api` (native Node22.18+, no added test dependency). Contract/type drift: `npm run topic:types:check`. No browser E2E runner, CI or pre-commit configured. Always verify with `build` + `lint`; also run API tests when touching the topic client/contract.
 
 ## Routing / entrypoints
 
+- When creating or changing a protected route or role-dependent UI, developers and coding agents MUST read and follow [security authorization rules](docs/architecture/security-authorization.md).
+
 - `src/main.tsx` wraps `AppRouter` in `BrowserRouter`; `src/router.tsx` aggregates feature routes via `useRoutes`. Import router from `"react-router"`, **not** `react-router-dom`.
-- Each feature exports its `RouteObject[]` from `src/features/<Name>/routes.ts` (layout `FullLayout` + `children` with `Component: <View>`). Register it in `src/router.tsx`; learner catalog, grammar, learning-path and subscription routes share one pathless `LearningLayout` parent, while standalone topic learning and management flows keep their own layouts.
-- Canonical shape per feature: `components/ hooks/ types/ views/ routes.ts`. `src/features/topic/` is currently an empty placeholder for new Engo Learn work.
+- When a feature owns routes, export its `RouteObject[]` from `src/features/<Name>/routes.ts` (layout `FullLayout` + `children` with `Component: <View>`) and register it in `src/router.tsx`. Learner catalog, grammar, learning-path and subscription routes share one pathless `LearningLayout` parent, while standalone topic learning and management flows keep their own layouts.
+- Use the folders each feature needs. Add views and routes for features that own UI surfaces.
 
 ## Imports & TS strictness
 
+- Before editing a feature, discover and follow the applicable `AGENTS.md` files along the path from the repository root to the files being changed.
 - Aliases (defined in both `vite.config.ts` and `tsconfig.app.json`): `@/` → `src/`, `@features/` → `src/features/`, `@shared/` → `src/shared/`. Prefer `@features/` over `@/` for feature imports.
 - Dùng alias cho mọi import ra khỏi thư mục hiện tại (chỉ giữ relative `./X` cho file cùng thư mục). Relative 2+ cấp (`../../...`) bị rule `no-restricted-imports` warn trong `eslint.config.js` — thay bằng `@features/<ten-feature>/...`, `@shared/...`, `@/...` cho app shell (`@/core/...`).
 - `verbatimModuleSyntax` + `erasableSyntaxOnly` are on: use `import type { ... }` for types, no TS enums/namespaces/parameter properties.
@@ -27,7 +31,8 @@ React 19 + Vite 6 + TS (~5.8) + React Router v7 + Tailwind v4 + shadcn (new-york
 
 ## Boundaries
 
-- Features are self-contained: never import across features. Shared code goes in `src/shared/` (`components/ hooks/ services/ utils/ constants/ types/`); app-wide infra in `src/core/` (`layouts/`, shadcn wrappers in `components/shadcn/`, global CSS in `assets/css/App.css`).
+- Cross-feature dependencies are permitted only through explicitly published capability contracts of the providing feature. Do not import another feature's internal implementation. Use shared for genuinely reusable, feature-neutral functionality. Follow `docs/architecture/project-structure.md` for detailed rules.
+- Shared code goes in `src/shared/` (`components/ hooks/ services/ utils/ constants/ types/`); app-wide infra in `src/core/` (`layouts/`, shadcn wrappers in `components/shadcn/`, global CSS in `assets/css/App.css`).
 - Data fetching: reuse `useFetch(fetchFn)` from `@shared/hooks` — pass a `(signal: AbortSignal) => Promise<T>` callback (see `src/features/Product/hooks/useProducts.ts`); it returns `{ data, loading, error, refetch }` with abort handling built in.
 - shadcn config (`components.json`): CSS `src/core/assets/css/App.css`, aliases `core/components/shadcn`, `core/lib/...`. Check `src/core/components/shadcn/` and `src/shared/components/` before creating any UI primitive.
 

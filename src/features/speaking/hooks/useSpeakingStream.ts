@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { speakingService, SpeakingApiError, SPEAKING_CONTRACT_VERSION } from "@features/topic/services/speaking.service";
-import { parseSpeakingDialogueDecision } from "@features/topic/hooks/speakingDialogueDecision";
-import type { SpeakingDialogueDecision, SpeakingSession } from "@features/topic/types/speaking.types";
+import { speakingService, SpeakingApiError, SPEAKING_CONTRACT_VERSION } from "@features/speaking/services/speaking.service";
+import type { SpeakingDialogueDecision, SpeakingSession } from "@features/speaking/types/speaking.types";
+import { parseSpeakingDialogueDecision } from "./speakingDialogueDecision";
 
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
 export type RecordingState = "idle" | "recording" | "processing";

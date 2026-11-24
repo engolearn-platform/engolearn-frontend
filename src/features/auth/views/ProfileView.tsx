@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
-import { RefreshCw, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { Card } from "@shared/components/Card";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
+import ProfileDashboard from "@features/auth/components/ProfileDashboard";
 
 type User = { id: string; email: string; role: "USER" | "CONTENT_MANAGER" | "ADMIN" };
 type AuthPath = "login" | "register";
@@ -198,6 +199,9 @@ export default function ProfileView() {
     }
   }
 
+  if (!loading && user) return <ProfileDashboard key={user.id} user={user} pending={pending} message={message} notice={notice}
+    onLogout={() => { void logout(); }} onCheckSession={() => { void refreshIdentity(); }} onRefreshSession={() => { void explicitlyRefresh(); }} />;
+
   return <main className="min-h-screen bg-surface px-5 py-8 text-on-surface">
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <Link to={ROUTES.HOME} className="self-start text-body-md font-semibold text-primary underline-offset-4 hover:underline">← Trang chủ</Link>
@@ -220,27 +224,6 @@ export default function ProfileView() {
         </form>
         <p className="mt-5 text-body-md text-on-surface-variant">{mode === "login" ? "New to Engo Learn?" : "Already have an account?"} {" "}<button type="button" className="font-semibold text-primary underline-offset-4 hover:underline" disabled={pending} onClick={() => { setMode(mode === "login" ? "register" : "login"); setMessage(null); }}>{mode === "login" ? "Create an account" : "Sign in"}</button></p>
       </Card>}
-      {!loading && user && <>
-        <Card className="rounded-2xl border-outline-variant bg-surface-container-lowest p-5">
-          <p className="mb-5 text-body-md font-semibold text-primary" role="status">Đã đăng nhập · Dữ liệu từ máy chủ</p>
-          <dl className="flex flex-col gap-5 text-body-md">
-            <div><dt className="text-on-surface-variant">Email</dt><dd className="break-all font-semibold">{user.email}</dd></div>
-            <div><dt className="text-on-surface-variant">Vai trò</dt><dd className="font-semibold">{user.role}</dd></div>
-            <div><dt className="text-on-surface-variant">User ID</dt><dd className="break-all font-mono">{user.id}</dd></div>
-          </dl>
-        </Card>
-        <section aria-labelledby="session-check" className="flex flex-col gap-4">
-          <div><h2 id="session-check" className="text-headline-md font-semibold">Kiểm tra phiên</h2><p className="mt-2 text-body-md text-on-surface-variant">Tải lại trang hoặc kiểm tra phiên để xác nhận danh tính máy chủ.</p></div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button className="min-h-12" disabled={pending || loading} onClick={() => { void refreshIdentity(); }}><RefreshCw aria-hidden="true" />Kiểm tra phiên</Button>
-            <Button variant="outline" className="min-h-12" disabled={pending || loading} onClick={() => { void explicitlyRefresh(); }}>Refresh session</Button>
-            <Button variant="outline" className="min-h-12" disabled={pending} onClick={() => window.location.reload()}>Tải lại trang</Button>
-            <Button variant="outline" className="min-h-12" disabled={pending} onClick={() => { void logout(); }}>Đăng xuất</Button>
-          </div>
-          {message && <p role="alert" className="rounded-md bg-error-container px-3 py-2 text-body-md text-on-error-container">{message} <button type="button" className="font-semibold underline" disabled={pending} onClick={() => { void refreshIdentity(); }}>Try again</button></p>}
-          {notice && <p role="status" className="text-body-md text-on-surface-variant">{notice}</p>}
-        </section>
-      </>}
     </div>
   </main>;
 }

@@ -5,14 +5,15 @@
 ## Nguồn và route
 
 - Không có Stitch. Route tạm `/dev/speaking` dưới `LearningLayout`, tách khỏi tiến độ Context → Vocab → Expressions → Practice.
-- Baseline yêu cầu đăng nhập qua cookie auth chung. Route này vẫn dùng API demo cũ để đối chiếu với [luồng Speaking chính](../../speaking-with-ai/README.md).
-- `GET /api/v1/speaking/demo-item` lấy item "At the Restaurant item 1" và mục tiêu mẫu từ backend dev profile.
+- `SpeakingDemoView` và route vẫn thuộc Topic. API demo và các kiểu dữ liệu của Speaking được tiêu thụ qua hợp đồng công khai [Speaking](../../../../src/features/speaking/contract/index.ts); xem [luồng Speaking chính](../../speaking-with-ai/README.md).
+- Route dùng cookie đăng nhập qua HTTP client của API demo.
+- Luồng demo cũ gọi `GET /api/v1/speaking/demo-item` để lấy item "At the Restaurant item 1" và mục tiêu mẫu. Backend checkout hiện tại không cung cấp endpoint này.
 - Mở route chỉ đọc item và phiên hiện có; không tự tạo phiên.
 
 ## Component, state và tương tác
 
 - `SpeakingDemoView`: tiêu đề item, danh sách mục tiêu, tiến độ, điều khiển thu âm, hội thoại, kết quả phiên.
-- `speaking-demo.service.ts`: unwrap `ApiResponse`; gọi create/current/resume/turn/end; hiển thị mã lỗi backend.
+- Speaking's `speaking-demo.service.ts`: unwrap `ApiResponse`; gọi create/current/resume/turn/end; hiển thị mã lỗi backend. API multipart này thuộc luồng demo cũ và backend checkout hiện tại không khai báo endpoint `GET /demo-item` hoặc multipart turn.
 - State UI: loading, error, recording, submitting. Trạng thái phiên và kết quả lấy từ backend.
 - Bắt đầu: xin micro trước khi gọi create. Lượt nói: `MediaRecorder` ghi một audio clip, gửi multipart với `turnId` UUID và `controllerEpoch`; chỉ bật lượt kế tiếp khi có response. Dừng thu ở 120 giây.
 - Kết thúc: chỉ nút **Kết thúc phiên** gọi endpoint end. Đóng tab/tải lại không gọi end.

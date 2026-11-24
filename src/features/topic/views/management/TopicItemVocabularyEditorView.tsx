@@ -1,182 +1,112 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
-import { EmptyState } from "@shared/components";
+import { useMemo, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
-import {
-  useTopicItemVocabularyForm,
-  type TopicVocabularyUpsert,
-} from "@features/topic/hooks/useTopicItemVocabularyForm";
-import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
-import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
-import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
-import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
-import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
 import VocabularyCard from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyCard";
 import VocabularyHeaderCard from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyHeaderCard";
 import VocabularyQuickAddSlot from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyQuickAddSlot";
 import VocabularyUpsertDialog from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyUpsertDialog";
+import type { TopicVocabularyResource } from "@features/topic/types/topic-management.types";
+import { mergeVocabularyEditorItem, toVocabularyEditorItem, type TopicVocabularyAuthoringDraft } from "@features/topic/utils/topic-vocabulary-authoring.adapter";
 
-function stepDetail(
-  steps: { key: string; detail: string }[],
-  key: string,
-): string {
-  const found = steps.find((step) => step.key === key);
-  return found ? found.detail.replace(/[()]/g, "") : "";
+interface TopicItemVocabularyEditorViewProps {
+  value: TopicVocabularyResource[];
+  onChange: (value: TopicVocabularyResource[]) => void;
+  disabled?: boolean;
+  topicId: string;
 }
 
-export default function TopicItemVocabularyEditorView() {
-  const navigate = useNavigate();
-  const { itemId, topicId } = useParams();
-  const {
-    item,
-    items,
-    count,
-    max,
-    canAdd,
-    addItem,
-    patchItem,
-    removeItem,
-    isValid,
-  } = useTopicItemVocabularyForm(itemId);
-  const [showErrors, setShowErrors] = useState(false);
+const MAX_VOCABULARIES = 5;
+
+export default function TopicItemVocabularyEditorView({
+  value,
+  onChange,
+  disabled = false,
+  topicId,
+}: TopicItemVocabularyEditorViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const handleBackToList = () => navigate(adminTopicItemsPath(topicId));
-
-  if (!item) {
-    return (
-      <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
-          <EmptyState
-            title="Không tìm thấy topic item"
-            description="Topic item này không tồn tại trong bản nháp hiện tại."
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleBackToList}
-            className="mx-auto w-full rounded-xl sm:w-auto"
-          >
-            Quay lại danh sách
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const handleSelectSection = (section: TopicItemStepKey) => {
-    if (section === "vocabulary" || !itemId) return;
-    navigate(topicItemSectionPath(itemId, section, topicId));
-  };
-
-  const handleBack = () =>
-    navigate(topicItemSectionPath(itemId ?? "", "context", topicId));
-
-  const handleContinue = () => {
-    if (!isValid || !itemId) {
-      setShowErrors(true);
-      return;
-    }
-    setShowErrors(false);
-    navigate(topicItemSectionPath(itemId, "expressions", topicId));
-  };
-
-  const handleAdd = () => {
-    if (!canAdd) return;
-    setDialogMode("add");
-    setEditingId(null);
-    setDialogOpen(true);
-  };
-
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const items = useMemo(
+    () => value.map((resource, index) => toVocabularyEditorItem(resource, `vocab-row-${index}`)),
+    [value],
+  );
   const handleEdit = (id: string) => {
-    setDialogMode("edit");
-    setEditingId(id);
+    const index = items.findIndex((entry) => entry.id === id);
+    if (index < 0 || disabled) return;
+    setEditingIndex(index);
     setDialogOpen(true);
   };
 
-  const handlePreviewAudio = () => undefined;
+  const handleDelete = (id: string) => {
+    if (disabled) return;
+    const index = items.findIndex((entry) => entry.id === id);
+    if (index < 0) return;
+    const word = items[index]?.word || "mục từ này";
+    if (!window.confirm(`Bạn có chắc muốn xóa ${word}?`)) return;
+    onChange(value.filter((_, current) => current !== index));
+  };
 
-  const handleSubmitDialog = (draft: TopicVocabularyUpsert) => {
-    if (dialogMode === "add") {
-      addItem(draft);
-    } else if (editingId) {
-      patchItem(editingId, { ...draft, audioUploaded: true });
+  const handleSubmit = (draft: TopicVocabularyAuthoringDraft) => {
+    if (disabled) return;
+    if (editingIndex === null) {
+      onChange([...value, mergeVocabularyEditorItem(undefined, draft, value.length)]);
+    } else {
+      onChange(value.map((resource, index) => index === editingIndex
+        ? mergeVocabularyEditorItem(resource, draft, index)
+        : resource));
     }
     setDialogOpen(false);
-    setEditingId(null);
+    setEditingIndex(null);
   };
 
-  const editingItem =
-    dialogMode === "edit"
-      ? items.find((entry) => entry.id === editingId)
-      : undefined;
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditingIndex(null);
+  };
 
-  const quizStep = item.steps.find((step) => step.key === "quiz");
+  function reorder(index: number, direction: -1 | 1) {
+    const ordered = [...value];
+    const [entry] = ordered.splice(index, 1);
+    ordered.splice(index + direction, 0, entry);
+    onChange(ordered.map((resource, orderIndex) => ({ ...resource, orderIndex })));
+  }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-      <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
-        <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicUpsertWizardHeader
-            title={`Bước 2: Biên soạn Từ vựng — ${item.titleEn}`}
+    <section className="mx-auto flex w-full max-w-[940px] flex-col gap-6">
+      <VocabularyHeaderCard count={value.length} max={MAX_VOCABULARIES} onAdd={() => {
+        if (disabled) return;
+        setEditingIndex(null);
+        setDialogOpen(true);
+      }} />
+      <div className="flex flex-col gap-4">
+        {items.map((entry, index) => (
+          <div key={entry.id} className="space-y-2">
+          <VocabularyCard
+            item={entry}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onPreviewAudio={() => undefined}
+            readOnly={disabled}
           />
-          <TopicUpsertStepper activeStep={1} />
-        </div>
-
-        <TopicItemSectionTabRail
-          activeSection="vocabulary"
-          vocabNote={stepDetail(item.steps, "vocabulary")}
-          expressionsNote={stepDetail(item.steps, "expressions")}
-          quizNote={stepDetail(item.steps, "quiz")}
-          quizEmpty={!quizStep || quizStep.state === "empty"}
-          onSelect={handleSelectSection}
-        />
-
-        <VocabularyHeaderCard count={count} max={max} onAdd={handleAdd} />
-
-        <div className="flex flex-col gap-4">
-          {items.map((entry) => (
-            <VocabularyCard
-              key={entry.id}
-              item={entry}
-              onEdit={handleEdit}
-              onDelete={removeItem}
-              onPreviewAudio={handlePreviewAudio}
-            />
-          ))}
-        </div>
-
-        {showErrors && !isValid && (
-          <p className="text-label-sm text-error">
-            Mỗi mục từ cần có từ vựng, nghĩa tiếng Việt và ít nhất một câu ví
-            dụ tiếng Anh.
-          </p>
-        )}
-
-        <VocabularyQuickAddSlot
-          visible={canAdd}
-          nextIndex={count + 1}
-          max={max}
-          onAdd={handleAdd}
-        />
-
-        <VocabularyUpsertDialog
-          open={dialogOpen}
-          mode={dialogMode}
-          nextIndex={count + 1}
-          initial={editingItem}
-          onClose={() => {
-            setDialogOpen(false);
-            setEditingId(null);
-          }}
-          onSubmit={handleSubmitDialog}
-        />
-
-        <TopicUpsertFooterBar onBack={handleBack} onContinue={handleContinue} />
+          {!disabled && value.length > 1 && <div className="flex justify-end gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={index === 0} onClick={() => reorder(index, -1)}>Đưa từ lên</Button>
+            <Button type="button" size="sm" variant="outline" disabled={index === items.length - 1} onClick={() => reorder(index, 1)}>Đưa từ xuống</Button>
+          </div>}
+          </div>
+        ))}
       </div>
-    </div>
+      <VocabularyQuickAddSlot visible={!disabled} nextIndex={value.length + 1} max={MAX_VOCABULARIES} onAdd={() => {
+        setEditingIndex(null);
+        setDialogOpen(true);
+      }} />
+      <VocabularyUpsertDialog
+        topicId={topicId}
+        open={dialogOpen}
+        mode={editingIndex === null ? "add" : "edit"}
+        nextIndex={value.length + 1}
+        initial={editingIndex === null ? undefined : items[editingIndex]}
+        initialResource={editingIndex === null ? undefined : value[editingIndex]}
+        onClose={closeDialog}
+        onSubmit={handleSubmit}
+      />
+    </section>
   );
 }
