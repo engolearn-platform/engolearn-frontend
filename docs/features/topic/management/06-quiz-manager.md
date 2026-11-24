@@ -4,6 +4,16 @@
 
 Tab Quiz chỉnh module và câu hỏi từ Item detail. Module hỗ trợ FILL_BLANK và SITUATIONAL_CHOICE. Nút Lưu nháp gửi `PUT /quizzes` kèm revision. Một lời giải thích chung dùng cho từng câu hỏi. Với FILL_BLANK, form dùng `___` để đánh dấu chỗ trống và lưu câu đầy đủ kèm đáp án sau khi đã có đủ dữ liệu. Word bank và lựa chọn dùng mảng options. Backend bật cờ đúng trên lựa chọn và kiểm tra cấu trúc. Điều kiện đủ câu hỏi mỗi loại được kiểm tra khi yêu cầu publish readiness.
 
+## P04 — Hiển thị semantic cho dữ liệu API
+
+View và Edit dùng chung adapter `src/features/topic/utils/topic-quiz-presentation.ts` từ DTO gốc. Mỗi mô-đun và mỗi câu có một phần trình bày theo thứ tự mảng API. Tổng đếm theo số câu hỏi, gồm cả câu thuộc loại legacy. Mô-đun hiển thị loại bài, tên, hướng dẫn và số câu. Thẻ câu hiển thị trạng thái đáp án. Chi tiết kỹ thuật đóng mặc định và dùng nhãn tham chiếu thay cho URL media. Phát audio sử dụng resolver quản trị hiện hành.
+
+Thẻ đánh dấu đáp án khi các nguồn đã lưu cùng xác định một lựa chọn. Các nguồn gồm `options[].isCorrect`, `correct` (nhãn), `answerData.correct_option` (nhãn) và `answerData.correct_answer` hoặc `answerData.answer` (văn bản). Thẻ hiển thị trạng thái thiếu hoặc mâu thuẫn khi đáp án chưa xác định được. Câu điền từ dùng `quizData.sentence_with_blank` có đúng một dấu `___` hoặc vị trí khớp duy nhất giữa đáp án đã xác định và câu gốc. Ngân hàng từ dùng nội dung `options` theo thứ tự API và dùng `quizData.word_bank` cho dữ liệu legacy thiếu `options`. Thẻ hỗ trợ bối cảnh từ `quizData.scenario_vi`, bản dịch, câu gốc, audio thường và audio chậm.
+
+Theo BR-F7.13–17, khi xuất bản mỗi loại cần 3–5 câu. Bản nháp có thể thiếu câu hoặc đáp án. Câu tình huống hiển thị số lựa chọn đã lưu khi có dưới bốn lựa chọn. Mô-đun legacy như `MATCHING` có bản xem trước và chi tiết kỹ thuật ở cả hai chế độ. Editor tạm khóa sửa câu có nguồn đáp án mâu thuẫn để bảo toàn dữ liệu trong luồng lưu hiện hành. Câu thiếu đáp án vẫn mở được trình sửa.
+
+API section PUT hiện từ chối loại legacy như `MATCHING` và câu có `isCorrect` mâu thuẫn với `correct`. Khi API từ chối ghi, dữ liệu đã lưu và nội dung đang nhập vẫn còn. Xem kết quả kiểm thử theo phase trong `screen-shot/topic-management-enhance/P04/report.md` của workspace.
+
 Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
 
 > Tài liệu workflow cho màn editor Quiz của 1 Topic Item trong luồng tạo topic

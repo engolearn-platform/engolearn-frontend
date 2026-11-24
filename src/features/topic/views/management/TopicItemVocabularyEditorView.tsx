@@ -80,10 +80,9 @@ export default function TopicItemVocabularyEditorView({
         {items.map((entry, index) => (
           <div key={entry.id} className="space-y-2">
           <VocabularyCard
-            item={entry}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onPreviewAudio={() => undefined}
+            resource={value[index]}
+            onEdit={() => handleEdit(entry.id)}
+            onDelete={() => handleDelete(entry.id)}
             readOnly={disabled}
           />
           {!disabled && value.length > 1 && <div className="flex justify-end gap-2">
