@@ -1671,7 +1671,36 @@
                               "text": "starter"
                             }
                           ]
-                        }
+                        },
+                        "entries": [
+                          {
+                            "quizId": "quiz-001",
+                            "type": "FILL_BLANK",
+                            "index": 0,
+                            "status": "CURRENT",
+                            "quiz": {
+                              "quizId": "quiz-001",
+                              "title": "Hỏi gợi ý món ăn",
+                              "index": 0,
+                              "totalInType": 3,
+                              "situationVi": "Bạn muốn nhờ người phục vụ gợi ý món đặc sản.",
+                              "imageUrl": null,
+                              "tips": null,
+                              "promptAudioUrl": null,
+                              "type": "FILL_BLANK",
+                              "sentenceBefore": "Can you ",
+                              "sentenceAfter": " a good local specialty?",
+                              "options": [
+                                { "optionId": "option-1", "text": "order" },
+                                { "optionId": "option-2", "text": "recommend" },
+                                { "optionId": "option-3", "text": "bill" },
+                                { "optionId": "option-4", "text": "starter" }
+                              ]
+                            },
+                            "feedback": null,
+                            "firstTryCorrect": null
+                          }
+                        ]
                       },
                       "timestamp": "2026-10-27T10:00:00Z"
                     }
