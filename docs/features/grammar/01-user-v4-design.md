@@ -1,4 +1,4 @@
-> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](README.md). Existing routes, roles and business transitions are retained.
 
 # Grammar User v4 — thiết kế đã điều chỉnh theo nghiệp vụ
 

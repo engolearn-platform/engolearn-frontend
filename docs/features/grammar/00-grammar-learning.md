@@ -17,7 +17,7 @@ Các endpoint dưới đây dùng tiền tố `/api/v1/grammar`, trả `ApiRespo
 | Thao tác | Dữ liệu |
 | --- | --- |
 | GET `/roadmap` | `{currentLevel,newlyUnlockedLevels,levels}`. Mỗi level có `{level,unlocked,completedTopics,totalTopics,percent,lockHint,topics}`. |
-| GET `/topics/{topicId}` | `{topic,lessons}`. Topic có `{id,titleVi,titleEn,description,level,status,completedLessons,totalLessons,percent}`. Lesson trong danh sách có `{id,number,titleVi,titleEn,objective,status,unlocked,bestScore,hasUpdate}`. |
+| GET `/topics/{topicId}` | `{topic,lessons}`. Topic có `{id,titleVi,titleEn,description,level,status,completedLessons,totalLessons,percent}`. Lesson trong danh sách có `{id,number,titleVi,titleEn,objective,status,unlocked,bestScore,hasUpdate,blockCount}`. |
 | GET `/topics/{topicId}/lessons/{lessonId}` | `{topicId,id,number,titleVi,titleEn,objective,status,contentVersion,blocks}`. Lấy từ nội dung xuất bản. |
 | POST `/topics/{topicId}/lessons/{lessonId}/seen` | Body `{contentVersion}`. Gọi khi FE đã hiển thị nội dung. Trả về phiên bản đã xem cao nhất. |
 | POST `/topics/{topicId}/lessons/{lessonId}/practice` | Body `{restart?:boolean}`. Bắt đầu, tiếp tục hoặc làm lại từ đầu. |
@@ -40,7 +40,7 @@ Khi nội dung bị lưu trữ trong lúc đang làm, phiên tiếp tục theo b
 | `/grammar/topics/:topicId/lessons/:lessonId` | Lý thuyết theo thứ tự API và nút luyện tập sau khối nội dung cuối. |
 | `/grammar/topics/:topicId/lessons/:lessonId/practice?session=:sessionId` | Tải phiên đang làm hoặc kết quả đã chốt theo mã phiên. |
 
-Các màn dùng layout học viên hiện có. Đăng nhập giữ đường dẫn gốc để quay lại. Lý thuyết gửi `seen` sau khi khối đầu tiên xuất hiện trong vùng nhìn của tab đang hiển thị, với đúng phiên bản đã tải. Màn lý thuyết đợi máy chủ xác nhận lượt xem đầu tiên trước khi bật nút luyện tập. Tên chủ đề và bài học hiển thị tiếng Anh trước, tên Việt trong ngoặc: English name (Tên tiếng Việt). Dữ liệu vẫn giữ hai trường ngôn ngữ riêng; xem [chuẩn hóa tên và học thuật](03-academic-names.md). Trong các cặp câu ví dụ, câu tiếng Anh có trọng lượng chữ cao hơn bản dịch.
+Các màn dùng layout học viên hiện có. Đăng nhập giữ đường dẫn gốc để quay lại. Lý thuyết gửi `seen` sau khi khối đầu tiên xuất hiện trong vùng nhìn của tab đang hiển thị, với đúng phiên bản đã tải. Màn lý thuyết đợi máy chủ xác nhận lượt xem đầu tiên trước khi bật nút luyện tập. Tên chủ đề và bài học hiển thị tiếng Anh trước, tên Việt trong ngoặc: English name (Tên tiếng Việt). Dữ liệu vẫn giữ hai trường ngôn ngữ riêng; xem [chuẩn hóa tên và học thuật](README.md). Trong các cặp câu ví dụ, câu tiếng Anh có trọng lượng chữ cao hơn bản dịch.
 
 Practice giữ nguyên câu vừa xác nhận và hiển thị phản hồi của server đến khi người học chọn câu tiếp theo hoặc xem kết quả. Khi tải lại, phiên đang làm mở câu chưa trả lời tiếp theo. Nếu chưa nhận được phản hồi khi gửi câu, thao tác gửi lại dùng cùng mã yêu cầu và cùng câu trả lời. Khi phiên hết hiệu lực, trang chuyển về lý thuyết, hiện thông báo và để người học chủ động bắt đầu lượt mới.
 
@@ -51,7 +51,7 @@ Practice giữ nguyên câu vừa xác nhận và hiển thị phản hồi củ
 - [x] FE thay lộ trình mẫu bằng dữ liệu từ API. Dùng chung layout Learner và luồng đăng nhập. Thêm chi tiết chủ đề, bài học, Practice và kết quả. Giữ lượt dở khi tải lại, giữ mã gửi khi thử lại sau lỗi mạng, hiển thị giải thích sau xác nhận.
 - [x] Chạy build, lint và kiểm thử qua Vite, BE thật và MongoDB replica set tạm. Tạo nội dung kiểm thử qua Grammar Admin, rồi thử quyền, tiến độ, đạt 3/5, lưu phiên, tải lại, gửi trùng và xuất bản revision mới.
 
-OQ-GRM-F1-01 hoãn tích hợp nguồn `current_level` và `max_achieved_level`. Nhánh này mặc định A1 và lưu thêm Level mở từ tiến độ Grammar. Module Placement và hồ sơ User tiếp tục do các contract hiện có quản lý.
+UserLevelLookup là nguồn level hồ sơ hiện hành; Grammar hợp quyền từ profile với unlock tiến độ đã lưu. Chỉ hai trường current_level/max_achieved_level riêng còn hoãn; không mặc định A1 cho mọi tài khoản. Xem [tích hợp level](06-placement-level-integration.md).
 
 ## Chạy local
 
@@ -61,7 +61,7 @@ OQ-GRM-F1-01 hoãn tích hợp nguồn `current_level` và `max_achieved_level`.
 
 ## User UI v4 — cập nhật 22/11/2026
 
-Thiết kế được chủ dự án chốt: [01-user-v4-design.md](01-user-v4-design.md). [Kế hoạch tuần tự](../../superpowers/plans/2026-11-22-grammar-user-v4.md). Chỉ cập nhật Grammar; giữ LearningLayout/sidebar/navbar của nhóm. Các route/result vẫn dùng API thật; không lấy dữ liệu/chấm điểm từ HTML demo.
+Thiết kế được chủ dự án chốt: [01-user-v4-design.md](01-user-v4-design.md). [Bàn giao hiện hành](README.md). Chỉ cập nhật Grammar; giữ LearningLayout/sidebar/navbar của nhóm. Các route/result vẫn dùng API thật; không lấy dữ liệu/chấm điểm từ HTML demo.
 
 - Roadmap có bốn thẻ cấp CEFR, tiến độ thật và nhóm chủ đề đã hoàn thành thu gọn. Không có thẻ Tiếp tục học, không gắn cứng 10 Topic hoặc 2 Lesson. Topic rows giữ khóa tuần tự, hasUpdate và bestScore.
 - Theory dùng accordion mở tự do, công thức xem được khi thu gọn; ví dụ bấm hiện nghĩa/phân tích. Bài completed mở sẵn các khối. Không lưu khối đã hiểu/vị trí đọc; giữ seen khi nội dung hiển thị thực sự.
@@ -70,7 +70,7 @@ Thiết kế được chủ dự án chốt: [01-user-v4-design.md](01-user-v4-d
 - Chưa đạt thì làm lại đủ 5 câu; giữ các nút điều hướng theo BE, không trộn đáp án các lượt. Best score và completed không giảm khi làm lại điểm thấp.
 - Summary chỉ mở từ chủ đề completed, gọi getTopic rồi getTheory của từng bài xuất bản; không gọi seen/startPractice và không có bản tóm tắt giả trong DB.
 
-Lưu ý khi chạy local: nội dung Nháp không xuất hiện ở learner. Ngày 22/11/2026 chủ dự án cho phép xuất bản riêng mẫu A1 Thì hiện tại đơn (3 bài); các chủ đề còn lại giữ Nháp. Trạng thái thực tế và kết quả kiểm tra ở [báo cáo triển khai](02-user-v4-result.md).
+Lưu ý khi chạy local: nội dung Nháp không xuất hiện ở learner. Ngày 22/11/2026 chủ dự án cho phép xuất bản riêng mẫu A1 Thì hiện tại đơn (3 bài); các chủ đề còn lại giữ Nháp. Trạng thái thực tế và kết quả kiểm tra ở [báo cáo triển khai](README.md).
 
 ## Team dev integration — 23/11/2026
 

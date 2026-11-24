@@ -1,4 +1,4 @@
-> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../grammar/README.md). Existing routes, roles and business transitions are retained.
 
 > Khóa đáp án khi nộp (23/11/2026): từ lúc bắt đầu flush/autosave đến khi submit kết thúc, thẻ câu hỏi disabled và setAnswer chặn đồng bộ bằng submittingRef. Sau thành công không nhận thay đổi nữa; nếu lỗi khi vẫn IN_PROGRESS thì mở lại để sửa/thử lại. Test placement-submit-lock.integration.test.mjs giữ chậm request thật, không giả lập response BE; đã tái hiện RED trước sửa.
 

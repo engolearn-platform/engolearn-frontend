@@ -1,72 +1,19 @@
-> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+# Placement — Guest / học viên
 
-# Learner docs — Placement Test (Đánh giá đầu vào)
+[Entry bàn giao](../README.md). Mỗi màn giữ route/component/state/responsive trong tài liệu tương ứng; dùng API thật, không mock/fallback từ fixture khi HTTP lỗi.
 
-> Package tài liệu cho luồng **Placement Test** phía người học.
-> Trạng thái mock ↔ API tập trung: `00-mock-api-status.md`.
-> Stitch project: `Remix of EngoLearn English Learning App`
-> (`projects/16234151544679864766`).
+| Route | Tài liệu / hành vi |
+| --- | --- |
+| `/placement` | [Bắt đầu](01-placement-start.md); User GET current để Tiếp tục/kết quả, không POST lúc mount |
+| `/placement/attempts/:attemptId` | [Làm bài](02-placement-attempt.md), Reading/Listening, lưu đáp án và deadline BE |
+| `/placement/attempts/:attemptId/submitted` | [Claim gate](03-placement-claim-gate.md), Guest đăng nhập/đăng ký rồi nhận kết quả |
+| `/placement/attempts/:attemptId/result` | [Kết quả](04-placement-result.md), dùng attemptId BE trả |
+| `/placement/attempts/:attemptId/review` | [Xem lại](05-placement-review.md), đúng snapshot/version |
 
-**Placement Guest flow: LOCKED** — P01 Guest/P02/P03 giữ luồng hiện tại; P01–P05 dùng
-backend HTTP thật. Shared `useAuth()` xác nhận User bằng cookie Auth chung.
+Guest P01/P03 dùng public navigation như trang chủ; User entry/result/review dùng LearningLayout chung qua adapter feature. P02 là layout làm bài riêng với timer, không sidebar. AuthProvider chung khôi phục phiên qua cookie; không lưu credential/session vào localStorage hoặc tạo User identity từ query.
 
-## Luồng & route
+User Start/Resume theo kết quả GET `/api/v1/placement/attempts/current`; tiếp tục giữ deadline/đề và hướng tới trang chưa trả lời. Guest làm trước, đăng nhập từ P03 rồi claim; User đã đăng nhập nộp đi thẳng kết quả. Claim dùng resultAttemptId thật, có thể khác attempt cũ nếu tài khoản đã có kết quả. Quy tắc thời hạn, ownership và quyền làm lại ở BE.
 
-```text
-/placement                    01-placement-start.md — Guest Public / User dashboard Start (P01)
-  │ CTA "Bắt đầu bài kiểm tra" (POST attempt thật)
-  ▼
-/placement/attempts/:attemptId 02-placement-attempt.md — Làm bài (P02-READING/P02-LISTENING)
-  │ nộp bài / hết giờ (auto-submit)
-  ▼
-/placement/attempts/:attemptId/submitted  03-placement-claim-gate.md — Guest Auth Gate (P03)
-  │ /login hoặc /register → quay về P03 → tự claim → resultAttemptId
-  ▼
-/placement/attempts/:attemptId/result → 04-placement-result.md
-  │ CTA “Xem chi tiết bài làm” dùng result.attemptId từ backend
-  ▼
-/placement/attempts/:attemptId/review → 05-placement-review.md
-```
+[Quyền kế thừa](08-inherited-role-access.md): USER gồm CONTENT_MANAGER/ADMIN theo hierarchy; không bỏ ownership. [Trạng thái đáp án cuối](09-final-answer-states.md): câu bỏ trống tính Sai nhưng không đánh dấu đáp án nào đã chọn. Trong bài vẫn có trạng thái chưa trả lời để điều hướng. Listening chỉ phát một audio cùng lúc, pause audio trước khi phát câu khác.
 
-User P01 → P02 khi Start trả `IN_PROGRESS`, hoặc → P04 khi backend trả result.
-User P02 nộp bài → P04; Guest P02 nộp bài → P03. P03 → P04 dùng `resultAttemptId` do backend trả khi claim hoặc tài khoản đã
-có kết quả. P04 → P05 dùng `result.attemptId`. Không gọi fixture trong
-service thường; claim giữ nguyên ownership và cửa sổ 2 giờ ở backend.
-
-User đăng nhập qua `/login` hoặc `/register`; shared AuthProvider lấy User từ
-`/api/v1/auth/me` qua cookie HttpOnly. P01/P02 dùng session chung cho
-Start/Get/Save/Submit; nộp User **đi thẳng P04**. Start khi User đã có kết quả
-trả `attemptId` hiện có. Guest request không mang identity User.
-
-## Danh sách docs
-
-| # | File | Màn / Route | Trạng thái code |
-|---|------|-------------|-----------------|
-| 00 | `00-mock-api-status.md` | Bảng mock ↔ API toàn package | — |
-| 01 | `01-placement-start.md` | Guest Public / User dashboard Start — `/placement` | Backend HTTP (Guest/User qua AuthContext; auto Resume thiếu lookup) |
-| 02 | `02-placement-attempt.md` | Làm bài — `/placement/attempts/:attemptId` | Backend HTTP (Guest/User qua AuthContext) |
-| 03 | `03-placement-claim-gate.md` | Guest Auth Gate — `/placement/attempts/:attemptId/submitted` | Backend HTTP (Guest → Login/Register → claim) |
-| 04 | `04-placement-result.md` | Kết quả User dashboard — `/placement/attempts/:attemptId/result` | Backend HTTP (AuthContext USER) |
-| 05 | `05-placement-review.md` | Xem lại User dashboard — `/placement/attempts/:attemptId/review` | Backend HTTP (AuthContext USER) |
-| 06 | `06-placement-dev-login.md` | Legacy DEV login redirect — `/placement/dev-login` | Chỉ Vite DEV; không còn DEV identity |
-
-## Quy ước của package
-
-- Mỗi doc theo khung: nguồn Stitch → route & trigger → bản đồ component →
-  state → điểm UI-only → khác biệt vs Stitch → responsive → checklist refactor.
-- **Shell tách theo màn:** Guest P01 + P03 dùng `PlacementPublicLayout`;
-  User P01 + P04 + P05 dùng `PlacementUserLayout` (sidebar/top bar theo
-  `P01-USER-RESUME`, `P04-USER-RESULT`, `P05-USER-REVIEW`).
-  P01 dùng `PlacementEntryLayout` chọn shell sau Auth loading; P04/P05 dùng
-  `PlacementResultLayout` chọn User shell khi xác thực. P02 dùng
-  `PlacementAttemptLayout` trung tính (logo + tiến độ + đồng hồ), không sidebar.
-  Guest/User dùng chung test shell; khác biệt vs Stitch ghi ở `02`.
-- P01 **không tự dò Resume**: contract hiện chỉ trả attemptId qua POST Start;
-  GET detail cần attemptId. Không POST khi mount, không lưu/fake attemptId hoặc
-  progress. Khi User bấm Start, backend vẫn ưu tiên resume attempt/result cũ.
-- `/submitted` là **post-submit dispatcher** cho nhiều trạng thái (claim gate,
-  result, no-result, already claimed, lỗi) — giữ nguyên URL, không đổi tên.
-  Sau Login/Register, P03 tự claim và chuyển sang P04 khi backend trả `resultAttemptId`.
-- Route/`PLACEMENT_ROUTES` khai báo local trong `src/features/placement/constants.ts`
-  (không thêm vào `ROUTES` dùng chung để tránh đụng code nhóm khác).
-- Sửa view nào thì cập nhật doc tương ứng + bảng `00` (rule trong `AGENTS.md`).
+[Bảng kết nối API](00-mock-api-status.md) và [redirect dev cũ](06-placement-dev-login.md). Route/constants ở feature; không nhân bản navbar/sidebar hoặc thay Assessment entry. Báo cáo prepush và kế hoạch cũ xem Git history/bản lưu local, không dùng làm kết quả kiểm chứng hiện hành.

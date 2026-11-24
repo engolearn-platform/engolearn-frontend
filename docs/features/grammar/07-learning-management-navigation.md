@@ -1,30 +1,9 @@
-# Grammar — hỗ trợ học và điều hướng quản trị
+# Grammar — điều hướng lý thuyết và checklist
 
-## Phạm vi 23/11/2026
-Giữ nguyên LearningLayout/ManagementLayout và mọi API. Chỉ thay Grammar FE; không sửa BE hoặc module khác.
+Học viên thấy lời nhắc đọc nội dung trước nút Bắt đầu luyện tập; có thể tự kiểm tra rồi quay lại lý thuyết. Không chặn bằng thời gian, scroll hoặc số khối đã mở vì chúng không chứng minh đọc hiểu. Giữ xác nhận seen của BE và quy tắc3/5.
 
-## Thiết kế và trình tự
-1. Theory: cạnh nút luyện tập có lời nhắc người học được tự kiểm tra và quay lại lý thuyết. Không chặn theo thời gian, scroll hay số accordion đã mở; không gọi đó là đã đọc hiểu. Giữ xác nhận seen hiện tại và luật 3/5.
-2. Review bài quản trị: thêm đường Danh sách bài học ở header/footer, luôn trỏ danh sách của đúng chủ đề, giữ disabled khi đang lưu. Bài Draft đã Ready có thông báo xác nhận trạng thái và hướng tiếp theo; không tự chuyển trang làm người dùng mất checklist.
-3. Danh sách bài: thêm hành động Kiểm tra dẫn đến review/checklist. Không thêm toggle Ready tại bảng: Ready cần qua checklist; với chủ đề Published nó có thể xuất bản bài ngay. Trường hợp này nút ở review phải ghi Xuất bản bài học và giữ dialog xác nhận.
-4. Kiểm tra FE build/lint và luồng thật. Không dùng mock API để khẳng định tích hợp.
+Review bài quản trị có đường Danh sách bài học ở header/footer, về đúng chủ đề; disabled khi đang lưu. Draft đã Ready có thông báo và hướng tiếp theo, không tự chuyển trang làm mất checklist. Danh sách bài có hành động Kiểm tra, không có toggle Ready trực tiếp: Ready phải qua checklist; nếu Topic đã Published có thể xuất bản bài ngay, nút phải ghi Xuất bản bài học và có dialog xác nhận.
 
-## Dữ liệu demo đã thực hiện
+Roadmap: chủ đề Đang học dùng Tiếp tục học tới danh sách bài, Chưa học dùng Xem chủ đề. Không thêm thẻ Tiếp tục riêng trên đầu. Tên chủ đề giữ phân cấp chữ gọn; mỗi bài chỉ có một dấu hoàn thành chính, số nội dung lấy từ blockCount của bản Published. Vòng tiến độ lấy tỷ lệ thực của BE.
 
-Chủ dự án chọn mỗi cấp 1–2 nội dung; đã giữ một chủ đề mỗi cấp (4 tổng cộng), tất cả không có tiến độ hoặc phiên luyện tập trước thao tác. Archive→Restore bằng API có version, giữ ID/nội dung/firstPublishedAt/revisions. Không ghi thẳng status, không xóa dữ liệu, không tạo mẫu mới. Nội dung seed và BE source không thay đổi trong lượt UX này.
-
-| Cấp | Mã chủ đề | Tên | Bài |
-| --- | --- | --- | --- |
-| A1 | ENG-GRM-T0009 | Câu hỏi có từ để hỏi và liên từ | 3 |
-| A2 | ENG-GRM-T0017 | Câu điều kiện loại 0 và loại 1 | 2 |
-| B1 | ENG-GRM-T0041 | Đại từ phản thân | 1 |
-| B2 | ENG-GRM-T0044 | Mức độ chắc chắn về tương lai | 1 |
-
-DB local hiện39 chủ đề/99 bài Published và4 chủ đề/7 bài chưa xuất bản. Các bài được khôi phục đủ checklist nên ready=true: Topic API/FE hiển thị IN_PROGRESS (Đang hoàn thiện), persisted lifecycle vẫn DRAFT. Đây là nội dung dùng demo kiểm tra/xuất bản; không phải bài chưa biên soạn hoặc bài chưa từng Ready. Không tự hạ Ready bằng cách làm hỏng nội dung. Muốn demo thao tác Đánh dấu Sẵn sàng từ false, dùng một bài mới hoặc bài thực sự chưa đủ checklist trong luồng soạn thảo bình thường.
-
-## Kết quả kiểm tra
-
-- FE build đạt; lint0 errors/72 warnings hiện có. Chỉ thay3 file UI Grammar: GrammarTheoryView, GrammarReview, GrammarLessonCatalog và tài liệu.
-- API thật qua localhost:3000: kiểm tra lịch sử trước chọn, Archive→Restore4 chủ đề thành công, xác nhận trạng thái và đối chiếu nội dung/ID từng bài sau thao tác. Không thay progress của người học.
-- Chưa xác nhận trực quan bằng browser: công cụ Computer Use dừng vì không xác định URL của cửa sổ Chrome đủ tin cậy. Không gọi đây là kiểm thử hình ảnh hoặc kiểm tra click end-to-end đã đạt.
-- Không commit/push/merge vào main/dev; giữ nhánh hiện tại. Không sửa Placement, User, BE code hoặc layout dùng chung.
+Nội dung Draft để demo được quản lý qua vòng đời Admin, không làm hỏng câu/khối để ép ready=false, không reset lịch sử học. Trạng thái DB local không phải mặc định chung cho thành viên khác.
