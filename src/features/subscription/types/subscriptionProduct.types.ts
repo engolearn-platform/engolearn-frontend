@@ -42,10 +42,17 @@ export interface ProductHistorySummary {
   effectiveAt: string;
 }
 
+export interface LegacySchedule {
+  version: number;
+  effectiveAt: string;
+  status: "SCHEDULED" | "CANCELLED" | "APPLIED" | "SUPERSEDED";
+}
+
 export interface ProductDetail extends ProductSummary {
   current: ProductVersion | null;
   draft: ProductDraft | null;
   history: ProductHistorySummary[];
+  legacySchedule: LegacySchedule | null;
   /** Immutable version accepted by the last successful or idempotently replayed publish. */
   publishedVersion?: ProductVersionDetail | null;
 }

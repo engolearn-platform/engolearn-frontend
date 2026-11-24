@@ -41,6 +41,12 @@ managing the fixed FREE, TRIAL and legacy PREMIUM configurations.
   and history behavior continue.
 - FREE/TRIAL activation and configuration, legacy PREMIUM reads and existing
   payment return behavior remain supported.
+- The PREMIUM product detail may expose an existing legacy scheduled release.
+  Its Vietnam-time editor can reschedule or cancel that release with its
+  expected version and effective time. Publishing a new PREMIUM version while
+  a legacy release is scheduled requires a separate confirmation and explicitly
+  asks the server to replace that pending schedule. New plan codes cannot create
+  legacy schedules; existing historical version displays remain available.
 
 ## UI-only
 
@@ -65,4 +71,7 @@ keyboard accessible with visible focus and minimum 48px touch targets.
 - [ ] Existing FREE/TRIAL and legacy PREMIUM flows continue to work.
 - [ ] Metered services and unmetered services with null quota metadata render
       correctly without service-code special cases.
+- [ ] Existing PREMIUM legacy schedules display in Vietnam time and can be
+      rescheduled/cancelled; immediate publication replaces one only after
+      explicit confirmation.
 - [ ] Build and lint pass.

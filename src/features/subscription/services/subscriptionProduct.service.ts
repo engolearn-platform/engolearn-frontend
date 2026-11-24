@@ -6,6 +6,7 @@ import type {
   ProductPreview,
   ProductService,
   ProductSummary,
+  LegacySchedule,
   ProductVersionDetail,
 } from "@features/subscription/types/subscriptionProduct.types";
 import type { ConfigurationContent } from "@features/subscription/types/subscriptionManagement.types";
@@ -85,6 +86,13 @@ function detail(value: unknown): ProductDetail {
   if (current) configurationContent(current.content);
   if (draft && draft.content !== null) configurationContent(draft.content, true);
   if (!Array.isArray(product.history)) invalid();
+  let legacySchedule: LegacySchedule | null = null;
+  if (product.legacySchedule !== null && product.legacySchedule !== undefined) {
+    const schedule = object(product.legacySchedule);
+    if (!integer(schedule.version) || schedule.version === 0 || typeof schedule.effectiveAt !== "string" || !Number.isFinite(Date.parse(schedule.effectiveAt)) ||
+      !["SCHEDULED", "CANCELLED", "APPLIED", "SUPERSEDED"].includes(String(schedule.status))) invalid();
+    legacySchedule = { version: schedule.version, effectiveAt: schedule.effectiveAt, status: schedule.status as LegacySchedule["status"] };
+  }
   let publishedVersion: ProductDetail["publishedVersion"];
   if (product.publishedVersion !== undefined) {
     if (product.publishedVersion === null) publishedVersion = null;
@@ -103,6 +111,7 @@ function detail(value: unknown): ProductDetail {
     current: current ? { version: current.version as number, content: configurationContent(current.content) } : null,
     draft: draft ? { revision: draft.revision as number, content: draft.content === null ? null : configurationContent(draft.content, true) } : null,
     history: product.history as ProductDetail["history"],
+    legacySchedule,
     ...(product.publishedVersion !== undefined ? { publishedVersion } : {}),
   };
 }
@@ -147,8 +156,14 @@ export const subscriptionProductService = {
   async preview(planCode: string, expectedDraftRevision: number, signal: AbortSignal) {
     return envelope<ProductPreview>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/preview`, { expectedDraftRevision }, { signal }), data => preview(data));
   },
-  async publish(planCode: string, expectedDraftRevision: number, key: string, signal: AbortSignal) {
-    return envelope<ProductDetail>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/publish`, { expectedDraftRevision }, { signal, headers: { "Idempotency-Key": key } }), data => detail(data));
+  async publish(planCode: string, expectedDraftRevision: number, key: string, signal: AbortSignal, replaceScheduled = false) {
+    return envelope<ProductDetail>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/publish`, { expectedDraftRevision, ...(replaceScheduled ? { replaceScheduled: true } : {}) }, { signal, headers: { "Idempotency-Key": key } }), data => detail(data));
+  },
+  async rescheduleLegacyPremium(expectedVersion: number, expectedEffectiveAt: string, effectiveAt: string, signal: AbortSignal) {
+    return envelope<ProductDetail>(await httpService.patch<unknown>(`${prefix}/PREMIUM/schedule`, { expectedVersion, expectedEffectiveAt, effectiveAt }, { signal }), data => detail(data));
+  },
+  async cancelLegacyPremiumSchedule(expectedVersion: number, expectedEffectiveAt: string, signal: AbortSignal) {
+    return envelope<ProductDetail>(await httpService.post<unknown>(`${prefix}/PREMIUM/schedule/cancel`, { expectedVersion, expectedEffectiveAt }, { signal }), data => detail(data));
   },
   async setVisibility(planCode: string, visibility: ProductSummary["visibility"], signal: AbortSignal) {
     return envelope<ProductDetail>(await httpService.patch<unknown>(`${prefix}/${segment(planCode)}/visibility`, { visibility }, { signal }), data => detail(data));

@@ -9,9 +9,23 @@ import { ROUTES } from "@shared/constants";
 import { subscriptionProductService } from "@features/subscription/services/subscriptionProduct.service";
 import type { ProductDetail, ProductPreview } from "@features/subscription/types/subscriptionProduct.types";
 import type { ConfigurationContent } from "@features/subscription/types/subscriptionManagement.types";
-import { VietnamTime } from "@features/subscription/components/management/ConfigurationFields";
+import { fieldClass, Field, VietnamTime } from "@features/subscription/components/management/ConfigurationFields";
 
 const EMPTY_PRODUCT_CONTENT: ConfigurationContent = { displayName: "", description: null, displayOrder: 0, benefits: [], billingOptions: [], quotaRules: [] };
+
+function vietnamDateTimeValue(value: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(value));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
+}
+
+function parseVietnamDateTime(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const milliseconds = Date.parse(`${value}:00+07:00`);
+  if (!Number.isFinite(milliseconds)) return null;
+  const instant = new Date(milliseconds).toISOString();
+  return vietnamDateTimeValue(instant) === value ? instant : null;
+}
 
 function ProductVersionDialog({ planCode, version, onClose }: { planCode: string; version: number; onClose: () => void }) {
   const fetcher = useCallback((signal: AbortSignal) => subscriptionProductService.version(planCode, version, signal), [planCode, version]);
@@ -44,7 +58,9 @@ export default function SubscriptionProductManagementDetailView() {
   const [previewRevision, setPreviewRevision] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<"archive" | "delete" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"archive" | "delete" | "cancel-schedule" | null>(null);
+  const [replaceScheduleConfirmOpen, setReplaceScheduleConfirmOpen] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [publicationVersion, setPublicationVersion] = useState<number | null>(null);
   const publishKey = useRef<string | null>(null);
@@ -52,6 +68,11 @@ export default function SubscriptionProductManagementDetailView() {
   useEffect(() => {
     if (state.data) setProduct(state.data.product);
   }, [state.data]);
+
+  useEffect(() => {
+    const schedule = product?.legacySchedule;
+    if (schedule?.status === "SCHEDULED") setScheduleAt(vietnamDateTimeValue(schedule.effectiveAt));
+  }, [product?.legacySchedule]);
 
   async function mutation(operation: () => Promise<{ data: ProductDetail }>) {
     if (pending) return;
@@ -97,15 +118,68 @@ export default function SubscriptionProductManagementDetailView() {
     }
   }
 
-  async function publish() {
+  async function publish(replaceScheduled = false) {
     if (!product?.draft || !preview || previewRevision !== product.draft.revision || pending) return;
+    if (!replaceScheduled && planCode === "PREMIUM" && product.legacySchedule?.status === "SCHEDULED") {
+      setReplaceScheduleConfirmOpen(true);
+      return;
+    }
+    const expectedDraftRevision = product.draft.revision;
     const key = publishKey.current ?? crypto.randomUUID();
     publishKey.current = key;
-    const result = await mutation(() => subscriptionProductService.publish(planCode, product.draft!.revision, key, new AbortController().signal));
-    if (result) {
+    setPending(true);
+    setFailure(null);
+    setPublicationVersion(null);
+    try {
+      const result = await subscriptionProductService.publish(planCode, expectedDraftRevision, key, new AbortController().signal, replaceScheduled);
       publishKey.current = null;
-      setPublicationVersion(result.publishedVersion?.version ?? null);
+      setProduct(result.data);
+      setPreview(null);
+      setPreviewRevision(null);
+      setPublicationVersion(result.data.publishedVersion?.version ?? null);
+      setReplaceScheduleConfirmOpen(false);
+    } catch (error) {
+      if ((error as { code?: string }).code === "LEGACY_SCHEDULE_REPLACEMENT_REQUIRED") {
+        publishKey.current = null;
+        setReplaceScheduleConfirmOpen(false);
+        try {
+          const latest = (await subscriptionProductService.detail(planCode, new AbortController().signal)).data;
+          setProduct(latest);
+          if (latest.legacySchedule?.status === "SCHEDULED" && latest.draft?.revision === expectedDraftRevision && previewRevision === expectedDraftRevision) {
+            setReplaceScheduleConfirmOpen(true);
+            setFailure("Máy chủ vẫn có lịch PREMIUM cũ đang chờ. Xem lại thời điểm mới nhất và xác nhận rõ trước khi xuất bản.");
+          } else {
+            if (latest.draft?.revision !== expectedDraftRevision) {
+              setPreview(null);
+              setPreviewRevision(null);
+            }
+            setFailure("Trạng thái lịch hoặc bản nháp đã thay đổi. Đã tải trạng thái mới; hãy kiểm tra lại trước khi gửi yêu cầu xuất bản.");
+          }
+        } catch {
+          setFailure("Máy chủ yêu cầu xác nhận lịch PREMIUM cũ nhưng chưa thể tải trạng thái mới. Tải lại sản phẩm trước khi xuất bản.");
+        }
+      } else {
+        setFailure((error as Error).message || "Chưa thể xác nhận xuất bản. Tải lại để kiểm tra trạng thái.");
+      }
+    } finally {
+      setPending(false);
     }
+  }
+
+  async function rescheduleLegacyPremium() {
+    const schedule = product?.legacySchedule;
+    const effectiveAt = parseVietnamDateTime(scheduleAt);
+    if (!schedule || schedule.status !== "SCHEDULED" || !effectiveAt || Date.parse(effectiveAt) <= Date.now() || pending) {
+      setFailure("Chọn thời điểm hợp lệ trong tương lai theo giờ Việt Nam.");
+      return;
+    }
+    await mutation(() => subscriptionProductService.rescheduleLegacyPremium(schedule.version, schedule.effectiveAt, effectiveAt, new AbortController().signal));
+  }
+
+  async function cancelLegacyPremiumSchedule() {
+    const schedule = product?.legacySchedule;
+    if (!schedule || schedule.status !== "SCHEDULED" || pending) return;
+    await mutation(() => subscriptionProductService.cancelLegacyPremiumSchedule(schedule.version, schedule.effectiveAt, new AbortController().signal));
   }
 
   async function confirmLifecycle() {
@@ -114,6 +188,10 @@ export default function SubscriptionProductManagementDetailView() {
     setConfirmAction(null);
     if (action === "archive") {
       await mutation(() => subscriptionProductService.archive(planCode, new AbortController().signal));
+      return;
+    }
+    if (action === "cancel-schedule") {
+      await cancelLegacyPremiumSchedule();
       return;
     }
     setPending(true);
@@ -138,6 +216,8 @@ export default function SubscriptionProductManagementDetailView() {
   const editorRevision = detail.draft?.revision ?? detail.draftRevision;
   const editorInitial = detail.draft?.content ?? detail.current?.content ?? (detail.draft ? EMPTY_PRODUCT_CONTENT : null);
   const publishDisabled = pending || !detail.draft || !preview || previewRevision !== detail.draft.revision;
+  const legacySchedule = planCode === "PREMIUM" ? detail.legacySchedule : null;
+  const newScheduleAt = parseVietnamDateTime(scheduleAt);
   return <div className="mx-auto min-w-0 max-w-6xl space-y-6 p-5 md:p-8">
     <nav aria-label="Điều hướng sản phẩm"><Link to={ROUTES.ADMIN_SUBSCRIPTION_PRODUCTS} className="font-semibold text-primary underline">Sản phẩm trả phí</Link></nav>
     <header className="flex flex-wrap items-start justify-between gap-4">
@@ -145,6 +225,7 @@ export default function SubscriptionProductManagementDetailView() {
       <div className="flex flex-wrap gap-2"><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending || detail.archived} onClick={() => void mutation(() => subscriptionProductService.setVisibility(planCode, detail.visibility === "VISIBLE" ? "HIDDEN" : "VISIBLE", new AbortController().signal))}>{detail.visibility === "VISIBLE" ? "Ẩn gói" : "Hiện gói"}</Button><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending || detail.archived} onClick={() => void mutation(() => subscriptionProductService.setSaleStatus(planCode, detail.saleStatus === "ON_SALE" ? "STOPPED" : "ON_SALE", new AbortController().signal))}>{detail.saleStatus === "ON_SALE" ? "Dừng bán" : "Mở bán lại"}</Button></div>
     </header>
     <div className="grid gap-4 sm:grid-cols-2"><Card className="space-y-2 rounded-2xl border-border bg-card p-5 shadow-none"><h2 className="font-semibold">Hiển thị</h2><p className="text-body-md">{detail.visibility === "VISIBLE" ? "Hiện trong danh sách" : "Ẩn khỏi danh sách"}</p></Card><Card className="space-y-2 rounded-2xl border-border bg-card p-5 shadow-none"><h2 className="font-semibold">Bán hàng</h2><p className="text-body-md">{detail.saleStatus === "ON_SALE" ? "Đang mở bán" : "Đã dừng bán"}</p></Card></div>
+    {legacySchedule && <Card className="space-y-4 rounded-2xl border-border bg-card p-5 shadow-none"><div><h2 className="text-headline-md font-semibold">Lịch phát hành PREMIUM cũ</h2><p className="mt-2 leading-6 text-muted-foreground">Lịch này chỉ áp dụng cho các bản PREMIUM đã được lên lịch trong hệ thống cũ. Thời gian nhập bên dưới dùng múi giờ Việt Nam (UTC+07:00).</p></div><p className="leading-6">Trạng thái: <strong>{legacySchedule.status === "SCHEDULED" ? "Đã lên lịch" : legacySchedule.status === "CANCELLED" ? "Đã hủy" : legacySchedule.status === "APPLIED" ? "Đã áp dụng" : "Được thay thế"}</strong> · Phiên bản v{legacySchedule.version} · Thời điểm: <VietnamTime value={legacySchedule.effectiveAt} /></p>{legacySchedule.status === "SCHEDULED" && !detail.archived && <><div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]"><Field id="legacySchedule.effectiveAt" label="Thời điểm mới (giờ Việt Nam)"><input id="legacySchedule.effectiveAt" type="datetime-local" step={60} min={vietnamDateTimeValue(new Date().toISOString())} value={scheduleAt} onChange={event => setScheduleAt(event.target.value)} className={fieldClass} aria-describedby="legacy-schedule-timezone" /></Field><p id="legacy-schedule-timezone" className="self-end pb-3 text-sm leading-6 text-muted-foreground">Máy chủ nhận thời điểm tương ứng theo UTC+07:00.</p></div><div className="flex flex-wrap gap-3"><Button className="min-h-12 rounded-xl" disabled={pending || !newScheduleAt || Date.parse(newScheduleAt) <= Date.now()} onClick={() => void rescheduleLegacyPremium()}>{pending ? "Đang cập nhật…" : "Đổi lịch"}</Button><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending} onClick={() => setConfirmAction("cancel-schedule")}>Hủy lịch</Button></div></>}</Card>}
     {publicationVersion !== null && <Card className="rounded-2xl border-border bg-card p-5 shadow-none"><p role="status" className="font-semibold text-primary">Máy chủ đã chấp nhận phiên bản v{publicationVersion}.</p>{detail.currentVersion !== publicationVersion && detail.currentVersion !== null && <p className="mt-1 text-sm leading-6 text-muted-foreground">Phiên bản hiện tại đã chuyển sang v{detail.currentVersion}.</p>}</Card>}
     {failure && <Card className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-border bg-card p-5 shadow-none"><p role="alert" className="min-w-0 flex-1 leading-6 text-destructive">{failure}</p><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending || state.loading} onClick={state.refetch}>Tải lại sản phẩm</Button></Card>}
     {detail.archived && <Card className="rounded-2xl border-border bg-card p-5 shadow-none"><p className="leading-6 text-muted-foreground">Sản phẩm đã lưu trữ và không thể chỉnh sửa.</p></Card>}
@@ -155,7 +236,10 @@ export default function SubscriptionProductManagementDetailView() {
     {detail.history.length > 0 && <section className="space-y-3"><h2 className="text-headline-md font-semibold">Lịch sử phiên bản</h2><div className="grid gap-3 sm:grid-cols-2">{[...detail.history].sort((a, b) => b.version - a.version).map(item => <Card key={item.version} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-border bg-card p-4 shadow-none"><div><p className="font-semibold">Phiên bản v{item.version}</p><p className="mt-1 text-sm text-muted-foreground">Áp dụng: <VietnamTime value={item.effectiveAt} /></p></div><Button variant="outline" className="min-h-12 rounded-xl" onClick={() => setSelectedVersion(item.version)}>Xem nội dung</Button></Card>)}</div></section>}
     {!detail.archived && <div className="flex flex-wrap gap-3 border-t border-border pt-5"><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending} onClick={() => setConfirmAction("archive")}>Lưu trữ sản phẩm</Button>{detail.currentVersion === null && detail.draft && <Button variant="outline" className="min-h-12 rounded-xl text-destructive" disabled={pending} onClick={() => setConfirmAction("delete")}>Xóa bản nháp chưa xuất bản</Button>}</div>}
     <Dialog open={!!confirmAction} onOpenChange={value => { if (!value && !pending) setConfirmAction(null); }}>
-      <DialogContent onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}><DialogHeader><DialogTitle>{confirmAction === "archive" ? "Lưu trữ sản phẩm?" : "Xóa bản nháp?"}</DialogTitle><DialogDescription className="leading-6">{confirmAction === "archive" ? "Sản phẩm sẽ không còn được cung cấp cho người học." : "Chỉ bản nháp chưa từng xuất bản mới có thể xóa. Thao tác này không thể hoàn tác."}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending} onClick={() => setConfirmAction(null)}>Hủy</Button><Button className="min-h-12 rounded-xl" disabled={pending} onClick={() => void confirmLifecycle()}>{pending ? "Đang cập nhật…" : confirmAction === "archive" ? "Lưu trữ" : "Xóa bản nháp"}</Button></DialogFooter></DialogContent>
+      <DialogContent onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}><DialogHeader><DialogTitle>{confirmAction === "archive" ? "Lưu trữ sản phẩm?" : confirmAction === "delete" ? "Xóa bản nháp?" : "Hủy lịch phát hành PREMIUM?"}</DialogTitle><DialogDescription className="leading-6">{confirmAction === "archive" ? "Sản phẩm sẽ không còn được cung cấp cho người học." : confirmAction === "delete" ? "Chỉ bản nháp chưa từng xuất bản mới có thể xóa. Thao tác này không thể hoàn tác." : "Lịch phát hành hiện tại sẽ bị hủy. Thao tác này không xóa các phiên bản đã lưu trong lịch sử."}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending} onClick={() => setConfirmAction(null)}>Đóng</Button><Button className="min-h-12 rounded-xl" disabled={pending} onClick={() => void confirmLifecycle()}>{pending ? "Đang cập nhật…" : confirmAction === "archive" ? "Lưu trữ" : confirmAction === "delete" ? "Xóa bản nháp" : "Hủy lịch"}</Button></DialogFooter></DialogContent>
+    </Dialog>
+    <Dialog open={replaceScheduleConfirmOpen && legacySchedule?.status === "SCHEDULED"} onOpenChange={open => { if (!open && !pending) setReplaceScheduleConfirmOpen(false); }}>
+      {legacySchedule?.status === "SCHEDULED" && <DialogContent onEscapeKeyDown={event => { if (pending) event.preventDefault(); }} onInteractOutside={event => { if (pending) event.preventDefault(); }}><DialogHeader><DialogTitle>Thay thế lịch PREMIUM đang chờ?</DialogTitle><DialogDescription className="leading-6">Xuất bản ngay phiên bản này sẽ thay thế lịch phát hành PREMIUM cũ đang chờ vào <VietnamTime value={legacySchedule.effectiveAt} />. Xác nhận rõ ràng để máy chủ hủy lịch cũ và áp dụng phiên bản mới ngay.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" className="min-h-12 rounded-xl" disabled={pending} onClick={() => setReplaceScheduleConfirmOpen(false)}>Quay lại</Button><Button className="min-h-12 rounded-xl" disabled={pending} onClick={() => void publish(true)}>{pending ? "Đang xuất bản…" : "Xác nhận thay thế và xuất bản ngay"}</Button></DialogFooter></DialogContent>}
     </Dialog>
     {selectedVersion !== null && <ProductVersionDialog planCode={planCode} version={selectedVersion} onClose={() => setSelectedVersion(null)} />}
   </div>;
