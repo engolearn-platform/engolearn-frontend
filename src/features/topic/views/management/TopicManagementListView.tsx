@@ -1,7 +1,6 @@
 import { EmptyState, Loading } from "@shared/components";
-import { ROUTES, adminTopicBasicInfoPath } from "@shared/constants";
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { ROUTES, adminTopicBasicInfoPath, adminTopicReadPath } from "@shared/constants";
+import { Link, useNavigate } from "react-router";
 import { useTopicList } from "@features/topic/hooks/useTopicList";
 import type { TopicManagementFilter } from "@features/topic/types/topic.types";
 import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
@@ -11,7 +10,6 @@ import TopicManagementPageHeader from "@features/topic/components/management/lis
 import TopicManagementPagination from "@features/topic/components/management/list/TopicManagementPagination";
 import TopicManagementStats from "@features/topic/components/management/list/TopicManagementStats";
 import TopicManagementTable from "@features/topic/components/management/list/TopicManagementTable";
-import UnpublishTopicDialog from "@features/topic/components/management/list/UnpublishTopicDialog";
 
 const DEFAULT_FILTER: TopicManagementFilter = {
   search: "",
@@ -20,10 +18,9 @@ const DEFAULT_FILTER: TopicManagementFilter = {
   status: "ALL",
 };
 
-export default function TopicManagementListView() {
+export default function TopicManagementListView({ readOnly = false }: { readOnly?: boolean }) {
   const navigate = useNavigate();
   const { data, loading, error, params, setFilter, setPage } = useTopicList();
-  const [unpublishing, setUnpublishing] = useState<TopicManagementListItem | null>(null);
 
   const filter: TopicManagementFilter = {
     search: params.search ?? "",
@@ -38,7 +35,7 @@ export default function TopicManagementListView() {
   const clearFilter = () => setFilter(DEFAULT_FILTER as Partial<typeof params>);
   const goToCreate = () => navigate(ROUTES.ADMIN_TOPIC_CREATE);
   const handleEdit = (topic: TopicManagementListItem) => {
-    navigate(adminTopicBasicInfoPath(topic.id));
+    navigate(readOnly ? adminTopicReadPath(topic.id) : adminTopicBasicInfoPath(topic.id));
   };
 
   if (loading && !data) {
@@ -49,12 +46,12 @@ export default function TopicManagementListView() {
     );
   }
 
-  if (error && !data) {
+  if (!data && (error || readOnly)) {
     return (
       <div className="mx-auto max-w-7xl p-5 lg:p-8">
         <EmptyState
-          title="Không tải được danh sách chủ đề"
-          description={error?.message ?? "Đã xảy ra lỗi khi tải danh sách chủ đề."}
+          title={error?.status === 401 ? "Bạn cần đăng nhập" : error?.status === 403 ? "Bạn không có quyền xem nội dung quản trị" : "Không tải được danh sách chủ đề"}
+          description={error?.status === 404 ? "Không tìm thấy danh sách chủ đề." : error?.message ?? "Chưa nhận được dữ liệu danh sách chủ đề."}
         />
       </div>
     );
@@ -71,7 +68,14 @@ export default function TopicManagementListView() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-      <TopicManagementPageHeader onCreate={goToCreate} />
+      {readOnly ? (
+        <div className="py-5">
+          <h1 className="text-headline-md font-semibold text-on-surface">Danh sách chủ đề</h1>
+        </div>
+      ) : <>
+        <TopicManagementPageHeader onCreate={goToCreate} />
+        <Link to={adminTopicReadPath()} className="inline-flex rounded-lg px-2 py-2 text-label-sm font-semibold text-primary hover:bg-surface-container-low">Mở danh sách chỉ đọc</Link>
+      </>}
       <TopicManagementStats stats={counters} />
       <TopicManagementFilterBar
         filter={filter}
@@ -87,22 +91,23 @@ export default function TopicManagementListView() {
         onClear={clearFilter}
       />
 
-      <div className="mt-4 flex min-h-[480px] flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm">
-        {isEmpty ? (
+      <div aria-busy={loading} className="mt-4 flex min-h-[480px] flex-col overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm">
+        {loading && readOnly ? <div className="py-12"><Loading size="lg" /></div> : isEmpty ? (
           <TopicManagementEmptyState
             keyword={filter.search.trim()}
             onClear={clearFilter}
             onCreate={goToCreate}
+            readOnly={readOnly}
             title={hasAny ? "Không khớp bộ lọc" : "Chưa có topic nào"}
             description={
               hasAny
                 ? "Không tìm thấy chủ đề nào phù hợp với bộ lọc hiện tại."
-                : "Hãy tạo topic đầu tiên để bắt đầu quản lý nội dung."
+                : readOnly ? "Danh sách Topic quản trị hiện chưa có dữ liệu." : "Hãy tạo topic đầu tiên để bắt đầu quản lý nội dung."
             }
           />
         ) : (
           <>
-            <TopicManagementTable topics={items} onUnpublish={setUnpublishing} onEdit={handleEdit} />
+            <TopicManagementTable topics={items} onEdit={handleEdit} readOnly={readOnly} />
             <TopicManagementPagination
               page={currentPage}
               totalPages={totalPages}
@@ -113,11 +118,6 @@ export default function TopicManagementListView() {
         )}
       </div>
 
-      <UnpublishTopicDialog
-        topic={unpublishing}
-        onClose={() => setUnpublishing(null)}
-        onConfirm={() => setUnpublishing(null)}
-      />
     </div>
   );
 }

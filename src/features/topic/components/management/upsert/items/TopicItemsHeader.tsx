@@ -7,6 +7,8 @@ interface TopicItemsHeaderProps {
   draftBadge?: string;
   countNote: string;
   onAdd: () => void;
+  readOnly?: boolean;
+  disabled?: boolean;
 }
 
 export default function TopicItemsHeader({
@@ -15,6 +17,8 @@ export default function TopicItemsHeader({
   draftBadge = "Bản nháp",
   countNote,
   onAdd,
+  readOnly = false,
+  disabled,
 }: TopicItemsHeaderProps) {
   return (
     <div className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
@@ -40,16 +44,17 @@ export default function TopicItemsHeader({
           {countNote}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      {!readOnly && <div className="flex shrink-0 items-center gap-3">
         <Button
           type="button"
+          disabled={disabled}
           onClick={onAdd}
           className="w-full rounded-xl bg-primary text-on-primary hover:bg-primary-container sm:w-auto"
         >
           <PlusCircle className="size-5" aria-hidden="true" />
           Thêm Topic Item mới
         </Button>
-      </div>
+      </div>}
       </div>
     </div>
   );

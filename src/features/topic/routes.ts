@@ -17,8 +17,11 @@ import TopicUpsertBasicInfoView from "@features/topic/views/management/TopicUpse
 import TopicUpsertItemsView from "@features/topic/views/management/TopicUpsertItemsView";
 import TopicItemEditorView from "@features/topic/views/management/TopicItemEditorView";
 import AuthGuard from "@features/auth/components/AuthGuard";
+import TopicManagementGuard from "@features/auth/components/TopicManagementGuard";
 import SpeakingDemoView from "@features/topic/views/learning/SpeakingDemoView";
 import SpeakingView from "@features/topic/views/learning/SpeakingView";
+import TopicManagementReadView from "@features/topic/views/management/TopicManagementReadView";
+import TopicManagementReadListView from "@features/topic/views/management/TopicManagementReadListView";
 
 function LegacyTopicRedirect() {
   const { topicId = "" } = useParams();
@@ -83,12 +86,16 @@ export const TopicStandaloneRoutes: RouteObject[] = [
 
 export const TopicManagementRoutes: RouteObject[] = [
   {
-    Component: AuthGuard,
+    Component: TopicManagementGuard,
     children: [{
     path: ROUTES.ADMIN_TOPICS,
     Component: ManagementLayout,
     children: [
       { path: "", Component: TopicManagementListView },
+      { path: "read", Component: TopicManagementReadListView },
+      { path: ":topicId/view", Component: TopicManagementReadView },
+      { path: ":topicId/view/items", Component: TopicManagementReadView },
+      { path: ":topicId/view/items/:itemId/:sectionKey", Component: TopicManagementReadView },
       { path: "create", Component: TopicUpsertBasicInfoView },
       { path: "create/items", Component: TopicUpsertItemsView },
       { path: "create/items/:itemId/:sectionKey", Component: TopicItemEditorView },

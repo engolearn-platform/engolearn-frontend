@@ -1,4 +1,5 @@
 import type { CefrLevel } from "./topic.types";
+import type { TopicCategory } from "./topic-management.types";
 
 export interface TopicCreateCefrOption {
   value: CefrLevel;
@@ -7,7 +8,7 @@ export interface TopicCreateCefrOption {
 }
 
 export interface TopicCategoryOption {
-  value: string;
+  value: TopicCategory;
   label: string;
 }
 
@@ -27,8 +28,8 @@ export type TopicUpsertMode = "create" | "update";
 export interface TopicBasicInfoDraft {
   titleEn: string;
   titleVi: string;
-  cefr: CefrLevel;
-  category: string;
+  cefr: CefrLevel | "";
+  category: TopicCategory | "";
   duration: string;
   description: string;
   tags: string[];
@@ -106,8 +107,8 @@ export const TOPIC_CREATE_DEFAULT_TAGS: string[] = [
 export const TOPIC_CREATE_DEFAULT_DRAFT: TopicBasicInfoDraft = {
   titleEn: "",
   titleVi: "",
-  cefr: "A1",
-  category: "DINING",
+  cefr: "",
+  category: "",
   duration: "",
   description: "",
   tags: [],
@@ -122,7 +123,7 @@ export const TOPIC_CREATE_DEFAULT_DRAFT: TopicBasicInfoDraft = {
  * NOTE: union chữ hoa có chủ ý theo spec; chưa reuse `TopicStatus`
  * ("published" | "draft") — hợp nhất khi gắn API thật.
  */
-export type TopicItemPublicationStatus = "DRAFT" | "PUBLISHED";
+export type TopicItemPublicationStatus = "DRAFT" | "PUBLISHED" | "HIDDEN";
 
 export type TopicItemStepKey = "context" | "vocabulary" | "expressions" | "quiz";
 
@@ -158,6 +159,7 @@ export interface TopicItemOverview {
   publicationStatus: TopicItemPublicationStatus;
   steps: TopicItemStepSummary[];
   updatedNote?: string;
+  durationMinutes?: number | null;
 }
 
 export interface TopicScriptQualityCheck {
@@ -614,6 +616,7 @@ export interface TopicSituationalQuestion {
   correct: string;
   explanationOk: string;
   explanationNg: string;
+  explanation?: string | null;
 }
 
 export interface TopicFillBlankSentence {

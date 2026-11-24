@@ -11,6 +11,7 @@ interface QuizGroupSectionProps {
   onEdit: (questionId: string) => void;
   onDelete: (questionId: string) => void;
   onPreviewAudio: () => void;
+  readOnly?: boolean;
 }
 
 export default function QuizGroupSection({
@@ -20,6 +21,7 @@ export default function QuizGroupSection({
   onEdit,
   onDelete,
   onPreviewAudio,
+  readOnly = false,
 }: QuizGroupSectionProps) {
   return (
     <section className="space-y-4">
@@ -41,14 +43,14 @@ export default function QuizGroupSection({
           <span className="rounded-full bg-surface-container-highest px-3 py-1 text-label-sm text-on-surface-variant">
             {group.questions.length} câu hỏi
           </span>
-          <Button
+          {!readOnly && <Button
             type="button"
             onClick={() => onAdd(group.id)}
             className="rounded-xl bg-surface-container-lowest text-primary shadow-sm hover:bg-surface-container-high"
           >
             <Plus className="size-[18px]" aria-hidden="true" />
             Thêm câu hỏi
-          </Button>
+          </Button>}
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4">
@@ -61,6 +63,7 @@ export default function QuizGroupSection({
               onEdit={onEdit}
               onDelete={onDelete}
               onPreviewAudio={onPreviewAudio}
+              readOnly={readOnly}
             />
           ) : (
             <FillBlankQuestionCard
@@ -70,6 +73,7 @@ export default function QuizGroupSection({
               onEdit={onEdit}
               onDelete={onDelete}
               onPreviewAudio={onPreviewAudio}
+              readOnly={readOnly}
             />
           ),
         )}

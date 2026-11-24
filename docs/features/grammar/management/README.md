@@ -38,6 +38,8 @@ File con giữ cấu trúc 8 mục giống luồng topic: Stitch → Route → B
 | Mở màn từ sidebar | `/admin/*` → `/admin/grammar` | `MANAGEMENT_CONTENT_NAV_ITEMS` trong `src/core/layouts/components/managementNav.ts` → `ROUTES.ADMIN_GRAMMAR` |
 | Breadcrumb topbar | pathname có tiền tố `/admin/grammar` | `ManagementTopBar.tsx` → `sectionLabel` |
 
+Sidebar chỉ chọn mục **Tổng quan** tại `/admin`. Mục **Quản lý Ngữ pháp** được chọn tại `/admin/grammar` và các trang con của mục này.
+
 Định nghĩa route: `ROUTES.ADMIN_GRAMMAR` trong `src/shared/constants/app.constants.ts`.
 Khai báo: `GrammarAdminRoutes` trong `src/features/grammar/routes.ts` (dưới `ManagementLayout`, child `path: ""`).
 Đăng ký: `appRoutes` trong `src/router.tsx` spread `...GrammarAdminRoutes`.

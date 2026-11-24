@@ -1,221 +1,135 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { adminTopicItemsPath, topicItemSectionPath } from "@shared/constants";
-import { EmptyState } from "@shared/components";
 import { Button } from "@/core/components/shadcn/button";
-import {
-  useTopicItemExpressionsForm,
-  type ExpressionExampleUpsert,
-} from "@features/topic/hooks/useTopicItemExpressionsForm";
-import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
-import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
-import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
-import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
-import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
+import type {
+  TopicExpressionExampleResource,
+  TopicExpressionGroupType,
+  TopicExpressionPurposeResource,
+  TopicExpressionResource,
+  TopicVocabularyResource,
+} from "@features/topic/types/topic-management.types";
+import { TOPIC_EXPRESSION_TYPE_OPTIONS } from "@features/topic/types/topic-create.types";
 import ExpressionsHeaderCard from "@features/topic/components/management/upsert/editor/expressions/ExpressionsHeaderCard";
-import ExpressionsQuickAddSlot from "@features/topic/components/management/upsert/editor/expressions/ExpressionsQuickAddSlot";
-import ExpressionUpsertDialog, {
-  type ExpressionDialogInitial,
-} from "@features/topic/components/management/upsert/editor/expressions/ExpressionUpsertDialog";
-import PurposeGroupSection from "@features/topic/components/management/upsert/editor/expressions/PurposeGroupSection";
+import ExpressionUpsertDialog, { EXPRESSION_LABELS } from "@features/topic/components/management/upsert/editor/expressions/ExpressionUpsertDialog";
+import ExpressionCard from "@features/topic/components/management/upsert/editor/expressions/ExpressionCard";
 
-function stepDetail(
-  steps: { key: string; detail: string }[],
-  key: string,
-): string {
-  const found = steps.find((step) => step.key === key);
-  return found ? found.detail.replace(/[()]/g, "") : "";
+const GROUP_TYPES: Record<TopicExpressionGroupType, string> = {
+  BASIC: "Cơ bản",
+  COMMON: "Phổ biến",
+  PLACEHOLDER: "Mẫu thế chỗ",
+};
+
+const fieldClass = "w-full rounded-lg bg-surface-container-low px-3 py-2 text-body-md text-on-surface";
+type DialogPosition = { block: number; group: number; row?: number };
+
+function move<T>(entries: T[], index: number, direction: -1 | 1) {
+  const ordered = [...entries];
+  const [entry] = ordered.splice(index, 1);
+  ordered.splice(index + direction, 0, entry);
+  return ordered;
 }
 
-export default function TopicItemExpressionsEditorView() {
-  const navigate = useNavigate();
-  const { itemId, topicId } = useParams();
-  const {
-    item,
-    purposes,
-    purposeOptions,
-    vocabOptions,
-    vocabWordById,
-    totalExamples,
-    maxPurposes,
-    maxExamples,
-    canAddPurpose,
-    addExampleToPurpose,
-    patchExample,
-    removeExample,
-    duplicateExample,
-    findExample,
-    lookupPurposeVi,
-    isValid,
-  } = useTopicItemExpressionsForm(itemId);
-  const [showErrors, setShowErrors] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
-  const [editingId, setEditingId] = useState<string | null>(null);
+export default function TopicItemExpressionsEditorView({ value, onChange, vocabulary, itemTitle, topicId, disabled = false }: {
+  value: TopicExpressionResource[];
+  onChange: (value: TopicExpressionResource[]) => void;
+  vocabulary: TopicVocabularyResource[];
+  itemTitle: string;
+  topicId: string;
+  disabled?: boolean;
+}) {
+  const [dialog, setDialog] = useState<DialogPosition | null>(null);
+  const vocabularyNames = new Map(vocabulary.flatMap(({ vocabId, snapshot }) => vocabId ? [[vocabId, snapshot?.word ?? vocabId]] : []));
+  const allPurposes = value.flatMap((block) => block.purposes);
+  const editGroup = (block: number, group: number, patch: Partial<TopicExpressionPurposeResource>) => {
+    onChange(value.map((entry, index) => index === block
+      ? { ...entry, purposes: entry.purposes.map((purpose, position) => position === group ? { ...purpose, ...patch } : purpose) }
+      : entry));
+  };
+  const changePurposes = (block: number, purposes: TopicExpressionPurposeResource[]) => {
+    onChange(value.map((entry, index) => index === block
+      ? { ...entry, purposes: purposes.map((purpose, orderIndex) => ({ ...purpose, orderIndex })) } : entry));
+  };
 
-  const handleBackToList = () => navigate(adminTopicItemsPath(topicId));
-
-  const hasFreeSlot =
-    canAddPurpose ||
-    purposes.some((purpose) => purpose.examples.length < maxExamples);
-
-  if (!item) {
-    return (
-      <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-        <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
-          <EmptyState
-            title="Không tìm thấy topic item"
-            description="Topic item này không tồn tại trong bản nháp hiện tại."
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleBackToList}
-            className="mx-auto w-full rounded-xl sm:w-auto"
-          >
-            Quay lại danh sách
-          </Button>
-        </div>
-      </div>
-    );
+  function addGroup() {
+    if (disabled) return;
+    const blank: TopicExpressionPurposeResource = { purposeEn: null, purposeVi: null, groupType: null, orderIndex: 0, examples: [] };
+    if (!value.length) onChange([{ purposes: [blank], tips: null }]);
+    else changePurposes(value.length - 1, [...value[value.length - 1].purposes, blank]);
   }
 
-  const handleSelectSection = (section: TopicItemStepKey) => {
-    if (section === "expressions" || !itemId) return;
-    navigate(topicItemSectionPath(itemId, section, topicId));
-  };
+  function submitExample(example: TopicExpressionExampleResource) {
+    if (!dialog || disabled) return;
+    const { block, group, row } = dialog;
+    const { examples } = value[block].purposes[group];
+    editGroup(block, group, { examples: row === undefined ? [...examples, example]
+      : examples.map((entry, index) => index === row ? example : entry) });
+    setDialog(null);
+  }
 
-  const handleBack = () =>
-    navigate(topicItemSectionPath(itemId ?? "", "vocabulary", topicId));
-
-  const handleContinue = () => {
-    if (!isValid || !itemId) {
-      setShowErrors(true);
-      return;
-    }
-    setShowErrors(false);
-    navigate(topicItemSectionPath(itemId, "quiz", topicId));
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setEditingId(null);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (id: string) => {
-    setDialogMode("edit");
-    setEditingId(id);
-    setDialogOpen(true);
-  };
-
-  const handlePreviewAudio = () => undefined;
-
-  const handleSubmitDialog = (draft: ExpressionExampleUpsert) => {
-    if (dialogMode === "add") {
-      addExampleToPurpose(draft);
-    } else if (editingId) {
-      patchExample(editingId, {
-        purposeEn: draft.purposeEn,
-        purposeVi: draft.purposeVi,
-        type: draft.type,
-        textEn: draft.textEn,
-        textVi: draft.textVi,
-        usageNote: draft.usageNote,
-        audioFile: draft.audioFile,
-        linkedVocabIds: draft.linkedVocabIds,
-      });
-    }
-    setDialogOpen(false);
-    setEditingId(null);
-  };
-
-  const editingInitial: ExpressionDialogInitial | undefined =
-    dialogMode === "edit" && editingId
-      ? (() => {
-          const found = findExample(editingId);
-          if (!found) return undefined;
-          return {
-            purposeEn: found.purpose.purposeEn,
-            purposeVi: found.purpose.purposeVi,
-            type: found.example.type,
-            textEn: found.example.textEn,
-            textVi: found.example.textVi,
-            usageNote: found.example.usageNote,
-            audioFile: found.example.audioFile,
-            linkedVocabIds: found.example.linkedVocabIds,
-          };
-        })()
-      : undefined;
-
-  const quizStep = item.steps.find((step) => step.key === "quiz");
-
-  return (
-    <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
-      <div className="mx-auto flex w-full max-w-[940px] flex-col gap-6 pt-6 lg:pt-8">
-        <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicUpsertWizardHeader
-            title={`Bước 2: Biên soạn Mẫu câu — ${item.titleEn}`}
-          />
-          <TopicUpsertStepper activeStep={1} />
+  return <fieldset disabled={disabled} className="flex flex-col gap-5">
+    <ExpressionsHeaderCard itemTitleEn={itemTitle} totalExamples={allPurposes.reduce((count, purpose) => count + purpose.examples.length, 0)}
+      purposeCount={allPurposes.length} maxPurposes={3} onAdd={addGroup} addLabel="Thêm nhóm mẫu câu" />
+    {value.map((block, blockIndex) => <div key={blockIndex} className="space-y-5">
+      {value.length > 1 && <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" disabled={blockIndex === 0} onClick={() => onChange(move(value, blockIndex, -1))}>Đưa khối lên</Button>
+        <Button type="button" variant="outline" disabled={blockIndex === value.length - 1} onClick={() => onChange(move(value, blockIndex, 1))}>Đưa khối xuống</Button>
+      </div>}
+      {block.purposes.map((purpose, groupIndex) => <section key={groupIndex}
+        className="space-y-4 rounded-xl bg-surface-container-lowest p-4 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-headline-sm font-semibold">{purpose.purposeVi || "Nhóm mẫu câu"}</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={groupIndex === 0} onClick={() => changePurposes(blockIndex, move(block.purposes, groupIndex, -1))}>Đưa nhóm lên</Button>
+            <Button type="button" size="sm" variant="outline" disabled={groupIndex + 1 === block.purposes.length} onClick={() => changePurposes(blockIndex, move(block.purposes, groupIndex, 1))}>Đưa nhóm xuống</Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => {
+              if (window.confirm("Xóa nhóm và các mẫu câu trong nhóm?")) changePurposes(blockIndex, block.purposes.filter((_, index) => index !== groupIndex));
+            }}>Xóa nhóm</Button>
+          </div>
         </div>
-
-        <TopicItemSectionTabRail
-          activeSection="expressions"
-          vocabNote={stepDetail(item.steps, "vocabulary")}
-          expressionsNote={stepDetail(item.steps, "expressions")}
-          quizNote={stepDetail(item.steps, "quiz")}
-          quizEmpty={!quizStep || quizStep.state === "empty"}
-          onSelect={handleSelectSection}
-        />
-
-        <ExpressionsHeaderCard
-          itemTitleEn={item.titleEn}
-          totalExamples={totalExamples}
-          purposeCount={purposes.length}
-          maxPurposes={maxPurposes}
-          onAdd={handleAdd}
-        />
-
-        <div className="flex flex-col gap-8">
-          {purposes.map((purpose, index) => (
-            <PurposeGroupSection
-              key={purpose.id}
-              purpose={purpose}
-              groupIndex={index}
-              vocabWordById={vocabWordById}
-              onEdit={handleEdit}
-              onDelete={removeExample}
-              onDuplicate={duplicateExample}
-              onPreviewAudio={handlePreviewAudio}
-            />
-          ))}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="grid gap-1"><span>Tên nhóm tiếng Anh</span>
+            <input className={fieldClass} value={purpose.purposeEn ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { purposeEn: event.target.value || null })} />
+          </label>
+          <label className="grid gap-1"><span>Tên nhóm tiếng Việt</span>
+            <input className={fieldClass} value={purpose.purposeVi ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { purposeVi: event.target.value || null })} />
+          </label>
+          <label className="grid gap-1"><span>Loại nhóm</span>
+            <select className={fieldClass} value={purpose.groupType ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { groupType: (event.target.value || null) as TopicExpressionGroupType | null })}>
+              <option value="">Chưa chọn</option>
+              {Object.entries(GROUP_TYPES).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+            </select>
+          </label>
         </div>
-
-        {showErrors && !isValid && (
-          <p className="text-label-sm text-error">
-            Mỗi mẫu câu cần có nhóm mục đích EN/VI và nội dung EN/VI đầy đủ.
-          </p>
-        )}
-
-        <ExpressionsQuickAddSlot visible={hasFreeSlot} onAdd={handleAdd} />
-
-        <ExpressionUpsertDialog
-          open={dialogOpen}
-          mode={dialogMode}
-          purposeOptions={purposeOptions}
-          vocabOptions={vocabOptions}
-          lookupPurposeVi={lookupPurposeVi}
-          initial={editingInitial}
-          onClose={() => {
-            setDialogOpen(false);
-            setEditingId(null);
-          }}
-          onSubmit={handleSubmitDialog}
-        />
-
-        <TopicUpsertFooterBar onBack={handleBack} onContinue={handleContinue} />
-      </div>
-    </div>
-  );
+        <div className="grid gap-4 lg:grid-cols-2">
+          {purpose.examples.map((source, row) => {
+            const { examples } = purpose;
+            return <div key={row} className="space-y-2">
+              <ExpressionCard example={{
+                id: String(row), type: TOPIC_EXPRESSION_TYPE_OPTIONS.find((entry) => entry.value === source.type)?.value ?? null,
+                textEn: source.textEn ?? "", textVi: source.textVi ?? "", usageNote: source.usageNote ?? "",
+                audioFile: source.audioUrl, linkedVocabIds: source.linkedVocabIds ?? [],
+              }} vocabWords={(source.linkedVocabIds ?? []).map((id) => vocabularyNames.get(id) ?? id)}
+                onEdit={() => setDialog({ block: blockIndex, group: groupIndex, row })}
+                onDelete={() => {
+                  if (window.confirm("Xóa mẫu câu khỏi bản nháp?")) editGroup(blockIndex, groupIndex, { examples: examples.filter((_, index) => index !== row) });
+                }}
+                onDuplicate={() => editGroup(blockIndex, groupIndex, { examples: [...examples, { ...source }] })}
+                onPreviewAudio={() => undefined} />
+              <div className="flex flex-wrap items-center gap-2">
+                {source.label && <span className="text-label-sm font-semibold">{EXPRESSION_LABELS[source.label]}</span>}
+                <Button type="button" size="sm" variant="outline" disabled={row === 0} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, -1) })}>Đưa mẫu câu lên</Button>
+                <Button type="button" size="sm" variant="outline" disabled={row + 1 === examples.length} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, 1) })}>Đưa mẫu câu xuống</Button>
+              </div>
+            </div>;
+          })}
+        </div>
+        <Button type="button" variant="outline" onClick={() => setDialog({ block: blockIndex, group: groupIndex })}>Thêm mẫu câu</Button>
+      </section>)}
+      <label className="grid gap-1"><span>Mẹo sử dụng mẫu câu</span>
+        <textarea className={fieldClass} value={block.tips ?? ""} onChange={(event) => onChange(value.map((entry, index) =>
+          index === blockIndex ? { ...entry, tips: event.target.value || null } : entry))} />
+      </label>
+    </div>)}
+    {dialog && <ExpressionUpsertDialog topicId={topicId} initial={dialog.row === undefined ? undefined : value[dialog.block].purposes[dialog.group].examples[dialog.row]}
+      vocabulary={vocabularyNames} onClose={() => setDialog(null)} onSubmit={submitExample} />}
+  </fieldset>;
 }

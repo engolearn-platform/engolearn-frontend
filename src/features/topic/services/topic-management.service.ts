@@ -5,6 +5,16 @@ import type {
   TopicManagementListQueryParams,
   TopicManagementListResponse,
   TopicManagementResponse,
+  TopicItemManagementDetail,
+  TopicItemManagementSummary,
+  TopicItemMetadataInput,
+  TopicItemMutationResult,
+  TopicItemResourceMutationResult,
+  TopicContextResource,
+  TopicVocabularyResource,
+  TopicExpressionResource,
+  TopicQuizResource,
+  TopicReadinessResult,
   TopicUpdateRequest,
 } from "../types/topic-management.types";
 
@@ -105,6 +115,44 @@ export async function fetchTopicById(
   return envelope.data;
 }
 
+export async function fetchTopicItems(
+  topicId: string,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemManagementSummary[]> {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/items`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  }
+
+  const envelope = (await response.json()) as ApiResponse<TopicItemManagementSummary[]>;
+  return envelope.data;
+}
+
+export async function fetchTopicItemById(
+  topicId: string,
+  itemId: string,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemManagementDetail> {
+  const response = await fetchImpl(
+    `/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}`,
+    { method: "GET", headers: { "Content-Type": "application/json" }, signal },
+  );
+
+  if (!response.ok) {
+    throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  }
+
+  const envelope = (await response.json()) as ApiResponse<TopicItemManagementDetail>;
+  return envelope.data;
+}
+
 export async function createTopic(
   body: TopicCreateRequest,
   signal?: AbortSignal,
@@ -150,9 +198,98 @@ export async function updateTopic(
   return envelope.data;
 }
 
+async function mutateTopicItems(topicId: string, method: string, path: string, body?: object): Promise<TopicItemMutationResult> {
+  const response = await fetch(`/api/management/topics/${encodeURIComponent(topicId)}/items${path}`, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicItemMutationResult>;
+  return envelope.data;
+}
+
+export function createTopicItem(topicId: string, revision: number, body: TopicItemMetadataInput) {
+  return mutateTopicItems(topicId, "POST", "", { ...body, revision });
+}
+
+export function updateTopicItem(topicId: string, itemId: string, revision: number, body: TopicItemMetadataInput) {
+  return mutateTopicItems(topicId, "PATCH", `/${encodeURIComponent(itemId)}`, { ...body, revision });
+}
+
+export function reorderTopicItems(topicId: string, revision: number, itemIds: string[]) {
+  return mutateTopicItems(topicId, "PATCH", "/order", { revision, itemIds });
+}
+
+export function setTopicItemVisibility(topicId: string, itemId: string, revision: number, hidden: boolean) {
+  return mutateTopicItems(topicId, "PATCH", `/${encodeURIComponent(itemId)}/visibility`, { revision, hidden });
+}
+
+export function deleteTopicItem(topicId: string, itemId: string, revision: number) {
+  return mutateTopicItems(topicId, "DELETE", `/${encodeURIComponent(itemId)}?revision=${revision}`);
+}
+
+async function saveItemSection(topicId: string, itemId: string, section: string, body: object) {
+  const response = await fetch(`/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/${section}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicItemResourceMutationResult>;
+  return envelope.data;
+}
+
+export function saveItemContext(topicId: string, itemId: string, revision: number, context: TopicContextResource | null) {
+  return saveItemSection(topicId, itemId, "context", { revision, context });
+}
+
+export function saveItemVocabulary(topicId: string, itemId: string, revision: number, vocabularies: TopicVocabularyResource[]) {
+  return saveItemSection(topicId, itemId, "vocabulary", { revision, vocabularies });
+}
+
+export function saveItemExpressions(topicId: string, itemId: string, revision: number, expressions: TopicExpressionResource[]) {
+  return saveItemSection(topicId, itemId, "expressions", { revision, expressions });
+}
+
+export function saveItemQuizzes(topicId: string, itemId: string, revision: number, quizzes: TopicQuizResource[]) {
+  return saveItemSection(topicId, itemId, "quizzes", { revision, quizzes });
+}
+
+export async function fetchTopicReadiness(topicId: string, signal?: AbortSignal) {
+  const response = await fetch(`/api/management/topics/${encodeURIComponent(topicId)}/readiness`, { signal });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicReadinessResult>;
+  return envelope.data;
+}
+
+export async function uploadTopicMedia(topicId: string, kind: "image" | "audio", file: File) {
+  const form = new FormData();
+  form.set("file", file);
+  const response = await fetch(`/api/management/topics/${encodeURIComponent(topicId)}/media/${kind}`, {
+    method: "POST",
+    body: form,
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<{ reference: string }>;
+  return envelope.data.reference;
+}
+
 export const topicManagementService = {
   fetchTopicList,
   fetchTopicById,
+  fetchTopicItems,
+  fetchTopicItemById,
   createTopic,
   updateTopic,
+  createTopicItem,
+  updateTopicItem,
+  reorderTopicItems,
+  setTopicItemVisibility,
+  deleteTopicItem,
+  saveItemContext,
+  saveItemVocabulary,
+  saveItemExpressions,
+  saveItemQuizzes,
+  fetchTopicReadiness,
 };

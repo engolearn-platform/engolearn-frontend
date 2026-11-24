@@ -36,6 +36,10 @@ export const ROUTES = {
   SPEAKING_SESSION_DEV: "/dev/speaking-session",
   ADMIN_TOPICS: "/admin/topics",
   ADMIN_ASSESSMENT: "/admin/assessment",
+  ADMIN_TOPICS_READ: "/admin/topics/read",
+  ADMIN_TOPIC_READ: "/admin/topics/:topicId/view",
+  ADMIN_TOPIC_READ_ITEMS: "/admin/topics/:topicId/view/items",
+  ADMIN_TOPIC_READ_ITEM_SECTION: "/admin/topics/:topicId/view/items/:itemId/:sectionKey",
   ADMIN_SUBSCRIPTION_PLANS: "/admin/subscription/plans",
   ADMIN_SUBSCRIPTION_QUOTAS: "/admin/subscription/quotas",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
@@ -47,6 +51,23 @@ export const ROUTES = {
     "/admin/topics/:topicId/edit/items/:itemId/:sectionKey",
   ADMIN_GRAMMAR: "/admin/grammar",
 } as const;
+
+export function adminTopicReadPath(topicId?: string): string {
+  return topicId
+    ? ROUTES.ADMIN_TOPIC_READ.replace(":topicId", encodeURIComponent(topicId))
+    : ROUTES.ADMIN_TOPICS_READ;
+}
+
+export function adminTopicReadItemsPath(topicId: string): string {
+  return ROUTES.ADMIN_TOPIC_READ_ITEMS.replace(":topicId", encodeURIComponent(topicId));
+}
+
+export function adminTopicReadSectionPath(topicId: string, itemId: string, sectionKey: string): string {
+  return ROUTES.ADMIN_TOPIC_READ_ITEM_SECTION
+    .replace(":topicId", encodeURIComponent(topicId))
+    .replace(":itemId", encodeURIComponent(itemId))
+    .replace(":sectionKey", sectionKey);
+}
 
 export function learningPathDayPath(
   pathId: string,

@@ -9,7 +9,10 @@ interface TopicItemsListProps {
   onSelect: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onInit: (id: string) => void;
+  onMetadata: (id: string) => void;
+  onVisibility: (id: string) => void;
+  onMove?: (id: string, direction: -1 | 1) => void;
+  disabled?: boolean;
   onAdd: () => void;
 }
 
@@ -19,7 +22,10 @@ export default function TopicItemsList({
   onSelect,
   onEdit,
   onDelete,
-  onInit,
+  onMetadata,
+  onVisibility,
+  onMove,
+  disabled,
   onAdd,
 }: TopicItemsListProps) {
   return (
@@ -32,20 +38,25 @@ export default function TopicItemsList({
           />
         </div>
       ) : (
-        items.map((item) => (
+        items.map((item, index) => (
           <TopicItemCard
             key={item.id}
             item={item}
             selected={item.id === selectedId}
             onSelect={onSelect}
             onEdit={onEdit}
-            onDelete={onDelete}
-            onInit={onInit}
+            disabled={disabled}
+            onDelete={() => onDelete(item.id)}
+            onMetadata={item.publicationStatus === "DRAFT" ? () => onMetadata(item.id) : undefined}
+            onVisibility={() => onVisibility(item.id)}
+            onMoveUp={onMove && index > 0 ? () => onMove(item.id, -1) : undefined}
+            onMoveDown={onMove && index < items.length - 1 ? () => onMove(item.id, 1) : undefined}
           />
         ))
       )}
       <button
         type="button"
+        disabled={disabled}
         onClick={onAdd}
         className="group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl bg-surface-container-low p-6 text-center shadow-sm transition-all hover:bg-surface-container-highest"
       >

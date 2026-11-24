@@ -9,6 +9,7 @@ interface TopicUpsertFooterBarProps {
   onContinue?: () => void;
   continueLabel?: string;
   disabled?: boolean;
+  saveDisabled?: boolean;
 }
 
 /**
@@ -24,6 +25,7 @@ export default function TopicUpsertFooterBar({
   onContinue,
   continueLabel = "Tiếp tục",
   disabled = false,
+  saveDisabled = false,
 }: TopicUpsertFooterBarProps) {
   return (
     <div className="sticky bottom-4 flex flex-col-reverse gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -42,7 +44,7 @@ export default function TopicUpsertFooterBar({
           <Button
             type="button"
             onClick={onSaveDraft}
-            disabled={disabled}
+            disabled={disabled || saveDisabled}
             className="w-full rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-variant sm:w-auto"
           >
             {saveLabel}
@@ -51,7 +53,7 @@ export default function TopicUpsertFooterBar({
         <Button
           type="button"
           onClick={onContinue}
-          disabled={disabled}
+          disabled={disabled || saveDisabled}
           className="w-full rounded-xl bg-primary text-on-primary hover:bg-primary-container sm:w-auto"
         >
           {continueLabel}

@@ -1,5 +1,6 @@
+import TopicMediaUpload from "@features/topic/components/management/upsert/TopicMediaUpload";
 import { useEffect, useState } from "react";
-import { Mic, Plus, PlusCircle, Trash2, Upload, X } from "lucide-react";
+import { Plus, PlusCircle, Trash2, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import {
   Dialog,
@@ -10,46 +11,42 @@ import {
 } from "@/core/components/shadcn/dialog";
 import { cn } from "@shared/utils";
 import { ThinScroll } from "@shared/components";
-import type {
-  TopicVocabularyItem,
-  VocabularyPos,
-} from "@features/topic/types/topic-create.types";
+import type { TopicVocabularyItem, VocabularyPos } from "@features/topic/types/topic-create.types";
 import { TOPIC_VOCAB_POS_OPTIONS } from "@features/topic/types/topic-create.types";
-import type { TopicVocabularyUpsert } from "@features/topic/hooks/useTopicItemVocabularyForm";
+import type { TopicVocabularyResource } from "@features/topic/types/topic-management.types";
+import type { TopicVocabularyAuthoringDraft } from "@features/topic/utils/topic-vocabulary-authoring.adapter";
 
 interface VocabularyUpsertDialogProps {
   open: boolean;
+  topicId: string;
   mode: "add" | "edit";
   nextIndex: number;
-  initial?: TopicVocabularyItem;
+  initial?: Omit<TopicVocabularyItem, "pos"> & { pos: string };
+  initialResource?: TopicVocabularyResource;
   onClose: () => void;
-  onSubmit: (draft: TopicVocabularyUpsert) => void;
+  onSubmit: (draft: TopicVocabularyAuthoringDraft) => void;
 }
 
 interface ExampleDraft {
+  key: string;
   en: string;
   vi: string;
+  audioUrl: string | null;
+  isManual: boolean | null;
+}
+
+interface CollocationDraft {
+  text: string;
+  example: { en: string | null; vi: string | null } | null;
+  descriptionVi: string | null;
 }
 
 const FIELD_CLASS =
   "w-full rounded-lg bg-surface-container-low px-3 py-2 text-body-md text-on-surface shadow-xs transition-all outline-none placeholder:text-outline focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary";
 
+const blankExample = (): ExampleDraft => ({ key: crypto.randomUUID(), en: "", vi: "", audioUrl: null, isManual: true });
 const MAX_EXAMPLES = 3;
 const MAX_COLLOCATIONS = 5;
-
-function RequiredMark() {
-  return (
-    <span className="text-error" aria-hidden="true">
-      *
-    </span>
-  );
-}
-
-function audioFileFor(word: string, fallback: string): string {
-  const slug = word.toLowerCase().trim().replace(/\s+/g, "_");
-  if (!slug) return fallback;
-  return `${slug}_pronunciation_us.mp3`;
-}
 
 function SectionTitle({
   title,
@@ -75,40 +72,57 @@ export default function VocabularyUpsertDialog({
   mode,
   nextIndex,
   initial,
+  initialResource,
+  topicId,
   onClose,
   onSubmit,
 }: VocabularyUpsertDialogProps) {
   const [word, setWord] = useState("");
-  const [pos, setPos] = useState<VocabularyPos>("noun");
+  const [pos, setPos] = useState<string>("");
   const [ipa, setIpa] = useState("");
   const [meaningVi, setMeaningVi] = useState("");
   const [audioName, setAudioName] = useState("");
-  const [examples, setExamples] = useState<ExampleDraft[]>([{ en: "", vi: "" }]);
-  const [collocations, setCollocations] = useState<string[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioEnUrl, setAudioEnUrl] = useState<string | null>(null);
+  const [vocabId, setVocabId] = useState<string | null>(null);
+  const [senseId, setSenseId] = useState<string | null>(null);
+  const [sense, setSense] = useState<string | null>(null);
+  const [examples, setExamples] = useState<ExampleDraft[]>(() => [blankExample()]);
+  const [collocations, setCollocations] = useState<CollocationDraft[]>([]);
   const [colloInput, setColloInput] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [quickSentence, setQuickSentence] = useState("");
+  const [quickMeaning, setQuickMeaning] = useState("");
+  const [quickExplanation, setQuickExplanation] = useState("");
+  const [tips, setTips] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setWord(initial?.word ?? "");
-    setPos(initial?.pos ?? "noun");
+    setPos(initial?.pos ?? "");
     setIpa(initial?.ipa ?? "");
     setMeaningVi(initial?.meaningVi ?? "");
-    setAudioName(initial?.audioFile ?? "");
+    setAudioName(initialResource?.snapshot?.audioUsUrl ?? "");
+    setAudioUrl(initialResource?.snapshot?.audioUrl ?? null);
+    setAudioEnUrl(initialResource?.snapshot?.audioEnUrl ?? null);
+    setVocabId(initialResource?.vocabId ?? null);
+    setSenseId(initialResource?.senseId ?? null);
+    setSense(initialResource?.snapshot?.sense ?? null);
     setExamples(
-      initial && initial.examples.length > 0
-        ? initial.examples.map((example) => ({ ...example }))
-        : [{ en: "", vi: "" }],
+      initialResource?.samples.length
+        ? initialResource.samples.map((sample) => ({ key: crypto.randomUUID(), en: sample.textEn ?? "", vi: sample.textVi ?? "", audioUrl: sample.audioUrl, isManual: sample.isManual }))
+        : [blankExample()],
     );
-    setCollocations(initial?.collocations ?? []);
+    setCollocations(initialResource?.collocations.map((entry) => ({ text: entry.text ?? "", example: entry.example ? { ...entry.example } : null, descriptionVi: entry.descriptionVi })) ?? []);
+    setQuickSentence(initialResource?.quickCheck?.sentence?.textEn ?? "");
+    setQuickMeaning(initialResource?.quickCheck?.sentence?.meaningVi ?? "");
+    setQuickExplanation(initialResource?.quickCheck?.explanation ?? "");
+    setTips(initialResource?.tips ?? "");
     setColloInput("");
-    setSubmitted(false);
-  }, [open, initial]);
+  }, [open, initial, initialResource]);
 
-  const wordError = submitted && word.trim().length === 0;
-  const meaningError = submitted && meaningVi.trim().length === 0;
-  const examplesError =
-    submitted && !examples.some((example) => example.en.trim().length > 0);
+  const wordError = false;
+  const meaningError = false;
+  const examplesError = false;
 
   const updateExample = (
     index: number,
@@ -122,7 +136,7 @@ export default function VocabularyUpsertDialog({
 
   const addExample = () =>
     setExamples((prev) =>
-      prev.length >= MAX_EXAMPLES ? prev : [...prev, { en: "", vi: "" }],
+      prev.length >= MAX_EXAMPLES ? prev : [...prev, blankExample()],
     );
 
   const removeExample = (index: number) =>
@@ -135,40 +149,48 @@ export default function VocabularyUpsertDialog({
     if (!value) return;
     setCollocations((prev) => {
       if (prev.length >= MAX_COLLOCATIONS) return prev;
-      if (prev.some((entry) => entry.toLowerCase() === value.toLowerCase()))
+      if (prev.some((entry) => entry.text.toLowerCase() === value.toLowerCase()))
         return prev;
-      return [...prev, value];
+      return [...prev, { text: value, example: null, descriptionVi: null }];
     });
     setColloInput("");
   };
 
-  const removeCollocation = (value: string) =>
-    setCollocations((prev) => prev.filter((entry) => entry !== value));
+  const removeCollocation = (index: number) =>
+    setCollocations((prev) => prev.filter((_, i) => i !== index));
 
   const handleSubmit = () => {
-    setSubmitted(true);
-    const validExamples = examples.filter(
-      (example) => example.en.trim().length > 0,
-    );
-    if (word.trim().length === 0 || meaningVi.trim().length === 0) return;
-    if (validExamples.length === 0) return;
     onSubmit({
-      word: word.trim(),
-      pos,
+      vocabId,
+      senseId,
+      word,
+      pos: pos as VocabularyPos,
       ipa: ipa.trim(),
       meaningVi: meaningVi.trim(),
-      audioFile:
-        audioName.trim().length > 0
-          ? audioName.trim()
-          : audioFileFor(
-              word,
-              initial?.audioFile ?? "vocabulary_pronunciation_us.mp3",
-            ),
-      examples: validExamples.map((example) => ({
-        en: example.en.trim(),
-        vi: example.vi.trim(),
-      })),
-      collocations,
+      audioUrl,
+      audioEnUrl,
+      audioUsUrl: audioName.trim() || null,
+      sense,
+      samples: examples.map((example) => ({ textEn: example.en || null, textVi: example.vi || null, audioUrl: example.audioUrl, isManual: example.isManual })),
+      collocations: collocations.map((entry) => ({ text: entry.text || null, example: entry.example ? { ...entry.example } : null, descriptionVi: entry.descriptionVi })),
+      audioFile: audioName,
+      examples: examples.map((example) => ({ en: example.en, vi: example.vi })),
+      quickCheck: initialResource?.quickCheck || quickSentence || quickMeaning || quickExplanation
+        ? {
+            sentence: {
+              textEn: quickSentence || null,
+              meaningVi: quickMeaning || null,
+              audioUrl: initialResource?.quickCheck?.sentence?.audioUrl ?? null,
+              audioUrlSlow: initialResource?.quickCheck?.sentence?.audioUrlSlow ?? null,
+              source: initialResource?.quickCheck?.sentence?.source ?? null,
+              externalId: initialResource?.quickCheck?.sentence?.externalId ?? null,
+            },
+            quizData: initialResource?.quickCheck?.quizData ?? null,
+            answerData: initialResource?.quickCheck?.answerData ?? null,
+            explanation: quickExplanation || null,
+          }
+        : null,
+      tips,
     });
   };
 
@@ -192,12 +214,17 @@ export default function VocabularyUpsertDialog({
           <section className="space-y-4">
             <SectionTitle title="1. Thông tin cơ bản" />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <label className="text-label-sm font-semibold text-on-surface">Vocabulary ID<input aria-label="Vocabulary ID" value={vocabId ?? ""} onChange={(event) => setVocabId(event.target.value || null)} className={FIELD_CLASS} /></label>
+              <label className="text-label-sm font-semibold text-on-surface">Sense ID<input aria-label="Sense ID" value={senseId ?? ""} onChange={(event) => setSenseId(event.target.value || null)} className={FIELD_CLASS} /></label>
+              <label className="text-label-sm font-semibold text-on-surface">Sense<input aria-label="Sense" value={sense ?? ""} onChange={(event) => setSense(event.target.value || null)} className={FIELD_CLASS} /></label>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="sm:col-span-2">
                 <label
                   htmlFor="vocab-word"
                   className="mb-1 block text-label-sm font-semibold text-on-surface"
                 >
-                  Từ vựng (Vocabulary Word) <RequiredMark />
+                  Từ vựng (Vocabulary Word)
                 </label>
                 <input
                   id="vocab-word"
@@ -229,6 +256,7 @@ export default function VocabularyUpsertDialog({
                   }
                   className={cn(FIELD_CLASS, "cursor-pointer")}
                 >
+                  <option value="">Chưa chọn</option>
                   {TOPIC_VOCAB_POS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -260,7 +288,7 @@ export default function VocabularyUpsertDialog({
                   htmlFor="vocab-vi"
                   className="mb-1 block text-label-sm font-semibold text-on-surface"
                 >
-                  Nghĩa tiếng Việt <RequiredMark />
+                  Nghĩa tiếng Việt
                 </label>
                 <input
                   id="vocab-vi"
@@ -284,57 +312,37 @@ export default function VocabularyUpsertDialog({
           </section>
 
           <section className="space-y-2">
-            <SectionTitle title="2. Audio phát âm (US)" hint="UI-only" />
+            <SectionTitle title="2. Tham chiếu audio phát âm (US)" />
             <div className="flex flex-col gap-2 rounded-lg bg-surface-container-low p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <label
-                  htmlFor="vocab-audio"
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-highest px-3 py-2 text-label-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
-                >
-                  <Upload className="size-4" aria-hidden="true" />
-                  Chọn file audio
-                </label>
-                <input
-                  id="vocab-audio"
-                  type="file"
-                  accept="audio/*"
-                  className="sr-only"
-                  onChange={(event) =>
-                    setAudioName(event.target.files?.[0]?.name ?? "")
-                  }
-                />
-                <span className="min-w-0 flex-1 truncate text-label-sm text-on-surface-variant">
-                  {audioName.trim().length > 0
-                    ? audioName
-                    : "Chưa chọn file — sẽ dùng audio TTS tự động"}
-                </span>
-                {audioName.trim().length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setAudioName("")}
-                    aria-label="Xóa file audio đã chọn"
-                    className="flex items-center rounded-full p-1 text-on-surface-variant transition-colors hover:text-error"
-                  >
-                    <X className="size-4" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
+              <label htmlFor="vocab-audio" className="text-label-sm font-semibold text-on-surface">URL audio</label>
+              <input id="vocab-audio" type="url" value={audioName} onChange={(event) => setAudioName(event.target.value)} placeholder="https://…" className={FIELD_CLASS} />
+              <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioName} />
               <p className="flex items-center gap-2 text-label-sm text-on-surface-variant">
-                <Mic className="size-4 shrink-0" aria-hidden="true" />
-                Hệ thống sẽ tự động tổng hợp Audio chuẩn US khi để trống
+                Giá trị được lưu như tham chiếu; tải lên media chưa được hỗ trợ ở đây.
               </p>
+              <label htmlFor="vocab-audio-en" className="text-label-sm font-semibold text-on-surface">URL audio EN</label>
+              <input id="vocab-audio-en" type="url" value={audioEnUrl ?? ""} onChange={(event) => setAudioEnUrl(event.target.value || null)} placeholder="https://…" className={FIELD_CLASS} />
+              <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioEnUrl} />
+              <label htmlFor="vocab-audio-main" className="text-label-sm font-semibold text-on-surface">URL audio chung</label>
+              <input id="vocab-audio-main" type="url" value={audioUrl ?? ""} onChange={(event) => setAudioUrl(event.target.value || null)} placeholder="https://…" className={FIELD_CLASS} />
+              <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioUrl} />
             </div>
           </section>
 
           <section className="space-y-3">
-            <SectionTitle
-              title="3. Ví dụ trong ngữ cảnh"
-              hint={`${examples.length}/${MAX_EXAMPLES} · tối thiểu 1 câu EN`}
-            />
+            <SectionTitle title="5. Quick Check và ghi chú" />
+            <textarea rows={2} value={quickSentence} onChange={(event) => setQuickSentence(event.target.value)} placeholder="Câu kiểm tra nhanh (EN)" className={cn(FIELD_CLASS, "resize-none")} />
+            <input type="text" value={quickMeaning} onChange={(event) => setQuickMeaning(event.target.value)} placeholder="Nghĩa tiếng Việt" className={FIELD_CLASS} />
+            <textarea rows={2} value={quickExplanation} onChange={(event) => setQuickExplanation(event.target.value)} placeholder="Giải thích" className={cn(FIELD_CLASS, "resize-none")} />
+            <textarea rows={2} value={tips} onChange={(event) => setTips(event.target.value)} placeholder="Ghi chú cho người học" className={cn(FIELD_CLASS, "resize-none")} />
+          </section>
+
+          <section className="space-y-3">
+            <SectionTitle title="3. Ví dụ trong ngữ cảnh" hint={`${examples.length}/${MAX_EXAMPLES}`} />
             <div className="space-y-3">
               {examples.map((example, index) => (
                 <div
-                  key={`vocab-example-${index}`}
+                  key={example.key}
                   className="space-y-2 rounded-lg bg-surface-container-low p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -376,6 +384,8 @@ export default function VocabularyUpsertDialog({
                     placeholder="Quý khách có muốn gọi đồ uống trước bữa ăn không?"
                     className={FIELD_CLASS}
                   />
+                  <input aria-label={`Audio ví dụ ${index + 1}`} type="url" value={example.audioUrl ?? ""} onChange={(event) => updateExample(index, { audioUrl: event.target.value || null })} placeholder="URL audio ví dụ" className={FIELD_CLASS} />
+              <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={(audioUrl) => updateExample(index, { audioUrl })} />
                 </div>
               ))}
             </div>
@@ -401,16 +411,19 @@ export default function VocabularyUpsertDialog({
               hint={`${collocations.length}/${MAX_COLLOCATIONS} · Enter để thêm`}
             />
             <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-container-low p-3 transition-all focus-within:bg-surface-container-lowest focus-within:ring-2 focus-within:ring-primary">
-              {collocations.map((phrase) => (
+              {collocations.map((entry, index) => (
                 <span
-                  key={phrase}
+                  key={`${index}-${entry.text}`}
                   className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-highest px-3 py-1.5 text-label-sm font-medium text-on-surface"
                 >
-                  {phrase}
+                  <input aria-label={`Cụm từ ${index + 1}`} value={entry.text} onChange={(event) => setCollocations((prev) => prev.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} className="w-32 bg-transparent outline-none" />
+                  <input aria-label={`Ví dụ EN cụm từ ${index + 1}`} value={entry.example?.en ?? ""} onChange={(event) => setCollocations((prev) => prev.map((item, i) => i === index ? { ...item, example: { ...(item.example ?? { en: null, vi: null }), en: event.target.value || null } } : item))} placeholder="Ví dụ EN" className="w-32 bg-transparent outline-none" />
+                  <input aria-label={`Ví dụ VI cụm từ ${index + 1}`} value={entry.example?.vi ?? ""} onChange={(event) => setCollocations((prev) => prev.map((item, i) => i === index ? { ...item, example: { ...(item.example ?? { en: null, vi: null }), vi: event.target.value || null } } : item))} placeholder="Ví dụ VI" className="w-32 bg-transparent outline-none" />
+                  <input aria-label={`Mô tả cụm từ ${index + 1}`} value={entry.descriptionVi ?? ""} onChange={(event) => setCollocations((prev) => prev.map((item, i) => i === index ? { ...item, descriptionVi: event.target.value || null } : item))} placeholder="Mô tả" className="w-28 bg-transparent outline-none" />
                   <button
                     type="button"
-                    onClick={() => removeCollocation(phrase)}
-                    aria-label={`Xóa cụm từ ${phrase}`}
+                    onClick={() => removeCollocation(index)}
+                    aria-label={`Xóa cụm từ ${entry.text}`}
                     className="flex items-center transition-colors hover:text-error"
                   >
                     <X className="size-3.5" aria-hidden="true" />
