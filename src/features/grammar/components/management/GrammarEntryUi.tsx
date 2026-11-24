@@ -163,7 +163,7 @@ export function EntryTable({ label, headings, children }: { label: string; headi
       <table className="w-full min-w-max border-collapse text-left text-sm">
         <thead className="border-b border-outline-variant/60 text-xs text-on-surface-variant">
           <tr>{headings.map((heading) => <th scope="col" className="px-3 py-2.5 font-semibold" key={heading}>
-            <span className={heading === "Thao tác" ? "sr-only" : undefined}>{heading}</span>
+            <span>{heading}</span>
           </th>)}</tr>
         </thead>
         <tbody className="[&_td]:px-3 [&_td]:py-3.5 [&_tr+tr]:border-t [&_tr+tr]:border-learning-outline">{children}</tbody>
@@ -198,11 +198,11 @@ export function EntryActions({ label, children }: { label: string; children: Rea
 
   return (
     <>
-      <EntryButton ref={trigger} type="button" variant="outline" size="icon" aria-label={label} aria-expanded={open} aria-controls={id}
+      <EntryButton ref={trigger} type="button" variant="outline" aria-label={label} aria-expanded={open} aria-controls={id}
         onClick={showActions} onKeyDown={(event) => {
           if (event.key === "ArrowDown") { event.preventDefault(); showActions(); }
         }}>
-        <EllipsisVertical aria-hidden="true" className="size-4" />
+        <EllipsisVertical aria-hidden="true" className="size-4" /><span>Khác</span>
       </EntryButton>
       <div id={id} ref={menu} popover="auto" className="fixed inset-auto m-0 w-56 rounded-lg border border-outline-variant bg-surface-container-lowest p-1 text-on-surface shadow-lg"
         onToggle={(event) => setOpen(event.currentTarget.matches(":popover-open"))}

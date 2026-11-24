@@ -62,7 +62,7 @@ export default function PlacementQuestionBankView() {
       <div className="flex items-end"><ManagementButton variant="outline" onClick={() => { setFilters(emptyFilters); setPage(1); }}>Đặt lại</ManagementButton></div>
     </ManagementCard>
     <ManagementCard className="overflow-hidden p-0">
-      <div className="overflow-x-auto"><table className="w-full text-left text-body-md"><thead className="bg-surface-container-low text-label-lg text-on-surface-variant"><tr>{["Mã / Nội dung", "Kỹ năng", "Trình độ", "Dùng trong", "Hoàn thiện", "Thao tác"].map((label) => <th key={label} className="px-5 py-4 font-semibold" scope="col">{label}</th>)}</tr></thead>
+      <div className="overflow-x-auto"><table className="w-full text-left text-body-md"><thead className="bg-surface-container-low text-label-lg text-on-surface-variant"><tr>{["Mã / Nội dung", "Kỹ năng", "Trình độ", "Dùng trong", "Tình trạng", "Thao tác"].map((label) => <th key={label} className="px-5 py-4 font-semibold" scope="col">{label}</th>)}</tr></thead>
         <tbody>{filtered.slice(offset, offset + pageSize).map((question) => {
           const readiness = getQuestionReadiness(question);
           const issues = getQuestionIssues(question);
@@ -73,7 +73,7 @@ export default function PlacementQuestionBankView() {
             <td className="max-w-sm px-5 py-4"><p className="font-semibold">{question.code}</p><p className="mt-1 line-clamp-2 break-words text-on-surface-variant">{question.prompt}</p></td>
             <td className="px-5 py-4">{MANAGEMENT_SKILL_LABEL[question.skill]}</td><td className="px-5 py-4"><ManagementBadge>{question.level}</ManagementBadge></td>
             <td className="whitespace-nowrap px-5 py-4">{state.testSets.filter((set) => set.questionIds.includes(question.id) || set.snapshot.some((item) => item.id === question.id)).length} bộ đề</td>
-            <td className="px-5 py-4"><div className="flex flex-wrap gap-2"><ManagementBadge tone={readiness === "ready" ? "success" : readiness === "missing" ? "warning" : "neutral"}>{readinessLabel[readiness]}</ManagementBadge><ManagementBadge>{statusLabel[question.status]}</ManagementBadge></div></td>
+            <td className="px-5 py-4"><div className="flex flex-wrap gap-2"><ManagementBadge tone={readiness === "missing" ? "warning" : question.status === "ACTIVE" ? "success" : "neutral"}>{question.status === "INACTIVE" ? "Ngừng sử dụng" : readiness === "missing" ? "Cần bổ sung" : question.status === "ACTIVE" ? "Sẵn sàng sử dụng" : "Chờ kích hoạt"}</ManagementBadge></div></td>
             <td className="px-5 py-4"><div className="flex flex-wrap gap-2"><ManagementButton asChild variant="outline"><Link to={MANAGEMENT_PATHS.editQuestion(question.id)}>{readiness === "missing" ? "Bổ sung" : "Mở"}</Link></ManagementButton>
               {question.status === "ACTIVE" ? <ManagementButton variant="ghost" disabled={busy} onClick={() => setDeactivating(question)}>Ngừng sử dụng</ManagementButton> : <ManagementButton variant="ghost" disabled={busy || issues.length > 0} title={issues.join(" · ")} onClick={() => void activate(question)}>Kích hoạt</ManagementButton>}
             </div></td>
@@ -82,7 +82,7 @@ export default function PlacementQuestionBankView() {
       {useServerFilter && loading && <p role="status" className="p-5">Đang tìm câu hỏi…</p>}
       {useServerFilter && error && <div role="alert" className="space-y-2 p-5"><p>{error.message}</p><ManagementButton variant="outline" onClick={refetch}>Thử lại</ManagementButton></div>}
       {!filtered.length && (!useServerFilter || (!loading && !error)) && <ManagementEmpty title="Chưa có câu hỏi phù hợp" description="Thử xóa bộ lọc hoặc thêm câu hỏi mới." />}
-      <ListPagination total={filtered.length} from={filtered.length ? offset + 1 : 0} to={Math.min(offset + pageSize, filtered.length)} itemNoun="câu hỏi" page={activePage} pageCount={pageCount} pageSize={pageSize} pageSizeOptions={[10, 20, 50]} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
+      <ListPagination compact total={filtered.length} from={filtered.length ? offset + 1 : 0} to={Math.min(offset + pageSize, filtered.length)} itemNoun="câu hỏi" page={activePage} pageCount={pageCount} pageSize={pageSize} pageSizeOptions={[10, 20, 50]} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
     </ManagementCard>
     <ManagementConfirm open={deactivating !== null} title="Ngừng sử dụng câu hỏi?" description={`Câu ${deactivating?.code ?? ""} sẽ không được chọn vào bộ đề mới. Các phiên bản đã xuất bản được giữ nguyên.`} busy={busy} onClose={() => setDeactivating(null)} onConfirm={() => { void deactivate(); }} confirmLabel="Ngừng sử dụng" />
   </div>;

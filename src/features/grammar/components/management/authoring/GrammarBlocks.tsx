@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Check, ChevronDown, GripVertical, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, Plus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
 import { grammarEntryInput as fieldClass } from "@features/grammar/components/management/GrammarEntryUi";
 import { grammarEditorPanel as panelClass } from "@features/grammar/constants/management-entry";
@@ -23,7 +23,6 @@ const blockStyles: Record<GrammarBlockType, { label: string; className: string }
   COMMON_MISTAKE: { label: "Lỗi thường gặp", className: "bg-pink-100 text-pink-900" },
 };
 const blockTypes = Object.keys(blockStyles) as GrammarBlockType[];
-const blockDragType = "application/x-engolearn-grammar-block";
 
 function createBlock(type: GrammarBlockType): GrammarBlock {
   return {
@@ -216,7 +215,7 @@ export function GrammarBlocks({ topic, lesson: initial, refresh }: LessonContext
     clearError();
   }
 
-  return <AuthoringPage title="Nội dung bài học" subtitle="Tạo và sắp xếp các khối lý thuyết (1–7 khối)."
+  return <AuthoringPage title="Nội dung bài học" subtitle="Biên soạn giải thích, công thức, ví dụ, quy tắc và lỗi thường gặp."
     badge={<LessonStatus lesson={lesson} />} context={<LessonBreadcrumb topic={topic} lesson={lesson} />}
     current={1} steps={steps} locked={busy}
     action={!busy && <ActionLink to={grammarPaths.lessonPreview(topic.id, lesson.id)}>Xem trước bài học</ActionLink>}
@@ -225,7 +224,7 @@ export function GrammarBlocks({ topic, lesson: initial, refresh }: LessonContext
     {lesson.hasDraft && <span><Badge tone="warning">Có thay đổi chưa xuất bản</Badge></span>}
     <ReportError error={!editor && !remove ? error : null} retry={conflict ? refresh : undefined} />
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <strong>{blocks.length} / {maxBlocks} khối</strong>
+      <p className="text-body-md text-on-surface-variant">{blocks.length} nội dung · Tối đa {maxBlocks} nội dung mỗi bài</p>
       {!archived && (canAdd ?
         <ActionMenu label="Thêm khối" trigger={<><Plus className="size-4" aria-hidden />Thêm khối<ChevronDown className="size-4" aria-hidden /></>}>
           {blockTypes.map((type) => <button type="button" className={menuItemClass} key={type} onClick={() => {
@@ -242,19 +241,9 @@ export function GrammarBlocks({ topic, lesson: initial, refresh }: LessonContext
         const collapsed = folded.includes(block.id);
         const title = block.title || blockStyles[block.type].label;
         const bodyId = "grammar-block-" + block.id;
-        return <li key={block.id} className="rounded-xl border border-outline-variant bg-surface-container-lowest"
-          onDragOver={(event) => { if (!busy && !archived && event.dataTransfer.types.includes(blockDragType)) event.preventDefault(); }}
-          onDrop={(event) => {
-            if (!event.dataTransfer.types.includes(blockDragType)) return;
-            event.preventDefault();
-            reorder(blocks.findIndex((item) => item.id === event.dataTransfer.getData(blockDragType)), index);
-          }}>
+        return <li key={block.id} className="rounded-xl border border-outline-variant bg-surface-container-lowest">
           <div className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap">
-            {!archived && <span className="cursor-grab px-1 text-on-surface-variant active:cursor-grabbing" draggable={!busy}
-              aria-hidden="true" onDragStart={(event) => {
-                event.dataTransfer.setData(blockDragType, block.id);
-                event.dataTransfer.effectAllowed = "move";
-              }}><GripVertical className="size-4" /></span>}
+
             <ActionButton variant="ghost" size="icon" className="size-7 min-h-7" aria-expanded={!collapsed}
               aria-controls={bodyId} aria-label={(collapsed ? "Mở khối " : "Thu gọn khối ") + (index + 1)}
               onClick={() => setFolded(collapsed ? folded.filter((id) => id !== block.id) : [...folded, block.id])}>

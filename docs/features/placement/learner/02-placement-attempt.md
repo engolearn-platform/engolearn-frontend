@@ -1,3 +1,5 @@
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+
 > Khóa đáp án khi nộp (23/11/2026): từ lúc bắt đầu flush/autosave đến khi submit kết thúc, thẻ câu hỏi disabled và setAnswer chặn đồng bộ bằng submittingRef. Sau thành công không nhận thay đổi nữa; nếu lỗi khi vẫn IN_PROGRESS thì mở lại để sửa/thử lại. Test placement-submit-lock.integration.test.mjs giữ chậm request thật, không giả lập response BE; đã tái hiện RED trước sửa.
 
 > Nhãn câu hỏi (23/11/2026): Guest và User dùng chung PlacementQuestionCard. Header chỉ hiện số câu và Reading/Listening theo section; không hiển thị question.label (nhãn biên soạn như “A1 listening 8 — compact”). Giữ label trong contract/dữ liệu quản trị, không sửa schema hay nội dung câu hỏi. Cách kiểm tra: mở lượt làm Guest/User thật qua FE proxy, xem câu ở cả hai kỹ năng; header không có mã/level/nhãn biên soạn.
@@ -195,3 +197,7 @@ headless Chrome profile, actual React hook and real FE proxy/BE/Mongo. It requir
 explicit `PLACEMENT_DEADLINE_UI_ALLOW_WRITES=1`; shortens only newly created Guest
 test attempt deadlines and retains those records. It never modifies stored papers,
 personal user attempts, or the user's browser profile. No mocked API responses.
+
+## Audio24/11/2026
+
+PlacementAudioPlayer dùng chung cho Guest/User và review: một audio bắt đầu phát sẽ pause audio Placement trước đó; không đặt currentTime=0. onPause đồng bộ nút Phát/Tạm dừng. Khi đổi câu/unmount gỡ listener và dừng audio. AbortError do chuyển trình phát không được coi là file hỏng. Đã thử media thật trong trình duyệt:16→17 chỉ một audio playing; phát lại16 tiếp tục từ giây7.34, audio17 bị pause. Không đổi transcript/đáp án hay quy tắc làm bài.

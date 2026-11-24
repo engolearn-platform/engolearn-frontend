@@ -42,6 +42,7 @@ interface GrammarLessonSummary {
 export interface GrammarTopicDetail {
   topic: LearnerGrammarTopic;
   lessons: (GrammarLessonSummary & {
+    blockCount: number;
     unlocked: boolean;
     bestScore: number | null;
     hasUpdate: boolean;

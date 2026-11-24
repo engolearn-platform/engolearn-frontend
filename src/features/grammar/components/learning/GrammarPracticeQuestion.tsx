@@ -9,6 +9,11 @@ import { useGrammarAction } from "@features/grammar/hooks/useGrammarAction";
 import { grammarLearning, grammarPaths } from "@features/grammar/services/grammar-learning.service";
 import type { GrammarAnswerResponse, GrammarPracticeAnswer, GrammarPracticeFeedback, GrammarPracticeQuestion } from "@features/grammar/types/grammar.types";
 
+function readablePrompt(prompt: string) {
+  // Keep authored text intact; separate only a recognized instruction after its context sentence.
+  return prompt.replace(/([.!?])[ \t]+(?=(?:Choose|Select|Complete|Fill in|Rewrite|Correct|Match|Put|Write|Use|Identify)\b)/g, "$1\n\n");
+}
+
 interface QuestionFormProps { sessionId: string; question: GrammarPracticeQuestion; total: number; onAnswer: (result: GrammarAnswerResponse) => void; onExpired: () => void }
 export function GrammarPracticeQuestionForm({ sessionId, question, total, onAnswer, onExpired }: QuestionFormProps) {
   const [answer, setAnswer] = useState("");
@@ -27,7 +32,7 @@ export function GrammarPracticeQuestionForm({ sessionId, question, total, onAnsw
       catch (reason) { if (!signal.aborted && reason instanceof Error && "code" in reason && reason.code === "SESSION_EXPIRED") onExpired(); throw reason; }
     }, onAnswer);
   }
-  const parts = question.prompt.split("____");
+  const parts = readablePrompt(question.prompt).split("____");
   const inline = question.type === "FILL_IN_BLANK" && parts.length === 2;
   const field = <input id="grammar-answer" lang="en" aria-label="Đáp án của bạn" value={answer} onChange={(event) => changeAnswer(event.target.value)}
     autoComplete="off" autoCapitalize="none" spellCheck={false}
@@ -38,7 +43,7 @@ export function GrammarPracticeQuestionForm({ sessionId, question, total, onAnsw
     <form className="space-y-5" onSubmit={submit}>
       <fieldset className="space-y-4 disabled:opacity-80" disabled={pending || retrying} aria-label={`Câu hỏi ${question.number}`}>
         <div id="grammar-practice-prompt" lang="en" className="wrap-break-word whitespace-pre-wrap text-headline-md font-semibold leading-relaxed">
-          {inline ? <>{parts[0]}{field}{parts[1]}</> : question.prompt}
+          {inline ? <>{parts[0]}{field}{parts[1]}</> : readablePrompt(question.prompt)}
         </div>
         {question.type === "MULTIPLE_CHOICE" ? <div role="radiogroup" aria-labelledby="grammar-practice-prompt" className="space-y-3">
           {question.options.map((option, index) => <label key={option.id} className={cn("flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-3 text-body-lg focus-within:ring-2 focus-within:ring-primary", answer === option.id ? "border-primary bg-learning-mint" : "border-learning-outline bg-white hover:border-primary")}>
@@ -62,7 +67,7 @@ export function GrammarPracticeAnswerFeedback({ question, feedback, total, final
   useEffect(() => { heading.current?.focus(); }, []);
   return <Card className="space-y-5 rounded-2xl border-learning-outline bg-white p-5 sm:p-6">
     <p className="text-label-lg font-semibold text-on-surface-variant">Câu {feedback.number}/{total}</p>
-    <p lang="en" className="wrap-break-word whitespace-pre-wrap text-headline-md font-semibold">{question.prompt}</p>
+    <p lang="en" className="wrap-break-word whitespace-pre-wrap text-headline-md font-semibold">{readablePrompt(question.prompt)}</p>
     <div className={cn("space-y-3 rounded-xl p-5", feedback.correct ? "bg-learning-mint text-primary" : "bg-learning-note text-learning-note-ink")} role="status">
       <h2 ref={heading} tabIndex={-1} className="flex items-center gap-2 text-headline-sm font-bold focus:outline-none"><Icon className="size-5" aria-hidden="true" />{feedback.correct ? "Chính xác!" : "Chưa đúng, cùng xem lại nhé!"}</h2>
       <dl className="space-y-2 text-body-md"><div><dt className="inline">Bạn trả lời: </dt><dd lang="en" className="wrap-break-word inline font-semibold">{feedback.submittedAnswer}</dd></div><div><dt className="inline">Đáp án đúng: </dt><dd lang="en" className="wrap-break-word inline font-semibold">{feedback.correctAnswer}</dd></div></dl>

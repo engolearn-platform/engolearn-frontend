@@ -32,8 +32,8 @@ export function ActionMenu({ trigger, label, align = "right", children }: {
   }}>
     <summary aria-label={label} className={cn(
       "flex min-h-9 cursor-pointer list-none items-center justify-center gap-2 rounded-lg px-3 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden",
-      trigger ? "bg-primary-container text-on-primary hover:bg-primary" : "size-9 border border-outline-variant bg-surface-container-lowest px-2 hover:bg-surface-container-low",
-    )}>{trigger ?? <EllipsisVertical className="size-4" aria-hidden />}</summary>
+      trigger ? "bg-primary-container text-on-primary hover:bg-primary" : "border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low",
+    )}>{trigger ?? <><EllipsisVertical className="size-4" aria-hidden /><span>Khác</span></>}</summary>
     <div className={cn("absolute top-full z-20 mt-1 grid min-w-44 gap-1 rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-sm",
       align === "right" ? "right-0" : "left-0")}
       onClick={(event) => {

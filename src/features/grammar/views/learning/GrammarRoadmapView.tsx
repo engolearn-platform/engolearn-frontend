@@ -15,7 +15,7 @@ function TopicCard({ topic, unlocked }: { topic: LearnerGrammarTopic; unlocked: 
   const actionLabel = topic.status === "COMPLETED" ? "Ôn lại chủ đề" : topic.status === "IN_PROGRESS" ? "Tiếp tục học" : "Xem chủ đề";
   const content = <>
     <StatusBadge status={unlocked ? topic.status : "LOCKED"} />
-    <div className="space-y-1"><h3 className="wrap-break-word text-headline-md font-bold"><GrammarName titleEn={topic.titleEn} titleVi={topic.titleVi} /></h3></div>
+    <div className="space-y-1"><h3 className="wrap-break-word text-title-md font-semibold"><GrammarName titleEn={topic.titleEn} titleVi={topic.titleVi} /></h3></div>
     <div className="mt-auto space-y-3 pt-2">
       <ProgressBar label={`Tiến độ ${topic.titleVi}`} value={topic.percent} description={`${topic.completedLessons}/${topic.totalLessons} bài hoàn thành`} />
       {unlocked && <span className="flex items-center justify-between font-semibold text-primary">{actionLabel}<ArrowRight className="size-5" aria-hidden="true" /></span>}

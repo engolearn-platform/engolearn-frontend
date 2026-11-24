@@ -1,3 +1,5 @@
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+
 # Quản lý ngữ pháp — Màn 01–10
 
 Đối chiếu phần nội dung với 10 PNG và HTML trong `EngoLearn_Admin_UI_v2.zip`. Vỏ ứng dụng dùng `ManagementLayout`, sidebar và topbar hiện có của nhóm. Hanken Grotesk và các token màu lấy từ hệ thiết kế của repo. Quy tắc nghiệp vụ theo GRM-UC-005 đến GRM-UC-013.
@@ -45,3 +47,7 @@ Màn 01–04 được xuất qua `views/management/GrammarTopicViews.tsx`, màn 
 ## Hỗ trợ học và điều hướng
 
 Lời nhắc nhẹ cạnh nút luyện tập; review có đường về danh sách bài, bảng có nút Kiểm tra. Không thêm Ready toggle hoặc chặn theo thao tác đọc. Xem [thiết kế điều hướng](../07-learning-management-navigation.md).
+
+## UX24/11/2026
+
+Danh sách giữ tên Việt/Anh, CEFR, trạng thái và số bài; ẩn mã/vị trí dưới tên. Cột Thao tác hiển thị tiêu đề (không sr-only); Sửa và Kiểm tra và xuất bản ở ngoài, menu Khác giữ tác vụ ít dùng. Phân trang dùng ListPagination compact: nút48px, cửa sổ số trang giới hạn có dấu …, mobile hiển thị Trangx/y; không lặp dòng Hiển thị. Tìm kiếm API hỗ trợ không dấu và không phân biệt hoa/thường theo literal, không tự sửa lỗi chính tả. Bảng bài học bỏ mã/cấp và tổng kết lặp; nội dung hiện bằng số nội dung thực. Trình soạn giải thích rõ giới hạn7 nội dung, không ép5 loại thành5 khối; bỏ kéo thả khối và giữ Di chuyển lên/xuống trong menu Khác để không phá trình tự đã soạn.

@@ -11,14 +11,14 @@ import { formatManagementDate } from "@features/placement/utils/placement-manage
 const emptyFilters: ManagementAttemptFilters = { search: "", testSetCode: "", version: "", status: "", level: "", from: "", to: "" };
 const columns = ["Người làm", "Bộ đề", "Bắt đầu", "Trạng thái", "Điểm", "CEFR", "Chi tiết"];
 
-function AttemptRow({ attempt }: { attempt: ManagementAttemptSummary }) {
+function AttemptRow({ attempt, testSetName }: { attempt: ManagementAttemptSummary; testSetName?: string }) {
   const graded = (attempt.status === "SUBMITTED" || attempt.status === "AUTO_SUBMITTED") && attempt.correctCount !== null;
   return <tr>
     <td className="px-5 py-4">
       <p className="font-semibold">{attempt.name}</p>
       <p className="text-label-sm text-on-surface-variant">{attempt.kind === "USER" ? "Thành viên" : "Khách"} · {attempt.id}</p>
     </td>
-    <td className="whitespace-nowrap px-5 py-4">{attempt.testSetCode || "—"}
+    <td className="max-w-sm px-5 py-4"><span className="font-semibold">{testSetName || attempt.testSetCode || "—"}</span>
       <p className="text-label-sm text-on-surface-variant">Phiên bản {attempt.testSetVersion}</p>
     </td>
     <td className="whitespace-nowrap px-5 py-4">{formatManagementDate(attempt.startedAt)}</td>
@@ -70,9 +70,9 @@ export default function PlacementAttemptListView() {
       {!loading && data && <>
         {data.items.length ? <div className="overflow-x-auto"><table className="w-full text-left text-body-md">
           <thead className="bg-surface-container-low text-label-lg text-on-surface-variant"><tr>{columns.map(label => <th key={label} scope="col" className="whitespace-nowrap px-5 py-4 font-semibold">{label}</th>)}</tr></thead>
-          <tbody className="divide-y divide-outline-variant">{data.items.map(attempt => <AttemptRow key={attempt.id} attempt={attempt} />)}</tbody>
+          <tbody className="divide-y divide-outline-variant">{data.items.map(attempt => <AttemptRow key={attempt.id} attempt={attempt} testSetName={state.testSets.find(set => set.code === attempt.testSetCode && set.version === attempt.testSetVersion)?.name} />)}</tbody>
         </table></div> : <ManagementEmpty title="Không tìm thấy lượt làm" description="Thử thay đổi bộ lọc hoặc đặt lại để xem tất cả lượt làm." />}
-        <ListPagination total={total} from={data.items.length ? offset + 1 : 0} to={data.items.length ? offset + data.items.length : 0}
+        <ListPagination compact total={total} from={data.items.length ? offset + 1 : 0} to={data.items.length ? offset + data.items.length : 0}
           itemNoun="lượt làm" page={page} pageSize={pageSize} pageSizeOptions={[10, 20, 50]} pageCount={Math.max(1, Math.ceil(total / pageSize))}
           onPageChange={setPage} onPageSizeChange={size => { setPageSize(size); setPage(1); }} />
       </>}

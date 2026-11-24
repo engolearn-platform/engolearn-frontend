@@ -37,7 +37,6 @@ function LessonList({ topicId }: { topicId: string }) {
   const lessons = [...(topic?.lessons ?? [])].sort((first, second) => (first.order ?? Infinity) - (second.order ?? Infinity));
   const active = lessons.filter((lesson) => lesson.status !== "ARCHIVED");
   const publishedCount = active.filter((lesson) => lesson.status === "PUBLISHED").length;
-  const questionCount = active.reduce((sum, lesson) => sum + lesson.questions.length, 0);
   const locking = !topic || archived || loading || mutation;
 
   async function moveLesson(lesson: GrammarLesson, order: number) {
@@ -104,7 +103,7 @@ function LessonList({ topicId }: { topicId: string }) {
   return (
     <div className={grammarEntryPage}>
       <EntryHeader title="Danh sách bài học"
-        description={archived ? "Chủ đề đã lưu trữ. Khôi phục chủ đề để tiếp tục biên soạn." : "Kéo tay nắm hoặc dùng phím mũi tên lên và xuống để đổi thứ tự bài học."}
+        description={archived ? "Chủ đề đã lưu trữ. Khôi phục chủ đề để tiếp tục biên soạn." : "Đổi thứ tự bài học bằng tay nắm."}
         actions={topic && !archived ? (
           active.length < 10 && !locking ? <Button asChild><Link to={grammarPaths.lessonNew(topicId)}><Plus aria-hidden="true" /> Thêm bài học</Link></Button> :
             <Button type="button" disabled><Plus aria-hidden="true" /> Thêm bài học</Button>
@@ -112,7 +111,6 @@ function LessonList({ topicId }: { topicId: string }) {
       {topic ? (
         <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-on-surface-variant">
           <strong className="text-on-surface">{topic.titleVi}</strong>
-          <span>· {topic.code} · {topic.level}</span>
           <EntryStatus status={topic.status} />
         </div>
       ) : null}
@@ -173,7 +171,7 @@ function LessonList({ topicId }: { topicId: string }) {
                     <p className="mt-0.5 text-xs text-on-surface-variant"><span lang="en">{lesson.titleEn}</span> · {lesson.objective}</p>
                   </td>
                   <td className="min-w-24 max-w-44">
-                    <p>{lesson.blocks.length} khối</p>
+                    <p>{lesson.blocks.length} nội dung</p>
                     {blockTypes.length ? <p className="mt-0.5 text-xs text-on-surface-variant">{blockTypes.join(", ")}</p> : null}
                   </td>
                   <td>
@@ -216,11 +214,7 @@ function LessonList({ topicId }: { topicId: string }) {
             {!archived ? <p className="mt-1 text-sm text-on-surface-variant">Thêm bài học đầu tiên cho chủ đề này.</p> : null}
           </section>
         ) : null}
-        {topic ? (
-          <p className="text-xs text-on-surface-variant">
-            {active.length}/10 bài đang hoạt động · {topic.readyCount} bài sẵn sàng · Luyện tập {questionCount}/{active.length * 5} câu
-          </p>
-        ) : null}
+
       </div>
       <EntryFooter back={grammarPaths.root} backLabel="Danh sách chủ đề" status={mutation ? "Đang lưu thay đổi…" : message}
         next={topic ? <Button asChild><Link to={grammarPaths.topicPublish(topicId)}>Tiếp tục: Kiểm tra & xuất bản</Link></Button> : null} />

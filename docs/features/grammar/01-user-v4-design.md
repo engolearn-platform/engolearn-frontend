@@ -1,3 +1,5 @@
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+
 # Grammar User v4 — thiết kế đã điều chỉnh theo nghiệp vụ
 
 Ngày 22/11/2026. Người dùng chốt phương án giữ nghiệp vụ hiện tại và hoàn thiện tuần tự theo review v4. ZIP là nguồn bố cục/thao tác, không phải nguồn dữ liệu hoặc thuật toán chấm.
@@ -27,3 +29,7 @@ Giữ LearningLayout/sidebar/navbar nhóm trên các route hiện có; không s�
 ## Kiểm tra và giới hạn
 
 Build + lint FE; compile BE; kiểm tra thật qua FE proxy/BE/MongoDB. Không dùng mock hoặc fixture làm bằng chứng tích hợp. Kiểm tra đáp án chỉ xuất hiện sau nộp, result sau reload, 3/5 và 2/5, làm lại không mất bestScore, thứ tự/khóa, session hết hạn và tóm tắt không ghi tiến độ. Dùng dữ liệu Grammar thật, không thêm học liệu rác. Không tự publish toàn bộ bộ Nháp. Dùng nhánh và checkout D hiện tại theo yêu cầu, không tạo thêm worktree, không commit/push/main.
+
+## UX24/11/2026
+
+Tên chủ đề roadmap dùng text-title-md, nhỏ hơn tiêu đề mục. Bài học dùng số bài ở vòng tròn và một StatusBadge, tránh hai dấu tích hoàn thành. API topic.lessons[].blockCount là số khối của bản Published, không phải số loại khối hay bản Draft; không thêm request cho từng bài. Vòng tiến độ SVG dùng percent từ BE và aria-valuetext completed/total. Câu luyện tập giữ nguyên lời văn, thêm dòng trắng trước chỉ dẫn Choose/Complete/Select… khi đứng sau câu ngữ cảnh; áp dụng cả phần câu hỏi và phản hồi, giữ chỗ trống/đáp án/chấm điểm.

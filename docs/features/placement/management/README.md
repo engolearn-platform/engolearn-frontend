@@ -1,3 +1,5 @@
+> UX refinement24/11/2026: owner-approved simplification follows [implementation plan](../../../superpowers/plans/2026-11-24-grammar-placement-ux.md). Existing routes, roles and business transitions are retained.
+
 # Quản trị Placement
 
 Admin đăng nhập từ trang chung vào Bộ đề Placement; các đường dẫn quay lại sau đăng nhập vẫn được giữ. Dùng sidebar hoặc lựa chọn Chuyển mục quản trị trên màn hình nhỏ để đổi giữa Placement và Grammar.
@@ -39,3 +41,7 @@ xem trước từng lưu trong trình duyệt nằm ngoài luồng quản trị 
 ## Team dev integration — 23/11/2026
 
 See [shared authorization and audio integration](../../grammar/04-team-dev-integration.md) for current route guards, ADMIN WAV upload, real playback errors and verification. Existing team layouts are retained.
+
+## UX24/11/2026
+
+Tên bộ đề là link xem trước. Danh sách không lặp code/version; thông tin phiên bản vẫn ở chi tiết. Kết quả tra cứu tên theo đúng code+version của lượt làm từ danh mục hiện có, thiếu thì fallback mã, không lấy tên phiên bản mới nhất cho lượt cũ. Ngân hàng chỉ hiện một nhãn tổng hợp: Cần bổ sung/Chờ kích hoạt/Sẵn sàng sử dụng/Ngừng sử dụng. Hai thuộc tính readiness và status vẫn riêng trong dữ liệu và bộ lọc: một câu đủ nội dung chưa chắc được quản trị viên cho phép dùng. Cả ba danh sách dùng ListPagination compact opt-in, không ảnh hưởng các màn khác dùng mặc định.

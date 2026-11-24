@@ -81,7 +81,7 @@ function TopicForm({ topic, reload }: { topic?: GrammarTopic; reload?: () => voi
 
   return (
     <div className={grammarEntryPage}>
-      <EntryHeader title="Thông tin chủ đề" description="Nhập thông tin cơ bản trước khi thêm bài học." status={record?.status ?? "DRAFT"} />
+      <EntryHeader title={record ? "Chỉnh sửa chủ đề ngữ pháp" : "Tạo chủ đề ngữ pháp"} description={record ? record.titleVi : "Nhập thông tin cơ bản trước khi thêm bài học."} status={record?.status ?? "DRAFT"} />
       <EntrySteps steps={steps} current={0} />
       <div className={cn(grammarEditorGrid, "mb-6")}>
         <form ref={navigation.formElement} id="grammar-topic-form" className={cn(grammarEntryCard, "space-y-4 p-5 text-sm")} onSubmit={(event) => {

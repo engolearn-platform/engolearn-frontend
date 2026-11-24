@@ -26,12 +26,29 @@ export default function PlacementAudioPlayer({
   }, [questionId, audio.url]);
 
   useEffect(() => {
+    const media = mediaRef.current;
+    if (!media) return;
+    const pauseForAnotherPlayer = (event: Event) => {
+      if (event.target !== media) media.pause();
+    };
+    document.addEventListener("play", pauseForAnotherPlayer, true);
+    return () => {
+      document.removeEventListener("play", pauseForAnotherPlayer, true);
+      media.pause();
+    };
+  }, [questionId, audio.url]);
+
+  useEffect(() => {
     if (simulated || !playing) return;
 
     const media = mediaRef.current;
     if (!media) return;
 
-    void media.play().catch(() => { setPlaying(false); setFailed(true); });
+    void media.play().catch((reason: unknown) => {
+      setPlaying(false);
+      // Switching players can cancel a pending play request; this is not a broken audio asset.
+      if (!(reason instanceof DOMException && reason.name === "AbortError")) setFailed(true);
+    });
   }, [simulated, playing]);
 
   const handleToggle = () => {
@@ -65,6 +82,7 @@ export default function PlacementAudioPlayer({
           onTimeUpdate={(event) =>
             setElapsed(Math.floor(event.currentTarget.currentTime))
           }
+          onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}
           onError={() => { setPlaying(false); setFailed(true); }}
           preload="none"

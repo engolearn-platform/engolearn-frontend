@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Link } from "react-router";
 import { useFetch } from "@shared/hooks";
+import { ListPagination } from "@shared/components/management/ListPagination";
 import { cn } from "@shared/utils";
 import {
   EntryActions, EntryButton as Button, EntryConfirmation, EntryError, EntryHeader, EntryStatus, EntryTable, EntryTextInput,
@@ -186,7 +187,7 @@ export function GrammarTopicListView() {
                   <td className="w-1/3 min-w-56 max-w-sm">
                     <Link className="font-semibold hover:underline" to={grammarPaths.topic(topic.id)}>{topic.titleVi}</Link>
                     <p className="mt-0.5 text-xs text-on-surface-variant">
-                      <span lang="en">{topic.titleEn}</span> · {topic.code}{topic.order != null && <> · Vị trí {topic.order}</>}
+                      <span lang="en">{topic.titleEn}</span>
                     </p>
                   </td>
                   <td><span className="rounded-full border border-outline px-2.5 py-0.5 text-xs font-semibold">{topic.level}</span></td>
@@ -201,9 +202,9 @@ export function GrammarTopicListView() {
                   <td>
                     <div className="flex items-center gap-2">
                       <Button asChild variant="outline"><Link to={grammarPaths.topic(topic.id)} aria-label={`${topic.status === "ARCHIVED" ? "Xem" : "Sửa"} chủ đề ${topic.titleVi}`}>{topic.status === "ARCHIVED" ? "Xem" : "Sửa"}</Link></Button>
-                      <EntryActions label={`Thao tác cho ${topic.titleVi}`}>
+                      {topic.status !== "ARCHIVED" && <Button asChild variant="outline"><Link to={grammarPaths.topicPublish(topic.id)}>Kiểm tra và xuất bản</Link></Button>}
+                      <EntryActions label={`Thao tác khác cho ${topic.titleVi}`}>
                         <Link className={entryActionItem} to={grammarPaths.lessons(topic.id)}>Danh sách bài học</Link>
-                        <Link className={entryActionItem} to={grammarPaths.topicPublish(topic.id)}>Kiểm tra và xuất bản</Link>
                         {topic.status === "PUBLISHED" ? <button className={entryActionItem} type="button" onClick={() => requestAction(topic, "archive")}>Ngừng xuất bản</button> : null}
                         {topic.status === "ARCHIVED" ? <button className={entryActionItem} type="button" onClick={() => requestAction(topic, "restore")}>Khôi phục về bản nháp</button> : null}
                         {!(topic.firstPublishedAt || topic.status === "ARCHIVED" || topic.status === "PUBLISHED") ?
@@ -221,21 +222,8 @@ export function GrammarTopicListView() {
             </section>
           )}
           {data.total > 0 && (
-            <nav aria-label="Phân trang chủ đề" className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm text-on-surface-variant">
-              <p>Hiển thị {data.items.length ? (page - 1) * size + 1 : 0}–{Math.min(page * size, data.total)} trên {data.total} chủ đề · Trang {page} / {Math.ceil(data.total / size)}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <select aria-label="Số dòng mỗi trang" value={size} className={selectClass}
-                  onChange={(event) => { setSize(Number(event.target.value)); setPage(1); }}>
-                  {[6, 10, 20, 50].map((count) => <option key={count} value={count}>{count} dòng / trang</option>)}
-                </select>
-                <Button aria-label="Trang trước" variant="outline" size="icon" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                  <ChevronLeft aria-hidden="true" />
-                </Button>
-                <Button aria-label="Trang sau" variant="outline" size="icon" disabled={page * size >= data.total} onClick={() => setPage(page + 1)}>
-                  <ChevronRight aria-hidden="true" />
-                </Button>
-              </div>
-            </nav>
+            <ListPagination compact total={data.total} to={Math.min(page * size, data.total)} page={page} pageSize={size}
+              pageSizeOptions={[6, 10, 20, 50]} onPageChange={setPage} onPageSizeChange={next => { setSize(next); setPage(1); }} />
           )}
         </>
       )}
