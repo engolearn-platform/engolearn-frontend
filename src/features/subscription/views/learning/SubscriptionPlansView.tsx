@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { BadgeCheck, CalendarDays, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/core/components/shadcn/dialog";
 import { useAuth } from "@shared/hooks/useAuth";
-import PremiumPurchaseAction from "@features/subscription/components/PremiumPurchaseAction";
+import PlanPurchaseAction from "@features/subscription/components/PlanPurchaseAction";
 import { useMySubscription, usePlans, useTrialActivation } from "@features/subscription/hooks/useSubscription";
 import { Benefits, DateTime, LoadingState, PrivateAccount, SubscriptionPage, Surface, Unavailable } from "@features/subscription/components/SubscriptionUi";
 import type { MySubscriptionSummary, PlanCard } from "@features/subscription/types/subscription.types";
@@ -73,7 +74,7 @@ function CurrentSubscription({ summary }: { summary: MySubscriptionSummary }) {
             <h2 className="break-words text-headline-md font-semibold">{summary.currentBenefits.displayName}</h2>
             <span className="inline-flex items-center gap-2 rounded-full bg-secondary-container px-3 py-1 text-label-sm font-semibold text-secondary"><span className="size-1.5 rounded-full bg-current" aria-hidden="true" />{statusLabels[summary.status]}</span>
           </div>
-          <p className="max-w-2xl text-body-md leading-relaxed text-on-primary/90">{planCopy[summary.tier].description}</p>
+          <p className="max-w-2xl text-body-md leading-relaxed text-on-primary/90">{summary.currentPlanCode && summary.currentPlanCode !== "FREE" && summary.currentPlanCode !== "PREMIUM" ? "Quyền lợi của gói hiện tại đang có hiệu lực." : planCopy[summary.tier].description}</p>
           {summary.periodStartAt && summary.periodEndAt && <div className="flex flex-wrap gap-x-5 gap-y-2 text-label-sm text-on-primary/90">
             <span className="flex items-center gap-2"><CalendarDays className="size-4" aria-hidden="true" />{historical ? "Kỳ trước bắt đầu " : "Ngày bắt đầu "}<DateTime value={summary.periodStartAt} /></span>
             <span className="flex items-center gap-2"><CalendarDays className="size-4" aria-hidden="true" />{historical ? "Kỳ trước kết thúc " : "Ngày kết thúc kỳ "}<DateTime value={summary.periodEndAt} /></span>
@@ -87,12 +88,12 @@ function CurrentSubscription({ summary }: { summary: MySubscriptionSummary }) {
   </Surface>;
 }
 
-function PublishedPlan({ plan, summary, billingPeriod }: { plan: PlanCard; summary?: MySubscriptionSummary; billingPeriod: "MONTHLY" | "ANNUAL" }) {
+function PublishedPlan({ plan, summary, billingPeriod, refreshPlan }: { plan: PlanCard; summary?: MySubscriptionSummary; billingPeriod: "MONTHLY" | "ANNUAL"; refreshPlan: () => void }) {
   const option = plan.billingOptions.find(item => item.billingPeriod === billingPeriod);
   const premium = plan.planCode === "PREMIUM";
   const free = plan.planCode === "FREE";
-  const current = summary?.tier === plan.planCode;
-  const copy = planCopy[plan.planCode];
+  const current = (summary?.currentPlanCode ?? summary?.tier) === plan.planCode;
+  const copy = plan.version ? undefined : planCopy[plan.planCode];
   const description = copy?.description ?? plan.description?.trim().split(/\s+/).slice(0, 6).join(" ");
   const extraBenefits = (copy?.benefits ?? []).filter(extra =>
     !plan.benefits.some(benefit => benefit.code === extra.code || benefit.title.trim().toLocaleLowerCase() === extra.title.toLocaleLowerCase()));
@@ -109,22 +110,23 @@ function PublishedPlan({ plan, summary, billingPeriod }: { plan: PlanCard; summa
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={"inline-flex items-center gap-1 rounded-full px-3 py-1 text-label-sm font-semibold " + (premium ? "bg-primary text-on-primary" : "bg-surface-container-low text-on-surface-variant")}>
-          {premium && <Sparkles className="size-3" aria-hidden="true" />}{premium ? "Được khuyên dùng" : "Khởi đầu"}
+          {premium && <Sparkles className="size-3" aria-hidden="true" />}{premium ? "Premium" : free ? "Miễn phí" : "Gói học"}
         </span>
-        <span className="text-label-sm font-semibold text-primary">{current ? "Gói hiện tại" : premium ? "Toàn quyền A1–B2" : "Cơ bản"}</span>
+        <span className="text-label-sm font-semibold text-primary">{current ? "Gói hiện tại" : plan.saleStatus === "STOPPED" ? "Đã dừng bán" : plan.version ? "Quyền lợi theo phiên bản" : premium ? "Toàn quyền A1–B2" : free ? "Cơ bản" : "Quyền lợi học tập"}</span>
       </div>
-      <h3 className="text-headline-lg font-bold">{plan.displayName}</h3>
+      <h3 className="text-headline-lg font-bold">{plan.version ? <Link to={`/subscription/plans/${encodeURIComponent(plan.planCode)}`} className="rounded-sm underline decoration-primary/40 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{plan.displayName}</Link> : plan.displayName}</h3>
+      {plan.version && <p className="text-sm text-on-surface-variant">Phiên bản v{plan.version}</p>}
       {description && <p className="text-body-md leading-relaxed text-on-surface-variant">{description}</p>}
     </div>
     <div className={"space-y-2 rounded-xl p-4 " + (premium ? "bg-learning-nav-active" : "bg-surface")}>
       <p className="flex flex-wrap items-baseline gap-2"><span className={"break-words text-headline-lg font-bold " + (premium ? "text-primary" : "")}>{free ? "0đ" : price ?? "Chưa mở bán"}</span><span className="text-body-md text-on-surface-variant">{free ? "/ tháng" : option ? option.billingPeriod === "MONTHLY" ? "/ tháng" : "/ năm" : ""}</span></p>
-      <p className="text-label-sm text-on-surface-variant">{premium ? "Không tự động gia hạn" : "Mở sẵn cho mọi tài khoản"}</p>
+      <p className="text-label-sm text-on-surface-variant">{free ? "Mở sẵn cho mọi tài khoản" : "Không tự động gia hạn"}</p>
     </div>
     <div>
-      {premium && option && summary?.status !== "ACTIVE" ?
-        <PrivateAccount>{userId => <PremiumPurchaseAction userId={userId} option={option} />}</PrivateAccount> :
+      {!free && option && plan.version ?
+        <PrivateAccount>{userId => <PlanPurchaseAction userId={userId} plan={plan} option={option} refreshPlan={refreshPlan} />}</PrivateAccount> :
         current ? <p className="rounded-xl bg-surface-container-low px-4 py-3 text-center font-semibold text-on-surface-variant">Gói đang sử dụng</p> :
-        <p className="text-label-sm text-on-surface-variant">{plan.planCode === "FREE" ? "Gói cơ bản cho mọi tài khoản" : "Chưa có lựa chọn thanh toán"}</p>}
+        <p className="text-label-sm text-on-surface-variant">{free ? "Gói cơ bản cho mọi tài khoản" : summary?.status === "ACTIVE" ? "Bạn đang có kỳ trả phí đang hiệu lực" : plan.saleStatus === "STOPPED" ? "Gói hiện đã dừng bán" : option && !plan.version ? "Tải lại để xác nhận phiên bản giá trước khi mua" : "Chưa có lựa chọn thanh toán"}</p>}
     </div>
     <Benefits items={benefits} />
   </Surface>;
@@ -150,7 +152,7 @@ function Offers({ plans, summary }: { plans: ReturnType<typeof usePlans>; summar
     {plans.loading ? <LoadingState label="Đang tải gói học…" /> :
       plans.error ? <Unavailable error={plans.error} retry={plans.refetch} /> :
       plans.data?.data.items.length === 0 ? <Surface><p>Hiện chưa có gói học được công bố.</p></Surface> :
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-stretch gap-6">{plans.data?.data.items.map(plan => <PublishedPlan key={plan.planCode} plan={plan} summary={summary} billingPeriod={billingPeriod} />)}</div>}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-stretch gap-6">{plans.data?.data.items.map(plan => <PublishedPlan key={plan.planCode} plan={plan} summary={summary} billingPeriod={billingPeriod} refreshPlan={plans.refetch} />)}</div>}
   </section>;
 }
 
