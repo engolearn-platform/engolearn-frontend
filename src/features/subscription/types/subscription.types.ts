@@ -17,8 +17,8 @@ export interface PlanCard {
   benefits: PlanBenefit[];
   billingOptions: PlanBillingOption[];
   /** Dynamic paid products publish an immutable configuration version. */
-  version?: number;
-  saleStatus?: "ON_SALE" | "STOPPED";
+  version?: number | null;
+  saleStatus?: "ON_SALE" | "STOPPED" | null;
 }
 export interface MySubscriptionSummary {
   currentPlanCode?: string;

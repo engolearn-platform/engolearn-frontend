@@ -29,8 +29,9 @@ function planCard(value: unknown): PlanCard {
     if (!["MONTHLY", "ANNUAL"].includes(String(b.billingPeriod)) || !integer(b.amount) || typeof b.currency !== "string" || !/^[A-Z]{3}$/.test(b.currency)) invalid();
     try { new Intl.NumberFormat("vi-VN", { style: "currency", currency: b.currency }); } catch { invalid(); }
   }
-  if (p.version !== undefined && (!integer(p.version) || p.version === 0)) invalid();
-  if (p.saleStatus !== undefined && !["ON_SALE", "STOPPED"].includes(String(p.saleStatus))) invalid();
+  const isFreePlan = p.planCode === "FREE";
+  if (p.version !== undefined && !(isFreePlan && p.version === null) && (!integer(p.version) || p.version === 0)) invalid();
+  if (p.saleStatus !== undefined && !(isFreePlan && p.saleStatus === null) && !["ON_SALE", "STOPPED"].includes(String(p.saleStatus))) invalid();
   return p as unknown as PlanCard;
 }
 function envelope<T>(value: unknown, validate: (data: Record<string, unknown>) => void): ApiEnvelope<T> {
