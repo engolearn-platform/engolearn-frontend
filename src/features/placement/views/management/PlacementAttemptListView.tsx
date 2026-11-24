@@ -37,7 +37,7 @@ export default function PlacementAttemptListView() {
   const [applied, setApplied] = useState(emptyFilters);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const fetchPage = useCallback((signal: AbortSignal) => service.listAttempts(applied, page - 1, pageSize, signal),
+  const fetchPage = useCallback((signal: AbortSignal) => service.listAttempts({ ...applied, version: "" }, page - 1, pageSize, signal),
     [service, applied, page, pageSize]);
   const { data, loading, error, refetch } = useFetch(fetchPage);
   const invalidRange = Boolean(filters.from && filters.to && filters.from > filters.to);
@@ -50,12 +50,11 @@ export default function PlacementAttemptListView() {
   return <>
     <ManagementHeader title="Kết quả Placement" description="Tra cứu lượt làm của thành viên và khách." />
     <ManagementCard className="mb-6">
-      <form onSubmit={event => { event.preventDefault(); if (!invalidRange) { setApplied({ ...filters }); setPage(1); } }} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-12">
-        <div className="min-w-0 xl:col-span-3"><ManagementField label="Mã lượt làm hoặc mã User"><input className={managementInputClass} value={filters.search} maxLength={100} onChange={event => update("search", event.target.value)} /></ManagementField></div>
-        <div className="min-w-0 xl:col-span-3"><ManagementField label="Mã bộ đề"><input className={managementInputClass} list="placement-set-codes" value={filters.testSetCode} maxLength={100} onChange={event => update("testSetCode", event.target.value)} />
+      <form onSubmit={event => { event.preventDefault(); if (!invalidRange) { setApplied({ ...filters, search: filters.search.trim(), testSetCode: filters.testSetCode.trim(), version: "" }); setPage(1); } }} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-12">
+        <div className="min-w-0 xl:col-span-4"><ManagementField label="Mã lượt làm hoặc mã User"><input type="search" placeholder="Dán mã lượt làm hoặc mã User" className={managementInputClass} value={filters.search} maxLength={100} onChange={event => update("search", event.target.value)} /></ManagementField></div>
+        <div className="min-w-0 xl:col-span-4"><ManagementField label="Mã bộ đề"><input type="search" placeholder="Nhập hoặc chọn mã bộ đề" className={managementInputClass} list="placement-set-codes" value={filters.testSetCode} maxLength={100} onChange={event => update("testSetCode", event.target.value)} />
           <datalist id="placement-set-codes">{sets.map(code => <option key={code} value={code} label={testSets.filter(set => set.code === code).sort((a, b) => b.version - a.version)[0]?.name} />)}</datalist>
         </ManagementField></div>
-        <div className="min-w-0 xl:col-span-2"><ManagementField label="Phiên bản"><input type="number" min="1" max="2147483647" className={managementInputClass} value={filters.version} onChange={event => update("version", event.target.value)} /></ManagementField></div>
         <div className="min-w-0 xl:col-span-4"><ManagementField label="Trạng thái"><select className={`${managementInputClass} whitespace-nowrap`} value={filters.status} onChange={event => update("status", event.target.value)}><option value="">Tất cả trạng thái</option>{Object.entries(MANAGEMENT_ATTEMPT_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></ManagementField></div>
         <div className="min-w-0 xl:col-span-3"><ManagementField label="Kết quả CEFR"><select className={managementInputClass} value={filters.level} onChange={event => update("level", event.target.value)}><option value="">Tất cả trình độ</option>{MANAGEMENT_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}</select></ManagementField></div>
         <div className="min-w-0 xl:col-span-3"><ManagementField label="Từ ngày"><input type="date" className={managementInputClass} value={filters.from} onChange={event => update("from", event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "attempt-date-error" : undefined} /></ManagementField></div>
