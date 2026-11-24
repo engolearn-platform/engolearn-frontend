@@ -42,6 +42,8 @@ export const ROUTES = {
   ADMIN_TOPIC_READ_ITEM_SECTION: "/admin/topics/:topicId/view/items/:itemId/:sectionKey",
   ADMIN_SUBSCRIPTION_PLANS: "/admin/subscription/plans",
   ADMIN_SUBSCRIPTION_QUOTAS: "/admin/subscription/quotas",
+  ADMIN_SUBSCRIPTION_PRODUCTS: "/admin/subscription/products",
+  SUBSCRIPTION_PLAN_DETAIL: "/subscription/plans/:planCode",
   ADMIN_TOPIC_CREATE: "/admin/topics/create",
   ADMIN_TOPIC_CREATE_ITEMS: "/admin/topics/create/items",
   ADMIN_TOPIC_ITEM_SECTION: "/admin/topics/create/items/:itemId/:sectionKey",

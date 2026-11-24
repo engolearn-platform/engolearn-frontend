@@ -3,7 +3,7 @@ import { useFetch } from "@shared/hooks";
 import { subscriptionService } from "@features/subscription/services/subscription.service";
 
 export const usePlans = () => useFetch(subscriptionService.plans);
-export const useMySubscription = () => useFetch(subscriptionService.me);
+export const useMySubscription = (immediate = true) => useFetch(subscriptionService.me, immediate);
 export const useQuotaUsage = () => useFetch(subscriptionService.usage);
 
 // An unresolved intent survives route changes and explicit retries. Never replace

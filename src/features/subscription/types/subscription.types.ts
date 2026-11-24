@@ -16,8 +16,12 @@ export interface PlanCard {
   description?: string | null;
   benefits: PlanBenefit[];
   billingOptions: PlanBillingOption[];
+  /** Dynamic paid products publish an immutable configuration version. */
+  version?: number | null;
+  saleStatus?: "ON_SALE" | "STOPPED" | null;
 }
 export interface MySubscriptionSummary {
+  currentPlanCode?: string;
   tier: "FREE" | "PREMIUM";
   status: "FREE" | "TRIAL" | "ACTIVE" | "EXPIRED" | "REFUNDED";
   periodStartAt: string | null;
@@ -25,7 +29,7 @@ export interface MySubscriptionSummary {
   trialEligible: boolean;
   trialIneligibilityReason: "ALREADY_USED" | "ACTIVE_PREMIUM" | null;
   currentBenefits: {
-    planCode: "FREE" | "PREMIUM";
+    planCode: string;
     displayName: string;
     policySnapshotId: string;
     benefits: PlanBenefit[];

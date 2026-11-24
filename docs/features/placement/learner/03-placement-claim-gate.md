@@ -1,3 +1,5 @@
+> Quyền kế thừa (23/11/2026): User trong luồng học viên gồm USER, CONTENT_MANAGER, ADMIN theo auth contract của nhóm. Guest vẫn làm bài trước khi đăng nhập. Quyền kế thừa không bỏ qua ownership hoặc điều kiện làm bài. Xem [phụ lục quyền](08-inherited-role-access.md).
+
 # 03 — Guest Auth Gate (nhận kết quả sau khi nộp)
 
 > Màn **P03-GUEST-AUTH-GATE** — trạm trung chuyển sau khi nộp bài.
