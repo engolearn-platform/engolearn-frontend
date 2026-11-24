@@ -124,6 +124,14 @@ export default function SubscriptionProductManagementDetailView() {
       setReplaceScheduleConfirmOpen(true);
       return;
     }
+    const replacementSchedule = replaceScheduled && planCode === "PREMIUM" && product.legacySchedule?.status === "SCHEDULED"
+      ? { version: product.legacySchedule.version, effectiveAt: product.legacySchedule.effectiveAt }
+      : undefined;
+    if (replaceScheduled && !replacementSchedule) {
+      setReplaceScheduleConfirmOpen(false);
+      setFailure("Lịch PREMIUM cần thay thế không còn hiện hành. Tải lại sản phẩm và kiểm tra trạng thái mới.");
+      return;
+    }
     const expectedDraftRevision = product.draft.revision;
     const key = publishKey.current ?? crypto.randomUUID();
     publishKey.current = key;
@@ -131,7 +139,7 @@ export default function SubscriptionProductManagementDetailView() {
     setFailure(null);
     setPublicationVersion(null);
     try {
-      const result = await subscriptionProductService.publish(planCode, expectedDraftRevision, key, new AbortController().signal, replaceScheduled);
+      const result = await subscriptionProductService.publish(planCode, expectedDraftRevision, key, new AbortController().signal, replacementSchedule);
       publishKey.current = null;
       setProduct(result.data);
       setPreview(null);

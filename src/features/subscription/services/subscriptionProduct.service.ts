@@ -156,8 +156,13 @@ export const subscriptionProductService = {
   async preview(planCode: string, expectedDraftRevision: number, signal: AbortSignal) {
     return envelope<ProductPreview>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/preview`, { expectedDraftRevision }, { signal }), data => preview(data));
   },
-  async publish(planCode: string, expectedDraftRevision: number, key: string, signal: AbortSignal, replaceScheduled = false) {
-    return envelope<ProductDetail>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/publish`, { expectedDraftRevision, ...(replaceScheduled ? { replaceScheduled: true } : {}) }, { signal, headers: { "Idempotency-Key": key } }), data => detail(data));
+  async publish(planCode: string, expectedDraftRevision: number, key: string, signal: AbortSignal, replacementSchedule?: { version: number; effectiveAt: string }) {
+    const replacement = replacementSchedule ? {
+      replaceScheduled: true,
+      expectedScheduleVersion: replacementSchedule.version,
+      expectedScheduleEffectiveAt: replacementSchedule.effectiveAt,
+    } : {};
+    return envelope<ProductDetail>(await httpService.post<unknown>(`${prefix}/${segment(planCode)}/publish`, { expectedDraftRevision, ...replacement }, { signal, headers: { "Idempotency-Key": key } }), data => detail(data));
   },
   async rescheduleLegacyPremium(expectedVersion: number, expectedEffectiveAt: string, effectiveAt: string, signal: AbortSignal) {
     return envelope<ProductDetail>(await httpService.patch<unknown>(`${prefix}/PREMIUM/schedule`, { expectedVersion, expectedEffectiveAt, effectiveAt }, { signal }), data => detail(data));
