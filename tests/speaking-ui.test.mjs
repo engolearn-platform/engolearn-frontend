@@ -82,7 +82,22 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
   assert.equal(tracks.length, 0, "microphone must remain closed before server admission");
   const startCommand = FakeWebSocket.last.sent.map(value => JSON.parse(value)).find(message => message.type === "START_TURN");
   assert.ok(startCommand?.payload.clientTurnId);
-  await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2998", sequence: 1, payload: { clientTurnId: startCommand.payload.clientTurnId } }); await wait(); });
+  await act(async () => FakeWebSocket.last.receive({ type: "ERROR", sessionId: session.sessionId, requestId: "unrelated-request", payload: { code: "TURN_IN_PROGRESS", retryable: true } }));
+  assert.equal(state.recording, "requesting", "an unrelated admission error must not unlock the pending start");
+  assert.equal(tracks.length, 0, "an unrelated admission error must not open capture");
+  await act(async () => FakeWebSocket.last.receive({ type: "ERROR", sessionId: session.sessionId, requestId: startCommand.requestId, payload: { code: "TURN_IN_PROGRESS", retryable: true } }));
+  assert.equal(state.recording, "idle", "a matching admission error must restore the start control");
+  assert.match(errors.at(-1), /lượt nói trước vẫn đang xử lý/i);
+
+  await act(async () => state.startTurn());
+  const retryStart = FakeWebSocket.last.sent.map(value => JSON.parse(value)).filter(message => message.type === "START_TURN").at(-1);
+  await act(async () => {
+    FakeWebSocket.last.receive({ type: "ERROR", sessionId: session.sessionId, requestId: startCommand.requestId, payload: { code: "TURN_IN_PROGRESS", retryable: true } });
+    FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: startCommand.requestId, turnId: "stale-turn", sequence: 1, payload: { clientTurnId: startCommand.payload.clientTurnId } });
+  });
+  assert.equal(state.recording, "requesting", "a stale failure or acceptance must not alter the newer request");
+  assert.equal(tracks.length, 0, "a stale acceptance must not open capture");
+  await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: retryStart.requestId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2998", sequence: 1, payload: { clientTurnId: retryStart.payload.clientTurnId } }); await wait(); });
   assert.equal(tracks.length, 1, "microphone opens only after acceptance");
   assert.equal(state.recording, "recording");
   await act(async () => state.cancelTurn());
@@ -92,7 +107,7 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
   await act(async () => { FakeWebSocket.last.receive({ type: "TURN_SKIPPED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2998", payload: { code: "TURN_CANCELLED" } }); await wait(); });
   await act(async () => state.startTurn());
   const secondStart = FakeWebSocket.last.sent.map(value => JSON.parse(value)).filter(message => message.type === "START_TURN").at(-1);
-  await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2999", sequence: 2, payload: { clientTurnId: secondStart.payload.clientTurnId } }); await wait(); });
+  await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: secondStart.requestId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2999", sequence: 2, payload: { clientTurnId: secondStart.payload.clientTurnId } }); await wait(); });
   await act(async () => { FakeWebSocket.last.receive({ type: "TURN_FAILED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2999", payload: { code: "STT_UNAVAILABLE", retryable: false } }); await wait(30); });
   assert.match(errors.at(-1), /nhận diện lời nói|bản chép lời/i, "STT failure should explain how to recover without showing a raw code");
   await act(async () => { FakeWebSocket.last.close(); await wait(); });

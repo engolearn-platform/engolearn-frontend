@@ -56,6 +56,7 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
   const streamRef = useRef<MediaStream | null>(null); const contextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null); const workletRef = useRef<AudioWorkletNode | null>(null);
   const turnRef = useRef<string | null>(null); const pendingClientId = useRef<string | null>(null);
+  const pendingStartRequestId = useRef<string | null>(null);
   const chunkIndex = useRef(0); const voiceSeen = useRef(false); const quietSince = useRef<number | null>(null);
   const finishRef = useRef<() => void>(() => {}); const audioParts = useRef<Uint8Array[]>([]);
   const endAfterAck = useRef(false);
@@ -97,7 +98,14 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
   }, [send, stopCapture]);
   finishRef.current = finishTurn;
   const cancelTurn = useCallback(() => {
-    const turnId = turnRef.current; if (!turnId) return;
+    const turnId = turnRef.current;
+    if (!turnId) {
+      if (recordingRef.current === "requesting") {
+        pendingClientId.current = null; pendingStartRequestId.current = null; setRecording("idle");
+      }
+      return;
+    }
+    pendingClientId.current = null; pendingStartRequestId.current = null;
     turnRef.current = null; stopCapture(); setRecording("sealing"); send("CANCEL_TURN", {}, turnId);
   }, [send, stopCapture]);
   const endSession = useCallback(async (recordingChoice?: "FINALIZE" | "DISCARD") => {
@@ -109,8 +117,10 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
   }, [applySession, cancelTurn]);
   const startTurn = useCallback(() => {
     if (!sessionRef.current || connection !== "connected" || recording !== "idle" || playing) return;
-    const clientTurnId = crypto.randomUUID(); pendingClientId.current = clientTurnId;
-    if (send("START_TURN", { clientTurnId })) setRecording("requesting");
+    const clientTurnId = crypto.randomUUID(); const requestId = crypto.randomUUID();
+    pendingClientId.current = clientTurnId; pendingStartRequestId.current = requestId;
+    if (send("START_TURN", { clientTurnId }, undefined, requestId)) setRecording("requesting");
+    else { pendingClientId.current = null; pendingStartRequestId.current = null; }
   }, [connection, playing, recording, send]);
 
   const captureAcceptedTurn = useCallback(async (turnId: string) => {
@@ -210,8 +220,10 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
             const next = payload as unknown as SpeakingSession; if (applySession(next, true)) reconcileActiveTurn(next.activeTurn);
           }
           if (message.type === "OPENING_RESULT") { const current = sessionRef.current; if (current) applySession({ ...current, opening: payload as unknown as SpeakingSession["opening"] }); }
-          if (message.type === "TURN_ACCEPTED" && typeof message.turnId === "string" && payload.clientTurnId === pendingClientId.current) {
-            pendingClientId.current = null; turnRef.current = message.turnId; serverTurnRef.current = { turnId: message.turnId, sequence: message.sequence ?? 0, clientTurnId: String(payload.clientTurnId), status: "RECEIVING" };
+          if (message.type === "TURN_ACCEPTED" && typeof message.turnId === "string"
+            && message.requestId === pendingStartRequestId.current && payload.clientTurnId === pendingClientId.current) {
+            pendingClientId.current = null; pendingStartRequestId.current = null;
+            turnRef.current = message.turnId; serverTurnRef.current = { turnId: message.turnId, sequence: message.sequence ?? 0, clientTurnId: String(payload.clientTurnId), status: "RECEIVING" };
             setRecoverableTurn(null); void captureAcceptedTurn(message.turnId);
           }
           if (message.type === "TRANSCRIPT_PARTIAL" || message.type === "TRANSCRIPT_FINAL") setInterim(String(payload.transcript ?? ""));
@@ -255,6 +267,10 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
           if (message.type === "TTS_FAILED") { audioTurn.current = null; audioParts.current = []; errorFn.current("Không tạo được audio. Phản hồi văn bản vẫn khả dụng."); }
           if (message.type === "SESSION_ENDED") { applySession(payload as unknown as SpeakingSession); setRecording("idle"); }
           if (message.type === "ERROR") {
+            if (pendingStartRequestId.current && message.requestId === pendingStartRequestId.current) {
+              pendingClientId.current = null; pendingStartRequestId.current = null;
+              if (recordingRef.current === "requesting") setRecording("idle");
+            }
             if ((pendingRetryTurnRef.current === message.turnId || pendingRetryRequestIdRef.current === message.requestId)
               && (!message.turnId || message.turnId === pendingRetryTurnRef.current)) {
               pendingRetryTurnRef.current = null; pendingRetryRequestIdRef.current = null; setRecording("idle");
@@ -264,7 +280,7 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
           }
         };
         socket.onclose = () => {
-          if (stopped || socketRef.current !== socket) return; socketRef.current = null; turnRef.current = null; pendingClientId.current = null;
+          if (stopped || socketRef.current !== socket) return; socketRef.current = null; turnRef.current = null; pendingClientId.current = null; pendingStartRequestId.current = null;
           stopCapture(); if (recordingRef.current !== "processing") setRecording("idle"); setInterim("");
           if (retries < 5 && ["ACTIVE", "INITIALIZING", "CLOSING"].includes(sessionRef.current?.status ?? "")) { retries++; setConnection("reconnecting");
             errorFn.current(`Mất kết nối. Đang nối lại (${retries}/5).`); timer = setTimeout(() => void connect(), Math.min(1000 * 2 ** retries, 12000)); }
@@ -279,7 +295,7 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
       }
     };
     void connect();
-    return () => { stopped = true; if (timer) clearTimeout(timer); socketRef.current?.close(); socketRef.current = null; stopCapture(); stopPlayback(); };
+    return () => { stopped = true; if (timer) clearTimeout(timer); pendingClientId.current = null; pendingStartRequestId.current = null; socketRef.current?.close(); socketRef.current = null; stopCapture(); stopPlayback(); };
   }, [activeSessionId, activeControllerEpoch, activeWsPath, captureAcceptedTurn, stopCapture, stopPlayback, onTurns, applySession, reconcileActiveTurn]);
 
   const retryFailedTurn = useCallback((turnId: string) => {
