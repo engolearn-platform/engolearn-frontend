@@ -37,6 +37,7 @@ export interface CsvQuestionRow { line: number; draft: ManagementQuestionDraft |
 export interface BlueprintCell { skill: PlacementSection; level: PlacementLevel; count: number; required: number }
 export interface PlacementManagementService {
   getState(signal?: AbortSignal): Promise<ManagementState>;
+  listTestSets(signal?: AbortSignal): Promise<ManagementTestSet[]>;
   listAttempts(filters: ManagementAttemptFilters, page: number, size: number, signal?: AbortSignal): Promise<ManagementPage<ManagementAttemptSummary>>;
   getAttempt(id: string, signal?: AbortSignal): Promise<ManagementAttempt>;
   getSetPreview(id: string, signal?: AbortSignal): Promise<ManagementTestSet>;

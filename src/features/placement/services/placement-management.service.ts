@@ -38,6 +38,9 @@ export const placementManagementService: PlacementManagementService = {
     ]);
     return { schemaVersion: 1, questions: bank, testSets, attempts: [] };
   },
+  async listTestSets(signal) {
+    return readPages<ManagementTestSet>(sets, signal);
+  },
   async listAttempts(filters, page, size, signal) {
     const values = Object.fromEntries(Object.entries(filters).filter(([, value]) => value.trim()));
     return (await httpService.get<ApiEnvelope<ManagementPage<ManagementAttemptSummary>>>(attempts, {
