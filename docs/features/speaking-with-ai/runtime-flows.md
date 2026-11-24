@@ -1,47 +1,21 @@
-# Speaking runtime flows
+# Speaking V2 runtime flows
 
-Topic owns the learner-facing UI and all Speaking routes. It calls the provider through `@features/speaking/contract`. The provider uses the shared HTTP client for REST operations and opens a WebSocket for live voice turns. The backend snapshot remains authoritative for persisted session and turn state.
+## Entry from Topic
 
-## 1. Topic launches Speaking
+Topic detail exposes one topic-level Speaking entry and a separate entry on each item card. Topic routes mount `TopicSpeakingEntry` or `ItemSpeakingEntry` from Speaking's public contract. Entry reads availability for the exact scope. The learner explicitly starts or resumes a session; before create or replacement, the browser checks microphone permission and immediately releases the probe tracks. Topic Learning progress is not mutated.
 
-1. `TopicItemResultView` reads `speakingEnabled` from the Speaking contract and, when enabled, opens the Topic-owned item Speaking route.
-2. `topic/routes.ts` maps the item routes and `/speaking/history` to Topic's `SpeakingView`. In a development build, `/dev/speaking` maps to `SpeakingDemoView` and `/dev/speaking-session` maps to the same `SpeakingView` used by the item flow. The app router only aggregates these Topic routes.
-3. `SpeakingView` uses the regular session service and realtime hook. `SpeakingDemoView` uses the legacy multipart service. Both import through the Speaking contract.
+## Session and microphone
 
-## 2. Session creation and resume
+The standalone workspace loads the authoritative session and saved turn page, obtains a one-time socket ticket, connects to the server `wsPath` while the session initializes, and sends `SYNC_SESSION`. The socket stays open through active work and closing so opening and terminal events are delivered on that connection. Once connected, the learner can start a turn. The hook sends `START_TURN` and waits for `TURN_ACCEPTED` before requesting microphone capture. AudioWorklet output is framed as mono 16 kHz signed PCM16 little-endian chunks. VAD stops after 2.6 seconds of silence following detected speech; the learner can also stop or discard manually.
 
-1. Topic's `SpeakingView` loads the current account session, item configuration, and item-filtered history through the contract's service façade.
-2. Topic checks microphone permission before calling create or replace. Resuming calls the separate resume operation for the selected session. Topic records the returned session ID and controller epoch to track control in the tab.
-3. The provider sends cookie-authenticated requests to `/api/v1/speaking`; the backend checks identity and permissions, item availability, ownership, and controller state, then returns a session snapshot.
-4. Topic renders that snapshot and keeps the session selected. The backend retains authority over session state and eligibility.
+Finishing sends `END_TURN`; capture is already stopped and the interface waits for the server processing acknowledgement. Discard sends `CANCEL_TURN` and waits for `TURN_SKIPPED`. Ending during capture presents an explicit finalize-or-discard choice. A tab close or disconnect never ends the session.
 
-## 3. Opening turn
+## Messages, reconnect and audio
 
-1. The session snapshot reports the opening status. An AI-initiated opening can progress from `GENERATING` through `SYNTHESIZING` to `READY` or `TEXT_ONLY`. A failed opening reports `FAILED`. A learner-initiated opening reports `NOT_REQUIRED`.
-2. Topic presents the opening and available hint. Audio playback obtains a short-lived URL through the provider service. Topic may retry a failed opening while the learner controls an interactive session.
-3. `OPENING_UPDATED` carries a session snapshot and revision. The Speaking stream accepts only an update matching the active session and controller epoch whose event revision equals its snapshot revision. Topic's `acceptSnapshot` then rejects stale snapshots against the currently displayed session revision.
-4. The opening and its hint are outside the learner turn count and assessment. Reopening or hydrating a page does not autoplay the opening.
+Partial/final transcript updates belong to the active turn. Persisted `TURN_RESULT` fields are rendered with that same turn: correction under the learner message and hint under the corresponding AI reply. The client does not make an extra model request. On disconnect it stops the mic, retries tickets with bounded backoff, syncs the session and reloads saved turns. `SESSION_STATE.activeTurn` reconciles any raced receiving or sealed work: a remaining receiving recording can be discarded explicitly; sealed work stays pending until its terminal event. Turn IDs deduplicate updates and stale socket handlers are ignored. A retryable generation failure can be retried only when its transcript is persisted; `RETRY_TURN` keeps the original server turn ID and waits for its correlated acknowledgement.
 
-## 4. Realtime voice turn
+Opening and assistant text remain usable when synthesis fails. Opening and reply WAV streams are played after all framed chunks arrive and the server's declared byte length matches. An incomplete stream or playback error leaves text visible and gives a recovery message. Stable speech-recognition, empty-audio, generation, quota and connection errors map to Vietnamese recovery guidance; an unavailable transcript is kept distinct from an empty numeric or result value.
 
-1. Topic passes the session and its snapshot callback to `useSpeakingStream` when the tab controls the session for the current item.
-2. The Speaking provider requests a socket ticket from REST and connects to `/ws/speaking/{sessionId}`. When the learner starts a turn, it obtains the microphone and loads the AudioWorklet before sending `START_TURN` with a turn ID and controller epoch.
-3. The AudioWorklet converts microphone audio to mono 16 kHz signed 16-bit little-endian PCM, which the provider sends as binary frames. The worklet remains served at `/speaking-pcm-worklet.js`.
-4. Interim transcript events update Topic's transcript UI. Finishing recording sends `END_OF_TURN` for backend processing. If the microphone track ends unexpectedly, the provider sends `CANCEL_TURN` when the socket remains open.
-5. The provider reports event snapshots through its callback. It fetches the authoritative session through REST after a connection or turn lifecycle event that omits a snapshot and when audio becomes available. Topic checks the session and revision before applying the snapshot.
+## Result and history
 
-## 5. Feedback and achievements
-
-1. A committed turn snapshot returns to Topic through the stream's snapshot callback. Topic renders transcript, evaluation, AI reply and available audio playback from persisted fields.
-2. The Topic achievement adapter maps the session snapshot into presentation data. The Topic selector uses committed server fields and ignores provisional, invalid, failed, history and hydration transitions for live celebrations.
-3. Topic displays a final summary only after the backend reports `COMPLETED` or `INCOMPLETE`. Reaching goal or turn eligibility alone does not finalize a session.
-
-## 6. Completion, history and recovery
-
-1. Topic's explicit end action calls the provider service. Until the authoritative terminal snapshot returns, Topic can show its pending-result state. Automatic completion is recognized only from the resulting backend snapshot.
-2. Topic loads account or item history through the same service façade. Selecting a history snapshot shows settled content without replaying live achievements. Audio playback uses a provider request for a temporary URL.
-3. If the socket drops, the provider stops local capture and retries connection up to three times at about three-second intervals. Reconnection hydrates the session snapshot. The learner can return to Topic's Speaking view and resume if the session remains available.
-4. A server controller-change event ends the old tab's control. Unmounting releases local microphone and playback resources. Session completion requires an explicit end action or backend settlement.
-5. The dev-only legacy route retains its Topic-owned `MediaRecorder` flow and calls the provider's demo service. It is separate from the PCM WebSocket flow.
-
-See the [user flows](user-flows.md) for observed gaps and unverified conditions. Backend implementation references are indexed by the [backend Speaking overview](../../../../engolearn-backend/docs/features/speaking-with-ai/README.md).
+The result route polls assessment while status is `PENDING` or `FINALIZING`, with bounded backoff and unmount cleanup. It shows only pronunciation, fluency, grammar and vocabulary, preserving the acoustic 100-point and language 5-point scales. Null scores remain “Chưa có điểm”; partial and unavailable states explain what could not be assessed. History and result routes use REST only, are scoped to the authenticated account, and can replay authorized audio while available. Practice again and return links derive from the immutable session scope.

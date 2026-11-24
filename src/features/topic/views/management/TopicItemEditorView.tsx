@@ -135,6 +135,7 @@ function SectionEditor({ initial, section }: { initial: TopicItemResourceMutatio
       <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
         <Button type="button" variant="outline" onClick={() => leave(adminTopicItemsPath(topicId))} disabled={pending}>Quay lại danh sách</Button>
         <div className="flex flex-wrap items-center gap-3">
+          {!pending && <Link to={`/admin/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/speaking-profile`} className="text-label-sm text-primary underline-offset-4 hover:underline">Hồ sơ Speaking</Link>}
           {!pending && <Link to={adminTopicReadSectionPath(topicId, itemId, section)} className="text-label-sm text-primary">Xem bản đã lưu</Link>}
           <Button type="button" disabled={pending || conflict || !dirty} onClick={save}>Lưu nháp</Button>
         </div>
