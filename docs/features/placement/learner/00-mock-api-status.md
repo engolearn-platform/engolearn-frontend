@@ -13,3 +13,5 @@ Tên file được giữ để tương thích liên kết tài liệu hiện có
 BE persistence là Mongo với transaction, không in-memory. Reload FE giữ cookie/attempt/deadline; không reset lượt khi BE restart bình thường. Guest cookie `placement_guest_session`, Auth cookie theo contract của nhóm. FE không tạo identity bằng X-Dev-User-Id/query/sessionStorage. Login/Register giữ location.state.from; logout qua Auth chung.
 
 Quy tắc thời gian, một lượt đang hoạt động, claim, chấm và xếp level thuộc BE. GET current không tạo lượt nhưng có thể giải quyết deadline đã hết theo nghiệp vụ. Lỗi HTTP có retry và thông báo, không tạo bài/điểm giả. Test thiếu môi trường bị skip không được coi là đã pass. [Entry hiện hành](README.md).
+
+P02 đếm elapsed bằng performance.now() từ deadline/serverNow BE. GET lại khi focus/visible/online và mỗi60 giây; về0 chỉ GET xác nhận, không POST nộp sớm. Lỗi xác nhận giữ màn hình và retry5 giây. Deadline và trạng thái kết thúc vẫn do BE quyết định.

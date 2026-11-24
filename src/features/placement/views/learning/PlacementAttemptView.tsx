@@ -114,7 +114,7 @@ export default function PlacementAttemptView() {
           role="status"
           className="mt-4 rounded-xl border border-error/30 bg-error-container px-4 py-3 text-label-lg text-on-error-container"
         >
-          Đã hết thời gian làm bài. Hệ thống đang nộp bài của bạn.
+          Đang xác nhận thời gian làm bài với hệ thống…
         </p>
       ) : null}
 

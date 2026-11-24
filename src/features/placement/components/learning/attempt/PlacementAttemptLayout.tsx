@@ -1,7 +1,7 @@
 import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import { EmptyState, Loading } from "@shared/components";
 import { GraduationCap } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Link, Navigate, Outlet, useNavigate, useParams } from "react-router";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -68,7 +68,6 @@ function PlacementAttemptSession() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const learner = usePlacementLearnerAccess();
   const navigate = useNavigate();
-  const autoSubmitAttemptedRef = useRef(false);
   const allowed = !isAuthenticated || learner;
   const attempt = usePlacementAttempt(attemptId, !authLoading && allowed);
   const {
@@ -81,12 +80,6 @@ function PlacementAttemptSession() {
     submitResult,
     submit,
   } = attempt;
-
-  useEffect(() => {
-    if (!isExpired || autoSubmitAttemptedRef.current) return;
-    autoSubmitAttemptedRef.current = true;
-    void submit();
-  }, [isExpired, submit]);
 
   useEffect(() => {
     if (!submitResult) return;

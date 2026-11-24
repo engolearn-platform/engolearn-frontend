@@ -4,13 +4,14 @@ import {
   savePlacementAnswer,
   submitPlacementAttempt,
 } from "@features/placement/services/placement.service";
-import type { PlacementSubmitResult } from "@features/placement/types/placement-attempt.types";
+import type { PlacementAttemptDetail, PlacementSubmitResult } from "@features/placement/types/placement-attempt.types";
 import { useFetch } from "@shared/hooks";
 import { usePlacementCountdown } from "./usePlacementCountdown";
 
 const SAVE_ERROR_MESSAGE =
   "Không thể lưu câu trả lời. Vui lòng kiểm tra kết nối và thử lại.";
 const SUBMIT_ERROR_MESSAGE = "Không thể nộp bài. Vui lòng thử lại.";
+const CLOCK_ERROR_MESSAGE = "Chưa xác nhận được thời gian với hệ thống. Đang thử kết nối lại…";
 
 type AnswerMap = Record<string, string | null>;
 
@@ -19,7 +20,13 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
     (signal: AbortSignal) => getPlacementAttempt(attemptId, signal),
     [attemptId],
   );
-  const { data, loading, error, refetch } = useFetch(fetchAttempt, enabled);
+  const { data: loadedData, loading, error, refetch } = useFetch(fetchAttempt, enabled);
+  const [synchronized, setSynchronized] = useState<{
+    source: PlacementAttemptDetail;
+    snapshot: PlacementAttemptDetail;
+  } | null>(null);
+  const [clockError, setClockError] = useState<string | null>(null);
+  const data = synchronized?.source === loadedData ? synchronized.snapshot : loadedData;
 
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -45,6 +52,47 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
 
   const isExpired =
     Boolean(data) && remainingMs <= 0 && data?.status === "IN_PROGRESS";
+
+  useEffect(() => {
+    if (!enabled || !loadedData || loadedData.attemptId !== attemptId
+      || data?.status !== "IN_PROGRESS" || submitting || submitResult) return;
+
+    const controller = new AbortController();
+    let pending = false;
+    const synchronize = async () => {
+      if (pending || controller.signal.aborted || submittingRef.current) return;
+      pending = true;
+      try {
+        // GET resolves the real server deadline; never POST merely because the local display reached zero.
+        const current = await getPlacementAttempt(attemptId, controller.signal);
+        if (!controller.signal.aborted && !submittingRef.current) {
+          setSynchronized({ source: loadedData, snapshot: current });
+          setClockError(null);
+        }
+      } catch {
+        if (!controller.signal.aborted) setClockError(CLOCK_ERROR_MESSAGE);
+      } finally {
+        pending = false;
+      }
+    };
+    const onVisible = () => { if (!document.hidden) void synchronize(); };
+    const onOnline = () => { void synchronize(); };
+    const timer = window.setInterval(() => {
+      if (isExpired || !document.hidden) void synchronize();
+    }, isExpired ? 5000 : 60000);
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisible);
+    if (isExpired) void synchronize();
+
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [attemptId, enabled, loadedData, data?.status, isExpired, submitting, submitResult]);
 
   /**
    * Saves are serialized per question through a promise chain and always read
@@ -148,7 +196,7 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
   );
 
   const submit = useCallback(async () => {
-    if (!data || submittingRef.current || submitResult) return;
+    if (!data || !loadedData || submittingRef.current || submitResult) return;
 
     const targetAttemptId = data.attemptId;
     submittingRef.current = true;
@@ -156,6 +204,12 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
     setSubmitError(null);
 
     try {
+      if (isExpired) {
+        const current = await getPlacementAttempt(targetAttemptId);
+        setSynchronized({ source: loadedData, snapshot: current });
+        setClockError(null);
+        return;
+      }
       const flushed = await flushPendingAnswers(targetAttemptId);
       if (!flushed) {
         // Late PATCHes are rejected after BE finalizes; reconcile its status before blocking on dirty answers.
@@ -174,7 +228,7 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [data, submitResult, flushPendingAnswers]);
+  }, [data, loadedData, isExpired, submitResult, flushPendingAnswers]);
 
   return {
     data,
@@ -188,7 +242,7 @@ export function usePlacementAttempt(attemptId: string, enabled: boolean) {
     remainingMs,
     isExpired,
     submitting,
-    submitError,
+    submitError: submitError ?? (isExpired ? clockError : null),
     submitResult,
     submit,
   };

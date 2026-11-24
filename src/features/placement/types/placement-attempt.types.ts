@@ -42,7 +42,7 @@ export interface PlacementAttemptDetail {
   status: PlacementAttemptStatus;
   startedAt: string;
   deadlineAt: string;
-  /** Server clock at response time; used to offset the client countdown. */
+  /** Server clock at response time; anchors the monotonic client countdown. */
   serverNow: string;
   totalQuestions: number;
   /** Ordered: every READING question before the first LISTENING question. */

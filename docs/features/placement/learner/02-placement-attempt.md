@@ -120,13 +120,13 @@ Hooks/services:
   guard `submitResult`.
 - 0 câu + submit tay → chặn tại chỗ "Bạn chưa trả lời câu hỏi nào."
   (BR-F1.9); backend cũng từ chối khi còn trước deadline.
-- Hết giờ: layout gọi submit **đúng một lần** qua `autoSubmitAttemptedRef`;
+- Khi đồng hồ về0: hook GET xác nhận trạng thái BE; layout điều hướng theo trạng thái đã kết thúc, không tự POST nộp sớm;
   backend quyết định `AUTO_SUBMITTED` (≥1 đáp án) hay `EXPIRED` (0 đáp án)
   (BR-F1.10). FE không tự tạo rule mới.
 
 ### 4.4 Đồng hồ
 
-- Offset `serverNow − Date.now()` (một lần theo attempt); tick mỗi giây, tính
+- Đồng hồ neo vào deadlineAt/serverNow của BE, đếm elapsed bằng performance.now(); xem phần Đồng hồ và xác nhận hết hạn bên dưới.
   lại khi `focus`/`visibilitychange`; không reset khi quay lại tab.
 - `deadlineAt`/`serverNow` không hợp lệ → kẹp về 0 an toàn (không NaN).
 - `remaining` được suy ra trong render (không lưu state), nên render đầu tiên
@@ -201,3 +201,11 @@ personal user attempts, or the user's browser profile. No mocked API responses.
 ## Audio24/11/2026
 
 PlacementAudioPlayer dùng chung cho Guest/User và review: một audio bắt đầu phát sẽ pause audio Placement trước đó; không đặt currentTime=0. onPause đồng bộ nút Phát/Tạm dừng. Khi đổi câu/unmount gỡ listener và dừng audio. AbortError do chuyển trình phát không được coi là file hỏng. Đã thử media thật trong trình duyệt:16→17 chỉ một audio playing; phát lại16 tiếp tục từ giây7.34, audio17 bị pause. Không đổi transcript/đáp án hay quy tắc làm bài.
+
+## Đồng hồ và xác nhận hết hạn — 24/11/2026
+
+Đồng hồ dùng deadlineAt/serverNow từ BE làm mốc và performance.now() đo thời gian đã trôi qua. Khi quay lại tab, online trở lại hoặc mỗi60 giây lúc đang hiển thị, GET lại đúng lượt làm để đồng bộ; giữ đáp án đang sửa và không tải lại toàn bộ giao diện. Khi FE về0, chỉ GET xác nhận, không tự POST nộp sớm. Nếu BE vẫn IN_PROGRESS thì đặt lại mốc; nếu BE trả trạng thái kết thúc thì dùng trạng thái đó để điều hướng. Lỗi xác nhận giữ tại màn làm bài, thông báo và thử lại sau5 giây hoặc khi mạng trở lại. Deadline, chấm bài và cửa sổ claim vẫn do BE quyết định; nút nộp chủ động khi còn thời gian giữ luồng flush hiện tại.
+
+Kiểm tra bằng tool deadline UI với FE proxy/BE/Mongo thật: clock thay Date.now trong riêng trang kiểm thử, confirm mô phỏng elapsed clock vượt mốc để kiểm tra BE từ chối kết thúc sớm, resync/resync-empty chỉ rút deadline của Guest test vừa tạo rồi phát focus. Không đổi giờ Windows, đề, audio hoặc attempt cá nhân. Không mock HTTP response.
+
+Kiểm tra offline dùng Chrome DevTools cắt mạng thật của riêng trang test, không giả phản hồi BE: giữ bài khi chưa xác nhận được, nối mạng/đồng bộ lại, giữ đáp án và nộp chủ động thành công. USER clock probe đăng ký tài khoản test riêng; không sửa deadline hoặc kết quả user có sẵn.
