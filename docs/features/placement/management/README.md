@@ -49,3 +49,5 @@ Tên bộ đề là link xem trước. Danh sách không lặp code/version; th�
 ## Kết quả: danh mục độc lập khi reload24/11/2026
 
 Màn Kết quả tự tải danh mục test-set bằng listTestSets/readPages, không phụ thuộc state do màn Bộ đề/Ngân hàng tải trước. Chờ danh mục cùng lượt làm trước khi hiện bảng, lỗi danh mục có retry thay vì âm thầm đổi tên thành mã. Tên đối chiếu chính xác testSetId+version, fallback code+version; chỉ dùng mã nếu metadata thực sự không tồn tại. Gợi ý bộ lọc mã lấy cùng danh mục, không tải320 câu hỏi. Giữ cách lọc bằng mã/phiên bản hiện có; nới cột Trạng thái. Tên đề ở danh sách Bộ đề dùng text-on-surface (đen theo token), vẫn là link xem trước. Không thay BE hoặc dữ liệu.
+
+Nhãn trạng thái trong bảng Kết quả có cột tối thiểu min-w-48 và whitespace-nowrap để cả “Tự nộp khi hết giờ” nằm một hàng; ô select giữ một hàng. Bảng hẹp vẫn cuộn ngang trong wrapper hiện có. Không đổi enum, bộ lọc hay giao diện các màn khác.

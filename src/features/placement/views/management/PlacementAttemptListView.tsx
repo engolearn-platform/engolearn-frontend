@@ -18,11 +18,11 @@ function AttemptRow({ attempt, testSetName }: { attempt: ManagementAttemptSummar
       <p className="font-semibold">{attempt.name}</p>
       <p className="text-label-sm text-on-surface-variant">{attempt.kind === "USER" ? "Thành viên" : "Khách"} · {attempt.id}</p>
     </td>
-    <td className="max-w-sm px-5 py-4"><span className="font-semibold">{testSetName || attempt.testSetCode || "—"}</span>
+    <td className="min-w-64 max-w-sm px-5 py-4"><span className="font-semibold">{testSetName || attempt.testSetCode || "—"}</span>
       <p className="text-label-sm text-on-surface-variant">Phiên bản {attempt.testSetVersion}</p>
     </td>
     <td className="whitespace-nowrap px-5 py-4">{formatManagementDate(attempt.startedAt)}</td>
-    <td className="px-5 py-4"><ManagementBadge tone={graded ? "success" : attempt.status === "IN_PROGRESS" ? "warning" : "neutral"}>{MANAGEMENT_ATTEMPT_LABEL[attempt.status]}</ManagementBadge></td>
+    <td className="min-w-48 whitespace-nowrap px-5 py-4"><ManagementBadge tone={graded ? "success" : attempt.status === "IN_PROGRESS" ? "warning" : "neutral"}>{MANAGEMENT_ATTEMPT_LABEL[attempt.status]}</ManagementBadge></td>
     <td className="whitespace-nowrap px-5 py-4 font-semibold">{graded ? `${attempt.correctCount}${attempt.totalQuestions ? `/${attempt.totalQuestions}` : ""}` : "—"}</td>
     <td className="px-5 py-4">{graded && attempt.level ? <ManagementBadge>{attempt.level}</ManagementBadge> : "—"}</td>
     <td className="px-5 py-4"><Link to={MANAGEMENT_PATHS.attempt(attempt.id)} aria-label={`Xem lượt làm ${attempt.id}`} className="inline-flex min-h-12 items-center rounded-xl px-3 font-semibold text-primary hover:bg-learning-nav-active focus-visible:outline-2 focus-visible:outline-primary">Xem</Link></td>
@@ -56,7 +56,7 @@ export default function PlacementAttemptListView() {
           <datalist id="placement-set-codes">{sets.map(code => <option key={code} value={code} label={testSets.filter(set => set.code === code).sort((a, b) => b.version - a.version)[0]?.name} />)}</datalist>
         </ManagementField></div>
         <div className="min-w-0 xl:col-span-2"><ManagementField label="Phiên bản"><input type="number" min="1" max="2147483647" className={managementInputClass} value={filters.version} onChange={event => update("version", event.target.value)} /></ManagementField></div>
-        <div className="min-w-0 xl:col-span-4"><ManagementField label="Trạng thái"><select className={managementInputClass} value={filters.status} onChange={event => update("status", event.target.value)}><option value="">Tất cả trạng thái</option>{Object.entries(MANAGEMENT_ATTEMPT_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></ManagementField></div>
+        <div className="min-w-0 xl:col-span-4"><ManagementField label="Trạng thái"><select className={`${managementInputClass} whitespace-nowrap`} value={filters.status} onChange={event => update("status", event.target.value)}><option value="">Tất cả trạng thái</option>{Object.entries(MANAGEMENT_ATTEMPT_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></ManagementField></div>
         <div className="min-w-0 xl:col-span-3"><ManagementField label="Kết quả CEFR"><select className={managementInputClass} value={filters.level} onChange={event => update("level", event.target.value)}><option value="">Tất cả trình độ</option>{MANAGEMENT_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}</select></ManagementField></div>
         <div className="min-w-0 xl:col-span-3"><ManagementField label="Từ ngày"><input type="date" className={managementInputClass} value={filters.from} onChange={event => update("from", event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "attempt-date-error" : undefined} /></ManagementField></div>
         <div className="min-w-0 xl:col-span-3"><ManagementField label="Đến ngày"><input type="date" className={managementInputClass} value={filters.to} onChange={event => update("to", event.target.value)} aria-invalid={invalidRange} aria-describedby={invalidRange ? "attempt-date-error" : undefined} /></ManagementField></div>
