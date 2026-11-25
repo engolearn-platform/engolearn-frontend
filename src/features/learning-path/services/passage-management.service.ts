@@ -1,6 +1,6 @@
 import { httpService } from "@shared/services/http.service";
 import type { ApiEnvelope } from "@shared/services/http.service";
-import type { PassageDetail, PassageInput, PassageListParams, PassageListResponse } from "@features/learning-path/types/passage-management.types";
+import type { PassageDetail, PassageInput, PassageListParams, PassageListResponse, PassageReadiness } from "@features/learning-path/types/passage-management.types";
 
 const endpoint = "/api/management/learning-paths/passages";
 const itemUrl = (id: string) => `${endpoint}/${encodeURIComponent(id)}`;
@@ -13,6 +13,9 @@ export function passageFormData(input: PassageInput, audio?: File): FormData {
 }
 
 export const passageManagementService = {
+  async readiness(id: string, signal?: AbortSignal): Promise<PassageReadiness> {
+    return (await httpService.get<ApiEnvelope<PassageReadiness>>(`${itemUrl(id)}/readiness`, { signal })).data;
+  },
   async list(query: PassageListParams, signal?: AbortSignal): Promise<PassageListResponse> {
     const params: Record<string, string> = { page: String(query.page), size: String(query.size) };
     if (query.keyword.trim()) params.keyword = query.keyword.trim();

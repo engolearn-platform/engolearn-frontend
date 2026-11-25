@@ -9,6 +9,7 @@ import PassageManagementStats from "@features/learning-path/components/managemen
 import PassageManagementFilterBar from "@features/learning-path/components/management/passages/PassageManagementFilterBar";
 import PassageManagementTable from "@features/learning-path/components/management/passages/PassageManagementTable";
 import PassageDeleteDialog from "@features/learning-path/components/management/passages/PassageDeleteDialog";
+import PassageReadinessDialog from "@features/learning-path/components/management/passages/PassageReadinessDialog";
 import PassageWorkspaceDialog from "@features/learning-path/components/management/passages/PassageWorkspaceDialog";
 import type { PassageWorkspace } from "@features/learning-path/components/management/passages/PassageWorkspaceDialog";
 
@@ -16,6 +17,7 @@ export default function PassageManagementListView() {
   const { data, loading, error, filter, params, setFilter, clearFilters, setPage, setSize, refetch } = usePassageManagementList();
   const [workspace, setWorkspace] = useState<PassageWorkspace | null>(null);
   const [deleting, setDeleting] = useState<PassageListItem | null>(null);
+  const [checking, setChecking] = useState<PassageListItem | null>(null);
   const [notice, setNotice] = useState("");
   const create = () => { setNotice(""); setWorkspace({ mode: "create" }); };
   const saved = () => {
@@ -35,6 +37,7 @@ export default function PassageManagementListView() {
       </div> : loading ? <div role="status" className="p-8"><Loading /><span className="sr-only">Đang tải danh sách passages</span></div>
         : data && (data.items.length ? <>
           <PassageManagementTable items={data.items}
+            onCheck={setChecking}
             onView={item => setWorkspace({ mode: "view", passageId: item.passageId })}
             onEdit={item => setWorkspace({ mode: "edit", passageId: item.passageId })} onDelete={setDeleting} />
           <ListPagination compact total={data.totalElements} from={data.page * data.size + 1}
@@ -49,6 +52,10 @@ export default function PassageManagementListView() {
         </div>)}
     </div>
     {workspace && <PassageWorkspaceDialog workspace={workspace} onClose={() => setWorkspace(null)} onSaved={saved} />}
+    {checking && <PassageReadinessDialog key={checking.passageId} item={checking}
+      onClose={() => { setChecking(null); refetch(); }}
+      onEdit={() => { setWorkspace({ mode: "edit", passageId: checking.passageId }); setChecking(null); }}
+      onView={() => { setWorkspace({ mode: "view", passageId: checking.passageId }); setChecking(null); }} />}
     {deleting && <PassageDeleteDialog item={deleting} onClose={() => { setDeleting(null); refetch(); }}
       onDeleted={() => { setDeleting(null); setNotice("Đã xóa passage bản nháp."); refetch(); }} />}
   </div>;

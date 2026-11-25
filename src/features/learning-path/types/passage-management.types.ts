@@ -29,6 +29,18 @@ export interface PassageDetail extends Omit<PassageListItem, "hasAudio"> {
 }
 
 export interface PassageCounters { total: number; draft: number; active: number; retired: number }
+export interface PassageReadinessIssue { code: string; field: string; message: string }
+export interface PassageReadiness {
+  passageId: string;
+  revision: number | null;
+  status: string | null;
+  structurallyValid: boolean;
+  referencingQuestionCount: number;
+  incompatibleQuestionCount: number;
+  blockers: PassageReadinessIssue[];
+  warnings: PassageReadinessIssue[];
+  requiredReviewChecks: string[];
+}
 export interface PassageListResponse {
   items: PassageListItem[];
   page: number;
