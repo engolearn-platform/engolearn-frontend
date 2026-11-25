@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import BrandImage from "@shared/components/BrandImage";
 import type { CompanionMessage } from "../types/companion.types";
 
 interface MessageItemProps {
@@ -153,16 +154,32 @@ export function MessageItem({ message, incomplete = false }: MessageItemProps) {
   };
 
   return (
-    <article className={`companion-message ${isAssistant ? "companion-message-assistant" : "companion-message-user"}`}>
-      <div className="companion-message-heading">{isAssistant ? "Engo" : "Bạn"}</div>
-      <div className="companion-message-content">{renderMarkdown(message.content)}</div>
-      {incomplete ? <p className="companion-incomplete-label">Phản hồi chưa hoàn tất</p> : null}
+    <article
+      className={`companion-message ${isAssistant ? "companion-message-assistant" : "companion-message-user"}`}
+      aria-label={isAssistant ? "Tin nhắn của Engo" : "Tin nhắn của bạn"}
+    >
       {isAssistant ? (
-        <Button type="button" variant="ghost" size="sm" className="companion-copy-button" onClick={() => void copyMessage()}>
-          {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-          {copied ? "Đã sao chép" : "Sao chép"}
-        </Button>
+        <span className="companion-message-avatar" aria-hidden="true">
+          <BrandImage variant="mark" />
+        </span>
       ) : null}
+      <div className="companion-message-body">
+        <div className="companion-message-content">{renderMarkdown(message.content)}</div>
+        {incomplete ? <p className="companion-incomplete-label">Phản hồi chưa hoàn tất</p> : null}
+        <div className="companion-message-actions">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="companion-copy-button"
+            aria-label={copied ? "Đã sao chép tin nhắn" : "Sao chép tin nhắn"}
+            title={copied ? "Đã sao chép" : "Sao chép"}
+            onClick={() => void copyMessage()}
+          >
+            {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+          </Button>
+        </div>
+      </div>
     </article>
   );
 }

@@ -1,43 +1,37 @@
-# AI Companion Quick Panel
+# AI Companion
 
-## Stitch and interaction reference
+## Presentation
 
-This is the approved first Quick Panel implementation. It is a fixed, non-modal floating surface with a replaceable mascot placeholder. It does not add a route, backdrop, drag/resize behavior, workspace, persistent memory, or context attachment.
+The companion uses one fixed, non-modal panel for Home, conversation history, and an active conversation. The compact panel is 440px wide and 720px high when the viewport allows, inset 20px with a 24px radius. Its header and composer stay fixed while the selected content scrolls. Switching subviews does not change the compact shell dimensions.
 
-## Route and visibility
+Home uses the replaceable `/landing/penguin-hero.webp` mascot, a single full-width New Chat action, and up to three recent conversations with a View All shortcut. The header identifies Engo and provides history, workspace expansion, minimize, and close actions.
 
-The host is placed at the authenticated app shell and is gated through the public auth contract for learners (`USER`). It is not rendered on assessment-taking or nonlearner/auth/admin routes. Existing routes and route authorization remain owned by their features.
+The Full Workspace control is presentation-only local state in `QuickPanel`. It widens the same panel and adds a recent-conversation navigation column on wider viewports. It keeps the same provider, active conversation, mounted composer, and draft. Narrow viewports use the compact width while retaining the workspace control.
 
-## Component boundaries
+## Conversation
 
-- `src/features/companion/components/CompanionHost.tsx` gates the floating entry point with `HasRole` and the learner route allowlist. It excludes `/assessment/taking` and management paths.
-- `MascotButton.tsx` opens/minimizes the panel and uses the existing EngoLearn brand mark without creating a conversation.
-- `QuickPanel.tsx` presents Home, history, and active conversation views in one fixed, non-modal panel.
-- `CompanionHome.tsx` presents explicit New Chat, the server's three recent conversations, quota summary, and home composer.
-- `ConversationHistory.tsx` renders cursor-paginated history, opens an active conversation, and confirms before deletion.
-- `ConversationView.tsx`, `MessageList.tsx`, and `MessageItem.tsx` render active chat, older message pages, stop/retry feedback, and safe rich text.
-- `AdaptiveComposer.tsx` retains the in-session draft across view changes, stop, and failures.
-- `QuotaSummary.tsx` displays server-derived remaining percentage/reset and active conversation capacity.
-- `companion.css` scopes floating panel, responsive, focus, and reduced-motion styles to this feature.
+User messages use right-aligned mint bubbles. Engo messages use neutral bordered bubbles, a small outside brand avatar, and the available text width. Role names are available to assistive technology and are not repeated visually. Both roles have small icon-only copy controls. Existing safe Markdown rendering supports headings, lists, quotes, tables, and code with horizontal overflow where needed.
 
-## State and API
+Streaming and processing status, Stop, incomplete output, interruption feedback, safe request errors, and eligible Retry remain connected to the existing provider state. Retry is offered only when reconciliation confirms that the failed turn can be retried.
 
-`CompanionProvider` owns authenticated identity fencing, conversation/message data, the active stream, transient draft/retry payload, and request lifecycle. Components use its published `useCompanion()` interface and do not make duplicate service requests. Opening the panel does not create a conversation; New Chat is explicit, and Home send creates only as part of sending.
+Quota and message capacity are not shown as persistent dashboards. A single composer-area status appears only when known quota exhaustion or conversation capacity prevents another send. Capacity status offers the existing New Chat action; a known quota reset timestamp is shown when available.
 
-## UI-only behavior
+## Composer and interaction
 
-The stream maps `delta` to the in-memory answer, `completed` to the persisted assistant message and server capacity values, `error` to safe inline copy, and only `status.code === ASSESSMENT_LOOKUP` to “Đang xem kết quả học tập…”. Unknown status codes remain generic “Engo đang xử lý…” feedback. Client-only `STOPPED` and `INTERRUPTED` notices appear only after successful reconciliation; status stays out of persisted message history and announcements never include the full transcript.
+One textarea remains mounted across Home, history hiding, active conversation, panel minimize/restore, and workspace expansion/collapse. Its draft stays provider-owned. A hidden text sizer measures wrapping at the compact one-row width, and a `ResizeObserver` recalculates that width when the available panel width changes. The visible composer places its circular Send or Stop beside a one-line input; multiline text moves the input above the right-aligned action. It collapses back to one row when the text fits again.
 
-Stop is best-effort and keeps any next draft. A completed turn clears only the submitted text; the next draft is never sent automatically. Retry is offered only after reconciliation confirms the latest unanswered user turn and server eligibility; it reuses the same turn ID and exact text, at most once per failure. No stream resumes after reload.
-
-Home covers initial loading, recent conversations, empty state, quota unavailable/loading, and safe request errors. History covers its initial loading/empty states, cursor-based “Tải thêm”, selection, and confirmed deletion. Conversation covers newest/older message pages, connecting/streaming/reconciling states, safe errors, capacity, incomplete partial output, copy feedback, and eligible retry.
+Enter submits, Shift+Enter inserts a newline, and IME composition does not submit. Drafts may be edited during inference but are not sent in parallel; Stop keeps the next draft. Existing confirmed history deletion, pagination, and conversation selection remain available.
 
 ## Responsive, focus, and motion
 
-- Floating panel is fixed and does not reflow the page; narrow/mobile sizing includes safe-area insets.
-- Opening focuses the panel; closing/minimizing restores focus to the mascot trigger.
-- Controls have accessible labels and visible keyboard focus; delete uses the shared confirmation dialog.
-- Enter submits, Shift+Enter inserts a newline, and IME composition does not submit.
-- One composer remains mounted between Home and active chat; its textarea grows with wrapping/newlines and scrolls internally at its bound.
-- Reduced-motion preference disables nonessential transitions and hover movement.
-- Visible and semantic status messages remain separate from transcript content during streaming.
+- The floating panel does not reflow or dim the page beneath it and has no backdrop or body lock.
+- The header and composer remain fixed; only the current content and message list scroll.
+- Narrow viewports include safe-area insets and hide the expanded navigation column when it cannot fit.
+- Controls expose accessible names and visible keyboard focus. Copy feedback and stream status use semantic announcements.
+- Reduced-motion preference disables nonessential panel and mascot transitions and smooth message scrolling.
+
+## State and API boundaries
+
+`CompanionProvider` owns authenticated identity fencing, conversation/message data, quota reads, the active stream, transient draft/retry payload, and request lifecycle. Presentation components use `useCompanion()` and do not call services directly. UI refinement does not change routes, provider state, API/REST/SSE contracts, server admission, or backend behavior.
+
+Persistent memory management, canonical inline memory feedback, and manual context attachment remain unavailable until their required backend and page-context contracts exist. No inactive controls are shown for those capabilities.

@@ -1,7 +1,8 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { ArrowLeft, Clock3, Home, Minus, X } from "lucide-react";
+import { ArrowLeft, Clock3, Expand, Home, Minus, PanelRightClose, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import BrandImage from "@shared/components/BrandImage";
 import { useCompanion } from "../state/CompanionProvider";
 import { AdaptiveComposer } from "./AdaptiveComposer";
 import { CompanionHome } from "./CompanionHome";
@@ -9,7 +10,8 @@ import { ConversationHistory } from "./ConversationHistory";
 import { ConversationView } from "./ConversationView";
 
 export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props, ref) {
-  const { state, closePanel, minimizePanel, setMode } = useCompanion();
+  const { state, closePanel, minimizePanel, setMode, createConversation } = useCompanion();
+  const [isWorkspace, setIsWorkspace] = useState(false);
 
   const goHome = () => {
     setMode("home");
@@ -17,6 +19,11 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
 
   const showHistory = () => {
     setMode("history");
+  };
+
+  const startNewChat = async () => {
+    const conversation = await createConversation();
+    if (conversation) setMode("conversation");
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -33,7 +40,7 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
   return (
     <section
       ref={ref}
-      className="companion-panel"
+      className={`companion-panel ${isWorkspace ? "companion-panel-expanded" : ""}`}
       role="region"
       aria-label="AI Companion"
       tabIndex={-1}
@@ -46,10 +53,10 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
               <ArrowLeft aria-hidden="true" />
             </Button>
           ) : null}
-          <span className="companion-title-mark" aria-hidden="true">E</span>
+          <BrandImage variant="mark" className="companion-title-mark" />
           <div className="companion-title-copy">
-            <h2>AI Companion</h2>
-            <span>Đồng hành cùng bạn học tiếng Anh</span>
+            <h2>Engo</h2>
+            <span>Học tiếng Anh cùng bạn</span>
           </div>
         </div>
         <div className="companion-header-actions">
@@ -64,6 +71,17 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
           >
             {state.mode === "history" ? <Home aria-hidden="true" /> : <Clock3 aria-hidden="true" />}
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="companion-icon-button companion-expand-control"
+            aria-label={isWorkspace ? "Thu gọn Companion" : "Mở Full Workspace"}
+            title={isWorkspace ? "Thu gọn" : "Mở Full Workspace"}
+            onClick={() => setIsWorkspace((current) => !current)}
+          >
+            {isWorkspace ? <PanelRightClose aria-hidden="true" /> : <Expand aria-hidden="true" />}
+          </Button>
           <Button type="button" variant="ghost" size="icon" className="companion-icon-button" aria-label="Thu nhỏ AI Companion" onClick={minimizePanel}>
             <Minus aria-hidden="true" />
           </Button>
@@ -73,10 +91,27 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
         </div>
       </header>
 
-      <div className="companion-panel-content">
-        {state.mode === "home" ? <CompanionHome /> : null}
-        {state.mode === "history" ? <ConversationHistory /> : null}
-        {state.mode === "conversation" ? <ConversationView /> : null}
+      <div className={`companion-workspace ${isWorkspace ? "companion-workspace-expanded" : ""}`}>
+        {isWorkspace ? (
+          <aside className="companion-workspace-sidebar" aria-label="Điều hướng cuộc trò chuyện">
+            {state.mode !== "home" ? (
+              <Button type="button" className="companion-sidebar-new-chat" onClick={() => void startNewChat()}>
+                <span aria-hidden="true">+</span>
+                Trò chuyện mới
+              </Button>
+            ) : null}
+            <div className="companion-sidebar-heading">Gần đây</div>
+            <ConversationHistory compact conversations={state.recentConversations} />
+            <Button type="button" variant="ghost" className="companion-text-action companion-sidebar-history" onClick={showHistory}>
+              Xem tất cả
+            </Button>
+          </aside>
+        ) : null}
+        <div className="companion-panel-content">
+          {state.mode === "home" ? <CompanionHome /> : null}
+          {state.mode === "history" ? <ConversationHistory /> : null}
+          {state.mode === "conversation" ? <ConversationView /> : null}
+        </div>
       </div>
 
       <div className="companion-composer-slot" hidden={state.mode === "history"}>

@@ -2,7 +2,6 @@ import { RotateCw } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { useCompanion } from "../state/CompanionProvider";
 import { MessageList } from "./MessageList";
-import { QuotaSummary } from "./QuotaSummary";
 
 export function ConversationView() {
   const { state, retryTurn } = useCompanion();
@@ -12,13 +11,6 @@ export function ConversationView() {
     <div className="companion-conversation">
       <div className="companion-conversation-title">
         <h3>{title}</h3>
-        {state.activeConversation ? (
-          <QuotaSummary
-            quota={state.quota}
-            isLoading={state.isQuotaLoading}
-            conversation={state.activeConversation}
-          />
-        ) : null}
       </div>
       {state.error ? <p className="companion-inline-error" role="alert">{state.error}</p> : null}
       {state.retryAvailable ? (
@@ -30,7 +22,6 @@ export function ConversationView() {
           </Button>
         </div>
       ) : null}
-      {state.isAtCapacity ? <p className="companion-capacity-warning" role="status">Cuộc trò chuyện này đã đạt giới hạn lượt nhắn. Hãy bắt đầu cuộc trò chuyện mới để tiếp tục.</p> : null}
       {state.stream === "idle" && state.statusCode === "STOPPED" ? (
         <p className="companion-processing" role="status">Đã dừng phản hồi.</p>
       ) : null}
