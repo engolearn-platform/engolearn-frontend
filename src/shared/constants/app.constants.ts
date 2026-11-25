@@ -30,10 +30,10 @@ export const ROUTES = {
   // sidebar/footer navigation lands on a placeholder instead of blank.
   TOPIC_PRACTICE: "/topics/:topicId/practice",
   TOPIC_ITEM_SPEAKING: "/topics/:topicId/items/:itemId/speaking",
-  TOPIC_SPEAKING: "/topics/:itemId/speaking",
+  TOPIC_SPEAKING: "/topics/:topicId/speaking",
   SPEAKING_HISTORY: "/speaking/history",
-  SPEAKING_DEMO: "/dev/speaking",
-  SPEAKING_SESSION_DEV: "/dev/speaking-session",
+  SPEAKING_SESSION: "/speaking/sessions/:sessionId",
+  SPEAKING_RESULT: "/speaking/sessions/:sessionId/result",
   ADMIN_TOPICS: "/admin/topics",
   ADMIN_TOPICS_READ: "/admin/topics/read",
   ADMIN_TOPIC_READ: "/admin/topics/:topicId/view",

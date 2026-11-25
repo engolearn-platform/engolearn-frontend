@@ -44,6 +44,20 @@ test("auth endpoint 401 and forbidden response never trigger refresh", async () 
   assert.equal(calls.length, 2);
 });
 
+test("ProblemDetail preserves only verified retry and active session extensions", async () => {
+  const service = new HttpService("http://localhost", async () => Response.json({
+    code: "ACTIVE_SESSION_EXISTS", detail: "Existing session", retryable: true, activeSessionId: "session-1",
+  }, { status: 409 }));
+  await assert.rejects(service.get("/api/v1/items"), error => {
+    assert.equal(error.code, "ACTIVE_SESSION_EXISTS");
+    assert.equal(error.retryable, true);
+    assert.equal(error.activeSessionId, "session-1");
+    return true;
+  });
+  const malformed = new HttpService("http://localhost", async () => Response.json({ code: "BAD", retryable: "true", activeSessionId: { value: "nope" } }, { status: 409 }));
+  await assert.rejects(malformed.get("/api/v1/items"), error => error.retryable === undefined && error.activeSessionId === undefined);
+});
+
 test("GET appends params and forwards the abort signal", async () => {
   const controller = new AbortController();
   const service = new HttpService("http://localhost", async (url, init) => {

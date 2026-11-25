@@ -1,11 +1,12 @@
-import { Check, Clock3, LockKeyhole, Play, Sparkles } from "lucide-react";
+import { Check, Clock3, LockKeyhole, Mic, Play, Sparkles } from "lucide-react";
+import { Link } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { topicBlockMessage } from "@features/topic/utils/topic-catalog";
 import type { TopicItemSummaryDto } from "@features/topic/types/topic-api.types";
 import type { TopicLaunchAction } from "@features/topic/hooks/useTopicLaunch";
 
-export function TopicItemCard({ item, index, current, learner, busy, onAction }: {
-  item: TopicItemSummaryDto; index: number; current: boolean; learner: boolean; busy: boolean; onAction: (action: TopicLaunchAction, item: TopicItemSummaryDto) => void;
+export function TopicItemCard({ item, index, current, learner, busy, topicId, origin, onAction }: {
+  item: TopicItemSummaryDto; index: number; current: boolean; learner: boolean; busy: boolean; topicId: string; origin: string; onAction: (action: TopicLaunchAction, item: TopicItemSummaryDto) => void;
 }) {
   const completed = learner && item.learningStatus === "COMPLETED";
   const locked = learner && item.learningStatus === "NOT_STARTED" && !item.actions.start.allowed;
@@ -34,6 +35,7 @@ export function TopicItemCard({ item, index, current, learner, busy, onAction }:
           {!item.actions.resumeRetry.allowed && item.actions.retry.allowed && <Button type="button" variant="outline" disabled={busy} onClick={() => onAction("retry", item)} className="min-h-12 rounded-xl">Làm lại</Button>}
           {item.actions.continue.allowed && item.learningAttempt && <Button type="button" disabled={busy} onClick={() => onAction("continue", item)} className="min-h-12 rounded-xl px-6">{busy ? "Đang mở…" : "Tiếp tục bài học"}</Button>}
           {item.learningStatus === "NOT_STARTED" && <Button type="button" disabled={busy || !item.actions.start.allowed} onClick={() => onAction("start", item)} className="min-h-12 rounded-xl px-6">{busy ? "Đang mở…" : "Bắt đầu học"}</Button>}
+          <Button asChild type="button" variant="outline" className="min-h-12 rounded-xl"><Link to={`/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(item.topicItemId)}/speaking?from=${encodeURIComponent(origin)}`}><Mic className="size-5" aria-hidden="true" />Luyện nói</Link></Button>
         </div>}
       </div>
     </div>
