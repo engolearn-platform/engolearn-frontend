@@ -34,13 +34,14 @@ after(async () => {
   delete globalThis.window; delete globalThis.document; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
 });
 
-test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and disconnect", async t => {
+test("mounted V2 hook waits for admission, caps PCM and releases the microphone", async t => {
+  const limitedSession = { ...session, limits: { ...session.limits, maxTurnAudioMs: 150 } };
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     const path = new URL(url).pathname; requests.push(path);
     if (path.endsWith("/socket-ticket")) return Response.json({ data: { ticket: "one-time", expiresInSeconds: 30 } });
     if (path.endsWith(`/sessions/${session.sessionId}/turns`)) return Response.json({ data: { items: [], page: 0, size: 100, hasNext: false } });
-    if (path.endsWith(`/sessions/${session.sessionId}`)) return Response.json({ data: session });
+    if (path.endsWith(`/sessions/${session.sessionId}`)) return Response.json({ data: limitedSession });
     throw new Error(`Unexpected request ${path}`);
   });
   const tracks = []; const streams = [];
@@ -57,6 +58,8 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
     async close() { this.state = "closed"; }
   }
   class FakeAudioWorkletNode {
+    static last;
+    constructor() { FakeAudioWorkletNode.last = this; }
     port = { onmessage: null }; connect(target) { return target; } disconnect() {}
   }
   class FakeWebSocket {
@@ -70,7 +73,8 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
   }
   globalThis.AudioContext = FakeAudioContext; globalThis.AudioWorkletNode = FakeAudioWorkletNode; globalThis.WebSocket = FakeWebSocket; dom.window.WebSocket = FakeWebSocket;
   let state; const errors = [];
-  function Probe() { state = hookModule.useSpeakingV2Stream(session, () => {}, message => errors.push(message)); return h("p", null, state.connection); }
+  const commands = () => FakeWebSocket.last.sent.filter(value => typeof value === "string").map(value => JSON.parse(value));
+  function Probe() { state = hookModule.useSpeakingV2Stream(limitedSession, () => {}, message => errors.push(message)); return h("p", null, state.connection); }
   const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); container.remove(); });
   await act(async () => { root.render(h(Probe)); await wait(50); });
@@ -80,7 +84,7 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
 
   await act(async () => state.startTurn());
   assert.equal(tracks.length, 0, "microphone must remain closed before server admission");
-  const startCommand = FakeWebSocket.last.sent.map(value => JSON.parse(value)).find(message => message.type === "START_TURN");
+  const startCommand = commands().find(message => message.type === "START_TURN");
   assert.ok(startCommand?.payload.clientTurnId);
   await act(async () => FakeWebSocket.last.receive({ type: "ERROR", sessionId: session.sessionId, requestId: "unrelated-request", payload: { code: "TURN_IN_PROGRESS", retryable: true } }));
   assert.equal(state.recording, "requesting", "an unrelated admission error must not unlock the pending start");
@@ -90,7 +94,7 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
   assert.match(errors.at(-1), /lượt nói trước vẫn đang xử lý/i);
 
   await act(async () => state.startTurn());
-  const retryStart = FakeWebSocket.last.sent.map(value => JSON.parse(value)).filter(message => message.type === "START_TURN").at(-1);
+  const retryStart = commands().filter(message => message.type === "START_TURN").at(-1);
   await act(async () => {
     FakeWebSocket.last.receive({ type: "ERROR", sessionId: session.sessionId, requestId: startCommand.requestId, payload: { code: "TURN_IN_PROGRESS", retryable: true } });
     FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: startCommand.requestId, turnId: "stale-turn", sequence: 1, payload: { clientTurnId: startCommand.payload.clientTurnId } });
@@ -102,17 +106,31 @@ test("mounted V2 hook waits for TURN_ACCEPTED and releases mic on cancel and dis
   assert.equal(state.recording, "recording");
   await act(async () => state.cancelTurn());
   assert.equal(tracks[0].stopped, true);
-  assert.ok(FakeWebSocket.last.sent.map(value => JSON.parse(value)).some(message => message.type === "CANCEL_TURN"));
+  assert.ok(commands().some(message => message.type === "CANCEL_TURN"));
 
   await act(async () => { FakeWebSocket.last.receive({ type: "TURN_SKIPPED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2998", payload: { code: "TURN_CANCELLED" } }); await wait(); });
   await act(async () => state.startTurn());
-  const secondStart = FakeWebSocket.last.sent.map(value => JSON.parse(value)).filter(message => message.type === "START_TURN").at(-1);
+  const secondStart = commands().filter(message => message.type === "START_TURN").at(-1);
   await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: secondStart.requestId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2999", sequence: 2, payload: { clientTurnId: secondStart.payload.clientTurnId } }); await wait(); });
+  const emitPcm = () => FakeAudioWorkletNode.last.port.onmessage({ data: { pcm: new ArrayBuffer(3200), rms: 0.1 } });
+  await act(async () => { emitPcm(); emitPcm(); emitPcm(); });
+  const audioFrames = FakeWebSocket.last.sent.filter(value => typeof value !== "string");
+  assert.deepEqual(audioFrames.map(frame => frame.byteLength - 28), [3200, 1600]);
+  assert.deepEqual(audioFrames.map(frame => new DataView(frame).getUint32(24)), [0, 1]);
+  assert.equal(commands().filter(message => message.type === "END_TURN").length, 1);
+  assert.equal(JSON.parse(FakeWebSocket.last.sent.at(-1)).type, "END_TURN");
+  assert.equal(state.recording, "sealing");
+  assert.equal(tracks[1].stopped, true, "reaching the PCM cap must release the microphone");
+
   await act(async () => { FakeWebSocket.last.receive({ type: "TURN_FAILED", sessionId: session.sessionId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c2999", payload: { code: "STT_UNAVAILABLE", retryable: false } }); await wait(30); });
   assert.match(errors.at(-1), /nhận diện lời nói|bản chép lời/i, "STT failure should explain how to recover without showing a raw code");
+  await act(async () => state.startTurn());
+  const thirdStart = commands().filter(message => message.type === "START_TURN").at(-1);
+  await act(async () => { FakeWebSocket.last.receive({ type: "TURN_ACCEPTED", sessionId: session.sessionId, requestId: thirdStart.requestId, turnId: "dff51e78-0b05-48c6-9ad8-a7fe456c3000", sequence: 3, payload: { clientTurnId: thirdStart.payload.clientTurnId } }); await wait(); });
+  assert.equal(tracks[2].stopped, false);
   await act(async () => { FakeWebSocket.last.close(); await wait(); });
   await act(async () => { await wait(); });
-  assert.equal(tracks[1].stopped, true, "socket disconnect must release capture tracks");
+  assert.equal(tracks[2].stopped, true, "socket disconnect must release capture tracks");
   assert.ok(requests.some(path => path.endsWith("/socket-ticket")));
 });
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Open from a Topic or Item | Check availability for that exact scope; show an actionable reason when unavailable. |
 | Start a session | Request microphone permission, stop probe tracks, create a session and open its standalone workspace. |
-| Speak | Send `START_TURN`, capture only after `TURN_ACCEPTED`, stream PCM16, and stop by silence or learner action. |
+| Speak | Send `START_TURN`, capture only after `TURN_ACCEPTED`, and stream PCM16. Finalize on silence, learner action, or when transmitted PCM reaches the session's per-turn audio limit. |
 | Review a reply | Show original transcript, reply, message-specific hint and correction; keep text available when providers/audio fail. |
 | Reconnect | Stop capture, reconnect with a fresh ticket, sync REST state and deduplicate saved turns. |
 | Finish while recording | Let the learner choose to finalize the turn or discard it before ending. |

@@ -3,6 +3,8 @@ import { speakingV2Service, SpeakingV2ApiError } from "@features/speaking/servic
 import { createSpeakingAudioFrame, readSpeakingAudioFrame } from "@features/speaking/utils/speaking-audio-frame";
 import type { SpeakingSession, SpeakingSocketMessage, SpeakingTurn } from "@features/speaking/types/speaking-v2.types";
 
+const PCM_BYTES_PER_MS = 32;
+
 export type SpeakingConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
 export type SpeakingRecordingState = "idle" | "requesting" | "recording" | "sealing" | "processing";
 
@@ -124,6 +126,9 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
   }, [connection, playing, recording, send]);
 
   const captureAcceptedTurn = useCallback(async (turnId: string) => {
+    const current = sessionRef.current;
+    if (!current) return;
+    let remainingBytes = current.limits.maxTurnAudioMs * PCM_BYTES_PER_MS;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
       if (turnRef.current !== turnId) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -138,11 +143,15 @@ export function useSpeakingV2Stream(session: SpeakingSession | null, onSession: 
         errorFn.current("Microphone đã ngắt. Kiểm tra thiết bị rồi thử lại.");
       });
       worklet.port.onmessage = event => {
-        if (turnRef.current !== turnId || socketRef.current?.readyState !== WebSocket.OPEN) return;
+        const socket = socketRef.current;
+        if (turnRef.current !== turnId || socket?.readyState !== WebSocket.OPEN) return;
         const { pcm, rms } = event.data as { pcm: ArrayBuffer; rms: number };
         if (rms > 0.018) { voiceSeen.current = true; quietSince.current = null; }
         else if (voiceSeen.current) { quietSince.current ??= performance.now(); if (performance.now() - quietSince.current > 2600) { finishRef.current(); return; } }
-        socketRef.current?.send(createSpeakingAudioFrame(turnId, chunkIndex.current++, pcm));
+        const chunk = pcm.byteLength > remainingBytes ? pcm.slice(0, remainingBytes) : pcm;
+        socket.send(createSpeakingAudioFrame(turnId, chunkIndex.current++, chunk));
+        remainingBytes -= chunk.byteLength;
+        if (remainingBytes === 0) finishRef.current();
       };
       setRecording("recording");
     } catch (cause) {
