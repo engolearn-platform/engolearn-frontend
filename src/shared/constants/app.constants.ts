@@ -35,6 +35,7 @@ export const ROUTES = {
   SPEAKING_SESSION: "/speaking/sessions/:sessionId",
   SPEAKING_RESULT: "/speaking/sessions/:sessionId/result",
   ADMIN_TOPICS: "/admin/topics",
+  ADMIN_PASSAGES: "/admin/learning-paths/passages",
   ADMIN_TOPICS_READ: "/admin/topics/read",
   ADMIN_TOPIC_READ: "/admin/topics/:topicId/view",
   ADMIN_TOPIC_READ_ITEMS: "/admin/topics/:topicId/view/items",

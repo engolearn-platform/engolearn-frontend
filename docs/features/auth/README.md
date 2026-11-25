@@ -11,7 +11,7 @@ See the [required authorization rules](../../architecture/security-authorization
 - `/login` and `/register` are public routes owned by `src/features/auth/`.
 - `/` has one app-composition owner. It uses the shared session state to show the guest landing page, a neutral pending state, public landing information with retry on session errors, or the signed-in learner homepage inside `LearningLayout`.
 - `/login` and `/register` show their forms only to guests. While AuthProvider restores the session, a gate shows a loading state or a retry action. With a confirmed identity, the gate replaces the history entry and redirects based on the server role.
-- `ADMIN` and `CONTENT_MANAGER` land in `ManagementLayout` at `/admin/topics`. A valid captured URL within Topic management retains its path, query, and fragment. `USER` returns to a validated local destination or `/`. The `/profile` diagnostic page keeps its own in-page flow.
+- `ADMIN` and `CONTENT_MANAGER` land in `ManagementLayout` at `/admin/topics`. A valid captured URL within Topic management or Learning Path passage management (`/admin/learning-paths/passages`) retains its path, query, and fragment. `USER` returns to a validated local destination or `/`. The `/profile` diagnostic page keeps its own in-page flow.
 - Admin topic and subscription management routes wait for session bootstrap and redirect guests to login. Topic learning routes remain public.
 - Learning and management top bars expose sign out. Local identity is cleared even when server revocation cannot be confirmed; the provider retains an error describing that outcome.
 
@@ -22,6 +22,11 @@ See the [required authorization rules](../../architecture/security-authorization
 The shared auth provider now uses only server-cookie identity. The profile test page keeps local identity state and asks the shared provider to reload after auth changes so login/register route gates respond to the current cookie identity.
 
 The shared `HttpService` keeps cookie authentication and its single refresh/retry on eligible 401 responses. Its regular request headers include `ngrok-skip-browser-warning: 1` for the ngrok proxy; operation-specific headers can override defaults. The automatic refresh request retains its existing configuration.
+
+Multipart callers may pass `FormData` through the same POST/PATCH methods. The
+client sends that body directly and leaves Content-Type/boundary generation to
+the browser, including after the existing refresh/retry. Ordinary bodies retain
+JSON serialization. Passage client checks cover both paths.
 
 ## Profile verification checklist
 

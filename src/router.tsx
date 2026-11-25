@@ -10,7 +10,7 @@ import {
   MyTopicsRoutes,
   TopicStandaloneRoutes,
 } from "@features/topic/routes";
-import { LearningPathRoutes } from "@features/learning-path/routes";
+import { LearningPathRoutes, LearningPathManagementRoutes } from "@features/learning-path/routes";
 import {
   SubscriptionLearnerRoutes,
   SubscriptionManagementRoutes,
@@ -55,6 +55,7 @@ export const appRoutes = [
   ...TopicStandaloneRoutes,
   ...SpeakingRoutes,
   ...TopicManagementRoutes,
+  ...LearningPathManagementRoutes,
   ...SubscriptionManagementRoutes,
   ...GrammarManagementRoutes,
   ...PlacementRoutes,

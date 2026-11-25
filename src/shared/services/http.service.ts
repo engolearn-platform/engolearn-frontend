@@ -73,9 +73,11 @@ class HttpService {
     const isAuthEndpoint = /\/api\/v1\/auth\/(login|register|refresh|logout)$/.test(endpoint);
     const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" });
     for (const [key, value] of Object.entries(options?.headers ?? {})) headers.set(key, value);
+    const isMultipart = typeof FormData !== "undefined" && body instanceof FormData;
+    if (isMultipart) headers.delete("Content-Type");
     const response = await this.fetchImpl(this.buildUrl(endpoint, options?.params), {
       method, credentials: "same-origin", cache: "no-store", headers, signal: options?.signal, keepalive: options?.keepalive,
-      ...(body !== undefined && isUnsafe ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined && isUnsafe ? { body: isMultipart ? body as FormData : JSON.stringify(body) } : {}),
     });
     if (response.status === 401 && retry && !options?.skipAuthRefresh && !isAuthEndpoint && !options?.signal?.aborted) {
       if (await this.refresh(options?.signal)) return this.request<T>(method, endpoint, options, body, false);
