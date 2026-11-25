@@ -1,34 +1,27 @@
 import type { RouteObject } from "react-router";
-import ManagementLayout from "@/core/layouts/ManagementLayout";
 import { ROUTES } from "@shared/constants";
-import GrammarRoadmapView from "./views/GrammarRoadmapView";
-import GrammarTopicListView from "./views/admin/GrammarTopicListView";
+import GrammarLearnerGuard from "@features/grammar/components/learning/GrammarLearnerGuard";
+import GrammarRoadmapView from "@features/grammar/views/learning/GrammarRoadmapView";
+import GrammarTopicView from "@features/grammar/views/learning/GrammarTopicView";
+import GrammarTopicSummaryView from "@features/grammar/views/learning/GrammarTopicSummaryView";
+import GrammarTheoryView from "@features/grammar/views/learning/GrammarTheoryView";
+import GrammarPracticeView from "@features/grammar/views/learning/GrammarPracticeView";
 
 export const GrammarRoutes: RouteObject[] = [
   {
     path: ROUTES.GRAMMAR,
+    Component: GrammarLearnerGuard,
     children: [
       {
         index: true,
         Component: GrammarRoadmapView,
       },
-      // Reserved: unit detail screen ("Chi tiết ngữ pháp").
-      // { path: ":unitId", Component: GrammarUnitView },
+      { path: "topics/:topicId", Component: GrammarTopicView },
+      { path: "topics/:topicId/summary", Component: GrammarTopicSummaryView },
+      { path: "topics/:topicId/lessons/:lessonId", Component: GrammarTheoryView },
+      { path: "topics/:topicId/lessons/:lessonId/practice", Component: GrammarPracticeView },
     ],
   },
 ];
 
-export const GrammarAdminRoutes: RouteObject[] = [
-  {
-    path: ROUTES.ADMIN_GRAMMAR,
-    Component: ManagementLayout,
-    children: [
-      {
-        path: "",
-        Component: GrammarTopicListView,
-      },
-      // Reserved: create/edit screens (GA-01, GA-02) — chưa có Stitch UI.
-      // { path: "create", Component: GrammarTopicCreateView },
-    ],
-  },
-];
+export { GrammarManagementRoutes } from "@features/grammar/management.routes";

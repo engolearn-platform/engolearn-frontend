@@ -8,11 +8,6 @@ interface PlacementAudioPlayerProps {
   questionId: string;
 }
 
-/**
- * Mock has no audio files yet (`url: null`), so playback is simulated with a
- * ticker. Once the real API returns a URL the native <audio> element drives
- * the same UI. Replaying is always allowed (BR-F1.8).
- */
 export default function PlacementAudioPlayer({
   audio,
   questionId,
@@ -20,29 +15,28 @@ export default function PlacementAudioPlayer({
   const simulated = !audio.url;
   const duration = audio.durationSeconds;
   const mediaRef = useRef<HTMLAudioElement | null>(null);
+  const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     setPlaying(false);
     setElapsed(0);
-  }, [questionId]);
+    setFailed(false);
+  }, [questionId, audio.url]);
 
   useEffect(() => {
-    if (!simulated || !playing) return;
-
-    const timer = window.setInterval(() => {
-      setElapsed((previous) => {
-        if (previous + 1 >= duration) {
-          setPlaying(false);
-          return duration;
-        }
-        return previous + 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [simulated, playing, duration]);
+    const media = mediaRef.current;
+    if (!media) return;
+    const pauseForAnotherPlayer = (event: Event) => {
+      if (event.target !== media) media.pause();
+    };
+    document.addEventListener("play", pauseForAnotherPlayer, true);
+    return () => {
+      document.removeEventListener("play", pauseForAnotherPlayer, true);
+      media.pause();
+    };
+  }, [questionId, audio.url]);
 
   useEffect(() => {
     if (simulated || !playing) return;
@@ -50,7 +44,11 @@ export default function PlacementAudioPlayer({
     const media = mediaRef.current;
     if (!media) return;
 
-    void media.play().catch(() => setPlaying(false));
+    void media.play().catch((reason: unknown) => {
+      setPlaying(false);
+      // Switching players can cancel a pending play request; this is not a broken audio asset.
+      if (!(reason instanceof DOMException && reason.name === "AbortError")) setFailed(true);
+    });
   }, [simulated, playing]);
 
   const handleToggle = () => {
@@ -84,7 +82,9 @@ export default function PlacementAudioPlayer({
           onTimeUpdate={(event) =>
             setElapsed(Math.floor(event.currentTarget.currentTime))
           }
+          onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}
+          onError={() => { setPlaying(false); setFailed(true); }}
           preload="none"
           className="hidden"
         />
@@ -93,6 +93,7 @@ export default function PlacementAudioPlayer({
       <button
         type="button"
         onClick={handleToggle}
+        disabled={simulated || failed}
         aria-label={playing ? "Tạm dừng audio" : "Phát audio"}
         className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary/90"
       >
@@ -117,6 +118,8 @@ export default function PlacementAudioPlayer({
           {formatCountdown(elapsed * 1000)} / {formatCountdown(duration * 1000)}
         </span>
       </div>
+
+      {(simulated || failed) && <span role="alert" className="text-label-sm text-error">Không tải được audio. Hãy tải lại bài để thử lại.</span>}
 
       <Volume2
         className="size-4 shrink-0 text-on-surface-variant"

@@ -1,5 +1,5 @@
 import type { PlacementReview } from "@features/placement/types/placement-review.types";
-import { Check, Minus, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 export default function PlacementReviewSummary({
   review,
@@ -18,10 +18,7 @@ export default function PlacementReviewSummary({
         <Check className="size-4" aria-hidden="true" /> Đúng: {review.score}
       </span>
       <span className="inline-flex items-center gap-1 text-error">
-        <X className="size-4" aria-hidden="true" /> Sai: {review.incorrectCount}
-      </span>
-      <span className="inline-flex items-center gap-1 text-on-surface-variant">
-        <Minus className="size-4" aria-hidden="true" /> Bỏ trống: {review.unansweredCount}
+        <X className="size-4" aria-hidden="true" /> Sai: {review.incorrectCount + review.unansweredCount}
       </span>
     </div>
   );

@@ -129,6 +129,12 @@ export default function LearningTopBar({ cefr, onMenuOpen, menuButtonRef }: Lear
                 {auth.isAuthenticated ? (
                   <>
                     <p className="truncate px-3 py-2 text-xs text-on-surface-variant">{auth.user?.email}</p>
+                    {(auth.isAdmin() || auth.isContentManager()) && (
+                      <Link to={auth.isAdmin() ? "/admin/placement/test-sets" : ROUTES.ADMIN_GRAMMAR}
+                        onClick={() => setAccountOpen(false)} className={accountActionClass}>
+                        Quản trị nội dung
+                      </Link>
+                    )}
                     <Link to={ROUTES.PROFILE} onClick={() => setAccountOpen(false)} className={accountActionClass}>
                       <UserRound className="size-4" aria-hidden="true" />
                       Hồ sơ cá nhân

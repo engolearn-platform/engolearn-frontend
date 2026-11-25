@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import PublicNavigation from "@shared/components/PublicNavigation";
 import { Outlet, useLocation } from "react-router";
 import { useAuth } from "@shared/hooks/useAuth";
@@ -5,9 +6,10 @@ import PlacementPublicHeader from "./PlacementPublicHeader";
 import PlacementUserLayout from "./user/PlacementUserLayout";
 
 export default function PlacementPublicLayout() {
-  const { identityGeneration, isAuthenticated, isUser } = useAuth();
+  const { identityGeneration, isAuthenticated } = useAuth();
+  const learner = usePlacementLearnerAccess();
   const { pathname } = useLocation();
-  if (isAuthenticated && isUser()) return <PlacementUserLayout />;
+  if (learner) return <PlacementUserLayout />;
   return (
     <div className="flex min-h-screen flex-col bg-background text-on-surface">
       {isAuthenticated ? <PlacementPublicHeader /> : <PublicNavigation key={pathname} />}

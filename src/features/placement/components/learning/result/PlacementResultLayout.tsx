@@ -1,3 +1,4 @@
+import { usePlacementLearnerAccess } from "@features/placement/hooks/usePlacementLearnerAccess";
 import PlacementPublicLayout from "@features/placement/components/learning/PlacementPublicLayout";
 import { PLACEMENT_ROUTES } from "@features/placement/constants";
 import { GraduationCap } from "lucide-react";
@@ -8,9 +9,10 @@ import PlacementUserLayout from "@features/placement/components/learning/user/Pl
 
 /** Neutral feature shell: no Guest auth actions or invented User profile. */
 export default function PlacementResultLayout() {
-  const { isLoading, isAuthenticated, isUser, identityGeneration } = useAuth();
+  const { isLoading, isAuthenticated, identityGeneration } = useAuth();
+  const learner = usePlacementLearnerAccess();
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-surface"><Loading /></div>;
-  if (isAuthenticated && isUser()) return <PlacementUserLayout />;
+  if (learner) return <PlacementUserLayout />;
   if (!isAuthenticated) return <PlacementPublicLayout />;
 
   return (

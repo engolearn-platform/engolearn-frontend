@@ -137,7 +137,7 @@
   with the counting pattern — treat as the audit's recorded number, not a live metric). Verifiable
   examples: `src/features/topic/views/learning/TopicContextView.tsx` (`w-[1240px]`, `w-[840px]`,
   `w-[320px]`), `TopicManagementFilterBar.tsx` (`w-[280px]`), `TopicCard.tsx` /
-  `UnitRowCard.tsx` (`shadow-[…]`), `grammar/components/StatusBadge.tsx` (`text-[10px]`).
+  `UnitRowCard.tsx` (`shadow-[…]`), `grammar/components/learning/StatusBadge.tsx` (`text-[10px]`).
 - **Impact / risk:** bypasses the token system → inconsistent visuals and costly theme changes.
 - **Blocking?** No.
 - **Remediation:** gradual replacement with token/scale classes when touching those files anyway;

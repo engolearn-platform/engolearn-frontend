@@ -1,7 +1,7 @@
 import PlacementAudioPlayer from "@features/placement/components/learning/attempt/PlacementAudioPlayer";
 import type { PlacementReviewQuestion } from "@features/placement/types/placement-review.types";
 import { cn } from "@shared/utils";
-import { Check, Minus, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { getReviewAnswerState } from "./reviewState";
 
 export default function PlacementReviewQuestionCard({
@@ -13,8 +13,9 @@ export default function PlacementReviewQuestionCard({
 }) {
   const state = getReviewAnswerState(question);
   const stateLabel =
-    state === "CORRECT" ? "Đúng" : state === "INCORRECT" ? "Sai" : "Chưa trả lời";
-  const StateIcon = state === "CORRECT" ? Check : state === "INCORRECT" ? X : Minus;
+    state === "CORRECT" ? "Đúng" : "Sai";
+  const StateIcon = state === "CORRECT" ? Check : X;
+  const explanation = question.explanation?.trim();
 
   return (
     <article
@@ -40,9 +41,7 @@ export default function PlacementReviewQuestionCard({
             "ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-label-sm font-semibold",
             state === "CORRECT"
               ? "bg-primary-fixed text-on-primary-fixed"
-              : state === "INCORRECT"
-                ? "bg-error-container text-on-error-container"
-                : "bg-surface-container-highest text-on-surface-variant",
+              : "bg-error-container text-on-error-container",
           )}
         >
           <StateIcon className="size-4" aria-hidden="true" />
@@ -70,9 +69,9 @@ export default function PlacementReviewQuestionCard({
       <p className="mt-4 text-body-md font-semibold text-on-surface">
         {question.prompt}
       </p>
-      {state === "UNANSWERED" ? (
+      {question.selectedOptionId === null ? (
         <p className="mt-2 text-label-sm text-on-surface-variant">
-          Bạn chưa trả lời câu này.
+          Bạn không trả lời câu này.
         </p>
       ) : null}
 
@@ -116,10 +115,10 @@ export default function PlacementReviewQuestionCard({
           );
         })}
       </ol>
-      {question.explanation?.trim() ? (
+      {explanation ? (
         <section aria-labelledby={`review-explanation-${question.order}`} className="mt-5 space-y-2 rounded-xl border border-learning-mint-border bg-learning-nav-active p-4">
           <h3 id={`review-explanation-${question.order}`} className="text-label-lg font-semibold text-primary">Giải thích</h3>
-          <p className="whitespace-pre-line break-words text-body-md leading-relaxed text-on-surface-variant">{question.explanation}</p>
+          <p className="whitespace-pre-line break-words text-body-md leading-relaxed text-on-surface-variant">{explanation}</p>
         </section>
       ) : null}
     </article>

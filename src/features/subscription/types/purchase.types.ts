@@ -19,6 +19,9 @@ export interface Purchase {
   refundReference: string | null;
   refundId: string | null;
   refundStatus: "NONE" | "REQUESTED" | "PROCESSING" | "UNKNOWN" | "SUCCEEDED" | "FAILED" | null;
+  /** Absent on historical purchases created before dynamic products. */
+  planDisplayName?: string;
+  planVersion?: number;
 }
 export interface PurchaseHistory { items: Purchase[]; nextCursor: string | null }
 export interface PaymentReturn { validSignature: boolean; purchaseReference: string | null; message: string }

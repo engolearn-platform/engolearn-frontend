@@ -1,7 +1,7 @@
 import { Button } from "@/core/components/shadcn/button";
 import { PLACEMENT_ROUTES } from "@features/placement/constants";
 import type { PlacementResult } from "@features/placement/types/placement-result.types";
-import { CheckCircle2, CircleX, PauseCircle, Sparkles, Loader2 } from "lucide-react";
+import { CheckCircle2, CircleX, Sparkles, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { ROUTES } from "@shared/constants";
@@ -86,18 +86,14 @@ export default function PlacementResultCard({ result }: PlacementResultCardProps
       </div>
 
       {result.summary ? (
-        <div className="mt-8 grid grid-cols-1 gap-3 border-t border-outline-variant pt-8 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-3 border-t border-outline-variant pt-8 sm:grid-cols-2">
           <p className="flex items-center gap-2 rounded-xl bg-surface-container-low p-4 text-label-lg">
             <CheckCircle2 className="size-5 shrink-0 text-primary" aria-hidden="true" />
             Đúng: <strong>{result.score} câu</strong>
           </p>
           <p className="flex items-center gap-2 rounded-xl bg-surface-container-low p-4 text-label-lg">
             <CircleX className="size-5 shrink-0 text-error" aria-hidden="true" />
-            Sai: <strong>{result.summary.incorrectCount} câu</strong>
-          </p>
-          <p className="flex items-center gap-2 rounded-xl bg-surface-container-low p-4 text-label-lg">
-            <PauseCircle className="size-5 shrink-0 text-on-surface-variant" aria-hidden="true" />
-            Bỏ trống: <strong>{result.summary.unansweredCount} câu</strong>
+            Sai: <strong>{result.summary.incorrectCount + result.summary.unansweredCount} câu</strong>
           </p>
         </div>
       ) : null}

@@ -1,18 +1,15 @@
 # Speaking feature guide
 
-Speaking owns speaking sessions, REST and realtime operations, audio-stream integration, and Speaking protocol types. Its supported cross-feature API is `contract/index.ts`. Consumer features import from `@features/speaking/contract`; files under Speaking `hooks/`, `services/`, and `types/` remain implementation details unless the contract publishes them.
+Speaking owns the V2 session lifecycle client, REST and WebSocket operations, audio framing, assessment presentation, and learner routes. Its supported cross-feature API is `contract/index.ts`. Topic imports entry components and stable DTOs through `@features/speaking/contract`; hook, service implementation, types and utilities remain private unless explicitly exported.
 
 ## Find the implementation
 
-- Public exports and their consumer needs: `contract/index.ts`.
-- Session and demo API behavior: `services/`.
-- WebSocket, microphone, PCM, and snapshot behavior: `hooks/useSpeakingStream.ts`.
-- REST and demo response shapes: `types/`.
-- Topic consumers, learning routes, UI, and achievement presentation: `src/features/topic/`. The presentation selector test is [speakingAchievementLogic.test.ts](../../../src/features/topic/views/learning/speaking-achievements/speakingAchievementLogic.test.ts).
-- Speaking documentation: `docs/features/speaking-with-ai/README.md`, especially [module-map.md](../../../docs/features/speaking-with-ai/module-map.md) and [runtime-flows.md](../../../docs/features/speaking-with-ai/runtime-flows.md).
+- Public exports and consumer entry points: `contract/index.ts` and `views/SpeakingEntry.tsx`.
+- REST paths and error mapping: `services/speaking-v2.service.ts`.
+- WebSocket, microphone, VAD, reconnect and playback: `hooks/useSpeakingV2Stream.ts`.
+- SPK2 audio frame format: `utils/speaking-audio-frame.ts`.
+- Protocol DTOs: `types/speaking-v2.types.ts`.
+- Standalone learner routes and views: `routes.ts`, `views/SpeakingSessionView.tsx`, `views/SpeakingResultView.tsx`, `views/SpeakingHistoryView.tsx`.
+- Shared accepted wire contract: `docs/system-design/speaking-v2-contract.md` in the workspace root.
 
-The current Speaking learning UI and its routes belong to Topic. Speaking does not provide a standalone view or routes.
-
-## Keeping the boundary current
-
-When a consumer needs a provider capability, export its stable type or operation from the public contract. Keep parsing and implementation helpers internal unless another feature has a verified need. Do not import Topic implementation from Speaking or expose Topic presentation components through this contract. Update the API documentation when the FE–BE contract changes and update the module map/runtime flows when ownership or behavior paths change.
+Topic owns profile authoring and Topic/Item workspace launch locations. Do not import Topic implementation from Speaking or add learning progress mutations to session flows. Keep UI states aligned to the accepted V2 contract and fixture.

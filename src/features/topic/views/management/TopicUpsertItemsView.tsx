@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { EmptyState, Loading } from "@shared/components";
 import { adminTopicBasicInfoPath, adminTopicReadSectionPath, topicItemSectionPath } from "@shared/constants";
 import { useFetch } from "@shared/hooks";
@@ -139,6 +139,7 @@ function ItemListEditor({ topic, initialItems }: { topic: TopicManagementRespons
           <TopicUpsertStepper steps={getTopicUpsertSteps("update", saved.items.length)} activeStep={1} />
         </div>
         <TopicItemsHeader titleEn={topic.titleEn} cefrBadge={topic.cefr ? `CEFR ${topic.cefr}` : "Chưa chọn CEFR"} draftBadge={topic.status === "published" ? "Đã xuất bản" : "Bản nháp"} countNote={`${saved.items.length} bài học`} onAdd={add} disabled={pending || conflict} />
+        <Button asChild type="button" variant="outline" className="min-h-12 w-fit"><Link to={`/admin/topics/${encodeURIComponent(id)}/speaking-profile`}>Cấu hình Speaking cho chủ đề</Link></Button>
         {message && <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl bg-surface-container-lowest p-3 text-label-sm">
           {message}
           {conflict && <Button type="button" variant="outline" disabled={pending} onClick={reload}>Tải lại danh sách</Button>}
