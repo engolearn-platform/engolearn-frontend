@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import { readFile } from "node:fs/promises";
 import { JSDOM } from "jsdom";
 import { act, createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { createServer } from "vite";
 
-let dom; let vite; let router; let hookModule; let resultView;
+let dom; let vite; let router; let hookModule; let resultView; let speakingEntry; let historyView; let AuthProvider;
 const session = {
   sessionId: "42f14305-3cae-4523-8b68-59a48e728be1", scope: { type: "TOPIC_ITEM", topicId: "t", topicItemId: "i" },
   context: { title: "Ordering a drink", topicTitle: "At a cafe", topicItemTitle: "Ordering a drink", level: "A2", description: "Order a drink.", aiRole: "Barista", learnerRole: "Customer" },
@@ -13,6 +14,7 @@ const session = {
   createdAt: "2026-11-24T12:00:00Z", startedAt: "2026-11-24T12:00:00Z", endedAt: null, opening: null,
   finalizedTurnCount: 0, committedTurnCount: 0, speechDurationMs: 0, assessmentStatus: "PENDING", activeTurn: null,
 };
+const historyFixture = JSON.parse(await readFile(new URL("../../docs/system-design/speaking-access-history.fixture.json", import.meta.url), "utf8"));
 const wait = (ms = 20) => new Promise(resolve => setTimeout(resolve, ms));
 
 before(async () => {
@@ -23,15 +25,138 @@ before(async () => {
     name: "speaking-test-router", resolveId: id => id === routerId ? id : undefined,
     load: id => id === routerId ? 'export { createMemoryRouter, RouterProvider } from "react-router";' : undefined,
   }] });
-  [router, hookModule, resultView] = await Promise.all([
+  [router, hookModule, resultView, speakingEntry, historyView, AuthProvider] = await Promise.all([
     vite.ssrLoadModule(routerId),
     vite.ssrLoadModule("/src/features/speaking/hooks/useSpeakingV2Stream.ts"),
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingResultView.tsx"),
+    vite.ssrLoadModule("/src/features/speaking/views/SpeakingEntry.tsx"),
+    vite.ssrLoadModule("/src/features/speaking/views/SpeakingHistoryView.tsx"),
+    vite.ssrLoadModule("/src/shared/hooks/useAuth.tsx"),
   ]);
 });
 after(async () => {
   await vite?.close(); dom?.window.close();
   delete globalThis.window; delete globalThis.document; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+});
+
+test("history keeps account tabs in the URL, shows sections in order, and completed loads only completed Topics", async t => {
+  const groupCalls = []; const sessionItem = { ...session, status: "ENDED", assessmentStatus: "PARTIAL", committedTurnCount: 2, speechDurationMs: 18000 };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const request = new URL(url); const path = request.pathname;
+    if (path.endsWith("/auth/me")) return Response.json({ data: { id: "learner-1", email: "learner@example.test", role: "USER" } });
+    if (path.endsWith("/history/topics")) {
+      const group = request.searchParams.get("group"); groupCalls.push(group);
+      const data = { ...historyFixture.groups.response.data, totals: { ...historyFixture.groups.response.data.totals, other: group === "OTHER" ? 0 : historyFixture.groups.response.data.totals.other }, items: group === "OTHER" ? [] : historyFixture.groups.response.data.items };
+      return Response.json({ data });
+    }
+    if (path.endsWith("/sessions")) return Response.json({ data: { items: [sessionItem], page: 0, size: 6, hasNext: false } });
+    throw new Error(`Unexpected request ${path} ${options.method}`);
+  });
+  const { createMemoryRouter, RouterProvider } = router;
+  const appRouter = createMemoryRouter([{ path: "/speaking/history", Component: historyView.default }], { initialEntries: ["/speaking/history"] });
+  const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
+  await act(async () => { root.render(h(AuthProvider.AuthProvider, null, h(RouterProvider, { router: appRouter }))); await wait(80); });
+  assert.match(container.textContent, /Phiên luyện nói gần đây/);
+  assert.ok(container.textContent.indexOf("Phiên luyện nói gần đây") < container.textContent.indexOf("Chủ đề đang học"));
+  assert.match(container.textContent, /Luyện theo mục học/);
+  assert.match(container.textContent, /18 giây nói/);
+  assert.doesNotMatch(container.textContent, /Lịch sử khác/);
+  const resultLink = [...container.querySelectorAll("a")].find(link => link.textContent.includes("Xem phiên"));
+  assert.ok(resultLink?.getAttribute("href")?.includes("from=%2Fspeaking%2Fhistory"), "result route survives as a URL-backed history intent");
+  assert.deepEqual(groupCalls.slice(-2), ["IN_PROGRESS", "OTHER"]);
+
+  groupCalls.length = 0;
+  const completedTab = [...container.querySelectorAll("a")].find(link => link.textContent.includes("Hoàn thành"));
+  assert.ok(completedTab);
+  await act(async () => { completedTab.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, button: 0, cancelable: true })); await wait(80); });
+  assert.match(appRouter.state.location.search, /tab=COMPLETED/);
+  assert.doesNotMatch(container.textContent, /Phiên luyện nói gần đây/);
+  assert.deepEqual(groupCalls, ["COMPLETED"]);
+});
+
+test("parent history with zero sessions uses a neutral header when title metadata is absent", async t => {
+  const calls = [];
+  t.mock.method(globalThis, "fetch", async url => {
+    const path = new URL(url).pathname; calls.push(path);
+    if (path.endsWith("/auth/me")) return Response.json({ data: { id: "learner-1", email: "learner@example.test", role: "USER" } });
+    if (path.endsWith("/history/topics/topic-5/sessions")) return Response.json({ data: {
+      items: [], page: 0, size: 20, hasNext: false, topicId: "topic-5", title: null, sessionCount: 0,
+    } });
+    throw new Error(`Unexpected request ${path}`);
+  });
+  const { createMemoryRouter, RouterProvider } = router;
+  const appRouter = createMemoryRouter([{ path: "/speaking/history", Component: historyView.default }], {
+    initialEntries: ["/speaking/history?parentTopicId=topic-5"],
+  });
+  const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
+  await act(async () => { root.render(h(AuthProvider.AuthProvider, null, h(RouterProvider, { router: appRouter }))); await wait(80); });
+  assert.match(container.textContent, /Lịch sử chủ đề/);
+  assert.match(container.textContent, /0 phiên thuộc chủ đề này/);
+  assert.match(container.textContent, /Chưa có phiên Speaking trong chủ đề này/);
+  assert.doesNotMatch(container.textContent, /Chủ đề không còn hiển thị/);
+  assert.ok(calls.includes("/api/v1/speaking/history/topics/topic-5/sessions"));
+  assert.equal(calls.filter(path => path.includes("/api/v1/topics/")).length, 0, "no Topic metadata request is needed to render the empty parent history");
+});
+
+test("denied new admission keeps resume and links exact history back to the same Topic Item workspace", async t => {
+  const calls = [];
+  const availability = { scope: session.scope, available: false, reason: "LEVEL_TOO_HIGH", activeSession: {
+    sessionId: session.sessionId, scope: session.scope, status: "ACTIVE", controllerEpoch: 1,
+  } };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const parsed = new URL(url); calls.push({ path: parsed.pathname, method: options.method });
+    if (parsed.pathname.endsWith("/availability")) return Response.json({ data: availability });
+    if (parsed.pathname.endsWith(`/sessions/${session.sessionId}/resume`)) return Response.json({ data: session });
+    if (parsed.pathname.endsWith(`/sessions/${session.sessionId}`)) return Response.json({ data: session });
+    throw new Error(`Unexpected request ${parsed.pathname}`);
+  });
+  const { createMemoryRouter, RouterProvider } = router;
+  function Entry() { return h(speakingEntry.SpeakingEntry, { scope: session.scope }); }
+  function Workspace() { return h("p", null, "Workspace opened"); }
+  const appRouter = createMemoryRouter([
+    { path: "/topics/:topicId/items/:itemId/speaking", Component: Entry },
+    { path: "/speaking/sessions/:sessionId", Component: Workspace },
+  ], { initialEntries: ["/topics/t/items/i/speaking"] });
+  const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
+  await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(60); });
+  assert.match(container.textContent, /trình độ cao hơn/i);
+  assert.doesNotMatch(container.textContent, /LEVEL_TOO_HIGH/);
+  assert.match(container.textContent, /Bạn có một phiên đang mở/);
+  assert.ok([...container.querySelectorAll("button")].some(button => button.textContent.includes("Tiếp tục luyện")));
+  assert.ok(![...container.querySelectorAll("button")].some(button => button.textContent.includes("Thay bằng phiên mới")));
+  const exactHistory = [...container.querySelectorAll("a")].find(link => link.textContent === "Lịch sử phiên của mục học này");
+  assert.equal(exactHistory?.getAttribute("href"), "/speaking/history?scopeType=TOPIC_ITEM&topicId=t&topicItemId=i&from=%2Ftopics%2Ft%2Fitems%2Fi%2Fspeaking");
+  const resume = [...container.querySelectorAll("button")].find(button => button.textContent.includes("Tiếp tục luyện"));
+  await act(async () => { resume.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await wait(40); });
+  assert.ok(calls.some(call => call.path.endsWith("/resume") && call.method === "POST"));
+  assert.match(container.textContent, /Workspace opened/);
+});
+
+test("a create-time access denial is localized when availability changed after its read", async t => {
+  const previousNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", { value: dom.window.navigator, configurable: true });
+  Object.defineProperty(dom.window.navigator, "mediaDevices", { configurable: true, value: { getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }) } });
+  t.after(() => { if (previousNavigator) Object.defineProperty(globalThis, "navigator", previousNavigator); else delete globalThis.navigator; });
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const path = new URL(url).pathname;
+    if (path.endsWith("/availability")) return Response.json({ data: { scope: session.scope, available: true, reason: null, activeSession: null } });
+    if (path.endsWith("/sessions") && options.method === "POST") return Response.json({ code: "LEVEL_TOO_HIGH", detail: "Learner level is below the Topic level" }, { status: 403 });
+    throw new Error(`Unexpected request ${path}`);
+  });
+  const { createMemoryRouter, RouterProvider } = router;
+  function Entry() { return h(speakingEntry.SpeakingEntry, { scope: session.scope }); }
+  const appRouter = createMemoryRouter([{ path: "/entry", Component: Entry }], { initialEntries: ["/entry"] });
+  const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
+  t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
+  await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(50); });
+  const start = [...container.querySelectorAll("button")].find(button => button.textContent.includes("Bắt đầu luyện nói"));
+  assert.ok(start);
+  await act(async () => { start.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await wait(35); });
+  assert.match(container.textContent, /Chủ đề này yêu cầu trình độ cao hơn cấp độ hiện tại/i);
+  assert.doesNotMatch(container.textContent, /LEVEL_TOO_HIGH|Learner level/);
 });
 
 test("mounted V2 hook waits for admission, caps PCM and releases the microphone", async t => {
@@ -149,7 +274,8 @@ test("mounted result distinguishes a missing score from numeric zero", async t =
     throw new Error(`Unexpected request ${path}`);
   });
   const { createMemoryRouter, RouterProvider } = router;
-  const appRouter = createMemoryRouter([{ path: "/speaking/sessions/:sessionId/result", Component: resultView.default }], { initialEntries: [`/speaking/sessions/${value.sessionId}/result`] });
+  const historyOrigin = "/speaking/history?tab=COMPLETED&page=2";
+  const appRouter = createMemoryRouter([{ path: "/speaking/sessions/:sessionId/result", Component: resultView.default }], { initialEntries: [`/speaking/sessions/${value.sessionId}/result?from=${encodeURIComponent(historyOrigin)}`] });
   const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(50); });
@@ -158,6 +284,7 @@ test("mounted result distinguishes a missing score from numeric zero", async t =
   assert.match(container.textContent, /0 \/ 100/);
   assert.match(container.textContent, /theory/);
   assert.match(container.textContent, /Cần luyện phát âm/);
+  assert.equal([...container.querySelectorAll("a")].find(link => link.textContent === "Quay lại lịch sử")?.getAttribute("href"), historyOrigin);
   assert.doesNotMatch(container.textContent, /Mispronunciation/);
   assert.equal(container.querySelectorAll('[role="progressbar"]').length, 1, "only the assessed zero score has a progress indicator");
 });

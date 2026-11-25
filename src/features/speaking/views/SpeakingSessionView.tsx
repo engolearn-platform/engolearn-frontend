@@ -7,6 +7,7 @@ import ConversationTimeline from "@features/speaking/components/conversation/Con
 import { speakingV2Service } from "@features/speaking/services/speaking-v2.service";
 import { useSpeakingV2Stream } from "@features/speaking/hooks/useSpeakingV2Stream";
 import type { SpeakingSession, SpeakingTurn } from "@features/speaking/types/speaking-v2.types";
+import { speakingEntryPath, speakingHistoryUrl } from "@features/speaking/utils/speaking-history-navigation";
 
 function backPath(session: SpeakingSession | null, locationState: unknown) {
   const state = locationState as { returnTo?: unknown } | null;
@@ -27,6 +28,7 @@ export default function SpeakingSessionView() {
   const replayRequest = useRef(0);
   const refreshRequest = useRef(0); const routeSessionId = useRef(sessionId); routeSessionId.current = sessionId; const mounted = useRef(true);
   const backTo = backPath(session, location.state);
+  const historyPath = session ? speakingHistoryUrl({ kind: "exact", scope: session.scope, page: 0, origin: speakingEntryPath(session.scope) }) : "/speaking/history";
   const refresh = useCallback(async () => {
     const request = ++refreshRequest.current;
     const [latest, allTurns] = await Promise.all([speakingV2Service.get(sessionId), speakingV2Service.allTurns(sessionId)]);
@@ -120,6 +122,7 @@ export default function SpeakingSessionView() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm text-on-surface-variant"><Link className="min-h-10 content-center rounded px-1 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary" to={backTo}>Quay lại chủ đề</Link>
+            <span aria-hidden="true">·</span><Link className="min-h-10 content-center rounded px-1 text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary" to={historyPath}>Lịch sử phiên</Link>
             {session.context.topicTitle !== session.context.title && <><span aria-hidden="true">›</span><span className="truncate">{session.context.topicTitle}{session.context.topicItemTitle && session.context.topicItemTitle !== session.context.title ? ` · ${session.context.topicItemTitle}` : ""}</span></>}
           </div>
           <h1 className="mt-1 break-words text-xl font-bold sm:text-headline-md">{session.context.title}</h1>
