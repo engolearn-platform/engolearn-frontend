@@ -140,7 +140,7 @@ test("mounted result distinguishes a missing score from numeric zero", async t =
     sampleCount: 1, wordCount: null, speechDurationMs: 1000, accuracy: null, range: null, examples: [] });
   const assessment = { sessionId: value.sessionId, status: "PARTIAL", criteria: {
     pronunciation: criterion(null, 100), fluency: criterion(0, 100), grammar: criterion(null, 5), vocabulary: criterion(null, 5),
-  }, feedback: { strengthsVi: [], improvementsVi: [], recommendationsVi: [], wordsToPractice: [] }, finalizedAt: value.endedAt };
+  }, feedback: { strengthsVi: [], improvementsVi: [], recommendationsVi: [], wordsToPractice: [{ word: "theory", accuracyScore: 0.4, errorType: "Mispronunciation" }] }, finalizedAt: value.endedAt };
   t.mock.method(globalThis, "fetch", async url => {
     const path = new URL(url).pathname;
     if (path.endsWith(`/sessions/${value.sessionId}/turns`)) return Response.json({ data: { items: [], page: 0, size: 100, hasNext: false } });
@@ -154,7 +154,12 @@ test("mounted result distinguishes a missing score from numeric zero", async t =
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(50); });
   assert.match(container.textContent, /Chưa có điểm/);
+  assert.match(container.textContent, /Chưa đủ dữ liệu/);
   assert.match(container.textContent, /0 \/ 100/);
+  assert.match(container.textContent, /theory/);
+  assert.match(container.textContent, /Cần luyện phát âm/);
+  assert.doesNotMatch(container.textContent, /Mispronunciation/);
+  assert.equal(container.querySelectorAll('[role="progressbar"]').length, 1, "only the assessed zero score has a progress indicator");
 });
 
 test("mounted result refreshes the terminal session and loads turns beyond the first page", async t => {
@@ -194,7 +199,8 @@ test("mounted result refreshes the terminal session and loads turns beyond the f
   assert.match(container.textContent, /29 lượt hội thoại/);
   assert.match(container.textContent, /Turn 21/);
   await act(async () => { await wait(2700); });
-  assert.match(container.textContent, /Đánh giá · Một phần/, "final assessment remains visible when history refresh fails");
+  assert.match(container.textContent, /Kết quả một phần/, "final assessment remains visible when history refresh fails");
+  assert.doesNotMatch(container.textContent, /PARTIAL/, "assessment enums are translated for learners");
   assert.match(container.textContent, /30 lượt hội thoại/, "the final session counters refresh even if turn history is temporarily unavailable");
   assert.match(container.textContent, /History temporarily unavailable/);
   const retry = [...container.querySelectorAll("button")].find(button => button.textContent.includes("Tải lại hội thoại"));
@@ -234,8 +240,9 @@ test("mounted result stops its current audio before replay and when leaving the 
   const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(80); });
-  const playOpening = [...container.querySelectorAll("button")].find(button => button.textContent.includes("Phát audio mở đầu"));
-  const playReply = [...container.querySelectorAll("button")].find(button => button.textContent.includes("Phát phản hồi"));
+  const replyButtons = [...container.querySelectorAll('[aria-label="Nghe phản hồi AI"]')];
+  const playOpening = replyButtons[0];
+  const playReply = replyButtons[1];
   await act(async () => { playOpening.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await wait(10); });
   assert.equal(audios.length, 1);
   await act(async () => { playReply.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await wait(10); });

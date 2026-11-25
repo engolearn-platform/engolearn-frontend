@@ -1,16 +1,43 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router";
+import { AudioLines, BookOpen, Gauge, Headphones } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
+import ConversationTimeline from "@features/speaking/components/conversation/ConversationTimeline";
 import { speakingV2Service } from "@features/speaking/services/speaking-v2.service";
 import type { SpeakingAssessment, SpeakingSession, SpeakingTurn } from "@features/speaking/types/speaking-v2.types";
 
 const criterionNames = { pronunciation: "Phát âm", fluency: "Độ trôi chảy", grammar: "Ngữ pháp", vocabulary: "Từ vựng" } as const;
-function criterionState(status: string | null) {
+const criterionIcons = { pronunciation: Headphones, fluency: AudioLines, grammar: BookOpen, vocabulary: Gauge } as const;
+const scoreFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 });
+type CriterionKey = keyof typeof criterionNames;
+
+function criterionState(status: string | null | undefined) {
   if (status === "ASSESSED") return "Đã đánh giá";
   if (status === "INSUFFICIENT_DATA") return "Chưa đủ dữ liệu";
-  if (status === "UNAVAILABLE") return "Không khả dụng";
-  return "Đang chờ đánh giá";
+  if (status === "UNAVAILABLE") return "Chưa thể đánh giá";
+  return "Đang đánh giá";
 }
+
+function assessmentStatusLabel(status: string | null | undefined) {
+  if (status === "READY") return "Đã hoàn tất";
+  if (status === "PARTIAL") return "Kết quả một phần";
+  if (status === "UNAVAILABLE") return "Chưa thể đánh giá";
+  return "Đang hoàn tất đánh giá";
+}
+
+function criterionExplanation(key: CriterionKey, status: string | null | undefined, reason: string | null | undefined) {
+  if (status === "INSUFFICIENT_DATA") {
+    return key === "pronunciation" || key === "fluency"
+      ? "Chưa có đủ dữ liệu lời nói để đánh giá tiêu chí này."
+      : "Chưa có đủ dữ liệu ngôn ngữ để đánh giá tiêu chí này.";
+  }
+  if (status === "UNAVAILABLE") {
+    if (reason === "INSUFFICIENT_AUDIO_EVIDENCE") return "Chưa có đủ dữ liệu lời nói để đánh giá.";
+    return "Hệ thống chưa thể hoàn tất đánh giá tiêu chí này.";
+  }
+  return null;
+}
+
 function practicePath(session: SpeakingSession) {
   return session.scope.type === "TOPIC_ITEM"
     ? `/topics/${encodeURIComponent(session.scope.topicId)}/items/${encodeURIComponent(session.scope.topicItemId ?? "")}/speaking`
@@ -19,6 +46,37 @@ function practicePath(session: SpeakingSession) {
 function backPath(session: SpeakingSession, state: unknown) {
   const value = (state as { returnTo?: unknown } | null)?.returnTo;
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") ? value : practicePath(session);
+}
+
+function SkillCard({ skill, criterion }: { skill: CriterionKey; criterion: SpeakingAssessment["criteria"][CriterionKey] | null }) {
+  const Icon = criterionIcons[skill];
+  const state = criterionState(criterion?.status);
+  const score = typeof criterion?.score === "number" && Number.isFinite(criterion.score) ? criterion.score : null;
+  const hasScore = criterion?.status === "ASSESSED" && score !== null;
+  const scoreText = hasScore
+    ? `${scoreFormat.format(score)} / ${criterion.maxScore}`
+    : criterion?.status ? "Chưa có điểm" : null;
+  const explanation = criterionExplanation(skill, criterion?.status, criterion?.reason);
+  return <article className="flex min-w-0 flex-col rounded-2xl border border-outline-variant bg-surface-container-lowest p-3 sm:p-5">
+    <div className="flex items-center gap-2">
+      <span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-lg bg-learning-mint text-primary sm:size-9"><Icon className="size-4 sm:size-5" /></span>
+      <h3 className="font-semibold">{criterionNames[skill]}</h3>
+    </div>
+    <p className="mt-2 text-sm text-on-surface-variant">{state}</p>
+    {scoreText && <p className="mt-1 break-words text-xl font-bold tabular-nums sm:text-2xl">{scoreText}</p>}
+    {hasScore && <div className="mt-3 h-2 overflow-hidden rounded-full bg-learning-outline" role="progressbar" aria-label={`Mức ${criterionNames[skill]}`} aria-valuemin={criterion.maxScore === 5 ? 1 : 0} aria-valuemax={criterion.maxScore} aria-valuenow={score} aria-valuetext={scoreText ?? undefined}>
+      <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(0, Math.min(100, score / criterion.maxScore * 100))}%` }} />
+    </div>}
+    {explanation && <p className="mt-auto pt-3 text-sm leading-6 text-on-surface-variant">{explanation}</p>}
+  </article>;
+}
+
+function friendlyErrorType(errorType: string) {
+  const type = errorType.toUpperCase();
+  if (type === "MISPRONUNCIATION" || type === "MISPRONUNCIATION_ERROR") return "Cần luyện phát âm";
+  if (type === "OMISSION") return "Cần chú ý phát âm đầy đủ";
+  if (type === "INSERTION") return "Cần luyện phát âm chính xác";
+  return "Cần luyện phát âm";
 }
 
 export default function SpeakingResultView() {
@@ -88,57 +146,60 @@ export default function SpeakingResultView() {
       if (mounted.current && request === playbackRequest.current) setError(cause instanceof Error ? cause.message : "Audio không còn khả dụng.");
     }
   }
-  async function playOpening() {
-    if (!session) return;
-    await play(() => speakingV2Service.openingAudio(session.sessionId));
-  }
-  if (!session) return <main className="mx-auto max-w-4xl px-5 py-8"><p role="status">Đang tải kết quả…</p>{error && <div role="alert" className="mt-3 text-error">{error}<Button variant="outline" className="ml-2" onClick={() => void refresh()}>Tải lại</Button></div>}</main>;
-  const backTo = backPath(session, location.state);
+  const backToTopic = session ? backPath(session, location.state) : "/topics";
+  if (!session) return <div className="mx-auto max-w-6xl px-5 py-8"><p role="status">Đang tải kết quả…</p>{error && <div role="alert" className="mt-3 text-error">{error}<Button variant="outline" className="ml-2 min-h-11" onClick={() => void refresh().catch(() => {})}>Tải lại</Button></div>}</div>;
   const resultStatus = assessment?.status ?? session.assessmentStatus;
-  return <main className="mx-auto grid w-full max-w-4xl gap-5 px-5 py-8 sm:py-12">
-    <header><p className="font-semibold text-primary">KẾT QUẢ SPEAKING</p><h1 className="mt-1 text-headline-lg font-bold">{session.context.title}</h1>
-      <p className="mt-2 text-on-surface-variant">{session.context.topicTitle} · {session.committedTurnCount} lượt hội thoại · {Math.round(session.speechDurationMs / 1000)} giây nói</p></header>
+  const keys = Object.keys(criterionNames) as CriterionKey[];
+  const feedbackGroups = ([
+    ["Điểm tốt", assessment?.feedback.strengthsVi ?? []],
+    ["Có thể cải thiện", assessment?.feedback.improvementsVi ?? []],
+    ["Gợi ý luyện tập", assessment?.feedback.recommendationsVi ?? []],
+  ] as const).map(([title, items]) => ({
+    title,
+    items: items.filter(item => item.trim()),
+  })).filter(group => group.items.length > 0);
+  const wordsToPractice = assessment?.feedback.wordsToPractice.filter(item => item.word.trim()) ?? [];
+  const hasFeedback = feedbackGroups.length > 0 || wordsToPractice.length > 0;
+  return <div className="mx-auto grid w-full max-w-6xl gap-5 px-5 py-6 sm:gap-6 sm:py-8">
+    <header className="flex flex-wrap items-end justify-between gap-3">
+      <div><p className="font-semibold text-primary">KẾT QUẢ LUYỆN NÓI</p><h1 className="mt-1 text-headline-lg font-bold">{session.context.title}</h1>
+        <p className="mt-1 text-on-surface-variant">{session.committedTurnCount} lượt hội thoại · {Math.round(session.speechDurationMs / 1000)} giây nói</p></div>
+      <p role="status" className="rounded-full bg-learning-mint px-3 py-2 text-sm font-semibold text-primary">{assessmentStatusLabel(resultStatus)}</p>
+    </header>
     {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error/30 p-3 text-error"><p>{error}</p>
-      <Button variant="outline" onClick={() => void refreshTimeline().catch(() => {})}>Tải lại hội thoại</Button></div>}
-    <section className="grid gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
-      <h2 className="text-headline-md font-semibold">Đánh giá · {resultStatus === "PENDING" || resultStatus === "FINALIZING" ? "Đang hoàn tất…" : resultStatus === "READY" ? "Đầy đủ" : resultStatus === "PARTIAL" ? "Một phần" : "Chưa khả dụng"}</h2>
-      {(resultStatus === "PENDING" || resultStatus === "FINALIZING") && <p role="status">Đang xử lý đánh giá. Màn hình tự cập nhật sau vài giây.</p>}
-      {resultStatus === "UNAVAILABLE" && <p className="leading-6 text-on-surface-variant">Đánh giá chưa khả dụng, nhưng hội thoại và bản ghi vẫn có thể xem nếu còn trong thời hạn lưu trữ.</p>}
-      {assessment && <div className="grid gap-3 sm:grid-cols-2">
-        {(Object.keys(criterionNames) as (keyof typeof criterionNames)[]).map(key => {
-          const criterion = assessment.criteria[key];
-          return <article key={key} className="rounded-xl border border-outline-variant p-4">
-            <h3 className="font-semibold">{criterionNames[key]}</h3>
-            <p className="mt-1 text-sm text-on-surface-variant">{criterionState(criterion.status)}</p>
-            <p className="mt-2 text-2xl font-bold">{criterion.score === null ? "Chưa có điểm" : `${criterion.score} / ${criterion.maxScore}`}</p>
-            {criterion.reason && <p className="mt-2 text-sm leading-6">{criterion.reason}</p>}
-            {criterion.accuracy && <p className="mt-2 text-sm">Độ chính xác: {criterion.accuracy.level ?? criterion.accuracy.status}{criterion.accuracy.reasonVi ? ` — ${criterion.accuracy.reasonVi}` : ""}</p>}
-            {criterion.range && <p className="mt-2 text-sm">Độ đa dạng: {criterion.range.level ?? criterion.range.status}{criterion.range.reasonVi ? ` — ${criterion.range.reasonVi}` : ""}</p>}
-          </article>;
-        })}
+      <Button variant="outline" className="min-h-11" onClick={() => void refreshTimeline().catch(() => {})}>Tải lại hội thoại</Button></div>}
+    {resultStatus === "UNAVAILABLE" && <p className="text-sm text-on-surface-variant">Đánh giá chưa khả dụng. Hội thoại đã lưu vẫn có thể xem bên dưới.</p>}
+    <section aria-label="Điểm theo kỹ năng" className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
+      {keys.map(key => <SkillCard key={key} skill={key} criterion={assessment?.criteria[key] ?? null} />)}
+    </section>
+    <section aria-labelledby="feedback-title" className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-5">
+      <h2 id="feedback-title" className="text-headline-md font-semibold">Nhận xét & luyện tập</h2>
+      {!hasFeedback ? <p className="mt-3 rounded-xl bg-surface px-4 py-3 text-sm leading-6 text-on-surface-variant">
+        {resultStatus === "PENDING" || resultStatus === "FINALIZING"
+          ? "Nhận xét sẽ xuất hiện khi đánh giá hoàn tất."
+          : "Chưa có nhận xét hoặc từ cần luyện thêm cho phiên này."}
+      </p> : <div className="mt-4 grid gap-4">
+        {feedbackGroups.map(({ title, items }) => <div key={title}>
+          <h3 className="font-semibold">{title}</h3><ul className="mt-1 list-disc space-y-1 pl-5">{items.map((item, index) => <li key={index} className="leading-6">{item}</li>)}</ul>
+        </div>)}
+        {!!wordsToPractice.length && <div><h3 className="font-semibold">Từ nên luyện thêm</h3>
+          <ul className="mt-2 flex flex-wrap gap-2">{wordsToPractice.map((word, index) => <li key={word.word + index} className="rounded-xl border border-learning-outline bg-learning-mint px-3 py-2">
+            <span className="font-semibold">{word.word}</span><span className="ml-2 text-sm text-on-surface-variant">{friendlyErrorType(word.errorType)}</span>
+          </li>)}</ul>
+        </div>}
       </div>}
     </section>
-    {assessment && <section className="grid gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
-      <h2 className="text-headline-md font-semibold">Nhận xét</h2>
-      {([ ["Điểm tốt", assessment.feedback.strengthsVi], ["Có thể cải thiện", assessment.feedback.improvementsVi], ["Gợi ý luyện tập", assessment.feedback.recommendationsVi] ] as const).map(([title, items]) => <div key={title}>
-        <h3 className="font-semibold">{title}</h3>{items.length ? <ul className="mt-1 list-disc space-y-1 pl-5">{items.map((item, index) => <li key={index} className="leading-6">{item}</li>)}</ul> : <p className="mt-1 text-sm text-on-surface-variant">Chưa có nhận xét cho mục này.</p>}
-      </div>)}
-      {!!assessment.feedback.wordsToPractice.length && <div><h3 className="font-semibold">Từ nên luyện thêm</h3><ul className="mt-2 grid gap-2 sm:grid-cols-2">{assessment.feedback.wordsToPractice.map((word, index) => <li key={word.word + index} className="rounded-lg bg-learning-note p-3">{word.word} · {word.errorType}</li>)}</ul></div>}
-    </section>}
-    <section className="grid gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5"><h2 className="text-headline-md font-semibold">Hội thoại đã lưu</h2>
-      {session.opening && <article className="rounded-xl bg-learning-mint p-4"><p className="font-semibold">{session.context.aiRole}</p><p className="mt-2 leading-7">{session.opening.reply}</p>
-        {session.opening.hint && <p className="mt-2 text-sm">Gợi ý: {session.opening.hint.exampleEn} — {session.opening.hint.explanationVi}</p>}
-        {session.opening.audioAvailable && <Button variant="outline" className="mt-3 min-h-12" onClick={() => void playOpening()}>Phát audio mở đầu</Button>}</article>}
-      {turns.map(turn => <div key={turn.turnId} className="grid gap-3"><article className="rounded-xl border border-outline-variant p-4"><p className="font-semibold">Bạn · Lượt {turn.sequence}</p>
-        <p className="mt-2 whitespace-pre-wrap leading-7">{turn.transcript ?? "Bản chép lời không khả dụng."}</p>
-        {turn.learnerAudioAvailable && <Button variant="outline" className="mt-3 min-h-12" onClick={() => void play(() => speakingV2Service.audio(session.sessionId, turn.turnId, "LEARNER_RECORDING"))}>Nghe bản ghi</Button>}
-        {turn.correction && <details className="mt-3"><summary className="cursor-pointer font-medium">Gợi ý sửa câu</summary><p className="mt-2">{turn.correction.original} → {turn.correction.suggested}</p><p className="text-sm text-on-surface-variant">{turn.correction.explanationVi}</p></details>}</article>
-        {(turn.reply || turn.hint) && <article className="rounded-xl bg-learning-mint p-4"><p className="font-semibold">{session.context.aiRole}</p>{turn.reply && <p className="mt-2 leading-7">{turn.reply}</p>}
-          {turn.hint && <p className="mt-2 text-sm">Gợi ý: {turn.hint.exampleEn} — {turn.hint.explanationVi}</p>}
-          {turn.assistantAudioAvailable && <Button variant="outline" className="mt-3 min-h-12" onClick={() => void play(() => speakingV2Service.audio(session.sessionId, turn.turnId, "AI_REPLY"))}>Phát phản hồi</Button>}</article>}</div>)}
-      {!turns.length && <p className="text-on-surface-variant">Phiên chưa có lượt nói đã hoàn tất.</p>}
+    <section aria-labelledby="saved-conversation-title" className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest">
+      <div className="border-b border-outline-variant px-4 py-3 sm:px-6"><h2 id="saved-conversation-title" className="text-headline-md font-semibold">Hội thoại đã lưu</h2></div>
+      {!turns.length && !session.opening ? <p className="p-5 text-on-surface-variant">Phiên chưa có lượt nói đã hoàn tất.</p>
+        : <ConversationTimeline className="min-h-0" scrollable={false} aiRole={session.context.aiRole} learnerRole="Bạn" opening={session.opening} turns={turns}
+          onPlayOpening={session.opening?.audioAvailable ? () => void play(() => speakingV2Service.openingAudio(session.sessionId)) : undefined}
+          onPlayLearner={turn => { if (turn.learnerAudioAvailable) void play(() => speakingV2Service.audio(session.sessionId, turn.turnId, "LEARNER_RECORDING")); }}
+          onPlayAssistant={turn => { if (turn.assistantAudioAvailable) void play(() => speakingV2Service.audio(session.sessionId, turn.turnId, "AI_REPLY")); }} />}
     </section>
-    <div className="flex flex-wrap gap-3"><Button asChild className="min-h-12"><Link to={practicePath(session)}>Luyện lại</Link></Button><Button variant="outline" className="min-h-12" asChild><Link to={backTo}>Quay lại chủ đề</Link></Button>
-      <Link className="min-h-12 px-3 py-3 text-primary underline-offset-4 hover:underline" to="/speaking/history">Lịch sử Speaking</Link></div>
-  </main>;
+    <nav aria-label="Thao tác kết quả" className="flex flex-wrap justify-center gap-3 pb-2">
+      <Button asChild className="min-h-12"><Link to={practicePath(session)}>Luyện tập lại</Link></Button>
+      <Button variant="outline" className="min-h-12" asChild><Link to={backToTopic}>Quay lại chủ đề</Link></Button>
+    </nav>
+  </div>;
 }
