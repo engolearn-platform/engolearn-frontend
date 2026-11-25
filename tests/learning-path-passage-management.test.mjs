@@ -207,19 +207,22 @@ test("Signing in from Passage returns to its original URL, query and fragment", 
   });
 });
 
-test("Passage table has six columns and permits editing/deletion only for drafts", async t => {
+test("Passage table has seven columns with question counts and permits editing/deletion only for drafts", async t => {
   const container = document.createElement("div"); document.body.append(container);
   const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); container.remove(); });
   const selected = [];
   await act(async () => root.render(h(modules.PassageManagementTable, {
-    items: ["DRAFT", "ACTIVE", "RETIRED"].map(status => ({
+    items: ["DRAFT", "ACTIVE", "RETIRED"].map((status, index) => ({
       passageId: status, title: `Passage ${status}`, skill: "READING", level: "C2", status,
       revision: 2, updatedAt: "2026-11-25T11:40:00Z",
+      referencingQuestionCount: [3, 0, 1234][index],
     })),
     onView: item => selected.push(item.passageId), onEdit: () => {}, onDelete: () => {}, onCheck: item => selected.push(`check:${item.passageId}`),
   })));
-  assert.equal(container.querySelectorAll("th").length, 6);
+  assert.equal(container.querySelectorAll("th").length, 7);
+  assert.equal(container.querySelectorAll("th")[3].textContent, "Số câu hỏi");
+  assert.deepEqual([...container.querySelectorAll("tbody tr td:nth-child(4)")].map(cell => cell.textContent.trim()), ["3 câu hỏi", "0 câu hỏi", "1.234 câu hỏi"]);
   assert.doesNotMatch(container.querySelector("thead").textContent, /Audio/);
   const checkButtons = container.querySelectorAll('button[aria-label^="Kiểm tra "]');
   assert.equal(checkButtons.length, 1);
@@ -243,7 +246,7 @@ test("Passage table has six columns and permits editing/deletion only for drafts
   }
 });
 
-const draft = { passageId: "draft-1", title: "Library hours", skill: "READING", level: "B1", status: "DRAFT", revision: 2, updatedAt: "2026-11-25T11:40:00Z" };
+const draft = { passageId: "draft-1", title: "Library hours", skill: "READING", level: "B1", status: "DRAFT", revision: 2, referencingQuestionCount: 1, updatedAt: "2026-11-25T11:40:00Z" };
 const readinessResult = {
   passageId: draft.passageId, revision: 3, status: "DRAFT", structurallyValid: false,
   referencingQuestionCount: 1, incompatibleQuestionCount: 0,

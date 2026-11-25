@@ -11,8 +11,13 @@ EngoLearn Narrative và `ManagementLayout`. Route `/admin/learning-paths/passage
 `PassageManagementListView` ghép header, bốn bộ đếm, bộ lọc, bảng và phân trang.
 Component riêng thuộc `learning-path/components/management/passages`; không nhập
 component nội bộ của Topic. Tái sử dụng shared header, CEFR select, pagination,
-Button và Dialog. Bảng có Passage (tiêu đề/mã), Kỹ năng, Trình độ, Trạng thái,
-Cập nhật và Thao tác; không có cột Audio hoặc Số câu hỏi.
+Button và Dialog. Bảng có Passage (tiêu đề/mã), Kỹ năng, Trình độ, Số câu hỏi,
+Trạng thái, Cập nhật và Thao tác; không có cột Audio. Số câu hỏi hiển thị
+`referencingQuestionCount` do API danh sách cung cấp: tổng câu trong Question Pool
+tham chiếu passage, ở mọi trạng thái; 0 khi chưa có câu, không tính snapshot người
+học. Backend đếm theo lô các passage trong trang; frontend không gọi readiness cho
+từng dòng. Nếu backend cũ chưa trả trường này thì hiển thị “—”, không tự suy ra 0.
+Con số chưa có thao tác điều hướng vì màn quản lý câu hỏi chưa được tích hợp.
 
 `usePassageManagementList` dùng `useFetch`, tìm kiếm chờ 350 ms, thay bộ lọc về
 trang đầu, page API bắt đầu từ 0. Service gọi API thật
@@ -59,7 +64,7 @@ Trên mobile, filter xếp dòng và bảng cuộn ngang; controls có nhãn tru
 - `npm run lint`: đạt, 0 lỗi và 73 cảnh báo của các phần hiện có.
 - `npm run test:learning-path-passages`: 17 kiểm tra đạt. Bao gồm filter và
   pagination params, multipart giữ nguyên qua refresh, revision DELETE/PATCH,
-  lỗi conflict, JSON request cũ, 6 cột, quyền thao tác DRAFT và route thực tế:
+  lỗi conflict, JSON request cũ, 7 cột, số câu hỏi (có tham chiếu/0/định dạng số), quyền thao tác DRAFT và route thực tế:
   pending/error/retry, guest/USER/CONTENT_MANAGER/ADMIN, demotion/logout và
   quay về URL Passage sau đăng nhập (giữ query/fragment). Readiness được kiểm tra
   từ nút trong dòng của bảng đến Dialog: GET/cookie/no-store/ID encoding, signal,

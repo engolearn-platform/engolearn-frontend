@@ -10,11 +10,12 @@ export interface PassageListItem {
   status: PassageStatus;
   revision: number;
   hasAudio: boolean;
+  referencingQuestionCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface PassageDetail extends Omit<PassageListItem, "hasAudio"> {
+export interface PassageDetail extends Omit<PassageListItem, "hasAudio" | "referencingQuestionCount"> {
   text: string | null;
   transcript: string | null;
   audioMediaId: string | null;

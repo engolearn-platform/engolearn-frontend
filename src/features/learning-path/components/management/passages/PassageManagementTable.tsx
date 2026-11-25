@@ -83,7 +83,7 @@ export default function PassageManagementTable({ items, ...actions }: Props) {
     <table className="w-full text-left text-body-md">
       <caption className="sr-only">Danh sách passages</caption>
       <thead className="bg-surface-container-low/50 text-label-sm text-on-surface-variant">
-        <tr>{["Passage", "Kỹ năng", "Trình độ", "Trạng thái", "Cập nhật", "Thao tác"].map(label =>
+        <tr>{["Passage", "Kỹ năng", "Trình độ", "Số câu hỏi", "Trạng thái", "Cập nhật", "Thao tác"].map(label =>
           <th key={label} scope="col" className="px-4 py-4 whitespace-nowrap font-semibold">{label}</th>)}</tr>
       </thead>
       <tbody className="divide-y divide-outline-variant/30">
@@ -95,6 +95,9 @@ export default function PassageManagementTable({ items, ...actions }: Props) {
           </td>
           <td className="px-4 py-3">{PASSAGE_SKILL_LABELS[item.skill] ?? item.skill}</td>
           <td className="px-4 py-3"><span className="rounded-full bg-surface-container-high px-3 py-1 text-label-sm">{item.level}</span></td>
+          <td className="px-4 py-3 whitespace-nowrap text-label-sm font-semibold" title="Tổng số câu hỏi tham chiếu ở mọi trạng thái">
+            {typeof item.referencingQuestionCount === "number" ? `${item.referencingQuestionCount.toLocaleString("vi-VN")} câu hỏi` : "—"}
+          </td>
           <td className="px-4 py-3"><PassageStatusBadge status={item.status} /></td>
           <td className="px-4 py-3 whitespace-nowrap text-label-sm text-on-surface-variant">
             {item.updatedAt && !Number.isNaN(Date.parse(item.updatedAt)) ? <time dateTime={item.updatedAt}>{dateFormatter.format(new Date(item.updatedAt))}</time> : "—"}
