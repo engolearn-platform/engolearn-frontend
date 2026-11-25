@@ -5,12 +5,17 @@ import "@/core/assets/css/App.css";
 import { AuthProvider } from "@shared/hooks/useAuth";
 import { AppRouter } from "./router";
 import { BrowserRouter } from "react-router";
+import { CompanionProvider } from "@features/companion/state/CompanionProvider";
+import { CompanionHost } from "@features/companion/components/CompanionHost";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <AppRouter />
+        <CompanionProvider>
+          <AppRouter />
+          <CompanionHost />
+        </CompanionProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>
