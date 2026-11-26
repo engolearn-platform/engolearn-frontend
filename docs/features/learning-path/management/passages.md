@@ -34,7 +34,12 @@ Chỉ DRAFT được sửa/xóa. PATCH và DELETE gửi revision server để ph
 Xóa bị chặn khi đã có câu hỏi tham chiếu. Backend quyết định quyền và ràng buộc.
 Audio được nghe ở chi tiết, URL tạm chỉ giữ trong Dialog và tải lại khi hết hạn/lỗi.
 Với DRAFT, cột Thao tác có một nút **Kiểm tra và xuất bản** và menu ba
-chấm (Xem chi tiết, Sửa, Xóa). ACTIVE/RETIRED chỉ có menu Xem chi tiết.
+chấm (Xem chi tiết, Sửa, Xóa). ACTIVE có nút **Ngưng sử dụng** ở cùng vị trí
+trong cột Thao tác và menu Xem chi tiết; RETIRED chỉ có menu Xem chi tiết.
+Hai nút tác vụ dùng chung chiều rộng `w-48` (192px) và chiều cao `h-12` (48px)
+để thẳng hàng giữa DRAFT/ACTIVE; menu ba chấm vẫn canh phải và bảng cuộn ngang
+trên màn hình hẹp.
+Nút Ngưng sử dụng trong bảng dùng chữ trung tính `on-surface` cả khi hover.
 
 Nút **Kiểm tra và xuất bản** mở `PassageReadinessDialog`, luôn gọi mới GET
 `/{passageId}/readiness` qua cùng service/cookie/refresh và AbortSignal. Dialog
@@ -64,7 +69,16 @@ tra lại; lỗi mạng/503 không được tự coi là chưa xuất bản ho�
 kiểm tra lại đều loại bỏ xác nhận cũ; revision khác dòng hiện tại yêu cầu đóng/tải
 lại danh sách và xem lại nội dung. Mất quyền/sign out gỡ Dialog và hủy request ở
 client; kết quả server có thể đã được ghi nên lần truy cập sau cần tải lại trạng thái.
-Không có export hoặc retire trong phạm vi này. Listening dùng Media còn bị backend
+Ngưng sử dụng mở `PassageRetireDialog` để xác nhận tên passage và tác động trước
+khi gửi POST `/{passageId}/retire` với JSON `{revision}` của dòng ACTIVE. Không
+tự chặn theo tổng số câu tham chiếu trên bảng: chỉ backend xác định số câu ACTIVE.
+Khi gửi, khóa đóng/xác nhận và chống gửi trùng; đóng hoặc mất quyền hủy request,
+bỏ qua phản hồi muộn. Thành công tải lại bảng/counters từ backend và thông báo.
+Lỗi `PASSAGE_ACTIVE_REFERENCES` hiển thị `activeQuestionCount` hợp lệ từ
+ProblemDetail; các lỗi revision/quyền/không tồn tại hoặc mạng/503 không tự gửi
+lại. Sau lỗi, cần đóng và tải lại trạng thái trước khi xác nhận lần nữa. Ngưng
+sử dụng không xóa audio hoặc thay đổi lộ trình đã giao. Không có export.
+Listening dùng Media còn bị backend
 chặn cho đến khi luồng audio người học được hoàn thiện.
 
 ## State và responsive
@@ -124,3 +138,20 @@ Kiểm chứng của lần cập nhật này:
 - Chưa kiểm chứng desktop/mobile hoặc luồng xuất bản với backend thật:
   yêu cầu qua FE proxy `localhost:3000/api/v1/auth/me` bị connection refused.
   Cần chạy FE/BE và đăng nhập CONTENT_MANAGER/ADMIN để kiểm chứng luồng mới.
+
+## Ngưng sử dụng passage — 2026-11-26
+
+Thêm nút Ngưng sử dụng cho ACTIVE tại cột Thao tác, bên trái menu ba chấm,
+đối ứng vị trí Kiểm tra và xuất bản của DRAFT. Dialog xác nhận gọi API retire
+với revision của dòng; success receipt phải khớp ID, RETIRED và revision kế tiếp
+trước khi thông báo thành công. Các test hiện có được cập nhật/bổ sung cho nút
+theo trạng thái, request JSON/ID encoding, xác nhận/chống gửi trùng, refetch,
+lỗi tham chiếu ACTIVE, xung đột/mạng và hủy request khi sign out.
+
+- `npm run build`: đạt; còn cảnh báo bundle lớn hơn 500 kB.
+- `npm run lint`: đạt, 0 lỗi và 73 cảnh báo hiện có.
+- `node --check tests/learning-path-passage-management.test.mjs` và `git diff --check`: đạt.
+- Chưa chạy bộ test HTTP mô phỏng; chưa xác minh E2E qua FE proxy/backend thật.
+- Công cụ Computer Use đã dừng khi chọn cửa sổ Edge vì không xác định được URL
+  đủ chắc chắn. Chưa bấm xác nhận retire hoặc thay đổi dữ liệu thật; cần kiểm tra
+  thủ công dialog, lỗi còn câu ACTIVE, thành công và bảng/counters sau refetch.

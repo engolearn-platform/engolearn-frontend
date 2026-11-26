@@ -42,6 +42,13 @@ export function isPassageReviewCheck(value: string): value is PassageReviewCheck
   return Object.prototype.hasOwnProperty.call(PASSAGE_REVIEW_LABELS, value);
 }
 export interface PassagePublicationInput { revision: number; confirmedReviewChecks: PassageReviewCheck[] }
+export interface PassageRetirementReceipt {
+  passageId: string;
+  status: "RETIRED";
+  revision: number;
+  retiredBy: string;
+  retiredAt: string;
+}
 export interface PassagePublicationReceipt {
   passageId: string;
   status: "ACTIVE";

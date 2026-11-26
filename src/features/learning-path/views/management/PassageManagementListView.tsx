@@ -9,6 +9,7 @@ import PassageManagementStats from "@features/learning-path/components/managemen
 import PassageManagementFilterBar from "@features/learning-path/components/management/passages/PassageManagementFilterBar";
 import PassageManagementTable from "@features/learning-path/components/management/passages/PassageManagementTable";
 import PassageDeleteDialog from "@features/learning-path/components/management/passages/PassageDeleteDialog";
+import PassageRetireDialog from "@features/learning-path/components/management/passages/PassageRetireDialog";
 import PassageReadinessDialog from "@features/learning-path/components/management/passages/PassageReadinessDialog";
 import PassageWorkspaceDialog from "@features/learning-path/components/management/passages/PassageWorkspaceDialog";
 import type { PassageWorkspace } from "@features/learning-path/components/management/passages/PassageWorkspaceDialog";
@@ -18,6 +19,7 @@ export default function PassageManagementListView() {
   const [workspace, setWorkspace] = useState<PassageWorkspace | null>(null);
   const [deleting, setDeleting] = useState<PassageListItem | null>(null);
   const [checking, setChecking] = useState<PassageListItem | null>(null);
+  const [retiring, setRetiring] = useState<PassageListItem | null>(null);
   const [notice, setNotice] = useState("");
   const create = () => { setNotice(""); setWorkspace({ mode: "create" }); };
   const saved = () => {
@@ -38,6 +40,7 @@ export default function PassageManagementListView() {
         : data && (data.items.length ? <>
           <PassageManagementTable items={data.items}
             onPublish={setChecking}
+            onRetire={item => { setNotice(""); setRetiring(item); }}
             onView={item => setWorkspace({ mode: "view", passageId: item.passageId })}
             onEdit={item => setWorkspace({ mode: "edit", passageId: item.passageId })} onDelete={setDeleting} />
           <ListPagination compact total={data.totalElements} from={data.page * data.size + 1}
@@ -59,5 +62,8 @@ export default function PassageManagementListView() {
       onView={() => { setWorkspace({ mode: "view", passageId: checking.passageId }); setChecking(null); }} />}
     {deleting && <PassageDeleteDialog item={deleting} onClose={() => { setDeleting(null); refetch(); }}
       onDeleted={() => { setDeleting(null); setNotice("Đã xóa passage bản nháp."); refetch(); }} />}
+    {retiring && <PassageRetireDialog key={retiring.passageId} item={retiring}
+      onClose={() => { setRetiring(null); refetch(); }}
+      onRetired={() => { setRetiring(null); setNotice("Đã ngưng sử dụng passage."); refetch(); }} />}
   </div>;
 }

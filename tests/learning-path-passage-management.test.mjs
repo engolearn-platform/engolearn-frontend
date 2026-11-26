@@ -220,6 +220,7 @@ test("Passage table has seven columns with question counts and permits editing/d
     })),
     onView: item => selected.push(item.passageId), onEdit: () => {}, onDelete: () => {},
     onPublish: item => selected.push(`publish:${item.passageId}`),
+    onRetire: item => selected.push(`retire:${item.passageId}`),
   })));
   assert.equal(container.querySelectorAll("th").length, 7);
   assert.equal(container.querySelectorAll("th")[3].textContent, "Số câu hỏi");
@@ -232,6 +233,12 @@ test("Passage table has seven columns with question counts and permits editing/d
   assert.equal([...container.querySelectorAll("button")].filter(button => ["Kiểm tra", "Xuất bản"].includes(button.textContent)).length, 0);
   await act(async () => publishButtons[0].click());
   assert.deepEqual(selected, ["publish:DRAFT"]);
+  selected.length = 0;
+  const retireButtons = container.querySelectorAll('button[aria-label^="Ngưng sử dụng "]');
+  assert.equal(retireButtons.length, 1);
+  assert.equal(retireButtons[0].closest("tr").querySelector("td").textContent.includes("Passage ACTIVE"), true);
+  await act(async () => retireButtons[0].click());
+  assert.deepEqual(selected, ["retire:ACTIVE"]);
   selected.length = 0;
   const trigger = container.querySelector('button[aria-label="Thao tác với Passage DRAFT"]');
   await act(async () => trigger.click());
@@ -496,4 +503,96 @@ test("Sign out during publication aborts the client request and hides late succe
   await act(async () => complete(Response.json({ data: publicationReceipt })));
   assert.doesNotMatch(app.container.textContent, /Đã xuất bản passage/);
   assert.equal(app.router.state.location.pathname, "/login");
+});
+
+
+test("Retirement client sends revision to the encoded endpoint and validates the receipt", async t => {
+  const controller = new AbortController();
+  let request;
+  let valid = true;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    request = { url: new URL(url), options };
+    return Response.json({ data: { passageId: "id /?#", status: valid ? "RETIRED" : "ACTIVE", revision: 4, retiredBy: "manager", retiredAt: "2026-11-26T08:00:00Z" } });
+  });
+  const result = await modules.passageManagementService.retire("id /?#", 3, controller.signal);
+  assert.equal(result.status, "RETIRED");
+  assert.equal(request.url.pathname, `${endpoint}/id%20%2F%3F%23/retire`);
+  assert.equal(request.options.method, "POST");
+  assert.equal(request.options.credentials, "same-origin");
+  assert.equal(request.options.signal, controller.signal);
+  assert.deepEqual(JSON.parse(request.options.body), { revision: 3 });
+  valid = false;
+  await assert.rejects(modules.passageManagementService.retire("id /?#", 3), /Chưa xác định/);
+});
+
+test("Retirement asks for confirmation, prevents duplicate POSTs and refreshes the list", async t => {
+  let posts = 0;
+  let complete;
+  let retired = false;
+  const pending = new Promise(resolve => { complete = resolve; });
+  const item = { ...draft, status: "ACTIVE", referencingQuestionCount: 5 };
+  const app = await mount(t, "CONTENT_MANAGER", { items: [item], onRequest: (url, options) => {
+    if (url.pathname.endsWith("/retire")) {
+      posts++;
+      assert.deepEqual(JSON.parse(options.body), { revision: draft.revision });
+      return pending.then(() => { retired = true; return Response.json({ data: { passageId: draft.passageId, status: "RETIRED", revision: draft.revision + 1 } }); });
+    }
+    if (retired && url.pathname === endpoint) return Response.json({ data: {
+      items: [{ ...item, status: "RETIRED" }], page: 0, size: 20, totalPages: 1, totalElements: 1,
+      counters: { total: 1, draft: 0, active: 0, retired: 1 },
+    } });
+  } });
+  await app.settle();
+  await act(async () => app.container.querySelector('button[aria-label="Ngưng sử dụng Library hours"]').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  assert.match(dialog.textContent, /Ngưng sử dụng passage/);
+  assert.equal(posts, 0);
+  const confirm = findButton(dialog, "Ngưng sử dụng");
+  await act(async () => { confirm.click(); confirm.click(); });
+  assert.equal(posts, 1);
+  assert.equal(findButton(dialog, "Hủy").disabled, true);
+  await act(async () => complete());
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+  assert.match(app.container.textContent, /Đã ngưng sử dụng passage/);
+  assert.equal(app.container.querySelector('button[aria-label="Ngưng sử dụng Library hours"]'), null);
+});
+
+test("Retirement errors display ACTIVE references or uncertainty and require refetch before retry", async t => {
+  for (const failure of ["references", "conflict", "network"]) await t.test(failure, async child => {
+    let posts = 0;
+    const app = await mount(child, "ADMIN", { items: [{ ...draft, status: "ACTIVE" }], onRequest: url => {
+      if (url.pathname.endsWith("/retire")) {
+        posts++;
+        if (failure === "network") throw new TypeError("Network disconnected");
+        return Response.json({ code: failure === "references" ? "PASSAGE_ACTIVE_REFERENCES" : "PASSAGE_RETIRE_CONFLICT", activeQuestionCount: 2 }, { status: 409 });
+      }
+    } });
+    await app.settle();
+    await act(async () => app.container.querySelector('button[aria-label="Ngưng sử dụng Library hours"]').click());
+    const dialog = document.querySelector('[role="dialog"]');
+    await act(async () => findButton(dialog, "Ngưng sử dụng").click());
+    assert.equal(posts, 1);
+    assert.equal(findButton(dialog, "Ngưng sử dụng").disabled, true);
+    assert.ok(dialog.querySelector('[role="alert"]'));
+    if (failure === "references") assert.match(dialog.textContent, /2 câu hỏi đang sử dụng/);
+    await act(async () => findButton(dialog, "Đóng và tải lại").click());
+    assert.equal(document.querySelector('[role="dialog"]'), null);
+  });
+});
+
+test("Signing out during retirement aborts the request and ignores late success", async t => {
+  let signal;
+  let complete;
+  const pending = new Promise(resolve => { complete = resolve; });
+  const app = await mount(t, "CONTENT_MANAGER", { items: [{ ...draft, status: "ACTIVE" }], onRequest: (url, options) => {
+    if (url.pathname.endsWith("/retire")) { signal = options.signal; return pending; }
+  } });
+  await app.settle();
+  await act(async () => app.container.querySelector('button[aria-label="Ngưng sử dụng Library hours"]').click());
+  await act(async () => findButton(document.querySelector('[role="dialog"]'), "Ngưng sử dụng").click());
+  await app.logout();
+  assert.equal(signal.aborted, true);
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+  await act(async () => complete(Response.json({ data: { passageId: draft.passageId, status: "RETIRED", revision: draft.revision + 1 } })));
+  assert.doesNotMatch(app.container.textContent, /Đã ngưng sử dụng passage/);
 });

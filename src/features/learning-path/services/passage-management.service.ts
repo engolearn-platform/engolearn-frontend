@@ -1,6 +1,7 @@
 import { httpService } from "@shared/services/http.service";
 import type { ApiEnvelope, HttpError } from "@shared/services/http.service";
 import type { PassageDetail, PassageInput, PassageListParams, PassageListResponse, PassageReadiness, PassagePublicationInput, PassagePublicationReceipt } from "@features/learning-path/types/passage-management.types";
+import type { PassageRetirementReceipt } from "@features/learning-path/types/passage-management.types";
 
 export type PassagePublicationError = HttpError & { readiness?: PassageReadiness };
 
@@ -27,6 +28,14 @@ export function passageFormData(input: PassageInput, audio?: File): FormData {
 }
 
 export const passageManagementService = {
+  async retire(id: string, revision: number, signal?: AbortSignal): Promise<PassageRetirementReceipt> {
+    const response = await httpService.post<ApiEnvelope<PassageRetirementReceipt>>(`${itemUrl(id)}/retire`, { revision }, { signal });
+    const receipt = response?.data;
+    if (!receipt || receipt.passageId !== id || receipt.status !== "RETIRED" || receipt.revision !== revision + 1) {
+      throw new Error("Chưa xác định được kết quả ngưng sử dụng. Hãy tải lại trạng thái passage.");
+    }
+    return receipt;
+  },
   async publish(id: string, input: PassagePublicationInput, signal?: AbortSignal): Promise<PassagePublicationReceipt> {
     try {
       const response = await httpService.post<ApiEnvelope<PassagePublicationReceipt>>(`${itemUrl(id)}/publish`, input, { signal });

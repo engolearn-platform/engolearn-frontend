@@ -24,9 +24,10 @@ interface Props {
   onEdit: (item: PassageListItem) => void;
   onDelete: (item: PassageListItem) => void;
   onPublish: (item: PassageListItem) => void;
+  onRetire: (item: PassageListItem) => void;
 }
 
-function PassageActions({ item, onView, onEdit, onDelete, onPublish }: Omit<Props, "items"> & { item: PassageListItem }) {
+function PassageActions({ item, onView, onEdit, onDelete, onPublish, onRetire }: Omit<Props, "items"> & { item: PassageListItem }) {
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -52,8 +53,10 @@ function PassageActions({ item, onView, onEdit, onDelete, onPublish }: Omit<Prop
   }} onBlur={event => {
     if (!event.currentTarget.contains(event.relatedTarget) && !panel.current?.contains(event.relatedTarget)) setOpen(false);
   }}>
-    {item.status === "DRAFT" && <Button className="min-h-12 cursor-pointer whitespace-nowrap"
+    {item.status === "DRAFT" && <Button className="h-12 w-48 cursor-pointer whitespace-nowrap"
       aria-label={`Kiểm tra và xuất bản ${item.title}`} onClick={() => onPublish(item)}>Kiểm tra và xuất bản</Button>}
+    {item.status === "ACTIVE" && <Button variant="outline" className="h-12 w-48 cursor-pointer whitespace-nowrap text-on-surface hover:text-on-surface"
+      aria-label={`Ngưng sử dụng ${item.title}`} onClick={() => onRetire(item)}>Ngưng sử dụng</Button>}
     <Button ref={trigger} variant="ghost" className="size-12" aria-label={`Thao tác với ${item.title}`} aria-expanded={open}
       onClick={() => {
         const bounds = trigger.current!.getBoundingClientRect();
