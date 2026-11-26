@@ -58,7 +58,7 @@ export default function TopicManagementListView({ readOnly = false }: { readOnly
   }
 
   const items = data?.items ?? [];
-  const counters = data?.counters ?? { total: 0, published: 0, draft: 0 };
+  const counters = data?.counters ?? { total: 0, published: 0, draft: 0, unpublished: 0 };
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
   const currentPage = data?.page ?? params.page ?? 0;

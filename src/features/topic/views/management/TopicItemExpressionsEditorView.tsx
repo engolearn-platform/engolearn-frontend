@@ -28,13 +28,14 @@ function move<T>(entries: T[], index: number, direction: -1 | 1) {
   return ordered;
 }
 
-export default function TopicItemExpressionsEditorView({ value, onChange, vocabulary, itemTitle, topicId, disabled = false }: {
+export default function TopicItemExpressionsEditorView({ value, onChange, vocabulary, itemTitle, topicId, disabled = false, minor = false }: {
   value: TopicExpressionResource[];
   onChange: (value: TopicExpressionResource[]) => void;
   vocabulary: TopicVocabularyResource[];
   itemTitle: string;
   topicId: string;
   disabled?: boolean;
+  minor?: boolean;
 }) {
   const [dialog, setDialog] = useState<DialogPosition | null>(null);
   const vocabularyNames = new Map(vocabulary.flatMap(({ vocabId, snapshot }) => vocabId ? [[vocabId, snapshot?.word ?? vocabId]] : []));
@@ -51,7 +52,7 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
   };
 
   function addGroup() {
-    if (disabled) return;
+    if (disabled || minor) return;
     const blank: TopicExpressionPurposeResource = { purposeEn: null, purposeVi: null, groupType: null, orderIndex: 0, examples: [] };
     if (!value.length) onChange([{ purposes: [blank], tips: null }]);
     else changePurposes(value.length - 1, [...value[value.length - 1].purposes, blank]);
@@ -68,9 +69,9 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
 
   return <fieldset disabled={disabled} className="flex flex-col gap-5">
     <ExpressionsHeaderCard itemTitleEn={itemTitle} totalExamples={allPurposes.reduce((count, purpose) => count + purpose.examples.length, 0)}
-      purposeCount={allPurposes.length} maxPurposes={3} onAdd={addGroup} addLabel="Thêm nhóm mẫu câu" />
+      purposeCount={allPurposes.length} maxPurposes={3} onAdd={addGroup} showAdd={!minor} addLabel="Thêm nhóm mẫu câu" />
     {value.map((block, blockIndex) => <div key={blockIndex} className="space-y-5">
-      {value.length > 1 && <div className="flex justify-end gap-2">
+      {!minor && value.length > 1 && <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" disabled={blockIndex === 0} onClick={() => onChange(move(value, blockIndex, -1))}>Đưa khối lên</Button>
         <Button type="button" variant="outline" disabled={blockIndex === value.length - 1} onClick={() => onChange(move(value, blockIndex, 1))}>Đưa khối xuống</Button>
       </div>}
@@ -78,23 +79,23 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
         className="space-y-4 rounded-xl bg-surface-container-lowest p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-headline-sm font-semibold">{purpose.purposeVi || "Nhóm mẫu câu"}</h2>
-          <div className="flex flex-wrap gap-2">
+          {!minor && <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" disabled={groupIndex === 0} onClick={() => changePurposes(blockIndex, move(block.purposes, groupIndex, -1))}>Đưa nhóm lên</Button>
             <Button type="button" size="sm" variant="outline" disabled={groupIndex + 1 === block.purposes.length} onClick={() => changePurposes(blockIndex, move(block.purposes, groupIndex, 1))}>Đưa nhóm xuống</Button>
             <Button type="button" size="sm" variant="outline" onClick={() => {
               if (window.confirm("Xóa nhóm và các mẫu câu trong nhóm?")) changePurposes(blockIndex, block.purposes.filter((_, index) => index !== groupIndex));
             }}>Xóa nhóm</Button>
-          </div>
+          </div>}
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="grid gap-1"><span>Tên nhóm tiếng Anh</span>
-            <input className={fieldClass} value={purpose.purposeEn ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { purposeEn: event.target.value || null })} />
+            <input disabled={minor} className={fieldClass} value={purpose.purposeEn ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { purposeEn: event.target.value || null })} />
           </label>
           <label className="grid gap-1"><span>Tên nhóm tiếng Việt</span>
             <input className={fieldClass} value={purpose.purposeVi ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { purposeVi: event.target.value || null })} />
           </label>
           <label className="grid gap-1"><span>Loại nhóm</span>
-            <select className={fieldClass} value={purpose.groupType ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { groupType: (event.target.value || null) as TopicExpressionGroupType | null })}>
+            <select disabled={minor} className={fieldClass} value={purpose.groupType ?? ""} onChange={(event) => editGroup(blockIndex, groupIndex, { groupType: (event.target.value || null) as TopicExpressionGroupType | null })}>
               <option value="">Chưa chọn</option>
               {Object.entries(GROUP_TYPES).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
             </select>
@@ -111,26 +112,27 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
                 audioFile: source.audioUrl, linkedVocabIds: source.linkedVocabIds ?? [],
               }} vocabLinks={links.resolved} unresolvedVocabIds={links.unresolvedIds}
                 onEdit={() => setDialog({ block: blockIndex, group: groupIndex, row })}
-                onDelete={() => {
+                onDelete={!minor ? () => {
                   if (window.confirm("Xóa mẫu câu khỏi bản nháp?")) editGroup(blockIndex, groupIndex, { examples: examples.filter((_, index) => index !== row) });
-                }}
-                onDuplicate={() => editGroup(blockIndex, groupIndex, { examples: [...examples, { ...source }] })}
+                } : undefined}
+                onDuplicate={!minor ? () => editGroup(blockIndex, groupIndex, { examples: [...examples, { ...source }] }) : undefined}
+                minorMode={minor}
                 onPreviewAudio={() => undefined} />
-              <div className="flex flex-wrap items-center gap-2">
+              {!minor && <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" size="sm" variant="outline" disabled={row === 0} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, -1) })}>Đưa mẫu câu lên</Button>
                 <Button type="button" size="sm" variant="outline" disabled={row + 1 === examples.length} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, 1) })}>Đưa mẫu câu xuống</Button>
-              </div>
+              </div>}
             </div>;
           })}
         </div>
-        <Button type="button" variant="outline" onClick={() => setDialog({ block: blockIndex, group: groupIndex })}>Thêm mẫu câu</Button>
+        {!minor && <Button type="button" variant="outline" onClick={() => setDialog({ block: blockIndex, group: groupIndex })}>Thêm mẫu câu</Button>}
       </section>)}
       <label className="grid gap-1"><span>Mẹo sử dụng mẫu câu</span>
-        <textarea className={fieldClass} value={block.tips ?? ""} onChange={(event) => onChange(value.map((entry, index) =>
+        <textarea disabled={minor} className={fieldClass} value={block.tips ?? ""} onChange={(event) => onChange(value.map((entry, index) =>
           index === blockIndex ? { ...entry, tips: event.target.value || null } : entry))} />
       </label>
     </div>)}
-    {dialog && <ExpressionUpsertDialog topicId={topicId} initial={dialog.row === undefined ? undefined : value[dialog.block].purposes[dialog.group].examples[dialog.row]}
+    {dialog && <ExpressionUpsertDialog topicId={topicId} minor={minor} initial={dialog.row === undefined ? undefined : value[dialog.block].purposes[dialog.group].examples[dialog.row]}
       vocabulary={vocabularyNames} onClose={() => setDialog(null)} onSubmit={submitExample} />}
   </fieldset>;
 }

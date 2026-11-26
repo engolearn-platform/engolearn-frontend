@@ -1,4 +1,4 @@
-export type TopicStatus = "published" | "draft";
+export type TopicStatus = "published" | "draft" | "unpublished";
 
 export type CefrLevel = "A1" | "A2" | "B1" | "B2";
 
