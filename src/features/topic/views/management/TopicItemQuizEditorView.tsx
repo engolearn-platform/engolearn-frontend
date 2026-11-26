@@ -13,6 +13,7 @@ interface Props {
   onChange: (value: TopicQuizResource[]) => void;
   disabled?: boolean;
   topicId: string;
+  minor?: boolean;
 }
 
 function toInitial(question: QuizQuestionPresentation): QuizQuestionUpsert | undefined {
@@ -61,7 +62,7 @@ function withQuestion(module: TopicQuizResource, draft: QuizQuestionUpsert, inde
   return { ...module, questions };
 }
 
-export default function TopicItemQuizEditorView({ value, onChange, topicId, disabled = false }: Props) {
+export default function TopicItemQuizEditorView({ value, onChange, topicId, disabled = false, minor = false }: Props) {
   const [dialog, setDialog] = useState<{ moduleIndex: number; questionIndex?: number; type: QuizType } | null>(null);
   const presentation = useMemo(() => toQuizPresentations(value), [value]);
   const groups = presentation.modules;
@@ -96,25 +97,25 @@ export default function TopicItemQuizEditorView({ value, onChange, topicId, disa
   };
 
   return <div className="flex flex-col gap-6">
-    <QuizHeaderCard itemTitleEn="Quiz" totalQuestions={totalQuestions} groupCount={groups.length} disabled={disabled} onQuickAdd={() => addModule("SITUATIONAL_CHOICE")} />
-    <div className="flex flex-wrap gap-2">
+    <QuizHeaderCard itemTitleEn="Quiz" totalQuestions={totalQuestions} groupCount={groups.length} disabled={disabled || minor} onQuickAdd={() => { if (!minor) addModule("SITUATIONAL_CHOICE"); }} />
+    {!minor && <div className="flex flex-wrap gap-2">
       <Button type="button" disabled={disabled} variant="outline" onClick={() => addModule("FILL_BLANK")}>Thêm Fill Blank module</Button>
       <Button type="button" disabled={disabled} variant="outline" onClick={() => addModule("SITUATIONAL_CHOICE")}>Thêm Situational Choice module</Button>
-    </div>
+    </div>}
     {value.map((module, moduleIndex) => {
       const group = groups[moduleIndex];
       if (!group) return null;
       const supportedModule = group.kind === "supported";
-      const titleControl = <div className="grid gap-3 sm:grid-cols-2">
+      const titleControl = !minor && <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-label-sm">Tên module<input aria-label={`Quiz module ${moduleIndex + 1} title`} value={module.title ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { title: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
         <label className="text-label-sm">Hướng dẫn<input aria-label={`Quiz module ${moduleIndex + 1} instructions`} value={module.instructions ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { instructions: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
       </div>;
-      const moduleActions = <><Button type="button" variant="outline" disabled={disabled || moduleIndex === 0} onClick={() => moveModule(moduleIndex, -1)}>Lên</Button><Button type="button" variant="outline" disabled={disabled || moduleIndex === value.length - 1} onClick={() => moveModule(moduleIndex, 1)}>Xuống</Button><Button type="button" variant="outline" disabled={disabled} onClick={() => deleteModule(moduleIndex)}>Xóa module</Button></>;
+      const moduleActions = !minor && <><Button type="button" variant="outline" disabled={disabled || moduleIndex === 0} onClick={() => moveModule(moduleIndex, -1)}>Lên</Button><Button type="button" variant="outline" disabled={disabled || moduleIndex === value.length - 1} onClick={() => moveModule(moduleIndex, 1)}>Xuống</Button><Button type="button" variant="outline" disabled={disabled} onClick={() => deleteModule(moduleIndex)}>Xóa module</Button></>;
       return <div key={`${module.quizId ?? "draft"}-${moduleIndex}`} className="space-y-3">
-        <QuizGroupSection group={group} onAdd={() => { if (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE") setDialog({ moduleIndex, type: module.quizType }); }} onEdit={(id) => { const found = /question-(\d+)$/.exec(id); if (found && (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE")) setDialog({ moduleIndex, questionIndex: Number(found[1]), type: module.quizType }); }} onDelete={deleteQuestion} onPreviewAudio={() => undefined} readOnly={disabled} titleControl={supportedModule ? titleControl : undefined} moduleActions={supportedModule ? moduleActions : undefined} />
-        {supportedModule && module.questions.map((_, questionIndex) => <div key={`${moduleIndex}-${questionIndex}`} className="flex gap-2"><Button type="button" variant="outline" disabled={disabled || questionIndex === 0} onClick={() => reorderQuestion(moduleIndex, questionIndex, -1)}>Đưa câu lên</Button><Button type="button" variant="outline" disabled={disabled || questionIndex === module.questions.length - 1} onClick={() => reorderQuestion(moduleIndex, questionIndex, 1)}>Đưa câu xuống</Button></div>)}
+        <QuizGroupSection group={group} onAdd={() => { if (!minor && (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE")) setDialog({ moduleIndex, type: module.quizType }); }} onEdit={(id) => { const found = /question-(\d+)$/.exec(id); if (found && (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE")) setDialog({ moduleIndex, questionIndex: Number(found[1]), type: module.quizType }); }} onDelete={deleteQuestion} onPreviewAudio={() => undefined} readOnly={disabled} minorMode={minor} titleControl={supportedModule ? titleControl || undefined : undefined} moduleActions={supportedModule ? moduleActions || undefined : undefined} />
+        {!minor && supportedModule && module.questions.map((_, questionIndex) => <div key={`${moduleIndex}-${questionIndex}`} className="flex gap-2"><Button type="button" variant="outline" disabled={disabled || questionIndex === 0} onClick={() => reorderQuestion(moduleIndex, questionIndex, -1)}>Đưa câu lên</Button><Button type="button" variant="outline" disabled={disabled || questionIndex === module.questions.length - 1} onClick={() => reorderQuestion(moduleIndex, questionIndex, 1)}>Đưa câu xuống</Button></div>)}
       </div>;
     })}
-    {dialog && <QuestionUpsertDialog topicId={topicId} open mode={dialog.questionIndex == null ? "add" : "edit"} presetType={dialog.type} initial={initial} allowIncomplete onClose={() => setDialog(null)} onSubmit={(draft) => { const module = value[dialog.moduleIndex]; if (!disabled && module && draft.kind === dialog.type) onChange(value.map((entry, index) => index === dialog.moduleIndex ? withQuestion(entry, draft, dialog.questionIndex) : entry)); setDialog(null); }} />}
+    {dialog && <QuestionUpsertDialog topicId={topicId} open mode={dialog.questionIndex == null ? "add" : "edit"} minor={minor} presetType={dialog.type} initial={initial} allowIncomplete onClose={() => setDialog(null)} onSubmit={(draft) => { const module = value[dialog.moduleIndex]; if (!disabled && module && draft.kind === dialog.type && (!minor || dialog.questionIndex != null)) onChange(value.map((entry, index) => index === dialog.moduleIndex ? withQuestion(entry, draft, dialog.questionIndex) : entry)); setDialog(null); }} />}
   </div>;
 }

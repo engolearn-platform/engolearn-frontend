@@ -2,13 +2,15 @@ import type { CefrLevel } from "./topic.types";
 
 export type TopicCategory = "DINING" | "TRAVEL" | "BUSINESS" | "DAILY" | "HEALTH";
 
+export type TopicStatus = "draft" | "published" | "unpublished";
+
 export interface TopicManagementListItem {
   id: string;
   titleEn: string;
   titleVi: string;
   cefr?: CefrLevel;
   category?: TopicCategory;
-  status: "draft" | "published";
+  status: TopicStatus;
   itemCount: number;
   updatedAt: string;
 }
@@ -22,7 +24,7 @@ export interface TopicManagementResponse {
   category?: TopicCategory;
   description?: string;
   coverUrl?: string;
-  status: "draft" | "published";
+  status: TopicStatus;
   durationMinutes: number;
   itemCount: number;
   createdAt: string;
@@ -88,6 +90,43 @@ export interface TopicReadinessResult {
   violations: { path: string; code: string; message: string }[];
 }
 
+export interface TopicPublishItemResult {
+  topicItemId: string;
+  itemVersionId: string;
+  version: number;
+  order: number;
+  title: string;
+  durationMinutes: number;
+}
+
+export interface TopicPublishResult {
+  topicId: string;
+  revision: number;
+  topicVersionId: string;
+  version: number;
+  items: TopicPublishItemResult[];
+  itemCount: number;
+  durationMinutes: number;
+  publishedAt: string;
+  previousTopicVersionId?: string;
+  changes?: TopicPublishChange[];
+}
+
+export interface TopicUnpublishResult {
+  topicId: string;
+  revision: number;
+  status: "unpublished";
+  latestPublishedVersion: string | null;
+}
+
+export interface TopicPublishChange {
+  topicItemId: string;
+  previousItemVersionId: string | null;
+  itemVersionId: string;
+  version: number;
+  changeType: "MAJOR" | "NEW";
+}
+
 export interface TopicContextResource {
   prompt: string | null;
   scenarioDescription: string | null;
@@ -146,6 +185,7 @@ export interface TopicManagementCounters {
   total: number;
   published: number;
   draft: number;
+  unpublished: number;
 }
 
 export interface TopicManagementListResponse {
@@ -182,7 +222,7 @@ export interface TopicManagementListQueryParams {
   search?: string;
   cefr?: CefrLevel;
   category?: TopicCategory;
-  status?: "draft" | "published";
+  status?: TopicStatus;
   page?: number;
   size?: number;
 }

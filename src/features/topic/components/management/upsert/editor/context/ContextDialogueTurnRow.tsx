@@ -13,18 +13,19 @@ interface ContextDialogueTurnRowProps {
   onUp?: () => void;
   onDown?: () => void;
   topicId: string;
+  minor?: boolean;
 }
 
-export default function ContextDialogueTurnRow({ turn, onChange, onRemove, onUp, onDown, topicId }: ContextDialogueTurnRowProps) {
+export default function ContextDialogueTurnRow({ turn, onChange, onRemove, onUp, onDown, topicId, minor = false }: ContextDialogueTurnRowProps) {
   const speakerLabel = turn.speaker?.trim() || "người nói";
   const fieldClass = "w-full rounded bg-surface-container-lowest px-2 py-1 text-body-md text-on-surface focus:ring-2 focus:ring-primary";
   const audio = playableManagementMediaUrl(turn.audioUrl);
   return (
     <div className="grid gap-3 rounded-lg bg-surface-container-lowest p-3 shadow-sm sm:grid-cols-[6rem_1fr_auto]">
-      <input value={turn.speaker ?? ""} onChange={(event) => onChange({ speaker: event.target.value || null })}
+      <input disabled={minor} value={turn.speaker ?? ""} onChange={(event) => onChange({ speaker: event.target.value || null })}
         placeholder="Tên…" aria-label="Tên người nói" className={fieldClass} />
       <div className="grid min-w-0 gap-2">
-        <input value={turn.textEn ?? ""} onChange={(event) => onChange({ textEn: event.target.value || null })}
+        <input disabled={minor} value={turn.textEn ?? ""} onChange={(event) => onChange({ textEn: event.target.value || null })}
           placeholder="Câu thoại tiếng Anh…" aria-label={`Lời thoại của ${speakerLabel} (tiếng Anh)`} className={fieldClass} />
         <input value={turn.textVi ?? ""} onChange={(event) => onChange({ textVi: event.target.value || null })}
           placeholder="Nghĩa tiếng Việt…" aria-label="Nghĩa tiếng Việt của lời thoại" className={fieldClass} />
@@ -36,7 +37,7 @@ export default function ContextDialogueTurnRow({ turn, onChange, onRemove, onUp,
       <div className="flex items-start gap-1">
         {onUp && <Button type="button" size="sm" variant="ghost" onClick={onUp} aria-label="Đưa dòng thoại lên"><ArrowUp /></Button>}
         {onDown && <Button type="button" size="sm" variant="ghost" onClick={onDown} aria-label="Đưa dòng thoại xuống"><ArrowDown /></Button>}
-        <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label="Xóa dòng thoại"><Trash2 /></Button>
+        {!minor && <Button type="button" size="sm" variant="ghost" onClick={onRemove} aria-label="Xóa dòng thoại"><Trash2 /></Button>}
       </div>
     </div>
   );

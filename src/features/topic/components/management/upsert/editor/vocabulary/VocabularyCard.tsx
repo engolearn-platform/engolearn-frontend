@@ -22,9 +22,10 @@ interface VocabularyCardProps {
   readOnly?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  minorMode?: boolean;
 }
 
-export default function VocabularyCard({ resource, readOnly = true, onEdit, onDelete }: VocabularyCardProps) {
+export default function VocabularyCard({ resource, readOnly = true, onEdit, onDelete, minorMode = false }: VocabularyCardProps) {
   const item = toVocabularyPresentation(resource);
   const quickCheck = item.quickCheck;
   const collocationLayout = vocabularyCollocationLayout(item.collocations);
@@ -37,7 +38,7 @@ export default function VocabularyCard({ resource, readOnly = true, onEdit, onDe
       </div>
       {!readOnly && <div className="flex items-center gap-1">
         <button type="button" onClick={onEdit} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-label-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary"><Pencil className="size-[18px]" aria-hidden="true" />Chỉnh sửa</button>
-        <button type="button" onClick={onDelete} aria-label={`Xóa từ ${item.word}`} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-label-sm text-error transition-colors hover:bg-error-container/30"><Trash2 className="size-[18px]" aria-hidden="true" />Xóa</button>
+        {!minorMode && <button type="button" onClick={onDelete} aria-label={`Xóa từ ${item.word}`} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-label-sm text-error transition-colors hover:bg-error-container/30"><Trash2 className="size-[18px]" aria-hidden="true" />Xóa</button>}
       </div>}
     </header>
     {item.hasUnresolvedReference && <p className="mt-2 min-w-0 max-w-full break-words text-label-sm text-on-surface-variant [overflow-wrap:anywhere]">Từ điển liên kết chưa có nhãn hiển thị.</p>}
