@@ -1,11 +1,15 @@
 import type { ApiEnvelope, HttpError } from "@shared/services/http.service";
 import { httpService } from "@shared/services/http.service";
-import type { SpeakingProfile, SpeakingProfileState } from "@features/speaking/contract";
+import type { SpeakingProfile, SpeakingProfileState, SpeakingProfileViolation } from "@features/speaking/contract";
 
 export class TopicSpeakingProfileError extends Error {
   readonly code: string;
   readonly status?: number;
-  constructor(error: HttpError) { super(error.message); this.name = "TopicSpeakingProfileError"; this.code = error.code ?? "REQUEST_FAILED"; this.status = error.status; }
+  readonly violations: SpeakingProfileViolation[];
+  constructor(error: HttpError) {
+    super(error.message); this.name = "TopicSpeakingProfileError"; this.code = error.code ?? "REQUEST_FAILED"; this.status = error.status;
+    this.violations = error.violations ?? [];
+  }
 }
 function profilePath(topicId: string, itemId?: string) {
   return itemId

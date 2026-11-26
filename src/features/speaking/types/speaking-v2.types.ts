@@ -59,6 +59,15 @@ export interface SpeakingProfile {
 }
 export interface SpeakingProfileState {
   revision: number; draft: SpeakingProfile | null; published: SpeakingProfile | null; contentVersion: string | null;
-  resources: { id: string; type: "VOCABULARY" | "EXPRESSION"; textEn: string }[];
+  initialProfile: SpeakingProfile | null;
+  scopeTitle: string | null;
+  parentTitle: string | null;
+  publishedProfileVersion: number | null;
+  draftMatchesPublished: boolean;
+  resourceGroups: { itemId: string; itemTitle: string | null; resourceIds: string[] }[];
+  publishViolations: SpeakingProfileViolation[];
+  publishedViolations: SpeakingProfileViolation[];
+  resources: { id: string; itemId: string; type: "VOCABULARY" | "EXPRESSION"; textEn: string }[];
 }
+export interface SpeakingProfileViolation { path: string; code: string; message: string }
 export interface SpeakingSocketMessage<T = Record<string, unknown>> { type: string; requestId?: string; sessionId: string; turnId?: string; sequence?: number; payload: T }

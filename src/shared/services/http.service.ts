@@ -10,7 +10,7 @@ interface RequestOptions {
 
 interface ApiEnvelope<T> { data: T; timestamp?: string }
 
-type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; retryable?: boolean; activeSessionId?: string };
+type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; violations?: { path: string; code: string; message: string }[]; retryable?: boolean; activeSessionId?: string };
 
 class HttpService {
   private baseUrl: string;
@@ -34,8 +34,9 @@ class HttpService {
     let retryable: boolean | undefined;
     let activeSessionId: string | undefined;
     let fieldErrors: { field: string; message: string }[] | undefined;
+    let violations: { path: string; code: string; message: string }[] | undefined;
     try {
-      const problem = await response.json() as { detail?: string; title?: string; code?: string; retryable?: unknown; activeSessionId?: unknown; fieldErrors?: unknown } | null;
+      const problem = await response.json() as { detail?: string; title?: string; code?: string; retryable?: unknown; activeSessionId?: unknown; fieldErrors?: unknown; violations?: unknown } | null;
       if (problem) {
         if (typeof problem.code === "string") code = problem.code;
         if (typeof problem.retryable === "boolean") retryable = problem.retryable;
@@ -43,10 +44,14 @@ class HttpService {
         if (Array.isArray(problem.fieldErrors) && problem.fieldErrors.every((item: unknown) => item !== null && typeof item === "object" && "field" in item && typeof item.field === "string" && "message" in item && typeof item.message === "string")) {
           fieldErrors = problem.fieldErrors.map(item => ({ field: item.field, message: item.message }));
         }
+        const rawViolations = problem.violations;
+        if (Array.isArray(rawViolations) && rawViolations.every((item: unknown) => item !== null && typeof item === "object" && "path" in item && typeof item.path === "string" && "code" in item && typeof item.code === "string" && "message" in item && typeof item.message === "string")) {
+          violations = rawViolations.map(item => ({ path: item.path, code: item.code, message: item.message }));
+        }
         message = problem.detail || problem.title || message;
       }
     } catch { /* retain the HTTP message for non-JSON responses */ }
-    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, retryable, activeSessionId });
+    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, violations, retryable, activeSessionId });
   }
 
   private async refresh(signal?: AbortSignal): Promise<boolean> {

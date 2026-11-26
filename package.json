@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:auth": "node --test tests/auth-role-policy.test.mjs tests/auth-routes.test.mjs",
-    "test:speaking": "node --test tests/speaking-protocol.test.mjs tests/speaking-profile.test.mjs tests/speaking-api.test.mjs tests/speaking-ui.test.mjs",
+    "test:speaking": "node --test tests/speaking-protocol.test.mjs tests/speaking-profile.test.mjs tests/speaking-resource-selection.test.mjs tests/speaking-profile-editor.test.mjs tests/speaking-api.test.mjs tests/speaking-ui.test.mjs",
     "preview": "vite preview",
     "topic:types": "node scripts/generate-topic-api-types.mjs",
     "topic:types:check": "node scripts/generate-topic-api-types.mjs --check",
