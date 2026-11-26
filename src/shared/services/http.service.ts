@@ -10,7 +10,7 @@ interface RequestOptions {
 
 interface ApiEnvelope<T> { data: T; timestamp?: string }
 
-type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; violations?: { path: string; code: string; message: string }[]; retryable?: boolean; activeSessionId?: string };
+type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; violations?: { path: string; code: string; message: string }[]; retryable?: boolean; activeSessionId?: string; problem?: unknown };
 
 class HttpService {
   private baseUrl: string;
@@ -34,10 +34,12 @@ class HttpService {
     let retryable: boolean | undefined;
     let activeSessionId: string | undefined;
     let fieldErrors: { field: string; message: string }[] | undefined;
+    let problemBody: unknown;
     let violations: { path: string; code: string; message: string }[] | undefined;
     try {
       const problem = await response.json() as { detail?: string; title?: string; code?: string; retryable?: unknown; activeSessionId?: unknown; fieldErrors?: unknown; violations?: unknown } | null;
       if (problem) {
+        problemBody = problem;
         if (typeof problem.code === "string") code = problem.code;
         if (typeof problem.retryable === "boolean") retryable = problem.retryable;
         if (typeof problem.activeSessionId === "string" && problem.activeSessionId.length > 0) activeSessionId = problem.activeSessionId;
@@ -51,7 +53,7 @@ class HttpService {
         message = problem.detail || problem.title || message;
       }
     } catch { /* retain the HTTP message for non-JSON responses */ }
-    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, violations, retryable, activeSessionId });
+    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, violations, retryable, activeSessionId, problem: problemBody });
   }
 
   private async refresh(signal?: AbortSignal): Promise<boolean> {
@@ -78,9 +80,11 @@ class HttpService {
     const isAuthEndpoint = /\/api\/v1\/auth\/(login|register|refresh|logout)$/.test(endpoint);
     const headers = new Headers({ Accept: "application/json", "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" });
     for (const [key, value] of Object.entries(options?.headers ?? {})) headers.set(key, value);
+    const isMultipart = typeof FormData !== "undefined" && body instanceof FormData;
+    if (isMultipart) headers.delete("Content-Type");
     const response = await this.fetchImpl(this.buildUrl(endpoint, options?.params), {
       method, credentials: "same-origin", cache: "no-store", headers, signal: options?.signal, keepalive: options?.keepalive,
-      ...(body !== undefined && isUnsafe ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined && isUnsafe ? { body: isMultipart ? body as FormData : JSON.stringify(body) } : {}),
     });
     if (response.status === 401 && retry && !options?.skipAuthRefresh && !isAuthEndpoint && !options?.signal?.aborted) {
       if (await this.refresh(options?.signal)) return this.request<T>(method, endpoint, options, body, false);

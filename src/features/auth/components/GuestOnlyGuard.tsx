@@ -18,8 +18,10 @@ export default function GuestOnlyGuard() {
   if (isAuthenticated) {
     const returnTo = authReturnTo(location.state);
     const canManageContent = hasRequiredRole(user?.role ?? null, ["CONTENT_MANAGER"]);
-    const isTopicManagement = matchPath(`${ROUTES.ADMIN_TOPICS}/*`, returnTo.split(/[?#]/, 1)[0]);
-    return <Navigate to={canManageContent && !isTopicManagement ? ROUTES.ADMIN_TOPICS : returnTo} replace />;
+    const pathname = returnTo.split(/[?#]/, 1)[0];
+    const isContentManagement = [ROUTES.ADMIN_TOPICS, ROUTES.ADMIN_PASSAGES]
+      .some(base => matchPath(`${base}/*`, pathname));
+    return <Navigate to={canManageContent && !isContentManagement ? ROUTES.ADMIN_TOPICS : returnTo} replace />;
   }
   return <Outlet />;
 }
