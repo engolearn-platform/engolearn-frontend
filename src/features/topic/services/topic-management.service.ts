@@ -15,6 +15,8 @@ import type {
   TopicExpressionResource,
   TopicQuizResource,
   TopicReadinessResult,
+  TopicPublishResult,
+  TopicUnpublishResult,
   TopicUpdateRequest,
 } from "../types/topic-management.types";
 
@@ -22,6 +24,7 @@ export class TopicApiError extends Error {
   status: number;
   code: string;
   fieldErrors?: ApiErrorEnvelope["fieldErrors"];
+  violations?: TopicReadinessResult["violations"];
 
   constructor(status: number, envelope: ApiErrorEnvelope) {
     super(envelope.message);
@@ -70,6 +73,42 @@ async function parseErrorEnvelope(response: Response): Promise<ApiErrorEnvelope>
     code: "UNKNOWN_ERROR",
     message: response.statusText || "Request failed",
   };
+}
+
+async function parsePublishError(response: Response): Promise<ApiErrorEnvelope & { violations?: TopicReadinessResult["violations"] }> {
+  try {
+    const body = await response.json() as ApiErrorEnvelope & { detail?: string; violations?: TopicReadinessResult["violations"]; properties?: { violations?: TopicReadinessResult["violations"] } };
+    const violations = body.violations ?? body.properties?.violations;
+    if (body.code && (body.message || body.detail)) return { ...body, message: body.message || body.detail || "Không thể xuất bản chủ đề.", violations };
+  } catch { /* use standard error below */ }
+  return parseErrorEnvelope(response);
+}
+
+export async function publishTopic(topicId: string, revision: number, fetchImpl: typeof fetch = fetch): Promise<TopicPublishResult> {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision }),
+  });
+  if (!response.ok) {
+    const body = await parsePublishError(response);
+    const error = new TopicApiError(response.status, body);
+    error.violations = body.violations;
+    throw error;
+  }
+  const envelope = await response.json() as ApiResponse<TopicPublishResult>;
+  return envelope.data;
+}
+
+export async function unpublishTopic(topicId: string, revision: number, fetchImpl: typeof fetch = fetch): Promise<TopicUnpublishResult> {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/unpublish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision }),
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = await response.json() as ApiResponse<TopicUnpublishResult>;
+  return envelope.data;
 }
 
 export async function fetchTopicList(
@@ -150,6 +189,38 @@ export async function fetchTopicItemById(
   }
 
   const envelope = (await response.json()) as ApiResponse<TopicItemManagementDetail>;
+  return envelope.data;
+}
+
+export async function fetchPublishedTopicItemById(
+  topicId: string,
+  itemId: string,
+  signal?: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemManagementDetail> {
+  const response = await fetchImpl(
+    `/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}?view=published`,
+    { method: "GET", headers: { "Content-Type": "application/json" }, signal },
+  );
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicItemManagementDetail>;
+  return envelope.data;
+}
+
+export async function openItemWorkingDraft(
+  topicId: string,
+  itemId: string,
+  revision: number,
+  baseItemVersionId: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<TopicItemResourceMutationResult> {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/working-draft`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision, baseItemVersionId }),
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicItemResourceMutationResult>;
   return envelope.data;
 }
 
@@ -256,6 +327,31 @@ export function saveItemQuizzes(topicId: string, itemId: string, revision: numbe
   return saveItemSection(topicId, itemId, "quizzes", { revision, quizzes });
 }
 
+export type TopicMinorSection = "context" | "vocabularies" | "expressions" | "quizzes";
+export type TopicMinorChange =
+  | { context: TopicContextResource }
+  | { vocabularies: TopicVocabularyResource[] }
+  | { expressions: TopicExpressionResource[] }
+  | { quizzes: TopicQuizResource[] };
+
+export async function applyItemMinor(
+  topicId: string,
+  itemId: string,
+  revision: number,
+  itemVersionId: string,
+  change: TopicMinorChange,
+  fetchImpl: typeof fetch = fetch,
+) {
+  const response = await fetchImpl(`/api/management/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/minor`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision, itemVersionId, ...change }),
+  });
+  if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
+  const envelope = (await response.json()) as ApiResponse<TopicItemResourceMutationResult>;
+  return envelope.data;
+}
+
 export async function fetchTopicReadiness(topicId: string, signal?: AbortSignal) {
   const response = await fetch(`/api/management/topics/${encodeURIComponent(topicId)}/readiness`, { signal });
   if (!response.ok) throw new TopicApiError(response.status, await parseErrorEnvelope(response));
@@ -280,6 +376,8 @@ export const topicManagementService = {
   fetchTopicById,
   fetchTopicItems,
   fetchTopicItemById,
+  fetchPublishedTopicItemById,
+  openItemWorkingDraft,
   createTopic,
   updateTopic,
   createTopicItem,
@@ -291,5 +389,8 @@ export const topicManagementService = {
   saveItemVocabulary,
   saveItemExpressions,
   saveItemQuizzes,
+  applyItemMinor,
   fetchTopicReadiness,
+  publishTopic,
+  unpublishTopic,
 };

@@ -24,6 +24,11 @@ export default function TopicManagementStats({ stats }: TopicManagementStatsProp
         <span className="text-label-sm text-on-surface-variant">Bản nháp:</span>
         <span className="text-label-lg font-bold text-on-secondary-container">{stats.draft}</span>
       </span>
+      <span className="flex items-center gap-2.5 rounded-full bg-surface-container-lowest px-3.5 py-1.5 shadow-sm">
+        <span className="size-2 rounded-full bg-outline" aria-hidden="true" />
+        <span className="text-label-sm text-on-surface-variant">Đã gỡ xuất bản:</span>
+        <span className="text-label-lg font-bold text-on-surface-variant">{stats.unpublished}</span>
+      </span>
     </div>
   );
 }

@@ -29,12 +29,13 @@ function formatDetail(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export default function QuizQuestionCard({ question, onEdit, onDelete, onPreviewAudio, readOnly }: {
+export default function QuizQuestionCard({ question, onEdit, onDelete, onPreviewAudio, readOnly, minorMode = false }: {
   question: QuizQuestionPresentation;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPreviewAudio: () => void;
   readOnly: boolean;
+  minorMode?: boolean;
 }) {
   const label = question.kind === "FILL_BLANK" ? "Điền từ" : question.kind === "SITUATIONAL_CHOICE" ? "Tình huống" : "Chưa hỗ trợ";
   const answerConflict = question.correctness.status === "conflict";
@@ -49,10 +50,10 @@ export default function QuizQuestionCard({ question, onEdit, onDelete, onPreview
             onClick={() => onEdit(question.id)} aria-label={`Chỉnh sửa câu hỏi ${question.index + 1}`}>
             Chỉnh sửa
           </Button>
-          <Button type="button" variant="outline" onClick={() => onDelete(question.id)}
+          {!minorMode && <Button type="button" variant="outline" onClick={() => onDelete(question.id)}
             aria-label={`Xóa câu hỏi ${question.index + 1}`}>
             <X className="mr-1 size-4" aria-hidden="true" />Xóa
-          </Button>
+          </Button>}
         </div>
       )}
     </header>

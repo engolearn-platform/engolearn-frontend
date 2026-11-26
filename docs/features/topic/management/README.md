@@ -13,7 +13,7 @@ Luồng authoring hiện hành có các bước sau.
 1. [Thông tin cơ bản](./01-basic-info-upsert.md) tạo Topic tối thiểu với hai tiêu đề, mở URL chỉnh sửa có ID đã lưu và giữ revision mới khi PATCH.
 2. [Danh sách Item](./02-topic-items-overview.md) tạo, sửa, sắp xếp nháp và thực hiện thao tác ẩn/hiện hoặc xóa khi đủ điều kiện.
 3. [Context](./03-topic-item-context-editor.md), [Vocabulary](./04-vocabulary-manager.md), [Expressions](./05-expressions-editor.md) và [Quiz](./06-quiz-manager.md) dùng chung shell Item và ghi từng section vào bản nháp. Mỗi tài nguyên tải từ API và dùng revision của Topic khi lưu.
-4. Kiểm tra điều kiện xuất bản từ danh sách Item hiển thị lỗi theo trường. Việc publish và sửa bản phát hành qua MINOR/MAJOR thuộc F09/F10.
+4. Kiểm tra điều kiện xuất bản từ danh sách Item hiển thị lỗi theo trường. Việc publish, gỡ xuất bản và sửa bản phát hành qua MINOR/MAJOR thuộc F09/F10. Topic đã gỡ xuất bản vẫn giữ release pointer và có thể xuất bản lại qua cùng readiness/publish flow.
 
 Xem [ma trận và kiểm chứng](./authoring-verification.md) để biết dữ liệu đã chạy trên MongoDB thật. Các mục 1–8 dưới đây mô tả thiết kế Stitch và luồng cũ trước khi gắn các mutation F06–F08.
 

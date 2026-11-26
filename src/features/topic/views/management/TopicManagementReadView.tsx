@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { ArrowLeft, BookOpen, CircleAlert } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
@@ -19,6 +19,7 @@ import { hasContextContent } from "@features/topic/utils/topic-context-presentat
 import PurposeGroupSection from "@features/topic/components/management/upsert/editor/expressions/PurposeGroupSection";
 import QuizGroupSection from "@features/topic/components/management/upsert/editor/quiz/QuizGroupSection";
 import TopicItemsHeader from "@features/topic/components/management/upsert/items/TopicItemsHeader";
+import { topicStatusLabel } from "@features/topic/utils/topic-status-presentation";
 import VocabularyCard from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyCard";
 import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
 import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
@@ -173,53 +174,63 @@ function QuizResources({ quizzes }: { quizzes: TopicItemManagementDetail["quizze
   </div>;
 }
 
-function ResourceTab({ item, section }: { item: TopicItemManagementDetail; section: TopicItemStepKey }) {
+function ResourceTab({ item, section, allowMinor = true }: { item: TopicItemManagementDetail; section: TopicItemStepKey; allowMinor?: boolean }) {
+  const minorAction = allowMinor && item.status === "PUBLISHED" && item.versionId
+    ? <Link to={`${topicItemSectionPath(item.id, section, item.topicId)}?mode=minor`} className="inline-flex rounded-lg border border-outline-variant px-4 py-2 text-label-md font-semibold text-primary hover:bg-surface-container-low">Sửa nhỏ (MINOR)</Link>
+    : undefined;
   if (section === "context") {
     const empty = !hasContextContent(item.context);
     const emptyAction = empty && item.status === "DRAFT"
       ? <Link to={topicItemSectionPath(item.id, "context", item.topicId)} className="inline-flex rounded-lg border border-outline-variant px-4 py-2 text-label-md font-semibold text-primary hover:bg-surface-container-low">Thêm bối cảnh</Link>
       : undefined;
-    return <ResourcePanel title="Bối cảnh tình huống" empty={empty} emptyAction={emptyAction}>
+    return <ResourcePanel title="Bối cảnh tình huống" empty={empty} emptyAction={emptyAction} action={minorAction}>
       <TopicContextResourceView value={item.context} />
     </ResourcePanel>;
   }
   if (section === "vocabulary") {
-    return <ResourcePanel title="Từ vựng" empty={item.vocabularies.length === 0}>
+    return <ResourcePanel title="Từ vựng" empty={item.vocabularies.length === 0} action={minorAction}>
       <div className="space-y-5">{item.vocabularies.map((resource, index) => <VocabularyResource key={resource.vocabId || index} resource={resource} />)}</div>
     </ResourcePanel>;
   }
   if (section === "expressions") {
     const vocabWordById = new Map(item.vocabularies.flatMap((vocabulary) =>
       vocabulary.vocabId && vocabulary.snapshot?.word ? [[vocabulary.vocabId, vocabulary.snapshot.word] as const] : []));
-    return <ResourcePanel title="Mẫu câu" empty={item.expressions.length === 0}>
+    return <ResourcePanel title="Mẫu câu" empty={item.expressions.length === 0} action={minorAction}>
       <div className="space-y-6">{item.expressions.map((group, blockIndex) => <ExpressionBlock key={blockIndex} group={group} blockIndex={blockIndex} vocabWordById={vocabWordById} />)}</div>
     </ResourcePanel>;
   }
-  return <ResourcePanel title="Quiz" empty={item.quizzes.length === 0}>
+  return <ResourcePanel title="Quiz" empty={item.quizzes.length === 0} action={minorAction}>
     <QuizResources quizzes={item.quizzes} />
   </ResourcePanel>;
 }
 
-function ResourcePanel({ title, empty, emptyAction, children }: { title: string; empty: boolean; emptyAction?: React.ReactNode; children: React.ReactNode }) {
-  return <section className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7"><h2 className="mb-5 text-title-lg font-semibold text-on-surface">{title}</h2>{empty ? <div className="grid gap-3"><div role="status" className="flex items-center gap-2 rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant"><CircleAlert className="size-5" aria-hidden="true" />Chưa có dữ liệu {title.toLocaleLowerCase("vi-VN")}.</div>{emptyAction && <div className="justify-self-start">{emptyAction}</div>}</div> : children}</section>;
+function ResourcePanel({ title, empty, emptyAction, action, children }: { title: string; empty: boolean; emptyAction?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
+  return <section className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7"><header className="mb-5 flex flex-wrap items-center justify-between gap-3"><h2 className="text-title-lg font-semibold text-on-surface">{title}</h2>{action}</header>{empty ? <div className="grid gap-3"><div role="status" className="flex items-center gap-2 rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant"><CircleAlert className="size-5" aria-hidden="true" />Chưa có dữ liệu {title.toLocaleLowerCase("vi-VN")}.</div>{emptyAction && <div className="justify-self-start">{emptyAction}</div>}</div> : children}</section>;
 }
 
 function TopicManagementReadPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { topicId = "", itemId, sectionKey } = useParams();
+  const publishedView = new URLSearchParams(location.search).get("view") === "published";
+  const [majorPending, setMajorPending] = useState(false);
+  const [majorMessage, setMajorMessage] = useState("");
   const validSection = !itemId || Boolean(sectionKey && isTopicItemSectionKey(sectionKey));
   const needsItems = !itemId && location.pathname.endsWith("/items");
 
   const fetchTopic = useCallback((signal: AbortSignal) => topicManagementService.fetchTopicById(topicId, signal), [topicId]);
   const fetchItems = useCallback((signal: AbortSignal) => topicManagementService.fetchTopicItems(topicId, signal), [topicId]);
+  const fetchWorkingItems = useCallback((signal: AbortSignal) => topicManagementService.fetchTopicItems(topicId, signal), [topicId]);
   const fetchItem = useCallback((signal: AbortSignal) => {
     if (!itemId) return Promise.reject(new Error("Item ID is required"));
-    return topicManagementService.fetchTopicItemById(topicId, itemId, signal);
-  }, [itemId, topicId]);
+    return publishedView
+      ? topicManagementService.fetchPublishedTopicItemById(topicId, itemId, signal)
+      : topicManagementService.fetchTopicItemById(topicId, itemId, signal);
+  }, [itemId, topicId, publishedView]);
 
   const topicState = useFetch<TopicManagementResponse>(fetchTopic, Boolean(topicId && validSection));
   const itemsState = useFetch<TopicItemManagementSummary[]>(fetchItems, Boolean(topicId && needsItems));
+  const workingItemsState = useFetch<TopicItemManagementSummary[]>(fetchWorkingItems, Boolean(topicId && itemId));
   const itemState = useFetch<TopicItemManagementDetail>(fetchItem, Boolean(topicId && itemId && validSection));
 
   if (!topicId || !validSection) {
@@ -238,16 +249,30 @@ function TopicManagementReadPage() {
   const topic = topicState.data;
   const items = itemsState.data ?? [];
   const selectedItem = itemState.data;
+  const hasPendingMajor = Boolean(itemId && workingItemsState.data?.some((item) => item.id === itemId && item.status === "DRAFT" && item.previousItemVersionId));
   const activeSection = itemId ? sectionKey as TopicItemStepKey : "context";
   const showItems = needsItems || Boolean(itemId);
   const goToItems = () => navigate(adminTopicReadItemsPath(topic.id));
+  const majorDraftPath = itemId ? topicItemSectionPath(itemId, activeSection, topic.id) : "";
+  async function openMajorDraft() {
+    if (!selectedItem?.versionId || topic.status === "draft" || selectedItem.status !== "PUBLISHED" || majorPending) return;
+    setMajorPending(true);
+    setMajorMessage("");
+    try {
+      await topicManagementService.openItemWorkingDraft(topic.id, selectedItem.id, topic.revision, selectedItem.versionId);
+      navigate(majorDraftPath);
+    } catch (error) {
+      setMajorMessage(error instanceof Error ? error.message : "Không thể mở bản làm việc MAJOR.");
+    } finally {
+      setMajorPending(false);
+    }
+  }
   const goToParent = () => navigate(itemId ? adminTopicReadItemsPath(topic.id) : showItems ? adminTopicReadPath(topic.id) : adminTopicReadPath());
   const topicFields: [string, unknown, string?][] = [
     ["Tên tiếng Anh", topic.titleEn], ["Tên tiếng Việt", topic.titleVi], ["CEFR", topic.cefr],
-    ["Danh mục", topic.category], ["Trạng thái", topic.status], ["Mô tả", topic.description],
+    ["Danh mục", topic.category], ["Trạng thái", topicStatusLabel(topic.status)], ["Mô tả", topic.description],
     ["Thời lượng (phút)", topic.durationMinutes], ["Số Item", topic.itemCount], ["Ảnh bìa", topic.coverUrl, "coverUrl"],
     ["Tags", topic.tags], ["Thứ tự Topic", topic.orderIndex], ["Ngày tạo", topic.createdAt], ["Cập nhật lần cuối", topic.updatedAt],
-    ["Phiên bản đã xuất bản ID", topic.latestPublishedVersion], ["Phiên bản đã xuất bản", topic.publicationVersion],
     ["Phiên bản beta mới nhất", topic.latestBetaVersion],
   ];
 
@@ -276,23 +301,25 @@ function TopicManagementReadPage() {
         </>}
 
         {needsItems && <section className="space-y-4">
-          <TopicItemsHeader titleEn={topic.titleEn ?? ""} cefrBadge={`CEFR ${topic.cefr ?? "Chưa có dữ liệu"}`} draftBadge={topic.status} countNote={`${topic.itemCount} Topic Item`} onAdd={() => undefined} readOnly />
+          <TopicItemsHeader titleEn={topic.titleEn ?? ""} cefrBadge={`CEFR ${topic.cefr ?? "Chưa có dữ liệu"}`} draftBadge={topicStatusLabel(topic.status)} countNote={`${topic.itemCount} Topic Item`} onAdd={() => undefined} readOnly />
           {items.length === 0 ? <EmptyState title="Chưa có Topic Item" description="API chưa trả Topic Item nào cho chủ đề này." /> : <ol className="flex flex-col gap-3">{items.map((item) => <li key={item.id}><Link to={adminTopicReadSectionPath(topic.id, item.id, "context")} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-outline-variant/50 bg-surface-container-lowest p-4 hover:bg-surface-container-low"><span className="flex min-w-0 flex-col"><span className="font-semibold text-on-surface">{item.title || "Item chưa có tên"}</span><span className="text-label-sm text-on-surface-variant">#{item.order ?? "Chưa có dữ liệu"} · {item.durationMinutes == null ? "Chưa có thời lượng" : `${item.durationMinutes} phút`} · {item.status ?? "Chưa có trạng thái"}</span></span><span className="text-label-sm text-primary">Xem tài nguyên</span></Link></li>)}</ol>}
         </section>}
 
         {itemId && selectedItem && <>
           <TopicItemEditorBreadcrumb topicTitleEn={topic.titleEn ?? "Topic"} itemOrder={selectedItem.order} itemTitleEn={selectedItem.title ?? "Item"} onBackToList={goToItems} />
           <section className="flex flex-col gap-4 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-title-lg font-semibold text-on-surface">{selectedItem.title || "Item chưa có tên"}</h2><p className="text-label-sm text-on-surface-variant">#{selectedItem.order ?? "Chưa có dữ liệu"} · {selectedItem.status ?? "Chưa có trạng thái"} · {selectedItem.durationMinutes == null ? "Chưa có thời lượng" : `${selectedItem.durationMinutes} phút`}</p></div><span className="rounded-full bg-surface-container px-3 py-1 text-label-sm text-on-surface-variant">Version {selectedItem.version ?? "Chưa có dữ liệu"}</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-title-lg font-semibold text-on-surface">{selectedItem.title || "Item chưa có tên"}</h2><p className="text-label-sm text-on-surface-variant">#{selectedItem.order ?? "Chưa có dữ liệu"} · {selectedItem.status === "HIDDEN" ? "Đang ẩn" : selectedItem.status === "DRAFT" ? "Bản làm việc" : "Đã phát hành"} · {selectedItem.durationMinutes == null ? "Chưa có thời lượng" : `${selectedItem.durationMinutes} phút`}</p><p className="mt-1 text-label-sm text-on-surface-variant">{publishedView ? `Bản đã phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}` : selectedItem.status === "DRAFT" ? `Bản làm việc${selectedItem.changeType === "MAJOR" ? " MAJOR · dựa trên nội dung đã phát hành" : " mới"}` : `Bản hiện đang phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}`}</p></div><div className="flex flex-wrap items-center gap-2">{publishedView && <Link to={adminTopicReadSectionPath(topic.id, itemId, activeSection)} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Xem bản làm việc</Link>}{!publishedView && selectedItem.status === "DRAFT" && selectedItem.previousItemVersionId && <Link to={`${adminTopicReadSectionPath(topic.id, itemId, activeSection)}?view=published`} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Xem bản đã phát hành</Link>}{!publishedView && selectedItem.status === "PUBLISHED" && topic.status !== "draft" && <><Button type="button" onClick={() => void openMajorDraft()} disabled={majorPending || !selectedItem.versionId}>{majorPending ? "Đang mở bản MAJOR…" : "Sửa lớn (MAJOR)"}</Button>{workingItemsState.data && !hasPendingMajor && <Link to={`${topicItemSectionPath(itemId, activeSection, topic.id)}?mode=minor`} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Sửa nhỏ (MINOR)</Link>}</>}</div></div>
+            {!publishedView && selectedItem.status === "PUBLISHED" && topic.status !== "draft" && <p className="-mt-2 text-body-sm text-on-surface-variant">MAJOR tạo bản làm việc riêng; nội dung mới chỉ được phát hành cùng một đợt của toàn Topic. Dùng MINOR cho một sửa nhỏ được hỗ trợ.</p>}
+            {majorMessage && <p role="alert" className="rounded-lg bg-error-container p-3 text-label-sm text-on-error-container">{majorMessage}</p>}
             <p className="text-body-md text-on-surface-variant"><ResourceValue value={selectedItem.description} /></p>
-            <dl className="grid gap-3 rounded-lg bg-surface-container-low p-4 sm:grid-cols-2">{([
+            <details className="rounded-lg bg-surface-container-low p-4"><summary className="cursor-pointer text-label-md font-semibold text-on-surface">Thông tin kỹ thuật</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2">{([
               ["Version ID", selectedItem.versionId], ["Topic Version ID", selectedItem.topicVersionId],
               ["Previous Item Version ID", selectedItem.previousItemVersionId], ["Change Type", selectedItem.changeType],
               ["Ngày tạo", selectedItem.createdAt], ["Đã xuất bản lúc", selectedItem.publishedAt], ["Cập nhật lần cuối", selectedItem.updatedAt],
-            ] as [string, unknown][]).map(([label, value]) => <div key={label}><dt className="text-label-sm text-on-surface-variant">{label}</dt><dd className="break-all text-body-sm text-on-surface"><ResourceValue value={value} field={label} /></dd></div>)}</dl>
+            ] as [string, unknown][]).map(([label, value]) => <div key={label}><dt className="text-label-sm text-on-surface-variant">{label}</dt><dd className="break-all text-body-sm text-on-surface"><ResourceValue value={value} field={label} /></dd></div>)}</dl></details>
             <TopicItemSectionTabRail activeSection={activeSection} vocabNote="" expressionsNote="" quizNote="" quizEmpty={false} onSelect={(section) => navigate(adminTopicReadSectionPath(topic.id, itemId, section))} />
           </section>
-          <ResourceTab item={selectedItem} section={activeSection} />
+          <ResourceTab item={selectedItem} section={activeSection} allowMinor={Boolean(workingItemsState.data && !hasPendingMajor)} />
         </>}
         <Button type="button" variant="outline" onClick={goToParent} className="self-start"><ArrowLeft className="mr-2 size-4" />Quay lại</Button>
       </div>
