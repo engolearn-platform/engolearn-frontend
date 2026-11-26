@@ -172,3 +172,12 @@ nhớ của giao diện. Nút xác nhận mở khi đã xem qua cả 26 phần. 
 nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.
 
 Khi xem lại và phải tải URL phát mới, player giữ vị trí nghe trước đó nếu còn trong tệp.
+
+## Version 2 listening navigation
+
+During the two-second preparation, Next on an unanswered single sends the current question
+with a null choice. The server locks that single and opens the next unit. Choices become
+editable when preparation ends. Inside a five-question group Next moves focus locally,
+retaining the same audio, editable scope and deadline. Confirming the end of the current
+group may close it during preparation. A confirmation crossing the audio-start boundary
+remains valid for the same unit. Old-unit and duplicate commands cannot close a later group.
