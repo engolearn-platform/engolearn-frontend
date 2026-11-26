@@ -44,7 +44,13 @@ Automatic Memory reads `GET /api/v1/companion/memory/settings` and writes `PUT /
 
 The SSE parser accepts the additive `memory_operation` event (`operationId`, `action`, `memoryId`, `version`). The provider deduplicates receipts by operation ID for the authenticated panel session and shows a localized post-commit confirmation with a shortcut to the memory view. No success confirmation is produced from tool output or a pre-commit event. Existing terminal and status events are unchanged.
 
-Manual context attachment remains a separate, unshipped topic follow-on and is not exposed in this UI.
+## Screen Awareness (M4)
+
+Topic pages register their loaded screen context through the Companion public hook. Topic Detail exposes the published overview; Topic Lesson exposes the actual visible CONTEXT, VOCAB or EXPRESSIONS position, including a permitted earlier position. Unsupported pages and quiz/review stages register nothing. No route inference, DOM capture or automatic attachment.
+
+The composer shows + when a context is available and no context is attached. The menu explicitly selects one reference; the chip labels the attached snapshot and can be removed. Availability and attachment are separate. Moving between pages or learning positions changes availability, not an existing attachment. The attachment stays with the draft across minimize/expand; an accepted send clears only the submitted snapshot, and a rejected send retains it. Explicit conversation switches clear the attachment; retry uses the original turn reference. The current message remains plain text with optional screenContext metadata, not page content.
+
+Browser verification (2026-11-26): default 3000/8080 exercised manual attach, navigation retention and outgoing reference but quota rejected the synthetic user before inference. Isolated 3001/8082 real Chrome/Gemini completed overview and vocabulary, returning all five lesson titles and the attached word after a position change; accepted sends cleared the chip and manual removal passed. Unsupported quiz context returned 400 before admission. Build and lint passed (0 errors, 74 existing warnings). The Topic suite ran 31/33; two existing failures (operation count 20 versus 17, and missing example entries) reproduced exactly from the pre-M4 commit 84f90b7. No new failure was observed in that suite. Broader stage/retry/responsive UI verification remains open.
 
 ### M3 browser verification (2026-11-26)
 

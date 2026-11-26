@@ -69,10 +69,20 @@ export interface CompanionMemoryOperationReceipt extends CompanionMemoryOperatio
   conversationId: string;
 }
 
+export type ScreenContextReference =
+  | { type: "TOPIC_OVERVIEW"; topicId: string }
+  | { type: "TOPIC_LEARNING_POSITION"; attemptId: string; stage: "CONTEXT" | "VOCAB" | "EXPRESSIONS"; itemIndex: number };
+
+export interface AvailableScreenContext {
+  label: string;
+  reference: ScreenContextReference;
+}
+
 export interface CompanionTurnRequest {
   turnId: string;
   content: string;
   retry: boolean;
+  screenContext?: ScreenContextReference;
 }
 
 export type CompanionTurnEvent =
@@ -133,6 +143,7 @@ export interface CompanionState {
   hasOlderMessages: boolean;
   quota: CompanionQuotaItem | null;
   draft: string;
+  attachedContext: AvailableScreenContext | null;
   stream: CompanionStreamState;
   partialText: string;
   statusCode: "ASSESSMENT_LOOKUP" | "STOPPED" | "INTERRUPTED" | null;
@@ -159,6 +170,10 @@ export interface CompanionState {
 
 export interface CompanionContextValue {
   state: CompanionState;
+  availableContext: AvailableScreenContext | null;
+  registerScreenContext: (context: AvailableScreenContext) => () => void;
+  attachAvailableContext: () => void;
+  removeAttachedContext: () => void;
   openPanel: () => void;
   closePanel: () => void;
   minimizePanel: () => void;

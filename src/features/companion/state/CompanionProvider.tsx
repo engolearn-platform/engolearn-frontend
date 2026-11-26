@@ -14,6 +14,8 @@ import type {
   CompanionQuotaItem,
   CompanionState,
   CompanionTurnEvent,
+  AvailableScreenContext,
+  ScreenContextReference,
 } from "../types/companion.types";
 
 const INITIAL_STATE: CompanionState = {
@@ -30,6 +32,7 @@ const INITIAL_STATE: CompanionState = {
   hasOlderMessages: false,
   quota: null,
   draft: "",
+  attachedContext: null,
   stream: "idle",
   partialText: "",
   statusCode: null,
@@ -59,6 +62,7 @@ interface SessionTurn {
   turnId: string;
   content: string;
   baselineMessageCount: number;
+  screenContext?: ScreenContextReference;
   retryAvailable: boolean;
 }
 
@@ -97,6 +101,17 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const createInFlightRef = React.useRef(false);
   const createIdentityRef = React.useRef<string | null>(null);
   const draftVersionRef = React.useRef(0);
+  const attachmentVersionRef = React.useRef(0);
+  const [registeredContext, setRegisteredContext] = React.useState<{
+    token: symbol; identity: string; context: AvailableScreenContext;
+  } | null>(null);
+  const availableContext = authorized && registeredContext?.identity === identityKey ? registeredContext.context : null;
+  const registerScreenContext = React.useCallback((context: AvailableScreenContext) => {
+    if (!authorized) return () => {};
+    const token = Symbol("screen-context");
+    setRegisteredContext({ token, identity: identityKey, context: { label: context.label, reference: { ...context.reference } } });
+    return () => setRegisteredContext(current => current?.token === token ? null : current);
+  }, [authorized, identityKey]);
   const operationControllers = React.useRef(new Map<string, AbortController>());
   const inFlightTurnRef = React.useRef(false);
   const memoryOperationIdsRef = React.useRef(new Set<string>());
@@ -113,6 +128,17 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     stateRef.current = next;
     setReactState(next);
   }, []);
+
+  const attachAvailableContext = React.useCallback(() => {
+    if (!authorizedRef.current || !availableContext || stateRef.current.attachedContext) return;
+    attachmentVersionRef.current += 1;
+    patch({ attachedContext: { label: availableContext.label, reference: { ...availableContext.reference } } });
+  }, [availableContext, patch]);
+
+  const removeAttachedContext = React.useCallback(() => {
+    attachmentVersionRef.current += 1;
+    patch({ attachedContext: null });
+  }, [patch]);
 
   const isCurrent = React.useCallback((identity: string) => identityRef.current === identity && authorizedRef.current, []);
 
@@ -227,6 +253,10 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     const conversationId = typeof item === "string" ? item : item.id;
     const controller = beginOperation("messages");
     const known = typeof item === "string" ? null : item;
+    if (stateRef.current.activeConversation?.id !== conversationId) {
+      attachmentVersionRef.current += 1;
+      patch({ attachedContext: null });
+    }
     patch({
       mode: "conversation", activeConversation: known, messages: [], messagesBeforeSequence: null,
       hasOlderMessages: false, isMessagesLoading: true, error: null, retryAvailable: false, incomplete: false, statusCode: null,
@@ -289,6 +319,10 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       const conversation = await companionService.createConversation(controller.signal);
       if (!controller.signal.aborted && isCurrent(identity)) {
         pendingTurnRef.current = null;
+        if (!fromTurn) {
+          attachmentVersionRef.current += 1;
+          patch({ attachedContext: null });
+        }
         patch({
           activeConversation: conversation, messages: [], messagesBeforeSequence: null, hasOlderMessages: false,
           retryAvailable: false, incomplete: false, partialText: "", mode: "conversation", statusCode: null,
@@ -319,6 +353,10 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       await companionService.deleteConversation(conversationId, controller.signal);
       if (!controller.signal.aborted && isCurrent(identity)) {
         if (pendingTurnRef.current?.conversationId === conversationId) pendingTurnRef.current = null;
+        if (stateRef.current.activeConversation?.id === conversationId) {
+          attachmentVersionRef.current += 1;
+          patch({ attachedContext: null });
+        }
         patch((current) => ({
           activeConversation: current.activeConversation?.id === conversationId ? null : current.activeConversation,
           messages: current.activeConversation?.id === conversationId ? [] : current.messages,
@@ -382,6 +420,15 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     let turn = retry ? pendingTurnRef.current : null;
     const originalDraft = stateRef.current.draft;
     const submittedDraftVersion = draftVersionRef.current;
+    const originalAttachment = stateRef.current.attachedContext;
+    const submittedAttachmentVersion = attachmentVersionRef.current;
+    const clearSubmittedDraft = () => {
+      if (retry) return;
+      const updates: Partial<CompanionState> = {};
+      if (stateRef.current.draft === originalDraft && draftVersionRef.current === submittedDraftVersion) updates.draft = "";
+      if (originalAttachment && attachmentVersionRef.current === submittedAttachmentVersion) updates.attachedContext = null;
+      patch(updates);
+    };
     if (retry && (!turn || !turn.retryAvailable || turn.conversationId !== stateRef.current.activeConversation?.id)) return;
     if (!retry && !originalDraft.trim()) return;
     inFlightTurnRef.current = true;
@@ -428,6 +475,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
         conversationId: conversation.id,
         turnId: globalThis.crypto.randomUUID(),
         content: originalDraft,
+        screenContext: originalAttachment ? { ...originalAttachment.reference } : undefined,
         baselineMessageCount: conversation.messageCount,
         retryAvailable: false,
       };
@@ -443,6 +491,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
         turnId: turn.turnId,
         content: turn.content,
         retry,
+        ...(turn.screenContext ? { screenContext: turn.screenContext } : {}),
       }, controller.signal, (event: CompanionTurnEvent) => {
         if (!isCurrent(identity) || controller.signal.aborted) return;
         if (event.event === "delta") {
@@ -477,7 +526,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       }, () => {
         accepted = true;
         if (isCurrent(identity)) {
-          if (!retry && stateRef.current.draft === turn?.content) patch({ draft: "" });
+          clearSubmittedDraft();
           const lastMessage = stateRef.current.messages[stateRef.current.messages.length - 1];
           if (!retry) {
             const userMessage: CompanionMessage = {
@@ -526,9 +575,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
           pendingTurnRef.current = { ...turn, retryAvailable: false };
           patch({ error: apiError.message, stream: "reconciling" });
           const confirmed = await reconcile(pendingTurnRef.current, identity, controller, false);
-          if (malformedSuccess && confirmed && !retry && stateRef.current.draft === turn.content && draftVersionRef.current === submittedDraftVersion) {
-            patch({ draft: "" });
-          }
+          if (malformedSuccess && confirmed) clearSubmittedDraft();
         } else {
           pendingTurnRef.current = null;
           patch({ error: apiError.message, retryAvailable: false });
@@ -683,6 +730,10 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
 
   const contextValue = React.useMemo<CompanionContextValue>(() => ({
     state,
+    availableContext,
+    registerScreenContext,
+    attachAvailableContext,
+    removeAttachedContext,
     openPanel,
     closePanel,
     minimizePanel,
@@ -703,7 +754,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     updateMemory,
     forgetMemory,
     setAutomaticMemoryEnabled,
-  }), [state, openPanel, closePanel, minimizePanel, setMode, setDraft, loadHome, loadHistory, loadMoreHistory,
+  }), [state, availableContext, registerScreenContext, attachAvailableContext, removeAttachedContext, openPanel, closePanel, minimizePanel, setMode, setDraft, loadHome, loadHistory, loadMoreHistory,
     openConversation, loadOlderMessages, createConversation, deleteConversation, submitTurn, retryTurn, stopTurn, loadQuota,
     loadMemories, updateMemory, forgetMemory, setAutomaticMemoryEnabled]);
 
