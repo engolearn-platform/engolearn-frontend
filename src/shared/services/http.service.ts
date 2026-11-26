@@ -10,7 +10,7 @@ interface RequestOptions {
 
 interface ApiEnvelope<T> { data: T; timestamp?: string }
 
-type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; retryable?: boolean; activeSessionId?: string };
+type HttpError = Error & { status?: number; code?: string; fieldErrors?: { field: string; message: string }[]; retryable?: boolean; activeSessionId?: string; problem?: unknown };
 
 class HttpService {
   private baseUrl: string;
@@ -34,9 +34,11 @@ class HttpService {
     let retryable: boolean | undefined;
     let activeSessionId: string | undefined;
     let fieldErrors: { field: string; message: string }[] | undefined;
+    let problemBody: unknown;
     try {
       const problem = await response.json() as { detail?: string; title?: string; code?: string; retryable?: unknown; activeSessionId?: unknown; fieldErrors?: unknown } | null;
       if (problem) {
+        problemBody = problem;
         if (typeof problem.code === "string") code = problem.code;
         if (typeof problem.retryable === "boolean") retryable = problem.retryable;
         if (typeof problem.activeSessionId === "string" && problem.activeSessionId.length > 0) activeSessionId = problem.activeSessionId;
@@ -46,7 +48,7 @@ class HttpService {
         message = problem.detail || problem.title || message;
       }
     } catch { /* retain the HTTP message for non-JSON responses */ }
-    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, retryable, activeSessionId });
+    return Object.assign(new Error(message), { status: response.status, code, fieldErrors, retryable, activeSessionId, problem: problemBody });
   }
 
   private async refresh(signal?: AbortSignal): Promise<boolean> {

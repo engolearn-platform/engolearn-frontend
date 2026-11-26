@@ -31,6 +31,27 @@ export interface PassageDetail extends Omit<PassageListItem, "hasAudio" | "refer
 
 export interface PassageCounters { total: number; draft: number; active: number; retired: number }
 export interface PassageReadinessIssue { code: string; field: string; message: string }
+export type PassageReviewCheck = "LEVEL_APPROPRIATE" | "CONTENT_SUPPORTS_INTENDED_QUESTIONS" | "AUDIO_MATCHES_TRANSCRIPT" | "AUDIO_QUALITY_REVIEWED";
+export const PASSAGE_REVIEW_LABELS: Record<PassageReviewCheck, string> = {
+  LEVEL_APPROPRIATE: "Nội dung phù hợp trình độ đã chọn.",
+  CONTENT_SUPPORTS_INTENDED_QUESTIONS: "Passage cung cấp đủ thông tin cho các câu hỏi dự kiến.",
+  AUDIO_MATCHES_TRANSCRIPT: "Audio phát được và khớp transcript.",
+  AUDIO_QUALITY_REVIEWED: "Đã nghe toàn bộ audio và kiểm tra chất lượng giọng đọc.",
+};
+export function isPassageReviewCheck(value: string): value is PassageReviewCheck {
+  return Object.prototype.hasOwnProperty.call(PASSAGE_REVIEW_LABELS, value);
+}
+export interface PassagePublicationInput { revision: number; confirmedReviewChecks: PassageReviewCheck[] }
+export interface PassagePublicationReceipt {
+  passageId: string;
+  status: "ACTIVE";
+  revision: number;
+  reviewedRevision: number;
+  publishedBy: string;
+  publishedAt: string;
+  confirmedReviewChecks: PassageReviewCheck[];
+  warnings: PassageReadinessIssue[];
+}
 export interface PassageReadiness {
   passageId: string;
   revision: number | null;

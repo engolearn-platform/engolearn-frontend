@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -23,11 +23,10 @@ interface Props {
   onView: (item: PassageListItem) => void;
   onEdit: (item: PassageListItem) => void;
   onDelete: (item: PassageListItem) => void;
-  onCheck: (item: PassageListItem) => void;
+  onPublish: (item: PassageListItem) => void;
 }
 
-function PassageActions({ item, onView, onEdit, onDelete, onCheck }: Omit<Props, "items"> & { item: PassageListItem }) {
-  const publishHintId = useId();
+function PassageActions({ item, onView, onEdit, onDelete, onPublish }: Omit<Props, "items"> & { item: PassageListItem }) {
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -53,15 +52,8 @@ function PassageActions({ item, onView, onEdit, onDelete, onCheck }: Omit<Props,
   }} onBlur={event => {
     if (!event.currentTarget.contains(event.relatedTarget) && !panel.current?.contains(event.relatedTarget)) setOpen(false);
   }}>
-    {item.status === "DRAFT" && <>
-      <Button variant="outline" className="min-h-12 cursor-pointer whitespace-nowrap text-primary transition-colors hover:border-primary hover:bg-learning-mint hover:text-primary focus-visible:border-primary focus-visible:bg-learning-mint" onClick={() => onCheck(item)}
-        aria-label={`Kiểm tra ${item.title}`}>Kiểm tra</Button>
-      <span className="inline-flex rounded-md focus-visible:outline-2 focus-visible:outline-primary" tabIndex={0}
-        aria-label={`Xuất bản ${item.title}`} aria-describedby={publishHintId} title="Chức năng xuất bản đang được bổ sung">
-        <Button disabled className="min-h-12 whitespace-nowrap" aria-describedby={publishHintId}>Xuất bản</Button>
-      </span>
-      <span id={publishHintId} className="sr-only">Chức năng xuất bản đang được bổ sung.</span>
-    </>}
+    {item.status === "DRAFT" && <Button className="min-h-12 cursor-pointer whitespace-nowrap"
+      aria-label={`Kiểm tra và xuất bản ${item.title}`} onClick={() => onPublish(item)}>Kiểm tra và xuất bản</Button>}
     <Button ref={trigger} variant="ghost" className="size-12" aria-label={`Thao tác với ${item.title}`} aria-expanded={open}
       onClick={() => {
         const bounds = trigger.current!.getBoundingClientRect();

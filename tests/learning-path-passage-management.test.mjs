@@ -218,18 +218,20 @@ test("Passage table has seven columns with question counts and permits editing/d
       revision: 2, updatedAt: "2026-11-25T11:40:00Z",
       referencingQuestionCount: [3, 0, 1234][index],
     })),
-    onView: item => selected.push(item.passageId), onEdit: () => {}, onDelete: () => {}, onCheck: item => selected.push(`check:${item.passageId}`),
+    onView: item => selected.push(item.passageId), onEdit: () => {}, onDelete: () => {},
+    onPublish: item => selected.push(`publish:${item.passageId}`),
   })));
   assert.equal(container.querySelectorAll("th").length, 7);
   assert.equal(container.querySelectorAll("th")[3].textContent, "Số câu hỏi");
   assert.deepEqual([...container.querySelectorAll("tbody tr td:nth-child(4)")].map(cell => cell.textContent.trim()), ["3 câu hỏi", "0 câu hỏi", "1.234 câu hỏi"]);
   assert.doesNotMatch(container.querySelector("thead").textContent, /Audio/);
-  const checkButtons = container.querySelectorAll('button[aria-label^="Kiểm tra "]');
-  assert.equal(checkButtons.length, 1);
-  const publish = [...container.querySelectorAll("button")].find(button => button.textContent === "Xuất bản");
-  assert.equal(publish.disabled, true);
-  await act(async () => checkButtons[0].click());
-  assert.deepEqual(selected, ["check:DRAFT"]);
+  const publishButtons = container.querySelectorAll('button[aria-label^="Kiểm tra và xuất bản "]');
+  assert.equal(publishButtons.length, 1);
+  assert.equal(publishButtons[0].textContent, "Kiểm tra và xuất bản");
+  assert.equal(publishButtons[0].disabled, false);
+  assert.equal([...container.querySelectorAll("button")].filter(button => ["Kiểm tra", "Xuất bản"].includes(button.textContent)).length, 0);
+  await act(async () => publishButtons[0].click());
+  assert.deepEqual(selected, ["publish:DRAFT"]);
   selected.length = 0;
   const trigger = container.querySelector('button[aria-label="Thao tác với Passage DRAFT"]');
   await act(async () => trigger.click());
@@ -254,10 +256,16 @@ const readinessResult = {
   warnings: [{ code: "REVIEW_WARNING", field: "text", message: "Cần kiểm tra cách diễn đạt." }],
   requiredReviewChecks: ["LEVEL_APPROPRIATE", "CONTENT_SUPPORTS_INTENDED_QUESTIONS"],
 };
+const publicationReady = { ...readinessResult, revision: draft.revision, structurallyValid: true, blockers: [], warnings: [] };
+const publicationReceipt = {
+  passageId: draft.passageId, status: "ACTIVE", revision: draft.revision + 1, reviewedRevision: draft.revision,
+  publishedBy: "manager", publishedAt: "2026-11-25T15:00:00Z",
+  confirmedReviewChecks: publicationReady.requiredReviewChecks, warnings: [],
+};
 
 const findButton = (root, label) => [...root.querySelectorAll("button")].find(button => button.textContent === label);
 
-test("Checking a list row shows loading, blockers/warnings/manual review and refetches without publishing", async t => {
+test("Combined action checks before publishing and keeps blockers and stale revisions locked", async t => {
   let complete;
   const pending = new Promise(resolve => { complete = resolve; });
   let count = 0;
@@ -271,22 +279,28 @@ test("Checking a list row shows loading, blockers/warnings/manual review and ref
     }
   } });
   await app.settle();
-  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra Library hours"]').click());
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
   let dialog = document.querySelector('[role="dialog"]');
   assert.match(dialog.textContent, /Đang kiểm tra dữ liệu đã lưu/);
   assert.doesNotMatch(dialog.textContent, /Đạt kiểm tra tự động/);
+  assert.equal(findButton(dialog, "Xuất bản").disabled, true);
   await act(async () => complete(Response.json({ data: readinessResult })));
   assert.match(dialog.textContent, /Nội dung bài đọc còn thiếu/);
   assert.match(dialog.textContent, /Cần kiểm tra cách diễn đạt/);
   assert.match(dialog.textContent, /Passage đã thay đổi so với danh sách/);
   assert.match(dialog.textContent, /Nội dung phù hợp trình độ/);
-  assert.equal(dialog.querySelectorAll('input[type="checkbox"]').length, 0);
+  const manualChecks = [...dialog.querySelectorAll('input[type="checkbox"]')];
+  assert.equal(manualChecks.length, 2);
+  assert.ok(manualChecks.every(check => !check.checked && check.matches(":disabled")));
+  assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+  assert.ok(findButton(dialog, "Mở chỉnh sửa"));
   await act(async () => findButton(dialog, "Kiểm tra lại").click());
   dialog = document.querySelector('[role="dialog"]');
   assert.equal(count, 2);
   assert.match(dialog.textContent, /Đạt kiểm tra tự động/);
   assert.doesNotMatch(dialog.textContent, /Nội dung bài đọc còn thiếu/);
   assert.match(dialog.textContent, /chưa thay thế việc duyệt chuyên môn/);
+  assert.equal(findButton(dialog, "Xuất bản").disabled, true);
   assert.ok(methods.every(method => method === "GET"));
   await act(async () => findButton(dialog, "Đóng").click());
   assert.equal(document.querySelector('[role="dialog"]'), null);
@@ -300,7 +314,7 @@ test("Readiness failure can retry; non-DRAFT result cannot open editing", async 
       : Response.json({ data: { ...readinessResult, status: "ACTIVE" } }));
   } });
   await app.settle();
-  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra Library hours"]').click());
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
   let dialog = document.querySelector('[role="dialog"]');
   assert.match(dialog.textContent, /dịch vụ tạm thời không khả dụng/);
   assert.equal(findButton(dialog, "Mở chỉnh sửa"), undefined);
@@ -319,9 +333,167 @@ test("Closing readiness aborts its pending request and prevents a late result fr
     if (url.pathname.endsWith("/readiness")) { signal = options.signal; return pending; }
   } });
   await app.settle();
-  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra Library hours"]').click());
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
   await act(async () => findButton(document.querySelector('[role="dialog"]'), "Đóng").click());
   assert.equal(signal.aborted, true);
   await act(async () => complete(Response.json({ data: readinessResult })));
   assert.equal(document.querySelector('[role="dialog"]'), null);
+});
+
+test("Publication client sends JSON/revision/checks and retains typed 422 readiness extensions", async t => {
+  const controller = new AbortController();
+  const input = { revision: 2, confirmedReviewChecks: publicationReady.requiredReviewChecks };
+  let request;
+  let reject = false;
+  const receipt = { ...publicationReceipt, passageId: "id /?#" };
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    request = { url: new URL(url), options };
+    return reject ? Response.json({ detail: "Blocked", code: "PASSAGE_NOT_READY", readiness: { ...readinessResult, passageId: "id /?#" } }, { status: 422 })
+      : Response.json({ data: receipt });
+  });
+  assert.deepEqual(await modules.passageManagementService.publish("id /?#", input, controller.signal), receipt);
+  assert.equal(request.url.pathname, `${endpoint}/id%20%2F%3F%23/publish`);
+  assert.equal(request.options.method, "POST");
+  assert.equal(request.options.credentials, "same-origin");
+  assert.equal(request.options.headers.get("Content-Type"), "application/json");
+  assert.equal(request.options.signal, controller.signal);
+  assert.deepEqual(JSON.parse(request.options.body), input);
+  reject = true;
+  await assert.rejects(modules.passageManagementService.publish("id /?#", input), error =>
+    error.status === 422 && error.code === "PASSAGE_NOT_READY" && error.readiness?.blockers[0].code === "READING_TEXT_REQUIRED");
+});
+
+test("Publication requires explicit checks, locks duplicate clicks and refreshes ACTIVE list/counters on success", async t => {
+  const requests = [];
+  let complete;
+  let published = false;
+  const pending = new Promise(resolve => { complete = resolve; });
+  const app = await mount(t, "CONTENT_MANAGER", { items: [draft], onRequest: (url, options) => {
+    requests.push({ path: url.pathname, options });
+    if (url.pathname.endsWith("/readiness")) return Response.json({ data: publicationReady });
+    if (url.pathname.endsWith("/publish")) return pending.then(() => { published = true; return Response.json({ data: publicationReceipt }); });
+    if (published && url.pathname === endpoint) return Response.json({ data: {
+      items: [{ ...draft, status: "ACTIVE", revision: 3 }], page: 0, size: 20, totalPages: 1, totalElements: 1,
+      counters: { total: 1, draft: 0, active: 1, retired: 0 },
+    } });
+  } });
+  await app.settle();
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  assert.match(dialog.textContent, /Kiểm tra và xuất bản passage/);
+  const submit = findButton(dialog, "Xuất bản");
+  assert.equal(submit.disabled, true);
+  const checks = [...dialog.querySelectorAll('input[type="checkbox"]')];
+  assert.equal(checks.length, 2);
+  assert.ok(checks.every(check => !check.checked));
+  assert.equal(requests.filter(call => call.options.method === "POST").length, 0);
+  await act(async () => checks[0].click());
+  assert.equal(submit.disabled, true);
+  await act(async () => checks[1].click());
+  assert.equal(submit.disabled, false);
+  await act(async () => { submit.click(); submit.click(); });
+  const posts = requests.filter(call => call.path.endsWith("/publish"));
+  assert.equal(posts.length, 1);
+  assert.deepEqual(JSON.parse(posts[0].options.body), { revision: 2, confirmedReviewChecks: publicationReady.requiredReviewChecks });
+  assert.equal(findButton(dialog, "Đóng").disabled, true);
+  assert.match(dialog.textContent, /Đang xuất bản/);
+  await act(async () => complete());
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+  assert.match(app.container.textContent, /Đã xuất bản passage/);
+  assert.match(app.container.textContent, /Đang sử dụng:1/);
+  assert.equal(app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]'), null);
+});
+
+test("Publication blocks stale revisions, unsupported Media and unknown manual criteria", async t => {
+  for (const [label, result] of [
+    ["stale", { ...publicationReady, revision: 3 }],
+    ["media", { ...publicationReady, structurallyValid: false, blockers: [{ code: "LEARNER_AUDIO_DELIVERY_UNSUPPORTED", field: "audio", message: "Chưa hỗ trợ audio Media." }] }],
+    ["new check", { ...publicationReady, requiredReviewChecks: ["UNKNOWN_CHECK"] }],
+  ]) await t.test(label, async child => {
+    let posts = 0;
+    const app = await mount(child, "ADMIN", { items: [draft], onRequest: (url, options) => {
+      if (options.method === "POST") posts++;
+      if (url.pathname.endsWith("/readiness")) return Response.json({ data: result });
+    } });
+    await app.settle();
+    await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
+    const dialog = document.querySelector('[role="dialog"]');
+    await act(async () => { for (const check of dialog.querySelectorAll('input[type="checkbox"]')) check.click(); });
+    assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+    assert.equal(posts, 0);
+    await act(async () => findButton(dialog, "Đóng").click());
+  });
+});
+
+test("A rejected publication shows fresh 422 blockers, clears checks and cannot resubmit without rechecking", async t => {
+  let posts = 0;
+  let reads = 0;
+  const rejected = { ...publicationReady, structurallyValid: false, blockers: [{ code: "READING_TEXT_REQUIRED", field: "text", message: "Nội dung mới không hợp lệ." }] };
+  const app = await mount(t, "CONTENT_MANAGER", { items: [draft], onRequest: (url, options) => {
+    if (url.pathname.endsWith("/readiness")) { reads++; return Response.json({ data: publicationReady }); }
+    if (url.pathname.endsWith("/publish") && options.method === "POST") {
+      posts++; return Response.json({ detail: "Not ready", code: "PASSAGE_NOT_READY", readiness: rejected }, { status: 422 });
+    }
+  } });
+  await app.settle();
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  await act(async () => { for (const check of dialog.querySelectorAll('input[type="checkbox"]')) check.click(); });
+  await act(async () => findButton(dialog, "Xuất bản").click());
+  assert.equal(posts, 1);
+  assert.match(dialog.textContent, /Nội dung mới không hợp lệ/);
+  assert.ok([...dialog.querySelectorAll('input[type="checkbox"]')].every(check => !check.checked));
+  assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+  await act(async () => findButton(dialog, "Kiểm tra lại").click());
+  assert.equal(reads, 2);
+  assert.doesNotMatch(dialog.textContent, /Nội dung mới không hợp lệ/);
+  assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+  await act(async () => findButton(dialog, "Đóng").click());
+});
+
+test("Publication conflict or network uncertainty never retries the POST and rechecks current state", async t => {
+  for (const failure of ["conflict", "network"]) await t.test(failure, async child => {
+    let posts = 0;
+    const app = await mount(child, "ADMIN", { items: [draft], onRequest: url => {
+      if (url.pathname.endsWith("/readiness")) return Response.json({ data: posts ? { ...publicationReady, status: "ACTIVE", revision: 3, structurallyValid: false } : publicationReady });
+      if (url.pathname.endsWith("/publish")) {
+        posts++;
+        if (failure === "network") throw new TypeError("Network disconnected");
+        return Response.json({ detail: "Changed", code: "PASSAGE_PUBLISH_CONFLICT" }, { status: 409 });
+      }
+    } });
+    await app.settle();
+    await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
+    const dialog = document.querySelector('[role="dialog"]');
+    await act(async () => { for (const check of dialog.querySelectorAll('input[type="checkbox"]')) check.click(); });
+    await act(async () => findButton(dialog, "Xuất bản").click());
+    assert.equal(posts, 1);
+    assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+    assert.ok(dialog.querySelector('[role="alert"]'));
+    await act(async () => findButton(dialog, "Kiểm tra lại").click());
+    assert.equal(findButton(dialog, "Xuất bản").disabled, true);
+    assert.equal(posts, 1);
+    await act(async () => findButton(dialog, "Đóng").click());
+  });
+});
+
+test("Sign out during publication aborts the client request and hides late success", async t => {
+  let signal;
+  let complete;
+  const pending = new Promise(resolve => { complete = resolve; });
+  const app = await mount(t, "CONTENT_MANAGER", { items: [draft], onRequest: (url, options) => {
+    if (url.pathname.endsWith("/readiness")) return Response.json({ data: publicationReady });
+    if (url.pathname.endsWith("/publish")) { signal = options.signal; return pending; }
+  } });
+  await app.settle();
+  await act(async () => app.container.querySelector('button[aria-label="Kiểm tra và xuất bản Library hours"]').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  await act(async () => { for (const check of dialog.querySelectorAll('input[type="checkbox"]')) check.click(); });
+  await act(async () => findButton(dialog, "Xuất bản").click());
+  await app.logout();
+  assert.equal(signal.aborted, true);
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+  await act(async () => complete(Response.json({ data: publicationReceipt })));
+  assert.doesNotMatch(app.container.textContent, /Đã xuất bản passage/);
+  assert.equal(app.router.state.location.pathname, "/login");
 });

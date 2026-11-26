@@ -37,7 +37,7 @@ export default function PassageManagementListView() {
       </div> : loading ? <div role="status" className="p-8"><Loading /><span className="sr-only">Đang tải danh sách passages</span></div>
         : data && (data.items.length ? <>
           <PassageManagementTable items={data.items}
-            onCheck={setChecking}
+            onPublish={setChecking}
             onView={item => setWorkspace({ mode: "view", passageId: item.passageId })}
             onEdit={item => setWorkspace({ mode: "edit", passageId: item.passageId })} onDelete={setDeleting} />
           <ListPagination compact total={data.totalElements} from={data.page * data.size + 1}
@@ -53,6 +53,7 @@ export default function PassageManagementListView() {
     </div>
     {workspace && <PassageWorkspaceDialog workspace={workspace} onClose={() => setWorkspace(null)} onSaved={saved} />}
     {checking && <PassageReadinessDialog key={checking.passageId} item={checking}
+      onPublished={() => { setChecking(null); setNotice("Đã xuất bản passage."); refetch(); }}
       onClose={() => { setChecking(null); refetch(); }}
       onEdit={() => { setWorkspace({ mode: "edit", passageId: checking.passageId }); setChecking(null); }}
       onView={() => { setWorkspace({ mode: "view", passageId: checking.passageId }); setChecking(null); }} />}

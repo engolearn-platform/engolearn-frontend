@@ -27,6 +27,10 @@ Multipart callers may pass `FormData` through the same POST/PATCH methods. The
 client sends that body directly and leaves Content-Type/boundary generation to
 the browser, including after the existing refresh/retry. Ordinary bodies retain
 JSON serialization. Passage client checks cover both paths.
+HTTP errors also retain the original ProblemDetail body as optional `problem: unknown`.
+Feature clients validate their own extensions before rendering them; the shared client
+does not depend on Passage or other feature types. Publication uses this to display
+updated readiness from a 422 without changing the existing refresh/retry policy.
 
 ## Profile verification checklist
 
