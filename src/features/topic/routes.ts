@@ -3,7 +3,6 @@ import { Navigate, useParams } from "react-router";
 import { topicDetailPath } from "@features/topic/utils/topic-catalog";
 import type { RouteObject } from "react-router";
 import ManagementLayout from "@/core/layouts/ManagementLayout";
-import LearningLayout from "@/core/layouts/LearningLayout";
 import { ROUTES } from "@shared/constants";
 import TopicViewerLayout from "@features/topic/components/learning/catalog/TopicViewerLayout";
 import TopicPage from "@features/topic/views/TopicPage";
@@ -18,14 +17,19 @@ import TopicUpsertItemsView from "@features/topic/views/management/TopicUpsertIt
 import TopicItemEditorView from "@features/topic/views/management/TopicItemEditorView";
 import AuthGuard from "@features/auth/components/AuthGuard";
 import TopicManagementGuard from "@features/auth/components/TopicManagementGuard";
-import SpeakingDemoView from "@features/topic/views/learning/SpeakingDemoView";
-import SpeakingView from "@features/topic/views/learning/SpeakingView";
 import TopicManagementReadView from "@features/topic/views/management/TopicManagementReadView";
 import TopicManagementReadListView from "@features/topic/views/management/TopicManagementReadListView";
+import { TopicSpeakingEntry, ItemSpeakingEntry } from "@features/speaking/contract";
+import TopicSpeakingProfileView from "@features/topic/views/management/TopicSpeakingProfileView";
+import { ProtectedRoute } from "@features/auth/contract";
 
 function LegacyTopicRedirect() {
   const { topicId = "" } = useParams();
   return createElement(Navigate, { to: topicDetailPath(topicId, ROUTES.TOPICS), replace: true });
+}
+
+function TopicSpeakingProfileGuard() {
+  return createElement(ProtectedRoute, { allowedRoles: ["CONTENT_MANAGER"] });
 }
 
 export const TopicCatalogRoutes: RouteObject[] = [
@@ -51,22 +55,6 @@ export const TopicDetailRoutes: RouteObject[] = [
 
 export const TopicStandaloneRoutes: RouteObject[] = [
   {
-    Component: AuthGuard,
-    children: [
-      { path: ROUTES.SPEAKING_HISTORY, Component: LearningLayout,
-        children: [{ index: true, Component: SpeakingView }] },
-      ...(import.meta.env.DEV ? [{
-        path: ROUTES.SPEAKING_DEMO,
-        Component: LearningLayout,
-        children: [{ index: true, Component: SpeakingDemoView }],
-      }, {
-        path: ROUTES.SPEAKING_SESSION_DEV,
-        Component: LearningLayout,
-        children: [{ index: true, element: createElement(SpeakingView, { devSession: true }) }],
-      }] satisfies RouteObject[] : []),
-    ],
-  },
-  {
     Component: TopicViewerLayout,
     children: [
       { path: ROUTES.TOPIC_CONTEXT, Component: LegacyTopicRedirect },
@@ -77,8 +65,8 @@ export const TopicStandaloneRoutes: RouteObject[] = [
       { path: ROUTES.TOPIC_ITEM_RESULT, Component: TopicItemResultView },
       { path: ROUTES.TOPIC_ATTEMPT, Component: TopicAttemptEntryView },
       { Component: AuthGuard, children: [
-        { path: ROUTES.TOPIC_ITEM_SPEAKING, Component: SpeakingView },
-        { path: ROUTES.TOPIC_SPEAKING, Component: SpeakingView },
+        { path: ROUTES.TOPIC_ITEM_SPEAKING, Component: ItemSpeakingEntry },
+        { path: ROUTES.TOPIC_SPEAKING, Component: TopicSpeakingEntry },
       ] },
     ],
   },
@@ -102,6 +90,10 @@ export const TopicManagementRoutes: RouteObject[] = [
       { path: ":topicId/edit", Component: TopicUpsertBasicInfoView },
       { path: ":topicId/edit/items", Component: TopicUpsertItemsView },
       { path: ":topicId/edit/items/:itemId/:sectionKey", Component: TopicItemEditorView },
+      { Component: TopicSpeakingProfileGuard, children: [
+        { path: ":topicId/speaking-profile", Component: TopicSpeakingProfileView },
+        { path: ":topicId/items/:itemId/speaking-profile", Component: TopicSpeakingProfileView },
+      ] },
     ],
     }],
   },

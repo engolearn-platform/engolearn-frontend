@@ -1,5 +1,9 @@
 import { ROUTES } from "@shared/constants";
 import type { RouteObject } from "react-router";
+import { createElement } from "react";
+import { ProtectedRoute } from "@features/auth/contract";
+import ManagementLayout from "@/core/layouts/ManagementLayout";
+import PassageManagementListView from "@features/learning-path/views/management/PassageManagementListView";
 import LearningPathListView from "./views/learning/LearningPathListView";
 import LearningPathDetailView from "./views/learning/LearningPathDetailView";
 import LearningPathDailyPracticeView from "./views/learning/LearningPathDailyPracticeView";
@@ -16,3 +20,16 @@ export const LearningPathRoutes: RouteObject[] = [
     ],
   },
 ];
+
+function PassageManagementGuard() {
+  return createElement(ProtectedRoute, { allowedRoles: ["CONTENT_MANAGER"] });
+}
+
+export const LearningPathManagementRoutes: RouteObject[] = [{
+  Component: PassageManagementGuard,
+  children: [{
+    path: ROUTES.ADMIN_PASSAGES,
+    Component: ManagementLayout,
+    children: [{ index: true, Component: PassageManagementListView }],
+  }],
+}];

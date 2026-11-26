@@ -16,6 +16,7 @@ import TopicItemContextEditorView from "./TopicItemContextEditorView";
 import TopicItemVocabularyEditorView from "./TopicItemVocabularyEditorView";
 import TopicItemExpressionsEditorView from "./TopicItemExpressionsEditorView";
 import TopicItemQuizEditorView from "./TopicItemQuizEditorView";
+import { toQuizPresentations } from "@features/topic/utils/topic-quiz-presentation";
 
 type EditableSection = TopicItemStepKey;
 
@@ -41,6 +42,7 @@ function SectionEditor({ initial, section }: { initial: TopicItemResourceMutatio
 
   const current = { context, vocabulary: vocabularies, expressions, quiz: quizzes }[section];
   const committed = { context: saved.item.context, vocabulary: saved.item.vocabularies, expressions: saved.item.expressions, quiz: saved.item.quizzes }[section];
+  const savedQuizQuestionCount = toQuizPresentations(saved.item.quizzes).totalQuestions;
   const dirty = JSON.stringify(current) !== JSON.stringify(committed);
   useTopicUnsavedChanges(dirty, pending);
 
@@ -120,8 +122,8 @@ function SectionEditor({ initial, section }: { initial: TopicItemResourceMutatio
         <TopicUpsertStepper activeStep={1} />
       </div>
       <TopicItemSectionTabRail activeSection={section} vocabNote={String(saved.item.vocabularies.length)}
-        expressionsNote={String(saved.item.expressions.length)} quizNote={String(saved.item.quizzes.length)}
-        quizEmpty={!saved.item.quizzes.length} onSelect={openSection} />
+        expressionsNote={String(saved.item.expressions.length)} quizNote={String(savedQuizQuestionCount)}
+        quizEmpty={!savedQuizQuestionCount} onSelect={openSection} />
       {section === "context" && <TopicItemContextEditorView key={saved.revision} value={context} onChange={setContext} topicId={topicId} disabled={pending} />}
       {section === "vocabulary" && <TopicItemVocabularyEditorView topicId={topicId} key={saved.revision} value={vocabularies} onChange={setVocabularies} disabled={pending} />}
       {section === "expressions" && <TopicItemExpressionsEditorView topicId={topicId} key={saved.revision} value={expressions} onChange={setExpressions}
@@ -135,6 +137,7 @@ function SectionEditor({ initial, section }: { initial: TopicItemResourceMutatio
       <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
         <Button type="button" variant="outline" onClick={() => leave(adminTopicItemsPath(topicId))} disabled={pending}>Quay lại danh sách</Button>
         <div className="flex flex-wrap items-center gap-3">
+          {!pending && <Link to={`/admin/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/speaking-profile`} className="text-label-sm text-primary underline-offset-4 hover:underline">Hồ sơ Speaking</Link>}
           {!pending && <Link to={adminTopicReadSectionPath(topicId, itemId, section)} className="text-label-sm text-primary">Xem bản đã lưu</Link>}
           <Button type="button" disabled={pending || conflict || !dirty} onClick={save}>Lưu nháp</Button>
         </div>

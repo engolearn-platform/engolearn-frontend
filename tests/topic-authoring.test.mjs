@@ -5,7 +5,7 @@ import {
   topicDraftFromResponse,
   topicUpdateBody,
 } from "../src/features/topic/utils/topic-basic-info.adapter.ts";
-import { mergeVocabularyEditorItem, toVocabularyAuthoringDraft } from "../src/features/topic/utils/topic-vocabulary-authoring.adapter.ts";
+import { mergeVocabularyEditorItem, mergeVocabularyQuickCheck, toVocabularyAuthoringDraft } from "../src/features/topic/utils/topic-vocabulary-authoring.adapter.ts";
 
 test("a minimal topic draft does not supply CEFR or category defaults", () => {
   const draft = topicDraftFromResponse({ id: "draft", titleEn: " Cafe ", titleVi: " Quán cà phê " });
@@ -30,7 +30,7 @@ test("vocabulary edit preserves linked IDs, audio variants, and nested metadata"
     snapshot: { word: "drink", pos: "NOUN", sense: "beverage", describeVi: "đồ uống", phonetic: "/d/", audioUrl: "main.mp3", audioEnUrl: "en.mp3", audioUsUrl: "us.mp3" },
     samples: [{ textEn: "Order a drink", textVi: "Gọi đồ uống", audioUrl: "sample.wav", isManual: false }],
     collocations: [{ text: "soft drink", example: { en: "A soft drink", vi: "Nước ngọt" }, descriptionVi: "cụm giữ nguyên" }],
-    quickCheck: null, orderIndex: 2, tips: "tip",
+    quickCheck: { sentence: { textEn: "Choose one", meaningVi: "Chọn một", audioUrl: "quick.mp3", audioUrlSlow: "quick-slow.mp3", source: "source", externalId: "external" }, quizData: { question: "Pick a drink", options: ["water", "plate"] }, answerData: { correctAnswer: "water" }, explanation: "Water is a drink." }, orderIndex: 1, tips: "tip",
   };
   const draft = toVocabularyAuthoringDraft(resource);
   draft.word = "beverage";
@@ -40,4 +40,18 @@ test("vocabulary edit preserves linked IDs, audio variants, and nested metadata"
   assert.deepEqual(merged.snapshot, { ...resource.snapshot, word: "beverage" });
   assert.deepEqual(merged.samples, resource.samples);
   assert.deepEqual(merged.collocations, resource.collocations);
+  assert.deepEqual(merged.quickCheck, resource.quickCheck);
+  assert.equal(merged.orderIndex, 1);
+});
+
+test("an unrelated edit keeps a null quick-check sentence unchanged", () => {
+  const quickCheck = {
+    sentence: null,
+    quizData: { question: "Pick one", options: ["water", "plate"] },
+    answerData: { correct_answer: "water" },
+    explanation: "Water is a drink.",
+  };
+  const updated = mergeVocabularyQuickCheck(quickCheck, { sentence: "", meaningVi: "", explanation: quickCheck.explanation });
+  assert.deepEqual(updated, quickCheck);
+  assert.equal(mergeVocabularyQuickCheck(null, { sentence: "", meaningVi: "", explanation: "" }), null);
 });

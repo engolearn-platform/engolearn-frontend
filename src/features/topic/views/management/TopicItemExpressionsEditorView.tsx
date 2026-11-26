@@ -7,10 +7,10 @@ import type {
   TopicExpressionResource,
   TopicVocabularyResource,
 } from "@features/topic/types/topic-management.types";
-import { TOPIC_EXPRESSION_TYPE_OPTIONS } from "@features/topic/types/topic-create.types";
 import ExpressionsHeaderCard from "@features/topic/components/management/upsert/editor/expressions/ExpressionsHeaderCard";
-import ExpressionUpsertDialog, { EXPRESSION_LABELS } from "@features/topic/components/management/upsert/editor/expressions/ExpressionUpsertDialog";
+import ExpressionUpsertDialog from "@features/topic/components/management/upsert/editor/expressions/ExpressionUpsertDialog";
 import ExpressionCard from "@features/topic/components/management/upsert/editor/expressions/ExpressionCard";
+import { expressionVocabularyLinks } from "@features/topic/utils/topic-expression-presentation";
 
 const GROUP_TYPES: Record<TopicExpressionGroupType, string> = {
   BASIC: "Cơ bản",
@@ -38,6 +38,7 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
 }) {
   const [dialog, setDialog] = useState<DialogPosition | null>(null);
   const vocabularyNames = new Map(vocabulary.flatMap(({ vocabId, snapshot }) => vocabId ? [[vocabId, snapshot?.word ?? vocabId]] : []));
+  const vocabularyWords = new Map(vocabulary.flatMap(({ vocabId, snapshot }) => vocabId && snapshot?.word ? [[vocabId, snapshot.word]] : []));
   const allPurposes = value.flatMap((block) => block.purposes);
   const editGroup = (block: number, group: number, patch: Partial<TopicExpressionPurposeResource>) => {
     onChange(value.map((entry, index) => index === block
@@ -102,12 +103,13 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
         <div className="grid gap-4 lg:grid-cols-2">
           {purpose.examples.map((source, row) => {
             const { examples } = purpose;
+            const links = expressionVocabularyLinks(source.linkedVocabIds, vocabularyWords);
             return <div key={row} className="space-y-2">
               <ExpressionCard example={{
-                id: String(row), type: TOPIC_EXPRESSION_TYPE_OPTIONS.find((entry) => entry.value === source.type)?.value ?? null,
+                type: source.type, label: source.label,
                 textEn: source.textEn ?? "", textVi: source.textVi ?? "", usageNote: source.usageNote ?? "",
                 audioFile: source.audioUrl, linkedVocabIds: source.linkedVocabIds ?? [],
-              }} vocabWords={(source.linkedVocabIds ?? []).map((id) => vocabularyNames.get(id) ?? id)}
+              }} vocabLinks={links.resolved} unresolvedVocabIds={links.unresolvedIds}
                 onEdit={() => setDialog({ block: blockIndex, group: groupIndex, row })}
                 onDelete={() => {
                   if (window.confirm("Xóa mẫu câu khỏi bản nháp?")) editGroup(blockIndex, groupIndex, { examples: examples.filter((_, index) => index !== row) });
@@ -115,7 +117,6 @@ export default function TopicItemExpressionsEditorView({ value, onChange, vocabu
                 onDuplicate={() => editGroup(blockIndex, groupIndex, { examples: [...examples, { ...source }] })}
                 onPreviewAudio={() => undefined} />
               <div className="flex flex-wrap items-center gap-2">
-                {source.label && <span className="text-label-sm font-semibold">{EXPRESSION_LABELS[source.label]}</span>}
                 <Button type="button" size="sm" variant="outline" disabled={row === 0} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, -1) })}>Đưa mẫu câu lên</Button>
                 <Button type="button" size="sm" variant="outline" disabled={row + 1 === examples.length} onClick={() => editGroup(blockIndex, groupIndex, { examples: move(examples, row, 1) })}>Đưa mẫu câu xuống</Button>
               </div>

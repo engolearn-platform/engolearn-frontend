@@ -13,14 +13,20 @@ interface Props {
   retry: () => void;
 }
 
+interface ConfirmedRecommendation extends LearningPathRecommendation {
+  assessmentAttemptId: string;
+}
+
 export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data, error, refreshing, retry }: Props) {
   const navigate = useNavigate();
   const creation = useCreateLearningPath();
-  const [confirmation, setConfirmation] = useState<LearningPathRecommendation | null>(null);
+  const [confirmation, setConfirmation] = useState<ConfirmedRecommendation | null>(null);
   const confirmCreation = async () => {
     if (!confirmation) return;
     const result = await creation.create({
-      assessmentAttemptId, microSkills: confirmation.microSkills.map(skill => skill.name),
+      assessmentAttemptId: confirmation.assessmentAttemptId,
+      microSkills: confirmation.microSkills.map(skill => skill.name),
+      level: confirmation.level,
     });
     if (result?.kind === "busy") return;
     if (result?.kind === "created") {
@@ -58,11 +64,11 @@ export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data
       <p className="mt-4 text-sm text-muted-foreground">Tổng cộng {data.durationWeeks * data.daysPerWeek * data.questionsPerDay} câu hỏi luyện tập.</p>
       <Button type="button" disabled={creation.pending || refreshing} className="mt-5 h-12 w-full" onClick={() => {
         creation.clearError();
-        setConfirmation(data);
+        setConfirmation({ ...data, assessmentAttemptId, microSkills: data.microSkills.map(skill => ({ ...skill })) });
       }}>Tạo lộ trình học tập</Button>
     </>}
     <Confirmation open={confirmation !== null} title="Tạo lộ trình học tập?"
-      description={confirmation ? `Bạn xác nhận tạo lộ trình ${confirmation.durationWeeks} tuần cho ${confirmation.microSkills.map(skill => skill.name).join(", ")}, với ${confirmation.daysPerWeek} ngày mỗi tuần và ${confirmation.questionsPerDay} câu hỏi mỗi ngày? Sau khi tạo, bạn sẽ được chuyển đến thông tin lộ trình ở tuần 1.` : ""}
+      description={confirmation ? `Bạn xác nhận tạo lộ trình ở trình độ ${confirmation.level} trong ${confirmation.durationWeeks} tuần cho ${confirmation.microSkills.map(skill => skill.name).join(", ")}, với ${confirmation.daysPerWeek} ngày mỗi tuần và ${confirmation.questionsPerDay} câu hỏi mỗi ngày? Sau khi tạo, bạn sẽ được chuyển đến thông tin lộ trình ở tuần 1.` : ""}
       busy={creation.pending} onCancel={() => setConfirmation(null)} onConfirm={() => { void confirmCreation(); }} />
   </AssessmentCard>;
 }

@@ -8,32 +8,33 @@ import {
   adminTopicReadItemsPath,
   adminTopicReadPath,
   adminTopicReadSectionPath,
+  topicItemSectionPath,
 } from "@shared/constants";
 import { ForbiddenView } from "@features/auth/components/ForbiddenView";
 import { HasRole } from "@features/auth/components/HasRole";
 import TopicItemEditorBreadcrumb from "@features/topic/components/management/upsert/editor/TopicItemEditorBreadcrumb";
 import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
+import TopicContextResourceView from "@features/topic/components/management/read/TopicContextResourceView";
+import { hasContextContent } from "@features/topic/utils/topic-context-presentation";
 import PurposeGroupSection from "@features/topic/components/management/upsert/editor/expressions/PurposeGroupSection";
 import QuizGroupSection from "@features/topic/components/management/upsert/editor/quiz/QuizGroupSection";
-import VocabularyCard from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyCard";
 import TopicItemsHeader from "@features/topic/components/management/upsert/items/TopicItemsHeader";
+import VocabularyCard from "@features/topic/components/management/upsert/editor/vocabulary/VocabularyCard";
 import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
 import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
 import { topicManagementService } from "@features/topic/services/topic-management.service";
 import { isTopicItemSectionKey } from "@features/topic/types/topic-create.types";
-import type { TopicItemStepKey, TopicQuizGroup } from "@features/topic/types/topic-create.types";
+import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
 import type {
+  TopicExpressionResource,
   TopicItemManagementDetail,
   TopicItemManagementSummary,
   TopicManagementResponse,
   TopicVocabularyResource,
 } from "@features/topic/types/topic-management.types";
 import { playableManagementMediaUrl } from "@features/topic/utils/management-media";
-import {
-  toExpressionPurposes,
-  toQuizGroups,
-  toVocabularyCardItem,
-} from "@features/topic/utils/topic-management-read.adapter";
+import { toQuizPresentations } from "@features/topic/utils/topic-quiz-presentation";
+import { expressionSentenceCount } from "@features/topic/utils/topic-expression-presentation";
 
 const READ_STEPS = [
   { index: 0, title: "1. Thông tin chủ đề", note: "Xem chi tiết" },
@@ -135,68 +136,72 @@ function RequestState({ loading, error, title }: { loading: boolean; error: { st
   return <div className="mx-auto max-w-3xl py-12"><EmptyState title={title} description={message} /></div>;
 }
 
-function VocabularyResource({ resource, index }: { resource: TopicVocabularyResource; index: number }) {
-  const displayItem = toVocabularyCardItem(resource, index);
-  const additionalData = {
-    vocabId: resource.vocabId,
-    senseId: resource.senseId,
-    describeVi: resource.snapshot?.describeVi,
-    sense: resource.snapshot?.sense,
-    snapshotAudio: {
-      audioUrl: resource.snapshot?.audioUrl,
-      audioEnUrl: resource.snapshot?.audioEnUrl,
-      audioUsUrl: resource.snapshot?.audioUsUrl,
-    },
-    exampleMedia: resource.samples?.map((sample) => ({ audioUrl: sample.audioUrl, isManual: sample.isManual })),
-    collocationDetails: resource.collocations,
-    quickCheck: resource.quickCheck,
-    orderIndex: resource.orderIndex,
-    tips: resource.tips,
-  };
-  return <article className="space-y-3"><VocabularyCard item={displayItem} onEdit={() => undefined} onDelete={() => undefined} onPreviewAudio={() => undefined} readOnly /><ResourceValue value={additionalData} /></article>;
+function VocabularyResource({ resource }: { resource: TopicVocabularyResource }) {
+  return <VocabularyCard resource={resource} />;
 }
 
-function QuizResources({ groups, raw }: { groups: TopicQuizGroup[] | null; raw: TopicItemManagementDetail["quizzes"] }) {
-  if (!groups) return <ResourceValue value={raw} />;
-  return <div className="space-y-6">{groups.map((group, index) => {
-    const source = raw[index];
-    const extraData = {
-      quizId: source?.quizId,
-      questions: source?.questions,
-    };
-    return <div key={group.id} className="space-y-3"><QuizGroupSection group={group} groupIndex={index} onAdd={() => undefined} onEdit={() => undefined} onDelete={() => undefined} onPreviewAudio={() => undefined} readOnly /><ResourceValue value={extraData} /></div>;
-  })}</div>;
+function ExpressionBlock({ group, blockIndex, vocabWordById }: {
+  group: TopicExpressionResource;
+  blockIndex: number;
+  vocabWordById: Map<string, string>;
+}) {
+  const purposeCount = group.purposes.length;
+  const sentenceCount = expressionSentenceCount([group]);
+
+  return (
+    <article className="space-y-5 rounded-xl border border-outline-variant/50 p-4 sm:p-5">
+      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-outline-variant/50 pb-3">
+        <h3 className="text-title-md font-semibold text-on-surface">Khối mẫu câu {blockIndex + 1}</h3>
+        <p className="text-label-sm text-on-surface-variant">{purposeCount} nhóm · {sentenceCount} mẫu câu</p>
+      </header>
+      {group.purposes.map((purpose, purposeIndex) => <PurposeGroupSection key={purposeIndex} purpose={purpose} groupIndex={purposeIndex} vocabWordById={vocabWordById} />)}
+      {group.tips?.trim() && (
+        <aside className="rounded-lg bg-surface-container-low p-4">
+          <p className="mb-1 text-label-sm font-semibold text-on-surface-variant">Ghi chú</p>
+          <p className="whitespace-pre-wrap break-words text-body-md text-on-surface">{group.tips}</p>
+        </aside>
+      )}
+    </article>
+  );
+}
+
+function QuizResources({ quizzes }: { quizzes: TopicItemManagementDetail["quizzes"] }) {
+  const presentation = toQuizPresentations(quizzes);
+  return <div className="space-y-6">
+    <p className="text-label-sm text-on-surface-variant" aria-label={`Tổng số câu hỏi: ${presentation.totalQuestions}`}>Tổng số câu hỏi: {presentation.totalQuestions} · {presentation.modules.length} module</p>
+    {presentation.modules.map((group) => <QuizGroupSection key={group.id} group={group} onAdd={() => undefined} onEdit={() => undefined} onDelete={() => undefined} onPreviewAudio={() => undefined} readOnly />)}
+  </div>;
 }
 
 function ResourceTab({ item, section }: { item: TopicItemManagementDetail; section: TopicItemStepKey }) {
   if (section === "context") {
-    return <ResourcePanel title="Bối cảnh" empty={item.context === null}>
-      <ResourceValue value={item.context} />
+    const empty = !hasContextContent(item.context);
+    const emptyAction = empty && item.status === "DRAFT"
+      ? <Link to={topicItemSectionPath(item.id, "context", item.topicId)} className="inline-flex rounded-lg border border-outline-variant px-4 py-2 text-label-md font-semibold text-primary hover:bg-surface-container-low">Thêm bối cảnh</Link>
+      : undefined;
+    return <ResourcePanel title="Bối cảnh tình huống" empty={empty} emptyAction={emptyAction}>
+      <TopicContextResourceView value={item.context} />
     </ResourcePanel>;
   }
   if (section === "vocabulary") {
     return <ResourcePanel title="Từ vựng" empty={item.vocabularies.length === 0}>
-      <div className="space-y-5">{item.vocabularies.map((resource, index) => <VocabularyResource key={resource.vocabId || index} resource={resource} index={index} />)}</div>
+      <div className="space-y-5">{item.vocabularies.map((resource, index) => <VocabularyResource key={resource.vocabId || index} resource={resource} />)}</div>
     </ResourcePanel>;
   }
   if (section === "expressions") {
-    const purposes = toExpressionPurposes(item.expressions);
-    const vocabWordById = new Map(item.vocabularies.map((vocabulary) => [vocabulary.vocabId ?? "", vocabulary.snapshot?.word ?? ""]));
+    const vocabWordById = new Map(item.vocabularies.flatMap((vocabulary) =>
+      vocabulary.vocabId && vocabulary.snapshot?.word ? [[vocabulary.vocabId, vocabulary.snapshot.word] as const] : []));
     return <ResourcePanel title="Mẫu câu" empty={item.expressions.length === 0}>
-      {purposes === null ? <ResourceValue value={item.expressions} /> : <div className="space-y-6">{item.expressions.map((group, groupIndex) => <article key={groupIndex} className="space-y-4 rounded-xl border border-outline-variant/50 p-4"><ResourceValue value={{ groupOrder: groupIndex }} />{(group.purposes ?? []).map((sourcePurpose, purposeIndex) => {
-        const purpose = purposes.find((candidate) => candidate.purposeEn === (sourcePurpose.purposeEn ?? "") && candidate.purposeVi === (sourcePurpose.purposeVi ?? "") && candidate.orderIndex === (sourcePurpose.orderIndex ?? purposeIndex));
-        return purpose ? <div key={`${groupIndex}-${purposeIndex}`} className="space-y-3"><PurposeGroupSection purpose={purpose} groupIndex={purposeIndex} vocabWordById={vocabWordById} onEdit={() => undefined} onDelete={() => undefined} onDuplicate={() => undefined} onPreviewAudio={() => undefined} readOnly /><ResourceValue value={{ tips: group.tips, purposeOrderIndex: sourcePurpose.orderIndex, ...(sourcePurpose.groupType ? { groupType: sourcePurpose.groupType } : {}), ...(sourcePurpose.examples.some((example) => example.label) ? { label: sourcePurpose.examples.map((example) => example.label) } : {}), linkedVocabIds: purpose.examples.map((example) => example.linkedVocabIds) }} /></div> : <ResourceValue key={`${groupIndex}-${purposeIndex}`} value={sourcePurpose} />;
-      })}{(group.purposes ?? []).length === 0 && <ResourceValue value={{ tips: group.tips }} />}</article>)}</div>}
+      <div className="space-y-6">{item.expressions.map((group, blockIndex) => <ExpressionBlock key={blockIndex} group={group} blockIndex={blockIndex} vocabWordById={vocabWordById} />)}</div>
     </ResourcePanel>;
   }
-  const quizGroups = toQuizGroups(item.quizzes);
   return <ResourcePanel title="Quiz" empty={item.quizzes.length === 0}>
-    <QuizResources groups={quizGroups} raw={item.quizzes} />
+    <QuizResources quizzes={item.quizzes} />
   </ResourcePanel>;
 }
 
-function ResourcePanel({ title, empty, children }: { title: string; empty: boolean; children: React.ReactNode }) {
-  return <section className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7"><h2 className="mb-5 text-title-lg font-semibold text-on-surface">{title}</h2>{empty ? <div role="status" className="flex items-center gap-2 rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant"><CircleAlert className="size-5" aria-hidden="true" />Chưa có dữ liệu {title.toLocaleLowerCase("vi-VN")}.</div> : children}</section>;
+function ResourcePanel({ title, empty, emptyAction, children }: { title: string; empty: boolean; emptyAction?: React.ReactNode; children: React.ReactNode }) {
+  return <section className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7"><h2 className="mb-5 text-title-lg font-semibold text-on-surface">{title}</h2>{empty ? <div className="grid gap-3"><div role="status" className="flex items-center gap-2 rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant"><CircleAlert className="size-5" aria-hidden="true" />Chưa có dữ liệu {title.toLocaleLowerCase("vi-VN")}.</div>{emptyAction && <div className="justify-self-start">{emptyAction}</div>}</div> : children}</section>;
 }
 
 function TopicManagementReadPage() {

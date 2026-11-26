@@ -85,20 +85,28 @@ the backend message; `ALREADY_CREATED` tells the learner a path already exists.
 The “Tạo lộ trình học tập” button opens the existing confirmation Dialog for `AVAILABLE`.
 Opening, cancelling, Escape or dismissing the dialog sends no creation request. Only its
 “Xác nhận” action calls `POST /api/learning-paths/by-assessment`, sending the result's native
-ID and the complete skill-name list captured when the dialog opened. `useCreateLearningPath`
+ID, complete skill-name list and `level` captured when the dialog opened. The dialog
+explicitly shows that captured practice level, independently of later recommendation
+refreshes or the Assessment's level. `useCreateLearningPath`
 prevents repeated clicks, disables dialog actions during creation, aborts the client request
 on unmount/identity change and ignores its late result. Request errors remain visible and
 require another explicit confirmation to retry. A 409 reloads Recommendation and requires
-review and confirmation again; it never silently resubmits a new list.
+review and confirmation again; it never silently resubmits a new skill list or level.
+This includes the case where the skill names remain identical but the current user
+level has changed. Backend validation remains authoritative; the submitted level
+records the learner's confirmation and cannot override their current profile level.
 
 Both newly created and already-existing success responses navigate using the returned
 `pathId` to `/learning-paths/:pathId?week=1`. The detail page loads with the session cookie
 and opens the unlocked Week 1 tab. `ALREADY_CREATED` also provides a link to that owned path.
 Creation writes actual path/question snapshots; the Assessment result stays unchanged.
 
-The integrated backend reads the learner's native READY Assessment result by attempt ID.
-A recommendation can use the result immediately when the required Learning Path pools are
-available. The frontend retains the native ID through recommendation and path creation.
+The backend reads native READY Assessment results through AssessmentResults; no legacy
+Learning Path projection or background synchronization is required. Missing/foreign or
+non-READY sources return 404; unsupported/inconsistent source data returns 409. The
+frontend does not fabricate recommendations or convert native source IDs to ObjectIds.
+
+Recommendation is available immediately when the required Learning Path pools are available.
 
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
@@ -124,14 +132,29 @@ never a mocked assessment API. Review keyboard navigation, mobile overflow, audi
 failed-save/deadline transitions, owner/binding checks and historical snapshots.
 Build/lint and API/real-browser results have separate meanings. The release still requires
 real Placement/baseline, exact refund-to-analysis delivery, approved content/media and
-staging/Windows acceptance. Automatic Learning Path projection delivery remains open.
+staging/Windows acceptance.
 The local handoff package includes dated verification results and Windows demo instructions.
 
-## F03 — draft management
+### Learning Path level confirmation — 2026-11-26
 
-`/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units. New audio, preview and publication belong to subsequent milestones.
+The confirmation snapshot copies the recommendation and skill values together with
+the native source ID. Both dialog text and the creation payload use its level;
+later recommendation refreshes cannot replace that confirmed level. No level is
+inferred from the page header or the source Assessment.
+
+- `npm run build`: passed; the existing bundle-size warning remains.
+- `npm run lint`: passed, zero errors and 73 existing warnings.
+- `git diff --check`: passed. No mocked Assessment API was used for verification.
+- Browser/real FE proxy integration has not been verified in this change. Manual
+  checks: cancel sends no POST; confirm sends the displayed level; changing the
+  profile level while the dialog is open produces 409 even with identical skills;
+  the dialog closes, a refreshed recommendation must be explicitly confirmed,
+  and no replacement POST is sent automatically. Validate with a real account
+  and sufficient ACTIVE questions at both practice levels for the identical-skills case.
 
 ## Paper management (F03)
+
+`/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units.
 
 Content Managers and Admins enter `/admin/assessment` through the shared
 `ProtectedRoute`. Editors upload validated WAV files through Assessment, save
