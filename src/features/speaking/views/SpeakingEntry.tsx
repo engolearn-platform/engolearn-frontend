@@ -3,6 +3,24 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
 import { speakingV2Service, SpeakingV2ApiError } from "@features/speaking/services/speaking-v2.service";
 import type { SpeakingAvailability, SpeakingScope, SpeakingSession } from "@features/speaking/types/speaking-v2.types";
+import { speakingEntryPath, speakingHistoryUrl } from "@features/speaking/utils/speaking-history-navigation";
+
+const accessMessages: Record<string, string> = {
+  LEVEL_TOO_HIGH: "Chủ đề này yêu cầu trình độ cao hơn cấp độ hiện tại của bạn.",
+  ITEM_LOCKED: "Hãy hoàn thành mục học trước đó để mở phần luyện nói này.",
+  PROFILE_DISABLED: "Chủ đề chưa có hồ sơ Speaking đang hoạt động.",
+  PROFILE_RESOURCES_STALE: "Tài nguyên của hồ sơ Speaking cần được cập nhật trước khi bạn có thể luyện nói.",
+  CONTEXT_BUDGET_EXCEEDED: "Ngữ cảnh của hồ sơ Speaking vượt giới hạn. Hãy thử lại sau khi hồ sơ được cập nhật.",
+  SCOPE_FORBIDDEN: "Bạn chưa thể truy cập phần luyện nói này.",
+  DAILY_QUOTA_REACHED: "Bạn đã dùng hết thời lượng luyện nói hôm nay.",
+};
+function availabilityReason(reason: string | null) {
+  return reason ? accessMessages[reason] ?? "Hiện chưa thể bắt đầu phiên luyện nói mới." : "Chủ đề chưa có hồ sơ Speaking được xuất bản.";
+}
+function operationError(cause: unknown, fallback: string) {
+  if (cause instanceof SpeakingV2ApiError && accessMessages[cause.code]) return accessMessages[cause.code];
+  return cause instanceof Error ? cause.message : fallback;
+}
 
 export function TopicSpeakingEntry() {
   const { topicId = "" } = useParams();
@@ -23,8 +41,10 @@ export function SpeakingEntry({ scope: scopeInput }: { scope: SpeakingScope }) {
   const [active, setActive] = useState<SpeakingSession | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const returnTo = search.get("from")?.startsWith("/") && !search.get("from")?.startsWith("//")
-    ? search.get("from")! : `/topics/${encodeURIComponent(scope.topicId)}`;
+  const rawReturnTo = search.get("from");
+  const returnTo = rawReturnTo?.startsWith("/") && !rawReturnTo.startsWith("//")
+    ? rawReturnTo : `/topics/${encodeURIComponent(scope.topicId)}`;
+  const historyLink = speakingHistoryUrl({ kind: "exact", scope, page: 0, origin: speakingEntryPath(scope) });
 
   const load = useCallback(async () => {
     setError("");
@@ -55,7 +75,7 @@ export function SpeakingEntry({ scope: scopeInput }: { scope: SpeakingScope }) {
           setAvailability(previous => previous ? { ...previous, available: true } : previous);
           setError("Bạn đã có phiên luyện đang mở. Hãy tiếp tục phiên đó hoặc kết thúc trước khi tạo phiên mới.");
         } catch { setError("Đã tìm thấy phiên đang mở nhưng không tải được. Hãy kiểm tra lại kết nối rồi thử lại."); }
-      } else setError(cause instanceof Error ? cause.message : "Không bắt đầu được phiên.");
+      } else setError(operationError(cause, "Không bắt đầu được phiên."));
     }
     finally { setBusy(false); }
   }
@@ -80,7 +100,7 @@ export function SpeakingEntry({ scope: scopeInput }: { scope: SpeakingScope }) {
       navigate(`/speaking/sessions/${encodeURIComponent(result.sessionId)}`, { state: { returnTo } });
     } catch (cause) {
       setError(cause instanceof SpeakingV2ApiError && cause.activeSessionId
-        ? "Bạn đang có một phiên khác. Tiếp tục phiên đó hoặc thử lại sau khi kết thúc." : cause instanceof Error ? cause.message : "Không thay phiên được.");
+        ? "Bạn đang có một phiên khác. Tiếp tục phiên đó hoặc thử lại sau khi kết thúc." : operationError(cause, "Không thay phiên được."));
     } finally { setBusy(false); }
   }
 
@@ -94,16 +114,17 @@ export function SpeakingEntry({ scope: scopeInput }: { scope: SpeakingScope }) {
       <Button variant="outline" className="mt-3 min-h-12" onClick={() => void load()}>Kiểm tra lại</Button></div>}
     {!availability && !error && <p role="status" className="text-on-surface-variant">Đang kiểm tra điều kiện luyện nói…</p>}
     {availability && !availability.available && <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
-      <h2 className="text-headline-md font-semibold">Chưa thể bắt đầu</h2><p className="mt-2 leading-6 text-on-surface-variant">{availability.reason ?? "Chủ đề chưa có hồ sơ Speaking được xuất bản."}</p>
+      <h2 className="text-headline-md font-semibold">Chưa thể bắt đầu</h2><p className="mt-2 leading-6 text-on-surface-variant">{availabilityReason(availability.reason)}</p>
     </section>}
-    {availability?.available && active && <section className="grid gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
+    {availability && active && <section className="grid gap-3 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5">
       <h2 className="text-headline-md font-semibold">Bạn có một phiên đang mở</h2>
-      <p className="leading-6 text-on-surface-variant">Tiếp tục phiên hiện tại để giữ nguyên nội dung đã luyện, hoặc xác nhận thay thế phiên đó.</p>
+      <p className="leading-6 text-on-surface-variant">{availability.available ? "Tiếp tục phiên hiện tại để giữ nguyên nội dung đã luyện, hoặc xác nhận thay thế phiên đó." : "Không thể mở phiên mới tại thời điểm này, nhưng bạn vẫn có thể tiếp tục phiên đang mở."}</p>
       <div className="flex flex-wrap gap-3"><Button className="min-h-12" disabled={busy} onClick={() => void resume()}>Tiếp tục luyện</Button>
-        <Button variant="outline" className="min-h-12" disabled={busy} onClick={() => void replace()}>Thay bằng phiên mới</Button></div>
+        {availability.available && <Button variant="outline" className="min-h-12" disabled={busy} onClick={() => void replace()}>Thay bằng phiên mới</Button>}</div>
     </section>}
     {availability?.available && !active && <Button className="min-h-12 w-fit" disabled={busy} onClick={() => void create()}>
       {busy ? "Đang chuẩn bị…" : "Bắt đầu luyện nói"}</Button>}
+    <Link className="min-h-12 w-fit py-3 text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary" to={historyLink}>Lịch sử phiên của {scope.type === "TOPIC_ITEM" ? "mục học này" : "chủ đề này"}</Link>
     <Link className="min-h-12 w-fit py-3 text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary" to={returnTo}>Quay lại chủ đề</Link>
   </main>;
 }

@@ -34,6 +34,36 @@ Baseline Git là `8a86d4d` ở Backend và `1f96b4f` ở Frontend, cùng nhánh 
 - Ảnh và JSON kiểm chứng ở `e2e-artifacts/topic-authoring/` tại workspace. Harness ở `engolearn-backend/src/test/python/topic_authoring_acceptance.py` dùng riêng container `engolearn-topic-authoring-test`.
 - Frontend build thành công. Lint trả 0 lỗi và 72 cảnh báo. 7 test authoring/management read và 21 test auth qua. Hai test Learner hợp đồng lỗi giống nhau khi chạy từ commit Phase 1 `1f96b4f`: số operation `20 !== 17` và ví dụ response thiếu `entries`.
 
+## P01 — Context semantic presentation
+
+- Màn chỉ đọc dùng trình bày theo trường nghiệp vụ: scenario description, câu hỏi gợi mở, transcript theo đúng thứ tự API với nhãn speaker thực, câu tiếng Anh chính, tiếng Việt phụ khi có, audio theo từng lượt hoặc ghi chú thiếu audio, tips và duration theo giây. Không hiển thị các key `speaker`, `textEn` hay `textVi` như nhãn dữ liệu thô.
+- `null`, object trống hoặc Context chỉ có giá trị tùy chọn rỗng dùng đúng một empty state. Bản nháp giữ nguyên thứ tự lượt thoại, kể cả hai lượt liền nhau cùng speaker; form edit sắp trường Scenario → Prompt → Dialogue → Tips → Duration.
+- Regression assertions: `tests/topic-context-presentation.test.mjs`; browser assertions được bổ sung trong harness `engolearn-backend/src/test/python/topic_authoring_acceptance.py`. Ảnh và báo cáo có thẩm quyền của phase: `screen-shot/topic-management-enhance/P01/`.
+- Chi tiết mapping field, kết quả lệnh kiểm tra, DB/fixture và giới hạn evidence được ghi trong `implementation-report.md` ở thư mục phase.
+
+### P01 correction iteration 1
+
+- Audio của từng lượt phân biệt ba trường hợp: không có audio, reference không được resolver chấp nhận, và lỗi bất đồng bộ từ media element. Native error hiện `role="alert"`; state đặt lại khi `src` đổi và player được key theo source. Reference vẫn đi qua `playableManagementMediaUrl`.
+- Empty Context chỉ có link “Thêm bối cảnh” khi Item status là `DRAFT`; link mở cùng Topic/Item Context editor. Item `HIDDEN` và `PUBLISHED` không có link.
+- Scenario, prompt, speaker, EN/VI, tips dùng `break-words` cùng `whitespace-pre-wrap` ở các field có line breaks; nội dung đã lưu không đổi.
+- Token mapping của P01 correction: Hanken Grotesk `text-headline-sm` 18/24, `text-body-md` 16/24, `text-label-lg` 14/20; surfaces `surface-container-lowest` #fff, `surface-container-low` #f2f4f6, text `on-surface` #191c1e / `on-surface-variant` #3e4949, `primary` #006565, `error` #ba1a1a; `rounded-xl` = 14px, `rounded-lg` = 10px, `p-5` = 20px, `sm:p-6` = 24px, `gap-3` = 12px, `space-y-5` = 20px. Source values: `src/core/assets/css/App.css`.
+- Correction lint: 73 warnings, 0 errors. The reviewed 74th warning was the P01 Fast Refresh warning from exporting `hasContextContent` in a TSX file; it now lives in plain TypeScript. Remaining warnings are outside the P01 files. Build passes with the existing Vite chunk-size advisory.
+- Correction E2E, screenshots, and fresh report are kept separately in `screen-shot/topic-management-enhance/P01/correction-1/`; iteration 1 review files and screenshots remain unchanged.
+
+## P02 — Vocabulary semantic presentation
+
+- The existing `VocabularyCard` now renders the full resource in both read and edit summaries, one card per word: word, mapped part of speech where recognized, IPA, Vietnamese meaning, distinct English sense, available pronunciation tracks, translated examples with per-example audio state, collocations, optional quick check, notes, and closed technical reference details. Edit/delete callbacks and the existing reorder controls still operate on their original resource index.
+- A dictionary reference without lookup data is described as unresolved; linked IDs stay in disclosure. Known POS labels, including `phrase` and the stored `verb phrase`, are localized; unknown labels remain visible as stored. Quick-check correctness is marked only when every populated supported camel-case/snake-case candidate across the stored keys agrees on one unique option; conflicts show a neutral inconsistency status with no marked choices. Other legacy shapes are not interpreted as a quiz. Normal/slow sentence audio is playable when present, while source and external ID remain in details.
+- Vocabulary read view no longer renders the recursive `ResourceValue` dump or duplicates fields. Rendering uses the real `playableManagementMediaUrl` resolver. Absent, invalid references, and browser playback errors have separate states. Unsupported quick-check payloads are warned about and exposed only in a closed disclosure. The authoring merge clones nested examples, collocations, quick-check data, IDs and audio variants from the lossless authoring draft. Unrelated edits preserve the stored `orderIndex` and null/optional quick-check sentence shape; intentional reorder still updates the stored indices.
+- Targeted regression tests: `tests/topic-vocabulary-presentation.test.mjs` and `tests/topic-authoring.test.mjs`. Phase evidence and environment limits are recorded in `screen-shot/topic-management-enhance/P02/report.md`.
+
+## P03 — Expressions semantic presentation
+
+- The read path now iterates expression blocks, purposes, and sentences in API order. It keeps duplicate purpose names in their original groups, shows each group's EN/VI purpose and group type, reports group and sentence counts with their separate units, and presents each block note once. It does not flatten or recursively dump the expression DTO.
+- `ExpressionCard` presents each stored sentence once with its original EN/VI text, highlighted bracketed tokens, sentence type, communication label, usage note, audio state, and vocabulary links. Vocabulary names resolve from the same Item response snapshot. Missing names are reported as unresolved, and their IDs remain in a closed disclosure.
+- Draft editor cards share the presentation while retaining the existing section PUT/revision flow, dialog, and authoring state. Vocabulary chooser options continue to use the existing ID fallback. Unknown sentence type/label values display neutrally, with raw classifications in closed details.
+- Targeted regression tests: `tests/topic-expression-presentation.test.mjs`. Real Edge/API/MongoDB verification and screenshot evidence are recorded under `screen-shot/topic-management-enhance/P03/`.
+
 ## F06 đã kiểm chứng trên trình duyệt
 
 - Tạo hai Item nháp trong Topic, đổi thứ tự, sửa mô tả/thời lượng, tải lại, ẩn/hiện, xóa Item nháp đủ điều kiện. `topic_items` và `topic_item_versions` phản ánh đúng thao tác. Các bước chạy tiếp đến kiểm tra Phase 1 và trả exit 0.

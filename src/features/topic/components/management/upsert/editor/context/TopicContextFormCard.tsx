@@ -60,12 +60,12 @@ export default function TopicContextFormCard({ value, onChange, topicId, disable
       </header>
 
       <label className="grid gap-2">
-        <span className="flex items-center gap-2 text-label-lg font-semibold"><Lightbulb className="size-5 text-primary" /> Câu hỏi gợi mở phản xạ</span>
-        <textarea rows={2} value={context.prompt ?? ""} onChange={(event) => patch({ prompt: event.target.value || null })} className={FIELD_CLASS} />
-      </label>
-      <label className="grid gap-2">
         <span className="text-label-lg font-semibold">Mô tả bối cảnh tình huống</span>
         <textarea rows={4} value={context.scenarioDescription ?? ""} onChange={(event) => patch({ scenarioDescription: event.target.value || null })} className={FIELD_CLASS} />
+      </label>
+      <label className="grid gap-2">
+        <span className="flex items-center gap-2 text-label-lg font-semibold"><Lightbulb className="size-5 text-primary" /> Câu hỏi gợi mở phản xạ</span>
+        <textarea rows={2} value={context.prompt ?? ""} onChange={(event) => patch({ prompt: event.target.value || null })} className={FIELD_CLASS} />
       </label>
 
       <div className="flex flex-col gap-3">
@@ -84,14 +84,14 @@ export default function TopicContextFormCard({ value, onChange, topicId, disable
       </div>
 
       <label className="grid gap-2">
+        <span className="text-label-lg font-semibold">Mẹo cho người học</span>
+        <textarea value={context.tips ?? ""} onChange={(event) => patch({ tips: event.target.value || null })} className={FIELD_CLASS} />
+      </label>
+      <label className="grid gap-2">
         <span className="text-label-lg font-semibold">Thời lượng bối cảnh (giây)</span>
         <input type="number" min={0} step={1} value={context.durationSec ?? ""}
           onChange={(event) => patch({ durationSec: event.target.value === "" ? null : event.target.valueAsNumber })}
           className={FIELD_CLASS} />
-      </label>
-      <label className="grid gap-2">
-        <span className="text-label-lg font-semibold">Mẹo cho người học</span>
-        <textarea value={context.tips ?? ""} onChange={(event) => patch({ tips: event.target.value || null })} className={FIELD_CLASS} />
       </label>
     </fieldset>
   );

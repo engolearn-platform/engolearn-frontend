@@ -5,16 +5,58 @@ import { JSDOM } from "jsdom";
 import { createServer } from "vite";
 
 const fixture = JSON.parse(await readFile(new URL("../../docs/system-design/speaking-v2-protocol.fixture.json", import.meta.url), "utf8"));
-let dom; let vite; let speaking; let profile;
+const historyFixture = JSON.parse(await readFile(new URL("../../docs/system-design/speaking-access-history.fixture.json", import.meta.url), "utf8"));
+let dom; let vite; let speaking; let profile; let historyNavigation;
 
 before(async () => {
   dom = new JSDOM("<!doctype html><body></body>", { url: "https://engolearn.test/" });
   globalThis.window = dom.window;
   vite = await createServer({ server: { middlewareMode: true, hmr: false, watch: null }, optimizeDeps: { noDiscovery: true }, appType: "custom" });
-  [speaking, profile] = await Promise.all([
+  [speaking, profile, historyNavigation] = await Promise.all([
     vite.ssrLoadModule("/src/features/speaking/services/speaking-v2.service.ts"),
     vite.ssrLoadModule("/src/features/topic/services/topic-speaking-profile.service.ts"),
+    vite.ssrLoadModule("/src/features/speaking/utils/speaking-history-navigation.ts"),
   ]);
+});
+
+test("history reads keep group, parent, exact and account URL intentions distinct", () => {
+  assert.deepEqual(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("tab=COMPLETED&page=2")),
+    { kind: "account", tab: "COMPLETED", group: null, page: 2, topicPage: 0, inProgressPage: 0, otherPage: 0, completedPage: 0 });
+  assert.deepEqual(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("parentTopicId=topic-1&parentPage=3&from=%2Fspeaking%2Fhistory%3Ftab%3DCOMPLETED")),
+    { kind: "parent", topicId: "topic-1", page: 3, origin: "/speaking/history?tab=COMPLETED" });
+  assert.deepEqual(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("scopeType=TOPIC_ITEM&topicId=topic-1&topicItemId=item-2&page=1&from=%2Ftopics%2Ftopic-1%2Fitems%2Fitem-2%2Fspeaking")),
+    { kind: "exact", scope: { type: "TOPIC_ITEM", topicId: "topic-1", topicItemId: "item-2" }, page: 1, origin: "/topics/topic-1/items/item-2/speaking" });
+  assert.equal(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("scopeType=TOPIC&topicId=topic-1&topicItemId=item-2")).kind, "invalid");
+  assert.equal(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("topicId=topic-1")).kind, "invalid");
+  assert.equal(historyNavigation.parseSpeakingHistoryIntent(new URLSearchParams("topicId=topic-1&scopeType=TOPIC&tab=COMPLETED")).kind, "invalid");
+});
+
+test("history links accept only same-origin history URLs and retain paging on result return", () => {
+  assert.equal(historyNavigation.sanitizeSpeakingHistoryOrigin("/speaking/history?tab=COMPLETED&page=2", "https://engolearn.test"), "/speaking/history?tab=COMPLETED&page=2");
+  assert.equal(historyNavigation.sanitizeSpeakingHistoryOrigin("https://attacker.test/speaking/history", "https://engolearn.test"), null);
+  assert.equal(historyNavigation.sanitizeSpeakingHistoryOrigin("/speaking/history?scopeType=TOPIC&topicId=x&topicItemId=y", "https://engolearn.test"), null);
+  assert.equal(historyNavigation.sanitizeSpeakingHistoryOrigin("/speaking/history?scopeType=TOPIC_ITEM&topicId=t&topicItemId=i&from=%2Ftopics%2Ft%2Fitems%2Fi%2Fspeaking", "https://engolearn.test"), "/speaking/history?scopeType=TOPIC_ITEM&topicId=t&topicItemId=i&from=%2Ftopics%2Ft%2Fitems%2Fi%2Fspeaking");
+  assert.equal(historyNavigation.sanitizeSpeakingHistoryOrigin("/speaking/history?scopeType=TOPIC_ITEM&topicId=t&topicItemId=i&from=%2Ftopics%2Felsewhere%2Fitems%2Felsewhere%2Fspeaking", "https://engolearn.test"), null);
+});
+
+test("Speaking history service reads group and parent pages with abort signals", async t => {
+  const calls = [];
+  const controller = new AbortController();
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const parsed = new URL(url); calls.push({ path: parsed.pathname, params: Object.fromEntries(parsed.searchParams), signal: options.signal });
+    if (parsed.pathname.endsWith("/history/topics")) return Response.json({ data: historyFixture.groups.response.data });
+    if (parsed.pathname.endsWith("/sessions")) return Response.json({ data: historyFixture.parent.response.data });
+    throw new Error(`Unexpected Speaking history request: ${parsed.pathname}`);
+  });
+  const groups = await speaking.speakingV2Service.historyTopics("IN_PROGRESS", 0, 9, controller.signal);
+  const parent = await speaking.speakingV2Service.parentHistory("674300000000000000000001", 0, 2, controller.signal);
+  assert.equal(groups.items[0].sessionCount, 3);
+  assert.equal(parent.items[0].scope.type, "TOPIC_ITEM");
+  assert.deepEqual(calls.map(({ path, params }) => ({ path, params })), [
+    { path: "/api/v1/speaking/history/topics", params: { group: "IN_PROGRESS", page: "0", size: "9" } },
+    { path: "/api/v1/speaking/history/topics/674300000000000000000001/sessions", params: { page: "0", size: "2" } },
+  ]);
+  assert.ok(calls.every(call => call.signal === controller.signal));
 });
 after(async () => { await vite?.close(); dom?.window.close(); delete globalThis.window; });
 

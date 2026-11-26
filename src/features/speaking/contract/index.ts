@@ -10,6 +10,7 @@ export type {
   SpeakingPage,
   SpeakingProfile,
   SpeakingProfileState,
+  SpeakingProfileViolation,
   SpeakingScope,
   SpeakingSession,
   SpeakingTurn,

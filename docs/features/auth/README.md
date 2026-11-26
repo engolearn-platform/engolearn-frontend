@@ -31,6 +31,8 @@ HTTP errors also retain the original ProblemDetail body as optional `problem: un
 Feature clients validate their own extensions before rendering them; the shared client
 does not depend on Passage or other feature types. Publication uses this to display
 updated readiness from a 422 without changing the existing refresh/retry policy.
+The optional validated `violations` array from dev is retained alongside `problem`,
+including each entry's path, code and message for authoring clients.
 
 ## Profile verification checklist
 

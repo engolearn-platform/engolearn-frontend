@@ -5,6 +5,7 @@ import { Button } from "@/core/components/shadcn/button";
 import ConversationTimeline from "@features/speaking/components/conversation/ConversationTimeline";
 import { speakingV2Service } from "@features/speaking/services/speaking-v2.service";
 import type { SpeakingAssessment, SpeakingSession, SpeakingTurn } from "@features/speaking/types/speaking-v2.types";
+import { sanitizeSpeakingHistoryOrigin } from "@features/speaking/utils/speaking-history-navigation";
 
 const criterionNames = { pronunciation: "Phát âm", fluency: "Độ trôi chảy", grammar: "Ngữ pháp", vocabulary: "Từ vựng" } as const;
 const criterionIcons = { pronunciation: Headphones, fluency: AudioLines, grammar: BookOpen, vocabulary: Gauge } as const;
@@ -147,6 +148,7 @@ export default function SpeakingResultView() {
     }
   }
   const backToTopic = session ? backPath(session, location.state) : "/topics";
+  const historyOrigin = sanitizeSpeakingHistoryOrigin(new URLSearchParams(location.search).get("from"));
   if (!session) return <div className="mx-auto max-w-6xl px-5 py-8"><p role="status">Đang tải kết quả…</p>{error && <div role="alert" className="mt-3 text-error">{error}<Button variant="outline" className="ml-2 min-h-11" onClick={() => void refresh().catch(() => {})}>Tải lại</Button></div>}</div>;
   const resultStatus = assessment?.status ?? session.assessmentStatus;
   const keys = Object.keys(criterionNames) as CriterionKey[];
@@ -199,6 +201,7 @@ export default function SpeakingResultView() {
     </section>
     <nav aria-label="Thao tác kết quả" className="flex flex-wrap justify-center gap-3 pb-2">
       <Button asChild className="min-h-12"><Link to={practicePath(session)}>Luyện tập lại</Link></Button>
+      {historyOrigin && <Button asChild variant="outline" className="min-h-12"><Link to={historyOrigin}>Quay lại lịch sử</Link></Button>}
       <Button variant="outline" className="min-h-12" asChild><Link to={backToTopic}>Quay lại chủ đề</Link></Button>
     </nav>
   </div>;

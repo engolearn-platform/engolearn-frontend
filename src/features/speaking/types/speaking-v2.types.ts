@@ -21,6 +21,24 @@ export interface SpeakingTurn {
   audioStatus: SpeakingOpening["audioStatus"] | null; replyDeliveredAt: string | null; speechDurationMs: number; reason: string | null;
 }
 export interface SpeakingPage<T> { items: T[]; page: number; size: number; hasNext: boolean }
+export type SpeakingHistoryGroup = "IN_PROGRESS" | "COMPLETED" | "OTHER";
+export type SpeakingLearningStatus = "IN_PROGRESS" | "COMPLETED" | "NOT_STARTED" | "UNKNOWN";
+export interface SpeakingLearningProgress { completedItemCount: number; totalItemCount: number; percent: number }
+export interface SpeakingHistoryTopic {
+  topicId: string; title: string | null; level: string | null; coverUrl: string | null;
+  learningStatus: SpeakingLearningStatus; learningProgress: SpeakingLearningProgress | null;
+  sessionCount: number; latestSessionCreatedAt: string;
+}
+export interface SpeakingHistoryTotals { inProgress: number; completed: number; other: number }
+export interface SpeakingHistoryTopicPage extends SpeakingPage<SpeakingHistoryTopic> { totals: SpeakingHistoryTotals }
+export interface SpeakingHistorySessionSummary {
+  sessionId: string; scope: SpeakingScope; context: Pick<SpeakingContext, "title" | "topicTitle" | "topicItemTitle">;
+  createdAt: string; committedTurnCount: number; speechDurationMs: number;
+  status: SpeakingSessionStatus; assessmentStatus: SpeakingAssessmentStatus;
+}
+export interface SpeakingParentHistoryPage extends SpeakingPage<SpeakingHistorySessionSummary> {
+  topicId: string; title: string | null; sessionCount: number;
+}
 export interface SpeakingCriterion {
   status: SpeakingCriterionStatus | null; score: number | null; maxScore: 100 | 5; reason: string | null;
   sampleCount: number | null; wordCount: number | null; speechDurationMs: number | null;
@@ -41,6 +59,15 @@ export interface SpeakingProfile {
 }
 export interface SpeakingProfileState {
   revision: number; draft: SpeakingProfile | null; published: SpeakingProfile | null; contentVersion: string | null;
-  resources: { id: string; type: "VOCABULARY" | "EXPRESSION"; textEn: string }[];
+  initialProfile: SpeakingProfile | null;
+  scopeTitle: string | null;
+  parentTitle: string | null;
+  publishedProfileVersion: number | null;
+  draftMatchesPublished: boolean;
+  resourceGroups: { itemId: string; itemTitle: string | null; resourceIds: string[] }[];
+  publishViolations: SpeakingProfileViolation[];
+  publishedViolations: SpeakingProfileViolation[];
+  resources: { id: string; itemId: string; type: "VOCABULARY" | "EXPRESSION"; textEn: string }[];
 }
+export interface SpeakingProfileViolation { path: string; code: string; message: string }
 export interface SpeakingSocketMessage<T = Record<string, unknown>> { type: string; requestId?: string; sessionId: string; turnId?: string; sequence?: number; payload: T }

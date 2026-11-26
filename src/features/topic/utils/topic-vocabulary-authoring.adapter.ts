@@ -21,6 +21,40 @@ export interface TopicVocabularyAuthoringDraft {
   examples: { en: string; vi: string }[];
 }
 
+export interface VocabularyQuickCheckFields {
+  sentence: string;
+  meaningVi: string;
+  explanation: string;
+}
+
+export function mergeVocabularyQuickCheck(
+  original: TopicVocabularyResource["quickCheck"],
+  fields: VocabularyQuickCheckFields,
+): TopicVocabularyResource["quickCheck"] {
+  const originalSentence = original?.sentence?.textEn ?? "";
+  const originalMeaning = original?.sentence?.meaningVi ?? "";
+  const originalExplanation = original?.explanation ?? "";
+  const unchanged = fields.sentence === originalSentence
+    && fields.meaningVi === originalMeaning
+    && fields.explanation === originalExplanation;
+  if (unchanged) return original ? structuredClone(original) : null;
+
+  if (!original && !fields.sentence && !fields.meaningVi && !fields.explanation) return null;
+  return {
+    sentence: {
+      textEn: fields.sentence || null,
+      meaningVi: fields.meaningVi || null,
+      audioUrl: original?.sentence?.audioUrl ?? null,
+      audioUrlSlow: original?.sentence?.audioUrlSlow ?? null,
+      source: original?.sentence?.source ?? null,
+      externalId: original?.sentence?.externalId ?? null,
+    },
+    quizData: original?.quizData ?? null,
+    answerData: original?.answerData ?? null,
+    explanation: fields.explanation || null,
+  };
+}
+
 export function toVocabularyEditorItem(
   resource: TopicVocabularyResource,
   key: string,
@@ -63,7 +97,7 @@ export function toVocabularyAuthoringDraft(
 }
 
 export function mergeVocabularyEditorItem(
-  _resource: TopicVocabularyResource | undefined,
+  resource: TopicVocabularyResource | undefined,
   draft: TopicVocabularyAuthoringDraft,
   orderIndex: number,
 ): TopicVocabularyResource {
@@ -83,7 +117,7 @@ export function mergeVocabularyEditorItem(
     samples: structuredClone(draft.samples),
     collocations: structuredClone(draft.collocations),
     quickCheck: structuredClone(draft.quickCheck),
-    orderIndex,
+    orderIndex: resource ? resource.orderIndex : orderIndex,
     tips: draft.tips || null,
   };
 }
