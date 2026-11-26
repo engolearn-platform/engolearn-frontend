@@ -34,4 +34,18 @@ Enter submits, Shift+Enter inserts a newline, and IME composition does not submi
 
 `CompanionProvider` owns authenticated identity fencing, conversation/message data, quota reads, the active stream, transient draft/retry payload, and request lifecycle. Presentation components use `useCompanion()` and do not call services directly. UI refinement does not change routes, provider state, API/REST/SSE contracts, server admission, or backend behavior.
 
-Persistent memory management, canonical inline memory feedback, and manual context attachment remain unavailable until their required backend and page-context contracts exist. No inactive controls are shown for those capabilities.
+## Persistent memory
+
+The provider exposes memory management and Automatic Memory settings inside the same Companion panel and Full Workspace. Opening either view does not replace the conversation, composer, or draft. The header back action returns to Companion Home directly from either subview. The mascot setting remains independent from Automatic Memory.
+
+The memory list uses `GET /api/v1/companion/memory?limit=20`, with optional `category` and opaque `before` cursor parameters. Records retain the API's category, source, version, and timestamps; inferred records are labeled as Engo's inference. Editing uses `PATCH /memory/{memoryId}` with `{content,expectedVersion}` and updates the visible record only after the API succeeds. Forget asks for confirmation, then uses `DELETE /memory/{memoryId}?expectedVersion={version}` and removes the record only after success. There is no add-memory control.
+
+Automatic Memory reads `GET /api/v1/companion/memory/settings` and writes `PUT /api/v1/companion/memory/settings` with `{automaticMemoryEnabled}`. The initial setting is on when the backend returns its default. Turning it off blocks create/update classified as AUTOMATIC, regardless of EXPLICIT or INFERRED source. Direct remember, update, forget, and retrieval remain available. Chat create/update intent is model-classified, not independently confirmed consent.
+
+The SSE parser accepts the additive `memory_operation` event (`operationId`, `action`, `memoryId`, `version`). The provider deduplicates receipts by operation ID for the authenticated panel session and shows a localized post-commit confirmation with a shortcut to the memory view. No success confirmation is produced from tool output or a pre-commit event. Existing terminal and status events are unchanged.
+
+Manual context attachment remains a separate, unshipped topic follow-on and is not exposed in this UI.
+
+### M3 browser verification (2026-11-26)
+
+Actual Chrome with the local FE proxy to an isolated Gemini-backed demo verified synthetic registration, Automatic Memory OFF/ON persistence, post-commit create feedback, Memory shortcut and draft preservation, canonical versioned edit, canceled Forget and confirmed Forget. The edited vector version and eventual Qdrant deletion were confirmed separately against the isolated index. Build and lint passed (0 errors, 74 existing warnings). Browser retry/deduplication and wider responsive Memory layouts were not separately exercised in this run.

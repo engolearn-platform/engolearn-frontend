@@ -4,7 +4,7 @@ import { useCompanion } from "../state/CompanionProvider";
 import { MessageList } from "./MessageList";
 
 export function ConversationView() {
-  const { state, retryTurn } = useCompanion();
+  const { state, retryTurn, setMode } = useCompanion();
   const title = state.activeConversation?.title?.trim() || "Cuộc trò chuyện";
 
   return (
@@ -29,6 +29,10 @@ export function ConversationView() {
         <p className="companion-processing" role="status">Kết nối bị gián đoạn. Lịch sử đã được kiểm tra.</p>
       ) : null}
       <div className="companion-conversation-body">
+        {state.memoryOperations.filter((operation) => operation.conversationId === state.activeConversation?.id).map((operation) => <div className="companion-memory-confirmation" role="status" key={operation.operationId}>
+          <span>{operation.action === "CREATED" ? "Đã lưu vào bộ nhớ." : operation.action === "UPDATED" ? "Đã cập nhật bộ nhớ." : "Đã quên thông tin này."}</span>
+          <Button type="button" variant="ghost" className="companion-text-action" onClick={() => setMode("memory")}>Xem bộ nhớ</Button>
+        </div>)}
         <MessageList />
         {state.messages.length === 0 && !state.isMessagesLoading && !state.partialText ? (
           <p className="companion-conversation-empty">Hãy bắt đầu bằng một câu hỏi tiếng Anh.</p>

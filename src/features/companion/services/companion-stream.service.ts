@@ -39,13 +39,26 @@ function isMessage(value: unknown): value is CompanionMessage {
 }
 
 function parseEvent(frame: SseFrame): CompanionTurnEvent | null {
-  if (!["delta", "completed", "error", "status"].includes(frame.event)) return null;
+  if (!["delta", "completed", "error", "status", "memory_operation"].includes(frame.event)) return null;
   try {
     const data = JSON.parse(frame.data) as unknown;
     if (!data || typeof data !== "object") return null;
     const value = data as Record<string, unknown>;
     if (frame.event === "delta" && typeof value.text === "string") return { event: "delta", data: { text: value.text } };
     if (frame.event === "status" && typeof value.code === "string") return { event: "status", data: { code: value.code } };
+    if (frame.event === "memory_operation" && typeof value.operationId === "string" &&
+        ["CREATED", "UPDATED", "DELETED"].includes(String(value.action)) && typeof value.memoryId === "string" &&
+        Number.isInteger(value.version) && Number(value.version) > 0) {
+      return {
+        event: "memory_operation",
+        data: {
+          operationId: value.operationId,
+          action: value.action as "CREATED" | "UPDATED" | "DELETED",
+          memoryId: value.memoryId,
+          version: value.version as number,
+        },
+      };
+    }
     if (frame.event === "error" && typeof value.code === "string" && typeof value.turnId === "string") {
       return {
         event: "error",

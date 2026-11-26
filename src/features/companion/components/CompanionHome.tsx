@@ -21,6 +21,10 @@ export function CompanionHome() {
           <Plus aria-hidden="true" />
           Trò chuyện mới
         </Button>
+        <div className="companion-home-tools">
+          <Button type="button" variant="outline" onClick={() => setMode("memory")}>Xem bộ nhớ</Button>
+          <Button type="button" variant="ghost" onClick={() => setMode("settings")}>Cài đặt bộ nhớ</Button>
+        </div>
       </div>
 
       <section className="companion-recent" aria-labelledby="companion-recent-heading">

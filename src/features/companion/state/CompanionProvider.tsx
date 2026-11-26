@@ -7,6 +7,9 @@ import type {
   CompanionContextValue,
   CompanionConversation,
   CompanionMessage,
+  CompanionMemory,
+  CompanionMemoryCategory,
+  CompanionMemoryOperationReceipt,
   CompanionMode,
   CompanionQuotaItem,
   CompanionState,
@@ -40,6 +43,15 @@ const INITIAL_STATE: CompanionState = {
   isSending: false,
   isAtCapacity: false,
   canSubmit: false,
+  memories: [],
+  memoryCursor: null,
+  memoryCategory: "ALL",
+  memoryLoading: false,
+  memoryError: null,
+  automaticMemoryEnabled: true,
+  memorySettingsLoading: false,
+  memoryOperations: [],
+  memoryMutationLoading: false,
 };
 
 interface SessionTurn {
@@ -87,6 +99,9 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const draftVersionRef = React.useRef(0);
   const operationControllers = React.useRef(new Map<string, AbortController>());
   const inFlightTurnRef = React.useRef(false);
+  const memoryOperationIdsRef = React.useRef(new Set<string>());
+  const memorySettingsRequestRef = React.useRef(0);
+  const memoryMutationInFlightRef = React.useRef(false);
   const [state, setReactState] = React.useState(() => derive(INITIAL_STATE, null));
   const stateRef = React.useRef(state);
   stateRef.current = state;
@@ -118,6 +133,9 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     createIdentityRef.current = null;
     inFlightTurnRef.current = false;
     pendingTurnRef.current = null;
+    memoryOperationIdsRef.current.clear();
+    memorySettingsRequestRef.current += 1;
+    memoryMutationInFlightRef.current = false;
     const clean = derive({ ...INITIAL_STATE }, null);
     stateRef.current = clean;
     setReactState(clean);
@@ -431,6 +449,12 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
           patch((current) => ({ stream: "streaming", statusCode: null, partialText: current.partialText + event.data.text }));
         } else if (event.event === "status") {
           if (event.data.code === "ASSESSMENT_LOOKUP") patch({ statusCode: "ASSESSMENT_LOOKUP" });
+        } else if (event.event === "memory_operation") {
+          if (!memoryOperationIdsRef.current.has(event.data.operationId)) {
+            memoryOperationIdsRef.current.add(event.data.operationId);
+            const operation: CompanionMemoryOperationReceipt = { ...event.data, conversationId: turn?.conversationId ?? conversation?.id ?? "" };
+            patch((current) => ({ memoryOperations: [...current.memoryOperations, operation].slice(-20) }));
+          }
         } else if (event.event === "completed" && event.data.turnId === turn?.turnId) {
           terminal = true;
           pendingTurnRef.current = null;
@@ -520,6 +544,115 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [createConversationInternal, isCurrent, loadHome, loadQuota, patch, reconcile]);
 
+  const loadMemories = React.useCallback(async (category: CompanionMemoryCategory | "ALL" = "ALL", before?: string) => {
+    const identity = identityRef.current;
+    if (!isCurrent(identity)) return;
+    const controller = beginOperation("memories");
+    patch({ memoryLoading: true, memoryError: null, ...(before ? {} : { memoryCategory: category, memoryCursor: null }) });
+    try {
+      const page = await companionService.listMemories(category === "ALL" ? undefined : category, before, controller.signal);
+      if (!controller.signal.aborted && isCurrent(identity)) patch((current) => ({
+        memories: before ? [...current.memories, ...page.items] : page.items,
+        memoryCursor: page.nextCursor,
+        memoryCategory: category,
+      }));
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryError: toCompanionApiError(error).message });
+    } finally {
+      if (operationControllers.current.get("memories") === controller) operationControllers.current.delete("memories");
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryLoading: false });
+    }
+  }, [beginOperation, isCurrent, patch]);
+
+  const loadMemorySettings = React.useCallback(async () => {
+    const identity = identityRef.current;
+    if (!isCurrent(identity)) return;
+    const requestSequence = ++memorySettingsRequestRef.current;
+    const controller = beginOperation("memory-settings");
+    patch({ memorySettingsLoading: true, memoryError: null });
+    try {
+      const settings = await companionService.getMemorySettings(controller.signal);
+      if (!controller.signal.aborted && isCurrent(identity) && memorySettingsRequestRef.current === requestSequence) patch({ automaticMemoryEnabled: settings.automaticMemoryEnabled });
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryError: toCompanionApiError(error).message });
+    } finally {
+      if (operationControllers.current.get("memory-settings") === controller) operationControllers.current.delete("memory-settings");
+      if (!controller.signal.aborted && isCurrent(identity) && memorySettingsRequestRef.current === requestSequence) patch({ memorySettingsLoading: false });
+    }
+  }, [beginOperation, isCurrent, patch]);
+
+  const updateMemory = React.useCallback(async (memory: CompanionMemory, content: string) => {
+    const identity = identityRef.current;
+    if (!isCurrent(identity) || memoryMutationInFlightRef.current) return false;
+    memoryMutationInFlightRef.current = true;
+    const controller = beginOperation("memory-mutation");
+    patch({ memoryError: null, memoryMutationLoading: true });
+    try {
+      const updated = await companionService.updateMemory(memory, content, controller.signal);
+      if (!controller.signal.aborted && isCurrent(identity)) patch((current) => ({
+        memories: current.memories.map((item) => item.id === updated.id ? updated : item),
+      }));
+      return !controller.signal.aborted && isCurrent(identity);
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryError: toCompanionApiError(error).message });
+      return false;
+    } finally {
+      if (operationControllers.current.get("memory-mutation") === controller) {
+        operationControllers.current.delete("memory-mutation");
+        memoryMutationInFlightRef.current = false;
+        if (isCurrent(identity)) patch({ memoryMutationLoading: false });
+      }
+    }
+  }, [beginOperation, isCurrent, patch]);
+
+  const forgetMemory = React.useCallback(async (memory: CompanionMemory) => {
+    const identity = identityRef.current;
+    if (!isCurrent(identity) || memoryMutationInFlightRef.current) return;
+    memoryMutationInFlightRef.current = true;
+    const controller = beginOperation("memory-mutation");
+    patch({ memoryError: null, memoryMutationLoading: true });
+    try {
+      await companionService.deleteMemory(memory, controller.signal);
+      if (!controller.signal.aborted && isCurrent(identity)) patch((current) => ({
+        memories: current.memories.filter((item) => item.id !== memory.id),
+      }));
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryError: toCompanionApiError(error).message });
+    } finally {
+      if (operationControllers.current.get("memory-mutation") === controller) {
+        operationControllers.current.delete("memory-mutation");
+        memoryMutationInFlightRef.current = false;
+        if (isCurrent(identity)) patch({ memoryMutationLoading: false });
+      }
+    }
+  }, [beginOperation, isCurrent, patch]);
+
+  const setAutomaticMemoryEnabled = React.useCallback(async (enabled: boolean) => {
+    const identity = identityRef.current;
+    if (!isCurrent(identity)) return;
+    const requestSequence = ++memorySettingsRequestRef.current;
+    operationControllers.current.get("memory-settings")?.abort();
+    const controller = beginOperation("memory-settings-save");
+    patch({ memorySettingsLoading: true, memoryError: null });
+    try {
+      const settings = await companionService.setMemorySettings(enabled, controller.signal);
+      if (!controller.signal.aborted && isCurrent(identity) && memorySettingsRequestRef.current === requestSequence) patch({ automaticMemoryEnabled: settings.automaticMemoryEnabled });
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrent(identity)) patch({ memoryError: toCompanionApiError(error).message });
+    } finally {
+      if (operationControllers.current.get("memory-settings-save") === controller) operationControllers.current.delete("memory-settings-save");
+      if (!controller.signal.aborted && isCurrent(identity) && memorySettingsRequestRef.current === requestSequence) patch({ memorySettingsLoading: false });
+    }
+  }, [beginOperation, isCurrent, patch]);
+
+  const setMode = React.useCallback((mode: CompanionMode) => {
+    patch({ mode });
+    if (mode === "home") void loadHome();
+    if (mode === "history") void loadHistory();
+    if (mode === "memory") void loadMemories(stateRef.current.memoryCategory);
+    if (mode === "settings") void loadMemorySettings();
+  }, [loadHistory, loadHome, loadMemories, loadMemorySettings, patch]);
+
   const openPanel = React.useCallback(() => {
     if (!authorizedRef.current) return;
     patch({ panelOpen: true, panelMinimized: false });
@@ -528,11 +661,6 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
 
   const closePanel = React.useCallback(() => patch({ panelOpen: false }), [patch]);
   const minimizePanel = React.useCallback(() => patch({ panelMinimized: true }), [patch]);
-  const setMode = React.useCallback((mode: CompanionMode) => {
-    patch({ mode });
-    if (mode === "home") void loadHome();
-    if (mode === "history") void loadHistory();
-  }, [loadHistory, loadHome, patch]);
   const setDraft = React.useCallback((draft: string) => {
     draftVersionRef.current += 1;
     patch({ draft });
@@ -571,8 +699,13 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     retryTurn,
     stopTurn,
     refreshQuota: loadQuota,
+    loadMemories,
+    updateMemory,
+    forgetMemory,
+    setAutomaticMemoryEnabled,
   }), [state, openPanel, closePanel, minimizePanel, setMode, setDraft, loadHome, loadHistory, loadMoreHistory,
-    openConversation, loadOlderMessages, createConversation, deleteConversation, submitTurn, retryTurn, stopTurn, loadQuota]);
+    openConversation, loadOlderMessages, createConversation, deleteConversation, submitTurn, retryTurn, stopTurn, loadQuota,
+    loadMemories, updateMemory, forgetMemory, setAutomaticMemoryEnabled]);
 
   return <CompanionContext.Provider value={contextValue}>{children}</CompanionContext.Provider>;
 }

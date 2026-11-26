@@ -45,6 +45,30 @@ export interface CompanionQuotaUsage {
   items: CompanionQuotaItem[];
 }
 
+export type CompanionMemoryCategory = "FACT" | "GOAL" | "PREFERENCE" | "OBSERVATION" | "EXPERIENCE";
+export interface CompanionMemory {
+  id: string;
+  category: CompanionMemoryCategory;
+  content: string;
+  source: "EXPLICIT" | "INFERRED";
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CompanionMemoryPage {
+  items: CompanionMemory[];
+  nextCursor: string | null;
+}
+export interface CompanionMemoryOperation {
+  operationId: string;
+  action: "CREATED" | "UPDATED" | "DELETED";
+  memoryId: string;
+  version: number;
+}
+export interface CompanionMemoryOperationReceipt extends CompanionMemoryOperation {
+  conversationId: string;
+}
+
 export interface CompanionTurnRequest {
   turnId: string;
   content: string;
@@ -67,7 +91,8 @@ export type CompanionTurnEvent =
       event: "error";
       data: { turnId: string; code: string; detail: string; retryable: boolean };
     }
-  | { event: "status"; data: { code: "ASSESSMENT_LOOKUP" | string } };
+  | { event: "status"; data: { code: "ASSESSMENT_LOOKUP" | string } }
+  | { event: "memory_operation"; data: CompanionMemoryOperation };
 
 export interface CompanionProblem {
   status?: number;
@@ -91,7 +116,7 @@ export class CompanionApiError extends Error {
   }
 }
 
-export type CompanionMode = "home" | "history" | "conversation";
+export type CompanionMode = "home" | "history" | "conversation" | "memory" | "settings";
 export type CompanionStreamState = "idle" | "connecting" | "streaming" | "reconciling";
 
 export interface CompanionState {
@@ -121,6 +146,15 @@ export interface CompanionState {
   isSending: boolean;
   isAtCapacity: boolean;
   canSubmit: boolean;
+  memories: CompanionMemory[];
+  memoryCursor: string | null;
+  memoryCategory: CompanionMemoryCategory | "ALL";
+  memoryLoading: boolean;
+  memoryError: string | null;
+  automaticMemoryEnabled: boolean;
+  memorySettingsLoading: boolean;
+  memoryOperations: CompanionMemoryOperationReceipt[];
+  memoryMutationLoading: boolean;
 }
 
 export interface CompanionContextValue {
@@ -141,4 +175,8 @@ export interface CompanionContextValue {
   retryTurn: () => Promise<void>;
   stopTurn: () => void;
   refreshQuota: () => Promise<void>;
+  loadMemories: (category?: CompanionMemoryCategory | "ALL", before?: string) => Promise<void>;
+  updateMemory: (memory: CompanionMemory, content: string) => Promise<boolean>;
+  forgetMemory: (memory: CompanionMemory) => Promise<void>;
+  setAutomaticMemoryEnabled: (enabled: boolean) => Promise<void>;
 }

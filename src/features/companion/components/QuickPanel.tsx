@@ -8,6 +8,7 @@ import { AdaptiveComposer } from "./AdaptiveComposer";
 import { CompanionHome } from "./CompanionHome";
 import { ConversationHistory } from "./ConversationHistory";
 import { ConversationView } from "./ConversationView";
+import { CompanionMemorySettings, MemoryManagement } from "./MemoryManagement";
 
 export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props, ref) {
   const { state, closePanel, minimizePanel, setMode, createConversation } = useCompanion();
@@ -48,7 +49,7 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
     >
       <header className="companion-header">
         <div className="companion-header-title">
-          {state.mode === "conversation" ? (
+          {(state.mode === "conversation" || state.mode === "memory" || state.mode === "settings") ? (
             <Button type="button" variant="ghost" size="icon" className="companion-icon-button" aria-label="Về trang chủ" onClick={goHome}>
               <ArrowLeft aria-hidden="true" />
             </Button>
@@ -105,16 +106,20 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
             <Button type="button" variant="ghost" className="companion-text-action companion-sidebar-history" onClick={showHistory}>
               Xem tất cả
             </Button>
+            <Button type="button" variant="ghost" className="companion-text-action" onClick={() => setMode("memory")}>Bộ nhớ</Button>
+            <Button type="button" variant="ghost" className="companion-text-action" onClick={() => setMode("settings")}>Cài đặt bộ nhớ</Button>
           </aside>
         ) : null}
         <div className="companion-panel-content">
           {state.mode === "home" ? <CompanionHome /> : null}
           {state.mode === "history" ? <ConversationHistory /> : null}
           {state.mode === "conversation" ? <ConversationView /> : null}
+          {state.mode === "memory" ? <MemoryManagement /> : null}
+          {state.mode === "settings" ? <CompanionMemorySettings /> : null}
         </div>
       </div>
 
-      <div className="companion-composer-slot" hidden={state.mode === "history"}>
+      <div className="companion-composer-slot" hidden={state.mode === "history" || state.mode === "memory" || state.mode === "settings"}>
         <AdaptiveComposer />
       </div>
       <span className="sr-only" aria-live="polite">
