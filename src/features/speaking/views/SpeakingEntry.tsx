@@ -9,6 +9,8 @@ const accessMessages: Record<string, string> = {
   LEVEL_TOO_HIGH: "Chủ đề này yêu cầu trình độ cao hơn cấp độ hiện tại của bạn.",
   ITEM_LOCKED: "Hãy hoàn thành mục học trước đó để mở phần luyện nói này.",
   PROFILE_DISABLED: "Chủ đề chưa có hồ sơ Speaking đang hoạt động.",
+  PROFILE_RESOURCES_STALE: "Tài nguyên của hồ sơ Speaking cần được cập nhật trước khi bạn có thể luyện nói.",
+  CONTEXT_BUDGET_EXCEEDED: "Ngữ cảnh của hồ sơ Speaking vượt giới hạn. Hãy thử lại sau khi hồ sơ được cập nhật.",
   SCOPE_FORBIDDEN: "Bạn chưa thể truy cập phần luyện nói này.",
   DAILY_QUOTA_REACHED: "Bạn đã dùng hết thời lượng luyện nói hôm nay.",
 };
