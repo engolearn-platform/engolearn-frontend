@@ -27,7 +27,9 @@ existing Button/Card/Dialog and the Hanken Grotesk/primary/learning design token
 The start button accepts clicks when preparation data is ready. It lists unmet conditions
 near the button, including rules acknowledgement, sample playback and confirmation,
 and ineligible account or exam states. Missing conditions prevent a start API request.
-The server validates eligibility when a request is sent.
+The server validates eligibility when a request is sent. The preparation page links to
+Placement when the account has no qualifying result. A missing published Periodic
+Assessment paper appears separately and offers a refresh action.
 
 ## Taking rules
 
@@ -104,6 +106,8 @@ Learning Path projection or background synchronization is required. Missing/fore
 non-READY sources return 404; unsupported/inconsistent source data returns 409. The
 frontend does not fabricate recommendations or convert native source IDs to ObjectIds.
 
+Recommendation is available immediately when the required Learning Path pools are available.
+
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
 and Đúng/Sai/Chưa chọn. Section and outcome combine; clicking an active filter clears it.
@@ -147,3 +151,33 @@ inferred from the page header or the source Assessment.
   the dialog closes, a refreshed recommendation must be explicitly confirmed,
   and no replacement POST is sent automatically. Validate with a real account
   and sufficient ACTIVE questions at both practice levels for the identical-skills case.
+
+## Paper management (F03)
+
+`/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units.
+
+Content Managers and Admins enter `/admin/assessment` through the shared
+`ProtectedRoute`. Editors upload validated WAV files through Assessment, save
+the draft, open the validated preview, confirm review of that revision and
+publish it. A successful save requires review of the new revision. Archive is
+scoped to one published version and does not remove media needed by existing
+attempts. Learner media responses can contain a temporary URL in prod or a WAV
+payload for local development. Review playback can request a fresh URL after
+a failed load. Taking preserves the current issue ID on a transport retry.
+
+
+Danh sách kỹ năng của editor lấy từ API `/api/v1/assessment/admin/drafts/skill-catalog`.
+Trong xem thử, người soạn có thể chọn đáp án và mở lời giải; đáp án thử nằm trong bộ
+nhớ của giao diện. Nút xác nhận mở khi đã xem qua cả 26 phần. Backend chỉ nhận xác
+nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.
+
+Khi xem lại và phải tải URL phát mới, player giữ vị trí nghe trước đó nếu còn trong tệp.
+
+## Version 2 listening navigation
+
+During the two-second preparation, Next on an unanswered single sends the current question
+with a null choice. The server locks that single and opens the next unit. Choices become
+editable when preparation ends. Inside a five-question group Next moves focus locally,
+retaining the same audio, editable scope and deadline. Confirming the end of the current
+group may close it during preparation. A confirmation crossing the audio-start boundary
+remains valid for the same unit. Old-unit and duplicate commands cannot close a later group.

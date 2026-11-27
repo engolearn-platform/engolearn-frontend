@@ -19,7 +19,7 @@ export default function GuestOnlyGuard() {
     const returnTo = authReturnTo(location.state);
     const canManageContent = hasRequiredRole(user?.role ?? null, ["CONTENT_MANAGER"]);
     const pathname = returnTo.split(/[?#]/, 1)[0];
-    const isContentManagement = [ROUTES.ADMIN_TOPICS, ROUTES.ADMIN_PASSAGES]
+    const isContentManagement = [ROUTES.ADMIN_TOPICS, ROUTES.ADMIN_PASSAGES, ROUTES.ADMIN_ASSESSMENT]
       .some(base => matchPath(`${base}/*`, pathname));
     return <Navigate to={canManageContent && !isContentManagement ? ROUTES.ADMIN_TOPICS : returnTo} replace />;
   }

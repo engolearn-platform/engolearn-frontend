@@ -29,6 +29,11 @@ export interface ReviewQuestion extends Question {
   passage: string | null; unitIndex: number; audioAvailable: boolean;
 }
 export interface Review {result: AssessmentResult; questions: ReviewQuestion[]}
-export interface Media {mimeType: string; base64: string}
+export interface Media {
+  mimeType: string;
+  base64?: string | null;
+  url?: string | null;
+  expiresAt?: string | null;
+}
 export interface AnswerCommand {question: number; sequence: number; choice: number | null; commandId: string}
 export interface FinishStageCommand {unitIndex: number; phase: string; commandId: string}
