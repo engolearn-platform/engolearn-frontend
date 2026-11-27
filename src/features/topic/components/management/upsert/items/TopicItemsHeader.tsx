@@ -1,4 +1,5 @@
 import { Clock, PlusCircle } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/core/components/shadcn/button";
 
 interface TopicItemsHeaderProps {
@@ -9,6 +10,7 @@ interface TopicItemsHeaderProps {
   onAdd: () => void;
   readOnly?: boolean;
   disabled?: boolean;
+  trailingAction?: ReactNode;
 }
 
 export default function TopicItemsHeader({
@@ -19,6 +21,7 @@ export default function TopicItemsHeader({
   onAdd,
   readOnly = false,
   disabled,
+  trailingAction,
 }: TopicItemsHeaderProps) {
   return (
     <div className="rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
@@ -44,7 +47,8 @@ export default function TopicItemsHeader({
           {countNote}
         </p>
       </div>
-      {!readOnly && <div className="flex shrink-0 items-center gap-3">
+      {!readOnly && <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+        {trailingAction}
         <Button
           type="button"
           disabled={disabled}

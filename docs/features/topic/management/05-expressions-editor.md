@@ -8,6 +8,8 @@ The Topic Item list has a persistent “Kiểm tra & xuất bản” action besi
 
 Tab Expressions chỉnh nhóm và mẫu câu từ Item detail. Loại nhóm, loại mẫu câu và nhãn là ba giá trị riêng. Form hỗ trợ EN/VI, ghi chú, audio, từ vựng liên kết, sắp xếp và xóa có xác nhận. Danh sách từ vựng liên kết dựa trên ID hiện có. Nút Lưu nháp gửi `PUT /expressions` với revision. Sửa Item đã phát hành phụ thuộc F10.
 
+Footer cố định dùng `TopicUpsertFooterBar`: “Quay lại” mở Từ vựng, “Tiếp tục” lưu Mẫu câu giao tiếp rồi mở Bài tập & Quiz, và “Lưu nháp” lưu tại chỗ. “Hồ sơ Speaking” mở cấu hình theo Topic Item; bỏ “Xem bản đã lưu”.
+
 Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
 
 > Tài liệu workflow cho màn editor Mẫu câu của 1 Topic Item trong luồng tạo topic
@@ -45,8 +47,8 @@ Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước 
   (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `MessagesSquare`) gọi `onSelect("expressions")` →
   `navigate(topicItemSectionPath(itemId, "expressions", topicId))`.
-- Back của editor → section `vocabulary` cùng item (explicit, an toàn deep-link).
-  Continue (hợp lệ) → section `quiz` cùng mode.
+- Footer hiện hành điều hướng về `vocabulary` khi Quay lại và lưu rồi đi tới
+  `quiz` khi Tiếp tục; tab rail vẫn cho chọn trực tiếp section.
 
 ## 3. Bản đồ component
 
