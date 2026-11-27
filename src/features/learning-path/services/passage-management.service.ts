@@ -2,6 +2,7 @@ import { httpService } from "@shared/services/http.service";
 import type { ApiEnvelope, HttpError } from "@shared/services/http.service";
 import type { PassageDetail, PassageInput, PassageListParams, PassageListResponse, PassageReadiness, PassagePublicationInput, PassagePublicationReceipt } from "@features/learning-path/types/passage-management.types";
 import type { PassageRetirementReceipt } from "@features/learning-path/types/passage-management.types";
+import type { PassageWriteReceipt } from "@features/learning-path/types/passage-management.types";
 
 export type PassagePublicationError = HttpError & { readiness?: PassageReadiness };
 
@@ -70,11 +71,15 @@ export const passageManagementService = {
   async detail(id: string, signal?: AbortSignal): Promise<PassageDetail> {
     return (await httpService.get<ApiEnvelope<PassageDetail>>(itemUrl(id), { signal })).data;
   },
-  async create(input: PassageInput, audio?: File): Promise<void> {
-    await httpService.post(endpoint, passageFormData(input, audio));
+  async create(input: PassageInput, audio?: File, signal?: AbortSignal): Promise<PassageWriteReceipt> {
+    const { data } = await httpService.post<ApiEnvelope<PassageWriteReceipt>>(endpoint, passageFormData(input, audio), { signal });
+    if (!data?.passageId || data.status !== "DRAFT" || data.revision !== 1) throw new Error("Chưa xác định được passage vừa tạo. Hãy tải lại danh sách.");
+    return data;
   },
-  async update(id: string, input: PassageInput, audio?: File): Promise<void> {
-    await httpService.patch(itemUrl(id), passageFormData(input, audio));
+  async update(id: string, input: PassageInput, audio?: File, signal?: AbortSignal): Promise<PassageWriteReceipt> {
+    const { data } = await httpService.patch<ApiEnvelope<PassageWriteReceipt>>(itemUrl(id), passageFormData(input, audio), { signal });
+    if (!data || data.passageId !== id || data.status !== "DRAFT" || data.revision !== (input.revision ?? 0) + 1) throw new Error("Chưa xác định được kết quả lưu passage. Hãy tải lại trạng thái.");
+    return data;
   },
   async delete(id: string, revision: number): Promise<void> {
     await httpService.delete(itemUrl(id), { params: { revision: String(revision) } });

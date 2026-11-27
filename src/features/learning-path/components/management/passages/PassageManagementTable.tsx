@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical } from "lucide-react";
+import { Link } from "react-router";
+import { ROUTES } from "@shared/constants";
 import { Button } from "@/core/components/shadcn/button";
 import { PASSAGE_SKILL_LABELS, PASSAGE_STATUS_LABELS } from "@features/learning-path/types/passage-management.types";
 import type { PassageListItem, PassageStatus } from "@features/learning-path/types/passage-management.types";
@@ -91,7 +93,9 @@ export default function PassageManagementTable({ items, ...actions }: Props) {
           <td className="px-4 py-3">{PASSAGE_SKILL_LABELS[item.skill] ?? item.skill}</td>
           <td className="px-4 py-3"><span className="rounded-full bg-surface-container-high px-3 py-1 text-label-sm">{item.level}</span></td>
           <td className="px-4 py-3 whitespace-nowrap text-label-sm font-semibold" title="Tổng số câu hỏi tham chiếu ở mọi trạng thái">
-            {typeof item.referencingQuestionCount === "number" ? `${item.referencingQuestionCount.toLocaleString("vi-VN")} câu hỏi` : "—"}
+            <Link className="inline-flex min-h-12 items-center text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-primary" to={`${ROUTES.ADMIN_LEARNING_PATH_QUESTIONS}?${new URLSearchParams({ passageId: item.passageId })}`} aria-label={`Xem câu hỏi của passage ${item.title}`}>
+              {typeof item.referencingQuestionCount === "number" ? `${item.referencingQuestionCount.toLocaleString("vi-VN")} câu hỏi` : "Xem câu hỏi"}
+            </Link>
           </td>
           <td className="px-4 py-3"><PassageStatusBadge status={item.status} /></td>
           <td className="px-4 py-3 whitespace-nowrap text-label-sm text-on-surface-variant">
