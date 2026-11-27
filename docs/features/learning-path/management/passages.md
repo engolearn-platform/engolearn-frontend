@@ -16,8 +16,11 @@ Trạng thái, Cập nhật và Thao tác; không có cột Audio. Số câu h�
 `referencingQuestionCount` do API danh sách cung cấp: tổng câu trong Question Pool
 tham chiếu passage, ở mọi trạng thái; 0 khi chưa có câu, không tính snapshot người
 học. Backend đếm theo lô các passage trong trang; frontend không gọi readiness cho
-từng dòng. Nếu backend cũ chưa trả trường này thì hiển thị “—”, không tự suy ra 0.
-Con số chưa có thao tác điều hướng vì màn quản lý câu hỏi chưa được tích hợp.
+từng dòng. Con số liên kết đến kho câu hỏi với bộ lọc `passageId`, ở mọi trạng thái.
+Nếu backend cũ chưa trả trường này thì hiển thị “Xem câu hỏi”, không tự suy ra 0.
+Xem [quản lý câu hỏi](questions.md) cho form tạo passage ngay trong câu hỏi:
+form passage khóa skill/level theo câu hỏi và trả receipt để chọn passage mới,
+giữ nguyên nội dung câu hỏi đang soạn. Hủy request khi unmount và bỏ phản hồi muộn.
 
 `usePassageManagementList` dùng `useFetch`, tìm kiếm chờ 350 ms, thay bộ lọc về
 trang đầu, page API bắt đầu từ 0. Service gọi API thật

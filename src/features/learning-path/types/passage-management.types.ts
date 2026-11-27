@@ -30,6 +30,7 @@ export interface PassageDetail extends Omit<PassageListItem, "hasAudio" | "refer
 }
 
 export interface PassageCounters { total: number; draft: number; active: number; retired: number }
+export type PassageWriteReceipt = Pick<PassageDetail, "passageId" | "skill" | "level" | "title" | "status" | "revision">;
 export interface PassageReadinessIssue { code: string; field: string; message: string }
 export type PassageReviewCheck = "LEVEL_APPROPRIATE" | "CONTENT_SUPPORTS_INTENDED_QUESTIONS" | "AUDIO_MATCHES_TRANSCRIPT" | "AUDIO_QUALITY_REVIEWED";
 export const PASSAGE_REVIEW_LABELS: Record<PassageReviewCheck, string> = {
