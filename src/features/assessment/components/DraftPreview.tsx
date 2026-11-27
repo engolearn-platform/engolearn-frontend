@@ -4,9 +4,10 @@ import { AssessmentAudio } from "@features/assessment/components/AssessmentAudio
 import { draftService } from "@features/assessment/services/draft.service";
 import { unitLabels, type AssessmentDraft } from "@features/assessment/types/draft";
 
-export function DraftPreview({ draft, onReview, onClose }: {
+export function DraftPreview({ draft, onReview, onClose, filesByUnit }: {
   draft: AssessmentDraft;
-  onReview: () => void;
+  onReview?: () => void;
+  filesByUnit?: ReadonlyMap<number, File>;
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
@@ -14,7 +15,10 @@ export function DraftPreview({ draft, onReview, onClose }: {
   const [selections, setSelections] = useState<Record<string, number>>({});
   const [visited, setVisited] = useState(new Set([0]));
   const unit = draft.units[index];
-  const loadAudio = useCallback(() => draftService.previewAudio(draft, index), [draft, index]);
+  const loadAudio = useCallback(async () => {
+    const file = filesByUnit?.get(index);
+    return file ? {url: URL.createObjectURL(file), mimeType: "audio/wav"} : draftService.previewAudio(draft, index);
+  }, [draft, index, filesByUnit]);
 
   function move(next: number) {
     setAnswers(false);
@@ -52,7 +56,7 @@ export function DraftPreview({ draft, onReview, onClose }: {
       <Button variant="outline" disabled={index + 1 >= draft.units.length} onClick={() => move(index + 1)}>Phần sau</Button>
       <Button variant="outline" onClick={() => setAnswers(!answers)}>{answers ? "Ẩn đáp án" : "Hiện đáp án và giải thích"}</Button>
       <Button variant="outline" onClick={onClose}>Đóng xem thử</Button>
-      <Button disabled={visited.size !== draft.units.length} onClick={onReview}>Xác nhận đã kiểm tra</Button>
+      {onReview && <Button disabled={visited.size !== draft.units.length} onClick={onReview}>Xác nhận đã kiểm tra</Button>}
     </div>
   </section>;
 }

@@ -1,12 +1,16 @@
 import { useCallback, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
-import { useFetch } from "@shared/hooks";
+import { useAuth, useFetch } from "@shared/hooks";
 import { draftService } from "@features/assessment/services/draft.service";
 import type { AssessmentDraft, ManagedAssessmentPaper } from "@features/assessment/types/draft";
 import DraftEditor from "@features/assessment/components/DraftEditor";
+import { DraftImport } from "@features/assessment/components/DraftImport";
+import { MicroSkillAdmin } from "@features/assessment/components/MicroSkillAdmin";
+import { AssessmentSoundCheckAdmin } from "@features/assessment/components/AssessmentSoundCheckAdmin";
 import { DraftText } from "@features/assessment/components/DraftFields";
 
 export default function DraftManagementView() {
+  const { user } = useAuth();
   const [page,setPage] = useState(0);
   const list = useFetch(useCallback((signal: AbortSignal) => draftService.list(page,signal),[page]));
   const [paperPage, setPaperPage] = useState(0);
@@ -33,6 +37,9 @@ export default function DraftManagementView() {
   return <section className="mx-auto w-full max-w-4xl space-y-5 p-5">
     {editor ? <DraftEditor key={editor.series} initial={editor} close={() => {setEditor(null); list.refetch(); papers.refetch();}}/> :
       <><h1 className="text-2xl font-bold">Đề đánh giá định kỳ</h1>
+        <DraftImport onCreated={setEditor} />
+        <AssessmentSoundCheckAdmin />
+        {user?.role === "ADMIN" && <MicroSkillAdmin />}
         <form className="space-y-3 rounded-2xl border p-5" onSubmit={e => {e.preventDefault(); void open(series.trim(),true);}}>
           <h2 className="text-xl font-semibold">Tạo bản nháp</h2>
           <p className="text-sm">Nhập mã đề đã có để soạn phiên bản kế tiếp từ nội dung gần nhất.</p>

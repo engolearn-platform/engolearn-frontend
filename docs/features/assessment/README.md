@@ -168,6 +168,14 @@ a failed load. Taking preserves the current issue ID on a transport retry.
 
 
 Danh sách kỹ năng của editor lấy từ API `/api/v1/assessment/admin/drafts/skill-catalog`.
+ADMIN có mục Danh mục kỹ năng để thêm mã, đổi tên hiển thị và ngừng chọn cho đề
+mới. Mã chưa có mapping được xác nhận hiển thị ở trạng thái chờ.
+
+Trong danh sách Studio, tải mẫu Excel, chọn workbook và 12 WAV của đề, rồi
+chọn Kiểm tra và xem thử. Có thể kèm WAV âm thử riêng nếu ghi tên trong workbook.
+Khi xác nhận tạo nháp, Studio lưu từng WAV qua Media và mở đúng bản nháp đã tạo.
+Nếu lỗi giữa chừng, giữ tệp và thử lại từ màn xem thử. Mục Âm thử dùng chung
+là thao tác riêng có xác nhận khi muốn đổi âm thử trước bài của học viên.
 Trong xem thử, người soạn có thể chọn đáp án và mở lời giải; đáp án thử nằm trong bộ
 nhớ của giao diện. Nút xác nhận mở khi đã xem qua cả 26 phần. Backend chỉ nhận xác
 nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.

@@ -50,7 +50,7 @@ export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data
       <p className="mt-3 text-muted-foreground">Dựa trên kết quả bài đánh giá, bạn có thể tập trung luyện thêm các kỹ năng sau.</p>
       <ol className="mt-5 space-y-4">{data.microSkills.map((skill, index) => <li key={skill.name} className="rounded-xl border border-learning-outline bg-background p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h3 className="min-w-0 flex-1 break-words font-semibold">{index + 1}. {skill.name}</h3>
+          <h3 className="min-w-0 flex-1 break-words font-semibold">{index + 1}. {skill.displayName ?? skill.name}</h3>
           <span className="rounded-lg bg-learning-mint px-3 py-2 text-sm text-primary">{skill.skill === "LISTENING" ? "Nghe" : skill.skill === "READING" ? "Đọc" : skill.skill}</span>
         </div>
         <p className="mt-3 text-sm">{skill.correct}/{skill.total} câu ({skill.percent}%) · Cần luyện thêm</p>
@@ -68,7 +68,7 @@ export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data
       }}>Tạo lộ trình học tập</Button>
     </>}
     <Confirmation open={confirmation !== null} title="Tạo lộ trình học tập?"
-      description={confirmation ? `Bạn xác nhận tạo lộ trình ở trình độ ${confirmation.level} trong ${confirmation.durationWeeks} tuần cho ${confirmation.microSkills.map(skill => skill.name).join(", ")}, với ${confirmation.daysPerWeek} ngày mỗi tuần và ${confirmation.questionsPerDay} câu hỏi mỗi ngày? Sau khi tạo, bạn sẽ được chuyển đến thông tin lộ trình ở tuần 1.` : ""}
+      description={confirmation ? `Bạn xác nhận tạo lộ trình ở trình độ ${confirmation.level} trong ${confirmation.durationWeeks} tuần cho ${confirmation.microSkills.map(skill => skill.displayName ?? skill.name).join(", ")}, với ${confirmation.daysPerWeek} ngày mỗi tuần và ${confirmation.questionsPerDay} câu hỏi mỗi ngày? Sau khi tạo, bạn sẽ được chuyển đến thông tin lộ trình ở tuần 1.` : ""}
       busy={creation.pending} onCancel={() => setConfirmation(null)} onConfirm={() => { void confirmCreation(); }} />
   </AssessmentCard>;
 }

@@ -8,6 +8,7 @@ export interface LearningPathRecommendation {
   questionsPerDay: number;
   microSkills: {
     name: string;
+    displayName?: string | null;
     skill: string;
     correct: number;
     total: number;

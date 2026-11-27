@@ -23,9 +23,11 @@ export const draftService = {
     const { series, revision, name, skills, units } = draft;
     return (await httpService.put<ApiEnvelope<AssessmentDraft>>(draftPath(series), { revision, name, skills, units })).data;
   },
-  async upload(file: File) {
+  async upload(file: File, expectedSha?: string, soundCheck = false) {
     const form = new FormData();
     form.append("file", file);
+    if (expectedSha) form.append("sha256", expectedSha);
+    if (soundCheck) form.append("soundCheck", "true");
     return (await httpService.post<ApiEnvelope<{ sha256: string }>>(admin + "/media", form)).data.sha256;
   },
   async preview({ series, revision }: AssessmentDraft) {
