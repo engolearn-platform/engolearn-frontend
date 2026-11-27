@@ -13,6 +13,8 @@ const accessMessages: Record<string, string> = {
   CONTEXT_BUDGET_EXCEEDED: "Ngữ cảnh của hồ sơ Speaking vượt giới hạn. Hãy thử lại sau khi hồ sơ được cập nhật.",
   SCOPE_FORBIDDEN: "Bạn chưa thể truy cập phần luyện nói này.",
   DAILY_QUOTA_REACHED: "Bạn đã dùng hết thời lượng luyện nói hôm nay.",
+  QUOTA_UNAVAILABLE: "Chưa thể kiểm tra hạn mức luyện nói. Thử lại.",
+  QUOTA_NOT_CONFIGURED: "Hạn mức luyện nói chưa được cấu hình.",
 };
 function availabilityReason(reason: string | null) {
   return reason ? accessMessages[reason] ?? "Hiện chưa thể bắt đầu phiên luyện nói mới." : "Chủ đề chưa có hồ sơ Speaking được xuất bản.";

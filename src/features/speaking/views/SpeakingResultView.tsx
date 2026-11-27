@@ -168,6 +168,7 @@ export default function SpeakingResultView() {
         <p className="mt-1 text-on-surface-variant">{session.committedTurnCount} lượt hội thoại · {Math.round(session.speechDurationMs / 1000)} giây nói</p></div>
       <p role="status" className="rounded-full bg-learning-mint px-3 py-2 text-sm font-semibold text-primary">{assessmentStatusLabel(resultStatus)}</p>
     </header>
+    {session.endReason === "DAILY_QUOTA_REACHED" && <p role="status" className="rounded-xl bg-learning-note p-4 leading-6">Bạn đã hết hạn mức luyện nói hôm nay. Phiên đã kết thúc.</p>}
     {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-error/30 p-3 text-error"><p>{error}</p>
       <Button variant="outline" className="min-h-11" onClick={() => void refreshTimeline().catch(() => {})}>Tải lại hội thoại</Button></div>}
     {resultStatus === "UNAVAILABLE" && <p className="text-sm text-on-surface-variant">Đánh giá chưa khả dụng. Hội thoại đã lưu vẫn có thể xem bên dưới.</p>}
