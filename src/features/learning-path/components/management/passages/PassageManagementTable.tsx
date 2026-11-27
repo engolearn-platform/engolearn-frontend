@@ -88,7 +88,6 @@ export default function PassageManagementTable({ items, ...actions }: Props) {
           <td className="min-w-64 px-4 py-3">
             <button className="block min-h-12 text-left font-semibold text-on-surface hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
               onClick={() => actions.onView(item)}>{item.title}</button>
-            <span className="block break-all text-label-sm text-on-surface-variant">{item.passageId}</span>
           </td>
           <td className="px-4 py-3">{PASSAGE_SKILL_LABELS[item.skill] ?? item.skill}</td>
           <td className="px-4 py-3"><span className="rounded-full bg-surface-container-high px-3 py-1 text-label-sm">{item.level}</span></td>

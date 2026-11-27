@@ -11,7 +11,7 @@ EngoLearn Narrative và `ManagementLayout`. Route `/admin/learning-paths/passage
 `PassageManagementListView` ghép header, bốn bộ đếm, bộ lọc, bảng và phân trang.
 Component riêng thuộc `learning-path/components/management/passages`; không nhập
 component nội bộ của Topic. Tái sử dụng shared header, CEFR select, pagination,
-Button và Dialog. Bảng có Passage (tiêu đề/mã), Kỹ năng, Trình độ, Số câu hỏi,
+Button và Dialog. Bảng có Passage (chỉ tiêu đề), Kỹ năng, Trình độ, Số câu hỏi,
 Trạng thái, Cập nhật và Thao tác; không có cột Audio. Số câu hỏi hiển thị
 `referencingQuestionCount` do API danh sách cung cấp: tổng câu trong Question Pool
 tham chiếu passage, ở mọi trạng thái; 0 khi chưa có câu, không tính snapshot người
@@ -21,6 +21,7 @@ Nếu backend cũ chưa trả trường này thì hiển thị “Xem câu hỏi
 Xem [quản lý câu hỏi](questions.md) cho form tạo passage ngay trong câu hỏi:
 form passage khóa skill/level theo câu hỏi và trả receipt để chọn passage mới,
 giữ nguyên nội dung câu hỏi đang soạn. Hủy request khi unmount và bỏ phản hồi muộn.
+Mã passage không hiển thị trên bảng danh sách; vẫn hiển thị trong dialog chi tiết.
 
 `usePassageManagementList` dùng `useFetch`, tìm kiếm chờ 350 ms, thay bộ lọc về
 trang đầu, page API bắt đầu từ 0. Service gọi API thật
