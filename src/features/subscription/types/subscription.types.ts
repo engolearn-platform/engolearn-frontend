@@ -19,6 +19,7 @@ export interface PlanCard {
   /** Dynamic paid products publish an immutable configuration version. */
   version?: number | null;
   saleStatus?: "ON_SALE" | "STOPPED" | null;
+  speakingDurationDailyLimitSeconds?: number | null;
 }
 export interface MySubscriptionSummary {
   currentPlanCode?: string;

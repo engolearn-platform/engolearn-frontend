@@ -6,7 +6,7 @@ import { act, createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { createServer } from "vite";
 
-let dom; let vite; let router; let hookModule; let resultView; let speakingEntry; let historyView; let AuthProvider;
+let dom; let vite; let router; let hookModule; let resultView; let speakingEntry; let historyView; let AuthProvider; let quotaPresentation;
 const session = {
   sessionId: "42f14305-3cae-4523-8b68-59a48e728be1", scope: { type: "TOPIC_ITEM", topicId: "t", topicItemId: "i" },
   context: { title: "Ordering a drink", topicTitle: "At a cafe", topicItemTitle: "Ordering a drink", level: "A2", description: "Order a drink.", aiRole: "Barista", learnerRole: "Customer" },
@@ -25,13 +25,14 @@ before(async () => {
     name: "speaking-test-router", resolveId: id => id === routerId ? id : undefined,
     load: id => id === routerId ? 'export { createMemoryRouter, RouterProvider } from "react-router";' : undefined,
   }] });
-  [router, hookModule, resultView, speakingEntry, historyView, AuthProvider] = await Promise.all([
+  [router, hookModule, resultView, speakingEntry, historyView, AuthProvider, quotaPresentation] = await Promise.all([
     vite.ssrLoadModule(routerId),
     vite.ssrLoadModule("/src/features/speaking/hooks/useSpeakingV2Stream.ts"),
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingResultView.tsx"),
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingEntry.tsx"),
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingHistoryView.tsx"),
     vite.ssrLoadModule("/src/shared/hooks/useAuth.tsx"),
+    vite.ssrLoadModule("/src/features/speaking/utils/speaking-quota-presentation.ts"),
   ]);
 });
 after(async () => {
@@ -39,11 +40,42 @@ after(async () => {
   delete globalThis.window; delete globalThis.document; delete globalThis.IS_REACT_ACT_ENVIRONMENT;
 });
 
+test("quota presentation formats seconds, bounds remaining progress, and requires a higher published offer", () => {
+  assert.equal(quotaPresentation.formatSpeakingDuration(59), "59 giây");
+  assert.equal(quotaPresentation.formatSpeakingDuration(60), "1 phút");
+  assert.equal(quotaPresentation.formatSpeakingDuration(125), "2 phút 5 giây");
+  assert.equal(quotaPresentation.remainingPercentage(30, 60), 50);
+  assert.equal(quotaPresentation.remainingPercentage(0, 0), 0);
+  assert.equal(quotaPresentation.remainingPercentage(0, 60), 0);
+  assert.equal(quotaPresentation.isQuotaWindowExpired("2026-11-24T17:00:00Z", Date.parse("2026-11-24T17:00:00Z")), true);
+  assert.equal(quotaPresentation.isQuotaWindowExpired("2026-11-24T17:00:01Z", Date.parse("2026-11-24T17:00:00Z")), false);
+  const higher = { planCode: "PLUS", displayName: "Plus", saleStatus: "ON_SALE", speakingDurationDailyLimitSeconds: 120, billingOptions: [{ billingPeriod: "MONTHLY", amount: 100, currency: "VND" }] };
+  const stopped = { ...higher, planCode: "STOPPED", saleStatus: "STOPPED", speakingDurationDailyLimitSeconds: 600 };
+  const missingAllowance = { ...higher, planCode: "UNKNOWN", speakingDurationDailyLimitSeconds: null };
+  assert.equal(quotaPresentation.hasHigherSpeakingOffer([higher, stopped, missingAllowance], 60), true);
+  assert.equal(quotaPresentation.hasHigherSpeakingOffer([{ ...higher, billingOptions: [] }], 60), false);
+  assert.equal(quotaPresentation.hasHigherSpeakingOffer([{ ...higher, speakingDurationDailyLimitSeconds: 60 }], 60), false);
+  assert.equal(quotaPresentation.hasHigherSpeakingOffer([stopped, missingAllowance], 60), false);
+});
+
 test("history keeps account tabs in the URL, shows sections in order, and completed loads only completed Topics", async t => {
   const groupCalls = []; const sessionItem = { ...session, status: "ENDED", assessmentStatus: "PARTIAL", committedTurnCount: 2, speechDurationMs: 18000 };
+  let quotaReads = 0; let quotaUnavailable = false;
   t.mock.method(globalThis, "fetch", async (url, options) => {
     const request = new URL(url); const path = request.pathname;
     if (path.endsWith("/auth/me")) return Response.json({ data: { id: "learner-1", email: "learner@example.test", role: "USER" } });
+    if (path.endsWith("/quota/me/usage")) {
+      quotaReads++;
+      if (quotaUnavailable) return Response.json({ code: "QUOTA_UNAVAILABLE" }, { status: 503 });
+      return Response.json({ timestamp: "2026-11-24T12:00:00Z", data: { items: [{
+      quotaType: "SPEAKING_DURATION", displayName: "Thời lượng luyện nói", unit: "SECOND", period: "DAILY", used: 65, limit: 60, remaining: 0,
+      windowStartAt: "2099-11-24T00:00:00+07:00", allowanceStartAt: "2099-11-24T00:00:00+07:00", windowEndsAt: "2099-11-25T00:00:00+07:00", status: "OVER_LIMIT", overLimitAmount: 5,
+      }] } });
+    }
+    if (path.endsWith("/subscription/plans")) return Response.json({ timestamp: "2026-11-24T12:00:00Z", data: { items: [{
+      planCode: "PLUS", displayName: "Plus", benefits: [], saleStatus: "ON_SALE", speakingDurationDailyLimitSeconds: 120,
+      billingOptions: [{ billingPeriod: "MONTHLY", amount: 1000, currency: "VND" }],
+    }] } });
     if (path.endsWith("/history/topics")) {
       const group = request.searchParams.get("group"); groupCalls.push(group);
       const data = { ...historyFixture.groups.response.data, totals: { ...historyFixture.groups.response.data.totals, other: group === "OTHER" ? 0 : historyFixture.groups.response.data.totals.other }, items: group === "OTHER" ? [] : historyFixture.groups.response.data.items };
@@ -57,6 +89,28 @@ test("history keeps account tabs in the URL, shows sections in order, and comple
   const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(AuthProvider.AuthProvider, null, h(RouterProvider, { router: appRouter }))); await wait(80); });
+  const quotaCard = container.querySelector("section[aria-labelledby='speaking-quota-title']");
+  assert.ok(quotaCard, "account history displays the account-wide quota card");
+  assert.ok(quotaCard.compareDocumentPosition(container.querySelector("nav[aria-label='Nhóm lịch sử']")) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING,
+    "quota card appears before history filters");
+  assert.equal(container.querySelectorAll("section[aria-labelledby='speaking-quota-title']").length, 1);
+  assert.match(quotaCard.textContent, /Còn lại 0 giây/);
+  assert.match(quotaCard.textContent, /Tổng hạn mức 1 phút/);
+  assert.match(quotaCard.textContent, /Đã sử dụng 1 phút 5 giây/);
+  assert.match(quotaCard.textContent, /vượt hạn mức/);
+  assert.equal(quotaCard.querySelector("[role='progressbar']")?.getAttribute("aria-valuenow"), "0");
+  assert.equal(quotaCard.querySelector("a")?.getAttribute("href"), "/subscription");
+  const originalVisibility = Object.getOwnPropertyDescriptor(document, "visibilityState");
+  Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+  t.after(() => { if (originalVisibility) Object.defineProperty(document, "visibilityState", originalVisibility); else delete document.visibilityState; });
+  quotaUnavailable = true;
+  await act(async () => { document.dispatchEvent(new dom.window.Event("visibilitychange")); await wait(40); });
+  assert.match(quotaCard.textContent, /Chưa thể tải hạn mức luyện nói/);
+  assert.doesNotMatch(quotaCard.textContent, /Đã sử dụng 1 phút 5 giây/);
+  quotaUnavailable = false;
+  await act(async () => { document.dispatchEvent(new dom.window.Event("visibilitychange")); await wait(40); });
+  assert.match(quotaCard.textContent, /Đã sử dụng 1 phút 5 giây/);
+  assert.equal(quotaReads, 3, "visible-tab recovery refreshes usage after both success and failure");
   assert.match(container.textContent, /Phiên luyện nói gần đây/);
   assert.ok(container.textContent.indexOf("Phiên luyện nói gần đây") < container.textContent.indexOf("Chủ đề đang học"));
   assert.match(container.textContent, /Luyện theo mục học/);
@@ -93,6 +147,7 @@ test("parent history with zero sessions uses a neutral header when title metadat
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(AuthProvider.AuthProvider, null, h(RouterProvider, { router: appRouter }))); await wait(80); });
   assert.match(container.textContent, /Lịch sử chủ đề/);
+  assert.doesNotMatch(container.textContent, /Hạn mức luyện nói hôm nay|Còn lại \d+ (?:giây|phút)/);
   assert.match(container.textContent, /0 phiên thuộc chủ đề này/);
   assert.match(container.textContent, /Chưa có phiên Speaking trong chủ đề này/);
   assert.doesNotMatch(container.textContent, /Chủ đề không còn hiển thị/);
@@ -259,8 +314,8 @@ test("mounted V2 hook waits for admission, caps PCM and releases the microphone"
   assert.ok(requests.some(path => path.endsWith("/socket-ticket")));
 });
 
-test("mounted result distinguishes a missing score from numeric zero", async t => {
-  const value = { ...session, status: "ENDED", assessmentStatus: "PARTIAL", endedAt: "2026-11-24T12:01:00Z" };
+test("mounted result preserves quota close reason and distinguishes a missing score from numeric zero", async t => {
+  const value = { ...session, status: "ENDED", endReason: "DAILY_QUOTA_REACHED", assessmentStatus: "PARTIAL", endedAt: "2026-11-24T12:01:00Z" };
   const criterion = (score, maxScore) => ({ status: score === null ? "INSUFFICIENT_DATA" : "ASSESSED", score, maxScore, reason: null,
     sampleCount: 1, wordCount: null, speechDurationMs: 1000, accuracy: null, range: null, examples: [] });
   const assessment = { sessionId: value.sessionId, status: "PARTIAL", criteria: {
@@ -279,6 +334,7 @@ test("mounted result distinguishes a missing score from numeric zero", async t =
   const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
   t.after(async () => { await act(async () => root.unmount()); appRouter.dispose(); container.remove(); });
   await act(async () => { root.render(h(RouterProvider, { router: appRouter })); await wait(50); });
+  assert.match(container.textContent, /Bạn đã hết hạn mức luyện nói hôm nay\. Phiên đã kết thúc\./);
   assert.match(container.textContent, /Chưa có điểm/);
   assert.match(container.textContent, /Chưa đủ dữ liệu/);
   assert.match(container.textContent, /0 \/ 100/);

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetch } from "@shared/hooks";
 import { subscriptionService } from "@features/subscription/services/subscription.service";
 
-export const usePlans = () => useFetch(subscriptionService.plans);
+export const usePlans = (immediate = true) => useFetch(subscriptionService.plans, immediate);
 export const useMySubscription = (immediate = true) => useFetch(subscriptionService.me, immediate);
 export const useQuotaUsage = () => useFetch(subscriptionService.usage);
 

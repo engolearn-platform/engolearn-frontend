@@ -4,6 +4,7 @@ import { Button } from "@/core/components/shadcn/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/components/shadcn/dialog";
 import { SpeakingHistorySessionRow } from "@features/speaking/components/history/SpeakingHistorySessionRow";
 import { SpeakingHistoryTopicCard } from "@features/speaking/components/history/SpeakingHistoryTopicCard";
+import SpeakingQuotaCard from "@features/speaking/components/SpeakingQuotaCard";
 import { useSpeakingHistory } from "@features/speaking/hooks/useSpeakingHistory";
 import type { SpeakingHistoryGroup, SpeakingHistorySessionSummary, SpeakingHistoryTopic, SpeakingSession } from "@features/speaking/types/speaking-v2.types";
 import { sanitizeSpeakingHistoryOrigin, speakingEntryPath, speakingHistoryUrl, type SpeakingHistoryIntent } from "@features/speaking/utils/speaking-history-navigation";
@@ -75,6 +76,8 @@ export default function SpeakingHistoryView() {
 
     {mutationError && blockError(mutationError, () => setMutationError(""))}
     {intent.kind === "invalid" && <div role="alert" className="rounded-xl border border-error/30 bg-error/5 p-4">Đường dẫn lịch sử không hợp lệ. Hãy mở lại lịch sử Speaking.</div>}
+
+    {isAccount && <SpeakingQuotaCard />}
 
     {isAccount && <>
       <nav aria-label="Nhóm lịch sử" className="flex gap-6 border-b border-outline-variant">

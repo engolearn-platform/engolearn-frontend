@@ -17,7 +17,10 @@ export function speakingErrorMessage(code: unknown, fallback?: unknown) {
     case "STT_UNAVAILABLE": return "Chưa thể nhận diện lời nói. Kiểm tra kết nối và thử ghi âm lại.";
     case "CONVERSATION_UNAVAILABLE": return "Chưa tạo được phản hồi. Bản chép lời đã lưu; bạn có thể thử tạo lại phản hồi.";
     case "TTS_UNAVAILABLE": return "Không tạo được audio. Phản hồi văn bản vẫn có thể đọc.";
-    case "DAILY_QUOTA_REACHED": return "Bạn đã dùng hết lượt luyện nói hôm nay. Hãy quay lại sau.";
+    case "DAILY_QUOTA_REACHED": return "Bạn đã hết hạn mức luyện nói hôm nay.";
+    case "QUOTA_UNAVAILABLE": return "Chưa thể kiểm tra hạn mức luyện nói. Thử lại.";
+    case "QUOTA_NOT_CONFIGURED": return "Hạn mức luyện nói chưa được cấu hình.";
+    case "QUOTA_SETTLEMENT_PENDING": return "Đang xác nhận hạn mức. Hãy đồng bộ phiên sau ít phút.";
     case "CONTROLLER_CHANGED": return "Phiên đang được điều khiển ở nơi khác. Quay lại danh sách phiên để tiếp tục.";
     case "SESSION_CLOSING": case "SESSION_ENDED": return "Phiên đã kết thúc. Mở kết quả để xem phần luyện tập đã lưu.";
     case "TURN_IN_PROGRESS": return "Lượt nói trước vẫn đang xử lý. Chờ phản hồi rồi thử lại.";
