@@ -1,5 +1,9 @@
 # Topic — Bước 2: Biên soạn Mẫu câu giao tiếp (Expressions Editor)
 
+## Publish readiness entry (F09)
+
+The Topic Item list has a persistent “Kiểm tra & xuất bản” action beside the saved Item list header. It calls the saved Topic readiness endpoint, groups returned violations into Topic metadata, Item and resource sections, and links each field path to its existing editor. Ready state opens a confirmation dialog. Confirmation sends the current saved Topic revision to the initial publish command; only a successful server response shows the committed version summary and refreshed Topic/Item status. Validation and revision conflicts keep the author in the current workspace. A published Topic does not show the initial publish action.
+
 ## Luồng hiện hành
 
 Tab Expressions chỉnh nhóm và mẫu câu từ Item detail. Loại nhóm, loại mẫu câu và nhãn là ba giá trị riêng. Form hỗ trợ EN/VI, ghi chú, audio, từ vựng liên kết, sắp xếp và xóa có xác nhận. Danh sách từ vựng liên kết dựa trên ID hiện có. Nút Lưu nháp gửi `PUT /expressions` với revision. Sửa Item đã phát hành phụ thuộc F10.

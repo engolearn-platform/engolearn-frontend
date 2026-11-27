@@ -26,6 +26,7 @@ interface QuestionUpsertDialogProps {
   presetType: QuizType;
   initial?: QuizQuestionUpsert;
   allowIncomplete?: boolean;
+  minor?: boolean;
   onClose: () => void;
   onSubmit: (draft: QuizQuestionUpsert) => void;
 }
@@ -68,6 +69,7 @@ export default function QuestionUpsertDialog({
   presetType,
   initial,
   allowIncomplete = false,
+  minor = false,
   topicId,
   onClose,
   onSubmit,
@@ -174,6 +176,15 @@ export default function QuestionUpsertDialog({
   };
 
   const handleSubmit = () => {
+    if (minor) {
+      if (!initial) return;
+      if (initial.kind === "SITUATIONAL_CHOICE") {
+        onSubmit({ ...initial, audioUrl: audioUrl.trim() ? audioUrl.trim() : null, explanation: explanation.trim() });
+      } else {
+        onSubmit({ ...initial, audioUrl: audioUrl.trim() ? audioUrl.trim() : null, explanation: explanation?.trim() ?? "" });
+      }
+      return;
+    }
     setSubmitted(true);
     if (quizType === "SITUATIONAL_CHOICE") {
       const entries = optionTexts
@@ -228,6 +239,20 @@ export default function QuestionUpsertDialog({
       tips: tips.trim(),
     });
   };
+
+  if (minor) return <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+    <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogHeader><DialogTitle>Sửa nội dung an toàn (MINOR)</DialogTitle></DialogHeader>
+      <div className="grid gap-4">
+        <label className="grid gap-1 text-label-sm font-semibold text-on-surface">Audio URL<input aria-label="Audio URL" value={audioUrl} onChange={(event) => setAudioUrl(event.target.value)} className={FIELD_CLASS} /></label>
+        <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={setAudioUrl} />
+        <label className="grid gap-1 text-label-sm font-semibold text-on-surface">Giải thích chung<textarea aria-label="Giải thích chung" rows={3} value={explanation} onChange={(event) => setExplanation(event.target.value)} className={cn(FIELD_CLASS, "resize-none")} /></label>
+        {initial?.kind === "FILL_BLANK" && <p className="text-body-sm text-on-surface-variant">Audio áp dụng cho câu gốc. Nội dung đáp án và giải thích phản hồi legacy được giữ nguyên.</p>}
+        {initial?.kind === "SITUATIONAL_CHOICE" && <p className="text-body-sm text-on-surface-variant">Câu hỏi, lựa chọn, đáp án và giải thích phản hồi legacy được giữ nguyên.</p>}
+      </div>
+      <DialogFooter className="gap-3"><Button type="button" variant="outline" onClick={onClose}>Hủy</Button><Button type="button" onClick={handleSubmit}>Lưu thay đổi</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>;
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>

@@ -8,6 +8,7 @@ interface ExpressionsHeaderCardProps {
   maxPurposes: number;
   onAdd: () => void;
   addLabel?: string;
+  showAdd?: boolean;
 }
 
 export default function ExpressionsHeaderCard({
@@ -17,6 +18,7 @@ export default function ExpressionsHeaderCard({
   maxPurposes,
   onAdd,
   addLabel = "Thêm mẫu câu mới",
+  showAdd = true,
 }: ExpressionsHeaderCardProps) {
   return (
     <section className="flex flex-col gap-6 rounded-2xl bg-surface-container-lowest p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -45,14 +47,14 @@ export default function ExpressionsHeaderCard({
             {totalExamples} mẫu câu · {purposeCount}/{maxPurposes} nhóm
           </span>
         </div>
-        <Button
+        {showAdd && <Button
           type="button"
           onClick={onAdd}
           className="w-full rounded-xl bg-primary-container text-on-primary hover:bg-primary sm:w-auto"
         >
           <PlusCircle className="size-5" aria-hidden="true" />
           {addLabel}
-        </Button>
+        </Button>}
       </div>
     </section>
   );

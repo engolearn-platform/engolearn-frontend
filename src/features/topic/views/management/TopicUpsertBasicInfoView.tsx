@@ -23,6 +23,7 @@ import TopicUpsertTipsCallout from "@features/topic/components/management/upsert
 import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
 import TopicGeneralInfoCard from "@features/topic/components/management/upsert/basic-info/TopicGeneralInfoCard";
 import TopicTagsInput from "@features/topic/components/management/upsert/basic-info/TopicTagsInput";
+import { topicStatusLabel } from "@features/topic/utils/topic-status-presentation";
 import {
   TopicApiError,
   createTopic,
@@ -133,7 +134,7 @@ function TopicBasicInfoForm({ mode, snapshot, response }: TopicBasicInfoFormProp
                 ? "Cập nhật thông tin cơ bản của Chủ đề"
                 : "Bước 1: Thông tin cơ bản của Chủ đề"
             }
-            draftLabel={isUpdate ? "Đang cập nhật" : undefined}
+            draftLabel={isUpdate ? `Đang cập nhật · ${savedTopic ? topicStatusLabel(savedTopic.status) : "Bản nháp"}` : undefined}
             autosaveText={
               savedTopic?.updatedAt ? `Cập nhật lần cuối: ${new Date(savedTopic.updatedAt).toLocaleString("vi-VN")}` : undefined
             }

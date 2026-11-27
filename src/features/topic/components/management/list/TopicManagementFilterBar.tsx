@@ -76,6 +76,7 @@ export default function TopicManagementFilterBar({
           >
             <option value="ALL">Tất cả trạng thái</option>
             <option value="published">Đã xuất bản (Published)</option>
+            <option value="unpublished">Đã gỡ xuất bản</option>
             <option value="draft">Bản nháp (Draft)</option>
           </select>
           <ChevronDown

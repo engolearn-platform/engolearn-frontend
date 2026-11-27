@@ -17,12 +17,13 @@ const empty: TopicExpressionExampleResource = {
 
 const fieldClass = "w-full rounded-lg bg-surface-container-low px-3 py-2 text-body-md text-on-surface";
 
-export default function ExpressionUpsertDialog({ initial, vocabulary, onClose, onSubmit, topicId }: {
+export default function ExpressionUpsertDialog({ initial, vocabulary, onClose, onSubmit, topicId, minor = false }: {
   initial?: TopicExpressionExampleResource;
   vocabulary: Map<string, string>;
   topicId: string;
   onClose: () => void;
   onSubmit: (draft: TopicExpressionExampleResource) => void;
+  minor?: boolean;
 }) {
   const [draft, setDraft] = useState(initial ?? empty);
   const patch = (update: Partial<TopicExpressionExampleResource>) => setDraft((value) => ({ ...value, ...update }));
@@ -30,6 +31,19 @@ export default function ExpressionUpsertDialog({ initial, vocabulary, onClose, o
   const close = () => {
     if (draft === (initial ?? empty) || window.confirm("Bỏ nội dung đang nhập?")) onClose();
   };
+
+  if (minor) return <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
+    <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogHeader><DialogTitle>Sửa nội dung an toàn (MINOR)</DialogTitle><DialogDescription>Loại, thứ tự, câu tiếng Anh và liên kết từ vựng được giữ nguyên.</DialogDescription></DialogHeader>
+      <div className="grid gap-3">
+        <label className="grid gap-1"><span>Bản dịch tiếng Việt</span><textarea className={fieldClass} value={draft.textVi ?? ""} onChange={(event) => patch({ textVi: event.target.value || null })} /></label>
+        <label className="grid gap-1"><span>Ghi chú cách dùng</span><textarea className={fieldClass} value={draft.usageNote ?? ""} onChange={(event) => patch({ usageNote: event.target.value || null })} /></label>
+        <label className="grid gap-1"><span>Đường dẫn audio mẫu câu</span><input className={fieldClass} value={draft.audioUrl ?? ""} onChange={(event) => patch({ audioUrl: event.target.value || null })} /></label>
+        <TopicMediaUpload topicId={topicId} kind="audio" onUploaded={(audioUrl) => patch({ audioUrl })} />
+      </div>
+      <DialogFooter><Button type="button" variant="outline" onClick={close}>Hủy</Button><Button type="button" onClick={() => onSubmit({ ...(initial ?? empty), textVi: draft.textVi, usageNote: draft.usageNote, audioUrl: draft.audioUrl })}>Lưu thay đổi</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>;
 
   return <Dialog open onOpenChange={(open) => { if (!open) close(); }}>
     <DialogContent className="max-h-[90vh] overflow-y-auto">

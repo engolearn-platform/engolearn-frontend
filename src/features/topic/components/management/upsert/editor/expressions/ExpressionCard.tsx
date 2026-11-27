@@ -26,6 +26,7 @@ interface ExpressionCardProps {
   onDuplicate?: () => void;
   onPreviewAudio: () => void;
   readOnly?: boolean;
+  minorMode?: boolean;
 }
 
 function classificationClass(type: string | null) {
@@ -87,6 +88,7 @@ export default function ExpressionCard({
   onDuplicate,
   onPreviewAudio,
   readOnly = false,
+  minorMode = false,
 }: ExpressionCardProps) {
   const knownType = expressionTypeLabel(example.type);
   const knownLabel = expressionLabel(example.label);
@@ -108,12 +110,12 @@ export default function ExpressionCard({
             <button type="button" onClick={onEdit} title="Chỉnh sửa" aria-label={`Chỉnh sửa mẫu câu ${example.textEn}`} className="flex size-8 items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant transition-colors hover:bg-surface-container">
               <Pencil className="size-[18px]" aria-hidden="true" />
             </button>
-            <button type="button" onClick={onDuplicate} title="Nhân bản" aria-label={`Nhân bản mẫu câu ${example.textEn}`} className="flex size-8 items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant transition-colors hover:bg-surface-container">
+            {!minorMode && <button type="button" onClick={onDuplicate} title="Nhân bản" aria-label={`Nhân bản mẫu câu ${example.textEn}`} className="flex size-8 items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant transition-colors hover:bg-surface-container">
               <Copy className="size-[18px]" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={onDelete} title="Xóa" aria-label={`Xóa mẫu câu ${example.textEn}`} className="flex size-8 items-center justify-center rounded-lg bg-surface-container-low text-outline transition-colors hover:bg-error-container hover:text-on-error-container">
+            </button>}
+            {!minorMode && <button type="button" onClick={onDelete} title="Xóa" aria-label={`Xóa mẫu câu ${example.textEn}`} className="flex size-8 items-center justify-center rounded-lg bg-surface-container-low text-outline transition-colors hover:bg-error-container hover:text-on-error-container">
               <Trash2 className="size-[18px]" aria-hidden="true" />
-            </button>
+            </button>}
           </div>}
         </div>
         <div className="mb-3 min-w-0">
