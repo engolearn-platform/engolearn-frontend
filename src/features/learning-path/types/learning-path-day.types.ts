@@ -1,8 +1,25 @@
+export interface LearningPathAudioDto {
+  url: string;
+  expiresAt?: string | null;
+  contentType?: string | null;
+  durationSec: number | null;
+  format: string | null;
+}
+
+export interface LearningPathAudioContext {
+  pathId: string;
+  weekNo: string;
+  dayNo: string;
+  questionId: string;
+}
+
 export interface DailyAudioStimulus {
   type: "audio";
   label: string;
   duration: string;
   url?: string;
+  expiresAt?: string | null;
+  contentType?: string | null;
   transcript?: string | null;
 }
 
@@ -15,6 +32,7 @@ export interface DailyPassageStimulus {
 export type DailyStimulus = DailyAudioStimulus | DailyPassageStimulus;
 
 export interface DailyQuestion {
+  questionId?: string;
   number: number;
   microSkill: string;
   skill: "LISTENING" | "READING";
@@ -36,7 +54,7 @@ export interface PracticeQuestionDto {
   questionId: string;
   microSkill: string;
   skill: "LISTENING" | "READING";
-  passage: { title: string | null; text: string | null; audio: { url: string; durationSec: number | null; format: string | null } | null } | null;
+  passage: { title: string | null; text: string | null; audio: LearningPathAudioDto | null } | null;
   prompt: string;
   options: { optionId: string; text: string }[];
   selectedOptionId: string | null;

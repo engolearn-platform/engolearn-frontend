@@ -5,12 +5,26 @@ import type {
 } from "@features/learning-path/types/learning-path.types";
 import type { LearningPathDetailDto } from "@features/learning-path/types/learning-path-detail.types";
 import { httpService } from "@shared/services/http.service";
-import type { DayResultDto, PracticeDayDto, SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
+import type { DayResultDto, LearningPathAudioContext, LearningPathAudioDto, PracticeDayDto, SubmitDayResult } from "@features/learning-path/types/learning-path-day.types";
+import { learningPathAudioExpired, safeLearningPathAudioUrl } from "@features/learning-path/utils/learningPathAudio";
 
 const LEARNING_PATHS_ENDPOINT = "/api/learning-paths";
 const LEARNING_PATHS_SEARCH_ENDPOINT = `${LEARNING_PATHS_ENDPOINT}/search`;
 
 export const learningPathService = {
+  async questionAudio(context: LearningPathAudioContext, signal: AbortSignal): Promise<LearningPathAudioDto> {
+    const { pathId, weekNo, dayNo, questionId } = context;
+    const url = `${LEARNING_PATHS_ENDPOINT}/${encodeURIComponent(pathId)}/weeks/${encodeURIComponent(weekNo)}/days/${encodeURIComponent(dayNo)}/questions/${encodeURIComponent(questionId)}/audio`;
+    const { data } = await httpService.get<LearningPathApiResponse<LearningPathAudioDto>>(url, { signal });
+    if (!data || !safeLearningPathAudioUrl(data.url)
+      || !(data.expiresAt === null || typeof data.expiresAt === "string") || learningPathAudioExpired(data.expiresAt)
+      || !(data.contentType === null || typeof data.contentType === "string" && data.contentType.startsWith("audio/"))
+      || !(data.durationSec === null || Number.isFinite(data.durationSec) && data.durationSec >= 0)
+      || !(data.format === null || typeof data.format === "string")) {
+      throw new Error("Không lấy được liên kết audio hợp lệ. Vui lòng thử tải lại.");
+    }
+    return data;
+  },
   async dayResult(pathId: string, weekNo: string, dayNo: string, signal: AbortSignal): Promise<DayResultDto> {
     const url = `${LEARNING_PATHS_ENDPOINT}/${encodeURIComponent(pathId)}/weeks/${encodeURIComponent(weekNo)}/days/${encodeURIComponent(dayNo)}/result`;
     const response = await httpService.get<LearningPathApiResponse<DayResultDto>>(url, { signal });

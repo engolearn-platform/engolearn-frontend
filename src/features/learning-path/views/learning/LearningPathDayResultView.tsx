@@ -34,7 +34,8 @@ function ResultPage({ pathId, weekNo, dayNo }: { pathId: string; weekNo: string;
             <section className="min-w-0">
               <h2 className="mb-3 text-lg font-semibold text-on-surface">Xem lại câu trả lời</h2>
               <div className="space-y-4">
-                {questions.map((question) => <DailyQuestionCard key={question.number} question={question} mode="review" selectedIndex={data.answers[question.number]} />)}
+                {questions.map((question) => <DailyQuestionCard key={question.number} question={question} mode="review" selectedIndex={data.answers[question.number]}
+                  audioContext={{ pathId, weekNo, dayNo }} />)}
               </div>
               <div className="mt-4 flex justify-between gap-3">
                 <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>Trang trước</Button>

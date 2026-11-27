@@ -227,6 +227,8 @@ function PracticeSession({
                 mode="practice"
                 selectedIndex={answers[question.number]}
                 disabled={saving || submitting || closed}
+                audioContext={{ pathId: day.pathId, weekNo: String(day.weekNo), dayNo: String(day.dayNo) }}
+                audioDisabled={submitting || closed}
                 onSelect={(index) => void chooseAnswer(question.number, index)}
               />
             ))}
