@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useScreenContext, type AvailableScreenContext } from "@features/companion/contract";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Mic, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { ROUTES } from "@shared/constants";
 import { TopicRetryDialog } from "@features/topic/components/learning/attempt/TopicRetryDialog";
@@ -53,7 +53,7 @@ export default function TopicDetailView() {
               </div>
             </section>
             {launch.error && <div role="alert" className="rounded-xl border border-error/30 bg-error/5 p-4 text-body-md text-error">{launch.error}</div>}
-            {data.items.length ? <section aria-label="Các bài học tình huống" className="space-y-4">{data.items.map((item, index) => <TopicItemCard key={item.topicItemId} item={item} index={index} current={next?.topicItemId === item.topicItemId} learner={learner} busy={launch.busy} onAction={launch.choose} />)}</section> : <TopicState title="Chủ đề chưa có bài học hiển thị" description="Vui lòng quay lại sau để xem nội dung được cập nhật." />}
+            {data.items.length ? <section aria-label="Các bài học tình huống" className="space-y-4">{data.items.map((item, index) => <TopicItemCard key={item.topicItemId} topicId={topicId} origin={origin} item={item} index={index} current={next?.topicItemId === item.topicItemId} learner={learner} busy={launch.busy} onAction={launch.choose} />)}</section> : <TopicState title="Chủ đề chưa có bài học hiển thị" description="Vui lòng quay lại sau để xem nội dung được cập nhật." />}
           </div>
           <aside className="space-y-4 lg:sticky lg:top-6 lg:col-span-4">
             {!learner ? <TopicState title="Khám phá trước khi bắt đầu" description="Đăng nhập để học các tình huống và lưu tiến độ của bạn.">
@@ -79,6 +79,7 @@ export default function TopicDetailView() {
                 {next && <Button type="button" disabled={launch.busy} onClick={() => launch.choose(next.actions.continue.allowed ? "continue" : "start", next)} className="min-h-14 w-full rounded-xl text-base font-semibold">{launch.busy ? "Đang mở…" : (next.actions.continue.allowed ? "Tiếp tục học" : "Bắt đầu học") + " (Bài " + (nextIndex + 1) + ")"}</Button>}
                 {!next && data.progress?.status === "COMPLETED" && <p className="text-body-md font-medium text-primary">Bạn đã hoàn thành chủ đề này.</p>}
                 {data.progress?.status === "COMPLETED" && <Button asChild className="min-h-12 w-full rounded-xl"><Link to={topicResultPath(topicId, origin)}>Xem tổng kết chủ đề</Link></Button>}
+                <Button asChild variant="outline" className="min-h-12 w-full rounded-xl"><Link to={`/topics/${encodeURIComponent(topicId)}/speaking?from=${encodeURIComponent(origin)}`}><Mic className="size-5" aria-hidden="true" />Luyện nói theo chủ đề</Link></Button>
                 {data.retrySession?.scope === "TOPIC" && data.retrySession.status === "IN_PROGRESS" && (data.retrySession.currentAttemptId || data.retrySession.nextTopicItemId) && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("resumeTopicRetry")} className="min-h-12 w-full rounded-xl">Tiếp tục lượt làm lại</Button>}
                 {data.resetAvailability.allowed && <Button type="button" variant="outline" disabled={launch.busy} onClick={() => launch.choose("reset")} className="min-h-12 w-full rounded-xl">Làm lại chủ đề</Button>}
                 <p className="rounded-xl bg-surface p-4 text-label-sm leading-relaxed text-on-surface-variant">Bạn có thể xem chi tiết mọi chủ đề. Điều kiện level chỉ áp dụng khi bắt đầu lượt học hoặc lượt làm lại mới.</p>

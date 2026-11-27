@@ -1,38 +1,39 @@
-# Speaking FE–BE API contract
+# Speaking V2 FE–BE API contract
 
-This page records the contract implemented by the Speaking feature and current BE `SpeakingController` / `SpeakingRealtimeService`. It is a source-based handoff, not a claim of live provider verification. The [backend Speaking overview](../../../../engolearn-backend/docs/features/speaking-with-ai/README.md) indexes backend implementation and limitations. The current implementation is directly inspectable in the [controller](../../../../engolearn-backend/src/main/java/fit/iuh/engolearn/speaking/controller/SpeakingController.java), [realtime service](../../../../engolearn-backend/src/main/java/fit/iuh/engolearn/speaking/service/SpeakingRealtimeService.java), and [socket handler](../../../../engolearn-backend/src/main/java/fit/iuh/engolearn/speaking/controller/SpeakingSocketHandler.java).
+The accepted [shared contract](../../../../docs/system-design/speaking-v2-contract.md) is the wire-level authority. This page summarizes how the frontend uses it. Successful REST responses are unwrapped from `{data: ...}` by the shared HTTP client. Requests use the existing same-origin cookie authentication; the browser never places a bearer token in a WebSocket URL.
 
-## HTTP
+## REST client
 
-Base path is `/api/v1/speaking`. Official requests use the shared HTTP client and cookie authentication; FE does not send a learner ID. The client attaches `X-Speaking-Contract: 0.8.3` to all these requests. JSON POSTs are serialized by the shared client. Success bodies use `{ "data": ..., "timestamp": ... }`; the service unwraps `data`. Errors are RFC 9457-style `ProblemDetail` JSON (`type`, `title`, `status`, `detail`, with `code` on speaking errors). FE normalizes these to `SpeakingApiError(code, message)`; missing code/status fall back to `HTTP_<status>` / `Speaking request failed`.
+The Speaking facade is `speakingV2Service` from `@features/speaking/contract`.
 
-| Method and path | Request | Success data |
-|---|---|---|
-| `GET /items/{itemId}/config` | none | item ID/version, title, goals, minimum valid turns; BE also returns context, learner role, AI role and opening side |
-| `GET /sessions/current` | none | session snapshot or `null` |
-| `GET /sessions?itemId={id}` | optional item filter | session snapshot array |
-| `GET /sessions/{id}` | none | authoritative session snapshot |
-| `POST /sessions` | `{itemId, requestId}` | created snapshot |
-| `POST /sessions/replace` | `{itemId, requestId}` | replacement snapshot |
-| `POST /sessions/{id}/resume` | `{controllerEpoch, requestId}` | resumed snapshot; current BE uses request ID for resume and advances controller ownership |
-| `POST /sessions/{id}/end` | `{controllerEpoch, requestId}` | ended snapshot |
-| `POST /sessions/{id}/opening/retry` | `{controllerEpoch, requestId}` | snapshot after retry request |
-| `GET /sessions/{id}/opening/audio` | none | `{url, expiresInSeconds}` |
-| `POST /sessions/{id}/socket-ticket` | `{controllerEpoch, requestId}` | `{ticket, expiresInSeconds}` |
-| `DELETE /sessions/{id}` | none | resulting session snapshot |
-| `DELETE /sessions` | none | count deleted |
-| `GET /sessions/{id}/turns/{turnId}/audio/{kind}` | kind is `LEARNER_RECORDING` or `AI_REPLY` | `{url, expiresInSeconds}` |
+| Operation | Path | Frontend behavior |
+| --- | --- | --- |
+| Availability | `GET /api/v1/speaking/availability` | Sends complete scope query parameters before entry. |
+| Create / replace | `POST /sessions`, `POST /sessions/replace` | Generates stable client request UUIDs; replacement requires explicit learner action. |
+| Read / resume / end | `GET /sessions/{id}`, `POST /sessions/{id}/resume`, `POST /sessions/{id}/end` | Uses server session IDs and controller epochs. |
+| Socket ticket | `POST /sessions/{id}/socket-ticket` | Fetches a one-time ticket, then connects to the session's `wsPath`. |
+| Turns / assessment | `GET /sessions/{id}/turns`, `GET /sessions/{id}/assessment` | Paged turns and assessment polling are independent of microphone state. |
+| Recent / exact history / delete | `GET /sessions`, `DELETE /sessions/{id}`, `DELETE /sessions` | Recent is account-wide across statuses/scopes; exact filters must be complete. Deletes require explicit confirmation. |
+| Topic history groups | `GET /history/topics?group=IN_PROGRESS\|COMPLETED\|OTHER&page=0&size=9` | Returns authorized current Topic metadata, learning status, distinct Topic counts, latest session time, and full group totals. `OTHER` covers NOT_STARTED and UNKNOWN. Group page state is independent. |
+| Parent Topic sessions | `GET /history/topics/{topicId}/sessions?page=0&size=20` | Summary-only union of the learner's Topic and Item sessions, including hidden historical Items, with an authorized current or saved fallback Topic title. |
+| Audio | `GET .../audio/{LEARNER_RECORDING\|AI_REPLY}`, `GET .../opening/audio` | Streams opening and current reply playback over the active socket; history replay uses short-lived authorized URLs when selected. |
 
-The FE generates UUID `requestId` values for create, replace, resume, end, opening retry and ticket requests. A socket ticket is one-use and lasts 30 seconds. Audio playback uses a signed URL with a 60-second lifetime. Authentication failures are HTTP 401; the shared client can refresh the session and retry once. Domain errors include `CONTROLLER_CHANGED`, `SESSION_EXISTS`, `DAILY_QUOTA`, `AUDIO_EXPIRED` and `CONFIG_MISSING`; a persistence conflict can return 409 `STATE_CHANGED`. The backend overview documents the current known error and verification boundaries.
+Problem details are normalized to `SpeakingV2ApiError`, retaining stable error code, boolean retryability and a non-empty active session ID when supplied. The entry can reload that active session after an `ACTIVE_SESSION_EXISTS` conflict. User-facing messages explain the recovery action; provider/audio failures leave text history usable.
 
-The snapshot shape is described in [speaking.types.ts](../../../src/features/speaking/types/speaking.types.ts), owned by Speaking and published to consumers through its [public contract](../../../src/features/speaking/contract/index.ts). It contains pinned content, opening, session status/end reason, counts, controller epoch/revision, goals, and turns with optional assessment/audio availability. The backend snapshot is authoritative: FE accepts snapshots with revision checks and uses `GET /sessions/{id}` for connection or turn events without a snapshot. FE does not calculate persisted assessments, turn counts, status or goal completion.
+History GETs accept an `AbortSignal`; the page hook aborts superseded requests and ignores responses from a prior query or auth identity generation. Group, parent, and exact URL intents are validated independently. Malformed or mixed filters never widen to account-wide recent history. Result links carry a sanitized same-origin history URL so direct loads and reloads can return to the originating tab, group, parent page, or exact scope. Exact history returns to the validated same-scope Speaking entry or its canonical Topic/Item entry path.
 
-The reader also tolerates `UNRESOLVED`, unknown evaluation states and optional `payloadAvailability` with nullable transcript for the [v0.8.3 contract](../../../../docs/system-design/speaking-demo-contract-v0.8.3-addendum.md). These are client compatibility paths; the current backend checkout does not implement the corresponding durable-payload writer or emit `UNRESOLVED` on closing timeout. Hydration must not change terminal meaning once the FE has seen a terminal snapshot with an unresolved turn.
+The account page loads unscoped recent sessions independently from Topic group sections. The default `Đang học` tab shows recent rows first, in-progress Topics, then `Lịch sử khác` only when nonempty. `Hoàn thành` requests and renders completed Topic cards only. Tab badges use full distinct Topic totals, and account-wide deletion remains available from either tab when sessions exist. Session rows separate scope, pinned titles, creation time, exchange count, speech duration, lifecycle, and assessment. Confirmed deletions reload the visible history and totals, correcting empty pages.
+
+New-start access codes `LEVEL_TOO_HIGH`, `ITEM_LOCKED`, `PROFILE_DISABLED`, `SCOPE_FORBIDDEN`, and `DAILY_QUOTA_REACHED` use localized guidance. An owned active session retains explicit resume even when new admission is denied.
 
 ## WebSocket and audio
 
-Connect to `/ws/speaking/{sessionId}?ticket={ticket}` (the FE also adds `contractVersion=0.8.3`). Ticket issuance is an authenticated HTTP request; the WebSocket connection itself presents the ticket. FE sends JSON `START_TURN`, `END_OF_TURN`, and `CANCEL_TURN`, each with `turnId` and `controllerEpoch`, plus binary PCM frames while recording. AudioWorklet emits mono, signed 16-bit little-endian PCM at 16 kHz; frames are sent as binary WebSocket messages. Empty, invalid or oversized frames can be rejected; the BE enforces a two-minute/byte ceiling.
+The V2 hook connects to `wsPath` with a one-time ticket from `INITIALIZING` through `CLOSING`. Commands use the frozen envelope `{type,requestId,sessionId,turnId?,sequence?,payload}`. `START_TURN` is sent before microphone capture; `TURN_ACCEPTED` must arrive before `getUserMedia` and AudioWorklet setup. Disconnect stops local capture, then reconnect obtains a new ticket at the current controller epoch, requests `SYNC_SESSION`, and reloads durable turns. It offers `CANCEL_TURN` only for a server turn still marked `RECEIVING`; sealed server work stays pending. `RETRY_TURN` reuses the failed server turn ID, requires its persisted transcript and a retryable failure, and is sent once until correlated acknowledgement.
 
-The backend [SpeakingRealtimeService](../../../../engolearn-backend/src/main/java/fit/iuh/engolearn/speaking/service/SpeakingRealtimeService.java) and [socket handler](../../../../engolearn-backend/src/main/java/fit/iuh/engolearn/speaking/controller/SpeakingSocketHandler.java) implement server events. FE sets interim text from `INTERIM_TRANSCRIPT`, clears recording state on results/turn errors, and drops control on `CONTROLLER_CHANGED`. `AI_AUDIO_READY` has no snapshot: FE requests a new snapshot for availability and can independently attempt playback if the active view already has a successful turn. `OPENING_UPDATED` is accepted only for matching session, epoch and revision.
+The existing `public/speaking-pcm-worklet.js` resamples mono audio to 16 kHz PCM16. `speaking-audio-frame.ts` adds and validates the 28-byte `SPK2` binary header, turn UUID, direction, chunk index, reserved bytes, payload size and even upload length. Assistant WAV chunks are played only after a complete `TTS_COMPLETED` message with matching byte length; failed or incomplete audio falls back to text.
 
-The BE can attach optional `demoDecision` on manager result/error events. The stream hook parses it as `SpeakingDialogueDecision` for its opt-in diagnostics callback; the main `SpeakingView` does not enable that callback. It is not used to compute learner progress.
+The access/history extension wire fixtures are in [`speaking-access-history.fixture.json`](../../../../docs/system-design/speaking-access-history.fixture.json). The approved constraints and traceability are in the [H0 implementation contract](../../../../docs/implementation/speaking-v2-evidence/access-history-h0-contract.md).
+
+## Topic authoring
+
+Topic owns the optional profile at `/api/management/topics/{topicId}/speaking-profile` or `/items/{itemId}/speaking-profile`. GET and PUT return revision, draft, publication, content version and the currently allowed `resources` collection. PUT sends `{revision,profile}`; profile publish sends `{revision}` to the `/publish` suffix. The editor uses resource IDs from this response and reloads after a `409` conflict. Enabled-only required-field validation is applied client-side and must also be enforced by the backend.

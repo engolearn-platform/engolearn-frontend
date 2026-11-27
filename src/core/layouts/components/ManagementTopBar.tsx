@@ -20,7 +20,9 @@ export default function ManagementTopBar({
   const auth = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const sectionLabel = pathname.startsWith(ROUTES.ADMIN_GRAMMAR) ? "Quản lý Ngữ pháp" : "Quản lý chủ đề";
+  const sectionLabel = pathname.startsWith(ROUTES.ADMIN_LEARNING_PATH_QUESTIONS) ? "Quản lý câu hỏi Learning Path"
+    : pathname.startsWith(ROUTES.ADMIN_PASSAGES) ? "Quản lý kho passages"
+    : pathname.startsWith(ROUTES.ADMIN_GRAMMAR) ? "Quản lý Ngữ pháp" : "Quản lý chủ đề";
   const navigation = [
     { label: "Nội dung học", items: MANAGEMENT_CONTENT_NAV_ITEMS },
     ...(auth.isAdmin() ? [

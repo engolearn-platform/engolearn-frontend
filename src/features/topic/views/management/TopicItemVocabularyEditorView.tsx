@@ -11,6 +11,7 @@ interface TopicItemVocabularyEditorViewProps {
   value: TopicVocabularyResource[];
   onChange: (value: TopicVocabularyResource[]) => void;
   disabled?: boolean;
+  minor?: boolean;
   topicId: string;
 }
 
@@ -20,6 +21,7 @@ export default function TopicItemVocabularyEditorView({
   value,
   onChange,
   disabled = false,
+  minor = false,
   topicId,
 }: TopicItemVocabularyEditorViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function TopicItemVocabularyEditorView({
   };
 
   const handleDelete = (id: string) => {
-    if (disabled) return;
+    if (disabled || minor) return;
     const index = items.findIndex((entry) => entry.id === id);
     if (index < 0) return;
     const word = items[index]?.word || "mục từ này";
@@ -45,7 +47,7 @@ export default function TopicItemVocabularyEditorView({
   };
 
   const handleSubmit = (draft: TopicVocabularyAuthoringDraft) => {
-    if (disabled) return;
+    if (disabled || (minor && editingIndex === null)) return;
     if (editingIndex === null) {
       onChange([...value, mergeVocabularyEditorItem(undefined, draft, value.length)]);
     } else {
@@ -71,8 +73,8 @@ export default function TopicItemVocabularyEditorView({
 
   return (
     <section className="mx-auto flex w-full max-w-[940px] flex-col gap-6">
-      <VocabularyHeaderCard count={value.length} max={MAX_VOCABULARIES} onAdd={() => {
-        if (disabled) return;
+      <VocabularyHeaderCard count={value.length} max={MAX_VOCABULARIES} showAdd={!minor} onAdd={() => {
+        if (disabled || minor) return;
         setEditingIndex(null);
         setDialogOpen(true);
       }} />
@@ -80,20 +82,20 @@ export default function TopicItemVocabularyEditorView({
         {items.map((entry, index) => (
           <div key={entry.id} className="space-y-2">
           <VocabularyCard
-            item={entry}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onPreviewAudio={() => undefined}
+            resource={value[index]}
+            onEdit={() => handleEdit(entry.id)}
+            onDelete={() => handleDelete(entry.id)}
             readOnly={disabled}
+            minorMode={minor}
           />
-          {!disabled && value.length > 1 && <div className="flex justify-end gap-2">
+          {!disabled && !minor && value.length > 1 && <div className="flex justify-end gap-2">
             <Button type="button" size="sm" variant="outline" disabled={index === 0} onClick={() => reorder(index, -1)}>Đưa từ lên</Button>
             <Button type="button" size="sm" variant="outline" disabled={index === items.length - 1} onClick={() => reorder(index, 1)}>Đưa từ xuống</Button>
           </div>}
           </div>
         ))}
       </div>
-      <VocabularyQuickAddSlot visible={!disabled} nextIndex={value.length + 1} max={MAX_VOCABULARIES} onAdd={() => {
+      <VocabularyQuickAddSlot visible={!disabled && !minor} nextIndex={value.length + 1} max={MAX_VOCABULARIES} onAdd={() => {
         setEditingIndex(null);
         setDialogOpen(true);
       }} />

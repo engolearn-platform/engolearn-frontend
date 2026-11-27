@@ -26,18 +26,16 @@ export default function QuizHeaderCard({
           </h1>
         </div>
         <p className="text-body-md text-on-surface-variant">
-          Mỗi dạng quiz là một nhóm cố định: phản xạ tình huống và điền từ
-          vào chỗ trống. Mỗi nhóm cần tối thiểu 2 câu hỏi, mỗi câu gồm câu
-          hỏi, đáp án đúng và giải thích.
+          Khi xuất bản, mỗi dạng quiz cần 3–5 câu hỏi. Bản nháp được phép chưa hoàn chỉnh.
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <div className="hidden flex-col pr-3 text-right sm:flex">
+        <div className="flex flex-col pr-3 text-left sm:text-right" aria-label={`Tổng số câu hỏi: ${totalQuestions}`}>
           <span className="text-label-sm text-on-surface-variant">
-            Đã biên soạn
+            Tổng số câu hỏi
           </span>
           <span className="text-headline-sm font-bold text-primary">
-            {totalQuestions} câu hỏi · {groupCount} nhóm
+            {totalQuestions} câu hỏi · {groupCount} module
           </span>
         </div>
         <Button

@@ -1,16 +1,17 @@
-export { useSpeakingStream, type SpeakingSnapshotEvent } from "@features/speaking/hooks/useSpeakingStream";
-export { speakingEnabled, speakingService } from "@features/speaking/services/speaking.service";
+/** Stable Speaking capability consumed by Topic and the application router. */
+export { ItemSpeakingEntry, TopicSpeakingEntry } from "@features/speaking/views/SpeakingEntry";
+export { speakingV2Service, SpeakingV2ApiError } from "@features/speaking/services/speaking-v2.service";
 export type {
   SpeakingAssessment,
-  SpeakingEndReason,
-  SpeakingGoal,
-  SpeakingItemConfig,
+  SpeakingAvailability,
+  SpeakingContext,
+  SpeakingCorrection,
+  SpeakingHint,
+  SpeakingPage,
+  SpeakingProfile,
+  SpeakingProfileState,
+  SpeakingProfileViolation,
+  SpeakingScope,
   SpeakingSession,
   SpeakingTurn,
-} from "@features/speaking/types/speaking.types";
-
-export { speakingDemoService, SpeakingApiError as SpeakingDemoApiError } from "@features/speaking/services/speaking-demo.service";
-export type {
-  DemoSpeakingItem,
-  SpeakingSession as DemoSpeakingSession,
-} from "@features/speaking/types/speaking-demo.types";
+} from "@features/speaking/types/speaking-v2.types";

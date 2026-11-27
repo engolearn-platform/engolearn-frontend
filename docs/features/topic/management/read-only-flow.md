@@ -6,7 +6,7 @@ All routes require a Content Manager or Admin role. They use the existing manage
 
 | Feature | Route | API source | State |
 |---|---|---|---|
-| F05 Topic list | `/admin/topics/read` | `GET /api/management/topics` | API-backed filters, counters, page results and empty/error state |
+| F05 Topic list | `/admin/topics/read` | `GET /api/management/topics` | API-backed filters, three-status counters, page results and empty/error state |
 | F05 Topic detail | `/admin/topics/:topicId/view` | `GET /api/management/topics/{topicId}` | API-backed metadata and version fields |
 | F06 Topic Items | `/admin/topics/:topicId/view/items` | `GET /api/management/topics/{topicId}/items` | API order, status, duration and version summary |
 | F07 Context | `/admin/topics/:topicId/view/items/:itemId/context` | `GET /api/management/topics/{topicId}/items/{itemId}` | Persisted context and dialogue |
@@ -16,6 +16,12 @@ All routes require a Content Manager or Admin role. They use the existing manage
 | F08 Saved draft | Topic and Item detail routes above | management Topic and Item GETs | Displays the version/status returned by the API; the frontend does not select a version |
 
 The Item detail contract is returned as a single flattened record with nullable `context` and resource arrays. The screen renders API arrays in response order. Empty arrays and null resources remain empty states. Item status and version metadata are displayed directly from the response.
+
+## P04 Topic publication status
+
+The manager list shows Draft, Published and Unpublished, filters by the corresponding server status, and renders the three counters. The Topic Items workspace can unpublish a released Topic with the current revision, then reloads the Topic and Items. Its confirmation explains that release history, progress and pinned learning attempts remain stored; it makes no claim about downstream Learner visibility.
+
+An Unpublished Topic keeps its release pointer and remains editable through the existing MAJOR and MINOR flows. The existing readiness check and publish command serve both changed and unchanged republish. A successful response with the same release ID is reported as reuse; a new release ID is reported as a new version. A failed or ambiguous request triggers a status reload and is never shown as a confirmed success.
 
 ## Coverage matrix
 

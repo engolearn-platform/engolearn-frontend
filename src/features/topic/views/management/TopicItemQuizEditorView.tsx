@@ -4,60 +4,32 @@ import QuizGroupSection from "@features/topic/components/management/upsert/edito
 import QuizHeaderCard from "@features/topic/components/management/upsert/editor/quiz/QuizHeaderCard";
 import QuestionUpsertDialog from "@features/topic/components/management/upsert/editor/quiz/QuestionUpsertDialog";
 import type { QuizQuestionUpsert } from "@features/topic/hooks/useTopicItemQuizForm";
-import type { QuizType, TopicQuizGroup, TopicQuizQuestion } from "@features/topic/types/topic-create.types";
+import type { QuizType } from "@features/topic/types/topic-create.types";
 import type { TopicQuizResource } from "@features/topic/types/topic-management.types";
+import { toQuizPresentations, type QuizQuestionPresentation } from "@features/topic/utils/topic-quiz-presentation";
 
 interface Props {
   value: TopicQuizResource[];
   onChange: (value: TopicQuizResource[]) => void;
   disabled?: boolean;
   topicId: string;
+  minor?: boolean;
 }
 
-const supported = (value: string | null): value is QuizType => value === "FILL_BLANK" || value === "SITUATIONAL_CHOICE";
-
-function toGroups(resources: TopicQuizResource[]): (TopicQuizGroup | null)[] {
-  return resources.map((module, moduleIndex) => {
-    if (!supported(module.quizType)) return null;
-    const questions: TopicQuizQuestion[] = (module.questions ?? []).map((row, questionIndex) => {
-      const options = (row.options ?? []).map((option, index) => ({
-        label: option.label ?? String.fromCharCode(65 + index),
-        textEn: option.textEn ?? "",
-        isCorrect: option.isCorrect === true,
-      }));
-      const correct = options.find((option) => option.isCorrect);
-      const id = `module-${moduleIndex}-question-${questionIndex}`;
-      if (module.quizType === "SITUATIONAL_CHOICE") return {
-        id, kind: "SITUATIONAL_CHOICE", prompt: row.prompt ?? "", audioUrl: row.audioUrl,
-        options, correct: correct?.label ?? "", explanationOk: row.explanationOk ?? "", explanationNg: row.explanationNg ?? "", explanation: row.explanation,
-      };
-      const textEn = row.sentence?.textEn ?? "";
-      const answer = correct?.textEn ?? "";
-      const start = answer ? textEn.indexOf(answer) : -1;
-      const exactlyOnce = start >= 0 && textEn.indexOf(answer, start + answer.length) < 0;
-      return {
-        id, kind: "FILL_BLANK", sentence: { textEn, meaningVi: row.sentence?.meaningVi ?? "", audioUrl: row.sentence?.audioUrl ?? null },
-        sentenceWithBlank: exactlyOnce ? `${textEn.slice(0, start)}___${textEn.slice(start + answer.length)}` : textEn,
-        wordBank: options.map((option) => option.textEn), correctOption: answer,
-        explanation: row.explanation, tips: row.tips ?? "",
-      };
-    });
-    return { id: module.quizId ?? `module-${moduleIndex}`, quizType: module.quizType, title: module.title ?? "", instructions: module.instructions ?? "", orderIndex: module.orderIndex ?? moduleIndex, questions };
-  });
-}
-
-function toInitial(question: TopicQuizQuestion): QuizQuestionUpsert {
+function toInitial(question: QuizQuestionPresentation): QuizQuestionUpsert | undefined {
   if (question.kind === "SITUATIONAL_CHOICE") return {
-    kind: question.kind, prompt: question.prompt, audioUrl: question.audioUrl,
-    optionTexts: question.options.map((option) => option.textEn),
-    correctIndex: question.options.findIndex((option) => option.isCorrect),
-    explanationOk: question.explanationOk, explanationNg: question.explanationNg, explanation: question.explanation ?? "",
+    kind: question.kind, prompt: question.prompt ?? "", audioUrl: question.audioUrl,
+    optionTexts: question.options.map((option) => option.textEn ?? ""),
+    correctIndex: question.correctness.status === "resolved" ? question.correctness.selectedOptionIndex ?? -1 : -1,
+    explanationOk: question.explanationOk ?? "", explanationNg: question.explanationNg ?? "", explanation: question.explanation ?? "",
   };
+  if (question.kind !== "FILL_BLANK") return undefined;
   return {
-    kind: question.kind, textEn: question.sentence.textEn, meaningVi: question.sentence.meaningVi,
-    audioUrl: question.sentence.audioUrl, sentenceWithBlank: question.sentenceWithBlank,
-    wordBank: question.wordBank, correctOption: question.correctOption,
-    explanation: question.explanation, tips: question.tips,
+    kind: question.kind, textEn: question.sentenceText ?? "", meaningVi: question.meaningVi ?? "",
+    audioUrl: question.audioUrl, sentenceWithBlank: question.sentenceWithBlank ?? "",
+    wordBank: question.wordBank,
+    correctOption: question.correctness.status === "resolved" ? question.correctness.selectedAnswerText ?? "" : "",
+    explanation: question.explanation, tips: question.tips ?? "",
   };
 }
 
@@ -90,10 +62,11 @@ function withQuestion(module: TopicQuizResource, draft: QuizQuestionUpsert, inde
   return { ...module, questions };
 }
 
-export default function TopicItemQuizEditorView({ value, onChange, topicId, disabled = false }: Props) {
+export default function TopicItemQuizEditorView({ value, onChange, topicId, disabled = false, minor = false }: Props) {
   const [dialog, setDialog] = useState<{ moduleIndex: number; questionIndex?: number; type: QuizType } | null>(null);
-  const groups = useMemo(() => toGroups(value), [value]);
-  const totalQuestions = groups.reduce((sum, group) => sum + (group?.questions.length ?? 0), 0);
+  const presentation = useMemo(() => toQuizPresentations(value), [value]);
+  const groups = presentation.modules;
+  const totalQuestions = presentation.totalQuestions;
   const currentQuestion = dialog?.questionIndex == null || !dialog ? undefined : groups[dialog.moduleIndex]?.questions[dialog.questionIndex];
   const initial = currentQuestion ? toInitial(currentQuestion) : undefined;
 
@@ -124,28 +97,25 @@ export default function TopicItemQuizEditorView({ value, onChange, topicId, disa
   };
 
   return <div className="flex flex-col gap-6">
-    <QuizHeaderCard itemTitleEn="Quiz" totalQuestions={totalQuestions} groupCount={groups.length} disabled={disabled} onQuickAdd={() => addModule("SITUATIONAL_CHOICE")} />
-    <div className="flex flex-wrap gap-2">
+    <QuizHeaderCard itemTitleEn="Quiz" totalQuestions={totalQuestions} groupCount={groups.length} disabled={disabled || minor} onQuickAdd={() => { if (!minor) addModule("SITUATIONAL_CHOICE"); }} />
+    {!minor && <div className="flex flex-wrap gap-2">
       <Button type="button" disabled={disabled} variant="outline" onClick={() => addModule("FILL_BLANK")}>Thêm Fill Blank module</Button>
       <Button type="button" disabled={disabled} variant="outline" onClick={() => addModule("SITUATIONAL_CHOICE")}>Thêm Situational Choice module</Button>
-    </div>
+    </div>}
     {value.map((module, moduleIndex) => {
       const group = groups[moduleIndex];
-      if (!group) return <section key={`${module.quizId ?? "legacy"}-${moduleIndex}`} className="rounded-xl border border-outline-variant p-4" aria-label={`Quiz module ${moduleIndex + 1} unsupported`}>
-        <h2 className="font-semibold">Quiz module chưa được hỗ trợ chỉnh sửa</h2>
-        <p className="text-label-sm text-on-surface-variant">Loại quiz “{module.quizType ?? "không xác định"}” được giữ nguyên và chỉ hiển thị để tránh làm mất dữ liệu.</p>
-        <p className="mt-2">{module.title}</p>
-      </section>;
-      return <section key={`${module.quizId ?? "draft"}-${moduleIndex}`} className="space-y-4 rounded-xl border border-outline-variant p-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-label-sm">Tên module<input aria-label={`Quiz module ${moduleIndex + 1} title`} value={module.title ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { title: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
-          <label className="text-label-sm">Hướng dẫn<input aria-label={`Quiz module ${moduleIndex + 1} instructions`} value={module.instructions ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { instructions: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
-        </div>
-        <div className="flex gap-2"><Button type="button" variant="outline" disabled={disabled || moduleIndex === 0} onClick={() => moveModule(moduleIndex, -1)}>Lên</Button><Button type="button" variant="outline" disabled={disabled || moduleIndex === value.length - 1} onClick={() => moveModule(moduleIndex, 1)}>Xuống</Button><Button type="button" variant="outline" disabled={disabled} onClick={() => deleteModule(moduleIndex)}>Xóa module</Button></div>
-        <QuizGroupSection group={group} groupIndex={moduleIndex} onAdd={() => setDialog({ moduleIndex, type: group.quizType })} onEdit={(id) => { const found = /question-(\d+)$/.exec(id); if (found) setDialog({ moduleIndex, questionIndex: Number(found[1]), type: group.quizType }); }} onDelete={deleteQuestion} onPreviewAudio={() => undefined} readOnly={disabled} />
-        {group.questions.map((_, questionIndex) => <div key={`${moduleIndex}-${questionIndex}`} className="flex gap-2"><Button type="button" variant="outline" disabled={disabled || questionIndex === 0} onClick={() => reorderQuestion(moduleIndex, questionIndex, -1)}>Đưa câu lên</Button><Button type="button" variant="outline" disabled={disabled || questionIndex === group.questions.length - 1} onClick={() => reorderQuestion(moduleIndex, questionIndex, 1)}>Đưa câu xuống</Button></div>)}
-      </section>;
+      if (!group) return null;
+      const supportedModule = group.kind === "supported";
+      const titleControl = !minor && <div className="grid gap-3 sm:grid-cols-2">
+        <label className="text-label-sm">Tên module<input aria-label={`Quiz module ${moduleIndex + 1} title`} value={module.title ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { title: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
+        <label className="text-label-sm">Hướng dẫn<input aria-label={`Quiz module ${moduleIndex + 1} instructions`} value={module.instructions ?? ""} disabled={disabled} onChange={(event) => updateModule(moduleIndex, { instructions: event.target.value })} className="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2" /></label>
+      </div>;
+      const moduleActions = !minor && <><Button type="button" variant="outline" disabled={disabled || moduleIndex === 0} onClick={() => moveModule(moduleIndex, -1)}>Lên</Button><Button type="button" variant="outline" disabled={disabled || moduleIndex === value.length - 1} onClick={() => moveModule(moduleIndex, 1)}>Xuống</Button><Button type="button" variant="outline" disabled={disabled} onClick={() => deleteModule(moduleIndex)}>Xóa module</Button></>;
+      return <div key={`${module.quizId ?? "draft"}-${moduleIndex}`} className="space-y-3">
+        <QuizGroupSection group={group} onAdd={() => { if (!minor && (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE")) setDialog({ moduleIndex, type: module.quizType }); }} onEdit={(id) => { const found = /question-(\d+)$/.exec(id); if (found && (module.quizType === "FILL_BLANK" || module.quizType === "SITUATIONAL_CHOICE")) setDialog({ moduleIndex, questionIndex: Number(found[1]), type: module.quizType }); }} onDelete={deleteQuestion} onPreviewAudio={() => undefined} readOnly={disabled} minorMode={minor} titleControl={supportedModule ? titleControl || undefined : undefined} moduleActions={supportedModule ? moduleActions || undefined : undefined} />
+        {!minor && supportedModule && module.questions.map((_, questionIndex) => <div key={`${moduleIndex}-${questionIndex}`} className="flex gap-2"><Button type="button" variant="outline" disabled={disabled || questionIndex === 0} onClick={() => reorderQuestion(moduleIndex, questionIndex, -1)}>Đưa câu lên</Button><Button type="button" variant="outline" disabled={disabled || questionIndex === module.questions.length - 1} onClick={() => reorderQuestion(moduleIndex, questionIndex, 1)}>Đưa câu xuống</Button></div>)}
+      </div>;
     })}
-    {dialog && <QuestionUpsertDialog topicId={topicId} open mode={dialog.questionIndex == null ? "add" : "edit"} presetType={dialog.type} initial={initial} allowIncomplete onClose={() => setDialog(null)} onSubmit={(draft) => { const module = value[dialog.moduleIndex]; if (!disabled && module && draft.kind === dialog.type) onChange(value.map((entry, index) => index === dialog.moduleIndex ? withQuestion(entry, draft, dialog.questionIndex) : entry)); setDialog(null); }} />}
+    {dialog && <QuestionUpsertDialog topicId={topicId} open mode={dialog.questionIndex == null ? "add" : "edit"} minor={minor} presetType={dialog.type} initial={initial} allowIncomplete onClose={() => setDialog(null)} onSubmit={(draft) => { const module = value[dialog.moduleIndex]; if (!disabled && module && draft.kind === dialog.type && (!minor || dialog.questionIndex != null)) onChange(value.map((entry, index) => index === dialog.moduleIndex ? withQuestion(entry, draft, dialog.questionIndex) : entry)); setDialog(null); }} />}
   </div>;
 }

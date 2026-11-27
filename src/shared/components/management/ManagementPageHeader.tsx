@@ -7,6 +7,7 @@ interface ManagementPageHeaderProps {
   badge?: string;
   exportLabel?: string;
   onExport?: () => void;
+  showExport?: boolean;
   createLabel: string;
   onCreate?: () => void;
   createDisabled?: boolean;
@@ -20,6 +21,7 @@ export function ManagementPageHeader({
   badge,
   exportLabel = "Xuất dữ liệu",
   onExport,
+  showExport = true,
   createLabel,
   onCreate,
   createDisabled = false,
@@ -41,7 +43,7 @@ export function ManagementPageHeader({
         {description ? <p className="mt-1 text-body-md text-on-surface-variant">{description}</p> : null}
       </div>
       <div className="flex items-center gap-2 self-start lg:self-center">
-        <Button
+        {showExport && <Button
           type="button"
           variant="outline"
           onClick={onExport}
@@ -49,7 +51,7 @@ export function ManagementPageHeader({
         >
           <Download className="size-[18px]" aria-hidden="true" />
           {exportLabel}
-        </Button>
+        </Button>}
         <Button
           type="button"
           onClick={onCreate}

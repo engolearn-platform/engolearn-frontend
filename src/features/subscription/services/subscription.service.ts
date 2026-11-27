@@ -30,6 +30,7 @@ function planCard(value: unknown): PlanCard {
     try { new Intl.NumberFormat("vi-VN", { style: "currency", currency: b.currency }); } catch { invalid(); }
   }
   const isFreePlan = p.planCode === "FREE";
+  if (p.speakingDurationDailyLimitSeconds !== undefined && p.speakingDurationDailyLimitSeconds !== null && !integer(p.speakingDurationDailyLimitSeconds)) invalid();
   if (p.version !== undefined && !(isFreePlan && p.version === null) && (!integer(p.version) || p.version === 0)) invalid();
   if (p.saleStatus !== undefined && !(isFreePlan && p.saleStatus === null) && !["ON_SALE", "STOPPED"].includes(String(p.saleStatus))) invalid();
   return p as unknown as PlanCard;

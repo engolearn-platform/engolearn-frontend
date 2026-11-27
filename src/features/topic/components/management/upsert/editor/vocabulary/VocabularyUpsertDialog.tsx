@@ -14,7 +14,7 @@ import { ThinScroll } from "@shared/components";
 import type { TopicVocabularyItem, VocabularyPos } from "@features/topic/types/topic-create.types";
 import { TOPIC_VOCAB_POS_OPTIONS } from "@features/topic/types/topic-create.types";
 import type { TopicVocabularyResource } from "@features/topic/types/topic-management.types";
-import type { TopicVocabularyAuthoringDraft } from "@features/topic/utils/topic-vocabulary-authoring.adapter";
+import { mergeVocabularyQuickCheck, type TopicVocabularyAuthoringDraft } from "@features/topic/utils/topic-vocabulary-authoring.adapter";
 
 interface VocabularyUpsertDialogProps {
   open: boolean;
@@ -175,21 +175,11 @@ export default function VocabularyUpsertDialog({
       collocations: collocations.map((entry) => ({ text: entry.text || null, example: entry.example ? { ...entry.example } : null, descriptionVi: entry.descriptionVi })),
       audioFile: audioName,
       examples: examples.map((example) => ({ en: example.en, vi: example.vi })),
-      quickCheck: initialResource?.quickCheck || quickSentence || quickMeaning || quickExplanation
-        ? {
-            sentence: {
-              textEn: quickSentence || null,
-              meaningVi: quickMeaning || null,
-              audioUrl: initialResource?.quickCheck?.sentence?.audioUrl ?? null,
-              audioUrlSlow: initialResource?.quickCheck?.sentence?.audioUrlSlow ?? null,
-              source: initialResource?.quickCheck?.sentence?.source ?? null,
-              externalId: initialResource?.quickCheck?.sentence?.externalId ?? null,
-            },
-            quizData: initialResource?.quickCheck?.quizData ?? null,
-            answerData: initialResource?.quickCheck?.answerData ?? null,
-            explanation: quickExplanation || null,
-          }
-        : null,
+      quickCheck: mergeVocabularyQuickCheck(initialResource?.quickCheck ?? null, {
+        sentence: quickSentence,
+        meaningVi: quickMeaning,
+        explanation: quickExplanation,
+      }),
       tips,
     });
   };

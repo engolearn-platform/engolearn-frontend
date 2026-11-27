@@ -10,12 +10,13 @@ import {
   MyTopicsRoutes,
   TopicStandaloneRoutes,
 } from "@features/topic/routes";
-import { LearningPathRoutes } from "@features/learning-path/routes";
+import { LearningPathRoutes, LearningPathManagementRoutes } from "@features/learning-path/routes";
 import {
   SubscriptionLearnerRoutes,
   SubscriptionManagementRoutes,
 } from "@features/subscription/routes";
 import { AuthRoutes } from "@features/auth/routes";
+import { SpeakingRoutes } from "@features/speaking/routes";
 import LearningLayout from "@/core/layouts/LearningLayout";
 import LandingEntryView from "@features/landing-page/views/LandingEntryView";
 import { PlacementManagementRoutes, PlacementRoutes } from "@features/placement/routes";
@@ -52,7 +53,9 @@ export const appRoutes = [
   },
   ...AssessmentRoutes,
   ...TopicStandaloneRoutes,
+  ...SpeakingRoutes,
   ...TopicManagementRoutes,
+  ...LearningPathManagementRoutes,
   ...SubscriptionManagementRoutes,
   ...GrammarManagementRoutes,
   ...PlacementRoutes,

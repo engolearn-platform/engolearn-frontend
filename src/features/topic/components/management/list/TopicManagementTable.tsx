@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { TopicManagementListItem } from "@features/topic/types/topic-management.types";
+import { topicStatusLabel } from "@features/topic/utils/topic-status-presentation";
 
 interface TopicManagementTableProps {
   topics: TopicManagementListItem[];
@@ -57,6 +58,7 @@ export default function TopicManagementTable({ topics, onEdit, readOnly = false 
         <tbody className="text-body-md">
           {topics.map((topic) => {
             const isPublished = topic.status === "published";
+            const isUnpublished = topic.status === "unpublished";
             const isMenuOpen = openMenuId === topic.id;
             return (
               <tr
@@ -87,6 +89,10 @@ export default function TopicManagementTable({ topics, onEdit, readOnly = false 
                     <span className="rounded-lg bg-surface-container px-2 py-1 text-label-sm text-on-surface">
                       {CATEGORY_LABELS[topic.category] ?? topic.category}
                     </span>
+                  ) : isUnpublished ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-low px-2.5 py-1 text-label-sm font-semibold text-on-surface-variant">
+                      Đã gỡ xuất bản
+                    </span>
                   ) : (
                     <span className="text-label-sm text-on-surface-variant">—</span>
                   )}
@@ -100,12 +106,16 @@ export default function TopicManagementTable({ topics, onEdit, readOnly = false 
                   {isPublished ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-label-sm font-semibold text-primary">
                       <span className="size-1.5 rounded-full bg-primary-container" aria-hidden="true" />
-                      Đã xuất bản
+                      {topicStatusLabel(topic.status)}
+                    </span>
+                  ) : isUnpublished ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-low px-2.5 py-1 text-label-sm font-semibold text-on-surface-variant">
+                      {topicStatusLabel(topic.status)}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container/25 px-2.5 py-1 text-label-sm font-semibold text-on-secondary-container">
                       <PencilLine className="size-[13px]" aria-hidden="true" />
-                      Bản nháp
+                      {topicStatusLabel(topic.status)}
                     </span>
                   )}
                 </td>
