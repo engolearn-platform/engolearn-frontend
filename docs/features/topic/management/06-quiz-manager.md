@@ -4,6 +4,8 @@
 
 Tab Quiz chỉnh module và câu hỏi từ Item detail. Module hỗ trợ FILL_BLANK và SITUATIONAL_CHOICE. Nút Lưu nháp gửi `PUT /quizzes` kèm revision. Một lời giải thích chung dùng cho từng câu hỏi. Với FILL_BLANK, form dùng `___` để đánh dấu chỗ trống và lưu câu đầy đủ kèm đáp án sau khi đã có đủ dữ liệu. Word bank và lựa chọn dùng mảng options. Backend bật cờ đúng trên lựa chọn và kiểm tra cấu trúc. Điều kiện đủ câu hỏi mỗi loại được kiểm tra khi yêu cầu publish readiness.
 
+Footer cố định dùng `TopicUpsertFooterBar`: “Quay lại” mở Mẫu câu giao tiếp; “Tiếp tục” lưu Bài tập & Quiz rồi về danh sách Topic Item. “Lưu nháp” lưu tại chỗ. “Hồ sơ Speaking” mở cấu hình theo Topic Item; bỏ “Xem bản đã lưu”.
+
 ## P04 — Hiển thị semantic cho dữ liệu API
 
 View và Edit dùng chung adapter `src/features/topic/utils/topic-quiz-presentation.ts` từ DTO gốc. Mỗi mô-đun và mỗi câu có một phần trình bày theo thứ tự mảng API. Tổng đếm theo số câu hỏi, gồm cả câu thuộc loại legacy. Mô-đun hiển thị loại bài, tên, hướng dẫn và số câu. Thẻ câu hiển thị trạng thái đáp án. Chi tiết kỹ thuật đóng mặc định và dùng nhãn tham chiếu thay cho URL media. Phát audio sử dụng resolver quản trị hiện hành.
@@ -61,9 +63,10 @@ Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước 
   (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `ListChecks`) gọi `onSelect("quiz")` →
   `navigate(topicItemSectionPath(itemId, "quiz", topicId))`.
-- Back của editor → section `expressions` cùng item. Continue (hợp lệ) →
-  `adminTopicItemsPath(topicId)` (quiz là tab cuối — về overview items, giữ mode).
-  Footer chưa truyền `onSaveDraft` (chờ endpoint, giống view 01/03/04/05).
+- Footer hiện hành điều hướng về `expressions` khi Quay lại và lưu rồi về
+  danh sách Topic Item khi Tiếp tục (quiz là section cuối); tab rail vẫn cho
+  chọn trực tiếp section. Chế độ MINOR giữ thao tác “Áp dụng MINOR” và link
+  “Xem bản đã phát hành”.
 
 ## 3. Bản đồ component
 

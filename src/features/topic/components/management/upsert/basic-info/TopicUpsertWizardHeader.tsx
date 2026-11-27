@@ -1,10 +1,12 @@
 import { CheckCircle2 } from "lucide-react";
+import type { ReactNode } from "react";
 
 interface TopicUpsertWizardHeaderProps {
   title?: string;
   draftLabel?: string;
   autosaveText?: string;
   readOnly?: boolean;
+  statusAction?: ReactNode;
 }
 
 export default function TopicUpsertWizardHeader({
@@ -12,6 +14,7 @@ export default function TopicUpsertWizardHeader({
   draftLabel = "Bản nháp (Draft)",
   autosaveText,
   readOnly = false,
+  statusAction,
 }: TopicUpsertWizardHeaderProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -23,7 +26,8 @@ export default function TopicUpsertWizardHeader({
           {title}
         </h1>
       </div>
-      {!readOnly && <div className="flex flex-wrap items-center gap-3">
+      {!readOnly && <div className="flex flex-wrap items-center justify-end gap-3">
+        {statusAction}
         <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-fixed/50 px-3 py-1 text-label-sm font-semibold text-on-secondary-fixed">
           <span className="size-2 rounded-full bg-secondary-container" aria-hidden="true" />
           {draftLabel}

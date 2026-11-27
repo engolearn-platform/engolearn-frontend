@@ -4,6 +4,8 @@
 
 Tab Vocabulary đọc từ Item detail và lấy bản nháp chỉ khi Item đang ở DRAFT. Dialog chỉnh mục từ, Dictionary IDs, phiên âm, nghĩa, URL/audio tải lên, mẫu câu ví dụ, collocation và Quick Check. Dialog áp dụng thay đổi vào form. Nút Lưu nháp gửi `PUT /vocabulary` kèm revision, cập nhật UI từ phản hồi MongoDB. Có thể lưu mục từ thiếu thông tin và sắp xếp các mục trong nháp. Giới hạn publish được kiểm tra khi yêu cầu Kiểm tra điều kiện xuất bản.
 
+Footer cố định dùng `TopicUpsertFooterBar`: “Quay lại” mở Context, “Tiếp tục” lưu Từ vựng rồi mở Mẫu câu giao tiếp, và “Lưu nháp” lưu tại chỗ. “Hồ sơ Speaking” mở cấu hình theo Topic Item; bỏ “Xem bản đã lưu”.
+
 Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước khi gắn API.
 
 > Tài liệu workflow cho màn editor Từ vựng của 1 Topic Item trong luồng tạo topic
@@ -40,8 +42,8 @@ Phần dưới ghi lại thiết kế Stitch và mô tả phiên bản trước 
   (`src/features/topic/components/management/upsert/editor/TopicItemSectionTabRail.tsx`,
   icon `SpellCheck`, note `(4 từ)`) gọi `onSelect("vocabulary")` →
   `navigate(topicItemSectionPath(itemId, "vocabulary", topicId))`.
-- Back của editor → section `context` cùng item (explicit, an toàn deep-link).
-  Continue (hợp lệ) → section `expressions` cùng mode.
+- Footer hiện hành điều hướng về `context` khi Quay lại và lưu rồi đi tới
+  `expressions` khi Tiếp tục; tab rail vẫn cho chọn trực tiếp section.
 
 ## 3. Bản đồ component
 

@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { Button } from "@/core/components/shadcn/button";
 
 interface TopicUpsertFooterBarProps {
@@ -10,6 +11,8 @@ interface TopicUpsertFooterBarProps {
   continueLabel?: string;
   disabled?: boolean;
   saveDisabled?: boolean;
+  continueDisabled?: boolean;
+  trailingAction?: ReactNode;
 }
 
 /**
@@ -26,6 +29,8 @@ export default function TopicUpsertFooterBar({
   continueLabel = "Tiếp tục",
   disabled = false,
   saveDisabled = false,
+  continueDisabled = false,
+  trailingAction,
 }: TopicUpsertFooterBarProps) {
   return (
     <div className="sticky bottom-4 flex flex-col-reverse gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -40,6 +45,7 @@ export default function TopicUpsertFooterBar({
         {backLabel}
       </Button>
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+        {trailingAction}
         {onSaveDraft ? (
           <Button
             type="button"
@@ -53,7 +59,7 @@ export default function TopicUpsertFooterBar({
         <Button
           type="button"
           onClick={onContinue}
-          disabled={disabled || saveDisabled}
+          disabled={disabled || continueDisabled}
           className="w-full rounded-xl bg-primary text-on-primary hover:bg-primary-container sm:w-auto"
         >
           {continueLabel}

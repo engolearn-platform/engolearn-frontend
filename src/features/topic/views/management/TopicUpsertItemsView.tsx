@@ -313,11 +313,10 @@ function ItemListEditor({ topic, initialItems }: { topic: TopicManagementRespons
     <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
       <div className="flex flex-col gap-6 pt-6 lg:pt-8">
         <div className="flex flex-col gap-6 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-6">
-          <TopicUpsertWizardHeader title="Bước 2: Danh sách bài học" draftLabel={topicStatusLabel(currentTopic.status)} />
+          <TopicUpsertWizardHeader title="Bước 2: Danh sách bài học" draftLabel={topicStatusLabel(currentTopic.status)} statusAction={hasRelease && currentTopic.status === "published" && <Button type="button" variant="outline" className="min-h-10" disabled={pending || checkingReadiness || publishing || unpublishing || conflict || !!dialog} onClick={() => { setUnpublishError(""); setUnpublishOpen(true); }}><EyeOff className="mr-2 size-4" />Gỡ xuất bản</Button>} />
           <TopicUpsertStepper steps={getTopicUpsertSteps("update", saved.items.length).map((step) => step.index === 1 ? { ...step, title: "2. Danh sách bài học" } : step.index === 2 ? { ...step, title: "3. Kiểm tra và xuất bản", note: hasRelease ? topicStatusLabel(currentTopic.status) : step.note } : step)} activeStep={hasRelease ? 2 : 1} />
         </div>
-        <TopicItemsHeader titleEn={currentTopic.titleEn} cefrBadge={currentTopic.cefr ? `CEFR ${currentTopic.cefr}` : "Chưa chọn CEFR"} draftBadge={topicStatusLabel(currentTopic.status)} countNote={`${saved.items.length} bài học`} onAdd={add} disabled={pending || checkingReadiness || readinessOpen || publishing || unpublishing || conflict || !!dialog} />
-        {hasRelease && currentTopic.status === "published" && <Button type="button" variant="outline" className="self-start" disabled={pending || checkingReadiness || publishing || unpublishing || conflict || !!dialog} onClick={() => { setUnpublishError(""); setUnpublishOpen(true); }}><EyeOff className="mr-2 size-4" />Gỡ xuất bản</Button>}
+        <TopicItemsHeader titleEn={currentTopic.titleEn} cefrBadge={currentTopic.cefr ? `CEFR ${currentTopic.cefr}` : "Chưa chọn CEFR"} draftBadge={topicStatusLabel(currentTopic.status)} countNote={`${saved.items.length} bài học`} onAdd={add} disabled={pending || checkingReadiness || readinessOpen || publishing || unpublishing || conflict || !!dialog} trailingAction={<Button asChild type="button" variant="outline" className="min-h-12 w-fit"><Link to={`/admin/topics/${encodeURIComponent(id)}/speaking-profile`}>Cấu hình Speaking cho chủ đề</Link></Button>} />
         {(!hasRelease || visiblePendingCandidates.length > 0 || isRepublish) && <section className="flex flex-col gap-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-start gap-3">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><CheckCircle2 className="size-5" /></span>
@@ -330,7 +329,6 @@ function ItemListEditor({ topic, initialItems }: { topic: TopicManagementRespons
             {checkingReadiness ? <><LoaderCircle className="mr-2 size-4 animate-spin" />Đang kiểm tra…</> : <><CheckCircle2 className="mr-2 size-4" />{isRepublish ? "Kiểm tra và xuất bản lại" : "Kiểm tra và xuất bản"}</>}
           </Button>
         </section>}
-        <Button asChild type="button" variant="outline" className="min-h-12 w-fit"><Link to={`/admin/topics/${encodeURIComponent(id)}/speaking-profile`}>Cấu hình Speaking cho chủ đề</Link></Button>
         {message && <div role={conflict ? "alert" : "status"} className="flex flex-wrap items-center gap-3 rounded-xl bg-surface-container-lowest p-3 text-label-sm">
           {message}
           {conflict && <Button type="button" variant="outline" disabled={pending} onClick={reload}>Tải lại danh sách</Button>}

@@ -254,8 +254,11 @@ function TopicManagementReadPage() {
   const showItems = needsItems || Boolean(itemId);
   const goToItems = () => navigate(adminTopicReadItemsPath(topic.id));
   const majorDraftPath = itemId ? topicItemSectionPath(itemId, activeSection, topic.id) : "";
+  const canOpenMajor = topic.status !== "draft" && selectedItem?.status === "PUBLISHED";
+  const canResumeMajor = topic.status !== "draft" && selectedItem?.status === "DRAFT"
+    && selectedItem.changeType === "MAJOR" && Boolean(selectedItem.previousItemVersionId);
   async function openMajorDraft() {
-    if (!selectedItem?.versionId || topic.status === "draft" || selectedItem.status !== "PUBLISHED" || majorPending) return;
+    if (!canOpenMajor || !selectedItem?.versionId || majorPending) return;
     setMajorPending(true);
     setMajorMessage("");
     try {
@@ -308,8 +311,23 @@ function TopicManagementReadPage() {
         {itemId && selectedItem && <>
           <TopicItemEditorBreadcrumb topicTitleEn={topic.titleEn ?? "Topic"} itemOrder={selectedItem.order} itemTitleEn={selectedItem.title ?? "Item"} onBackToList={goToItems} />
           <section className="flex flex-col gap-4 rounded-xl bg-surface-container-lowest p-5 shadow-sm sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-title-lg font-semibold text-on-surface">{selectedItem.title || "Item chưa có tên"}</h2><p className="text-label-sm text-on-surface-variant">#{selectedItem.order ?? "Chưa có dữ liệu"} · {selectedItem.status === "HIDDEN" ? "Đang ẩn" : selectedItem.status === "DRAFT" ? "Bản làm việc" : "Đã phát hành"} · {selectedItem.durationMinutes == null ? "Chưa có thời lượng" : `${selectedItem.durationMinutes} phút`}</p><p className="mt-1 text-label-sm text-on-surface-variant">{publishedView ? `Bản đã phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}` : selectedItem.status === "DRAFT" ? `Bản làm việc${selectedItem.changeType === "MAJOR" ? " MAJOR · dựa trên nội dung đã phát hành" : " mới"}` : `Bản hiện đang phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}`}</p></div><div className="flex flex-wrap items-center gap-2">{publishedView && <Link to={adminTopicReadSectionPath(topic.id, itemId, activeSection)} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Xem bản làm việc</Link>}{!publishedView && selectedItem.status === "DRAFT" && selectedItem.previousItemVersionId && <Link to={`${adminTopicReadSectionPath(topic.id, itemId, activeSection)}?view=published`} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Xem bản đã phát hành</Link>}{!publishedView && selectedItem.status === "PUBLISHED" && topic.status !== "draft" && <><Button type="button" onClick={() => void openMajorDraft()} disabled={majorPending || !selectedItem.versionId}>{majorPending ? "Đang mở bản MAJOR…" : "Sửa lớn (MAJOR)"}</Button>{workingItemsState.data && !hasPendingMajor && <Link to={`${topicItemSectionPath(itemId, activeSection, topic.id)}?mode=minor`} className="rounded-lg border border-outline-variant px-3 py-2 text-label-sm font-semibold text-primary">Sửa nhỏ (MINOR)</Link>}</>}</div></div>
-            {!publishedView && selectedItem.status === "PUBLISHED" && topic.status !== "draft" && <p className="-mt-2 text-body-sm text-on-surface-variant">MAJOR tạo bản làm việc riêng; nội dung mới chỉ được phát hành cùng một đợt của toàn Topic. Dùng MINOR cho một sửa nhỏ được hỗ trợ.</p>}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-title-lg font-semibold text-on-surface">{selectedItem.title || "Item chưa có tên"}</h2>
+                <p className="text-label-sm text-on-surface-variant">#{selectedItem.order ?? "Chưa có dữ liệu"} · {selectedItem.status === "HIDDEN" ? "Đang ẩn" : selectedItem.status === "DRAFT" ? "Bản làm việc" : "Đã phát hành"} · {selectedItem.durationMinutes == null ? "Chưa có thời lượng" : `${selectedItem.durationMinutes} phút`}</p>
+                <p className="mt-1 text-label-sm text-on-surface-variant">{publishedView ? `Bản đã phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}` : selectedItem.status === "DRAFT" ? `Bản làm việc${selectedItem.changeType === "MAJOR" ? " MAJOR · dựa trên nội dung đã phát hành" : " mới"}` : `Bản hiện đang phát hành · phiên bản ${selectedItem.version ?? "chưa có dữ liệu"}`}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {canOpenMajor && <Button type="button" onClick={() => void openMajorDraft()} disabled={majorPending || !selectedItem.versionId}>
+                  {majorPending ? "Đang mở bản MAJOR…" : hasPendingMajor ? "Tiếp tục sửa MAJOR" : "Sửa lớn (MAJOR)"}
+                </Button>}
+                {canResumeMajor && <Button asChild><Link to={majorDraftPath}>Tiếp tục sửa MAJOR</Link></Button>}
+                {publishedView && hasPendingMajor && <Button variant="outline" asChild><Link to={adminTopicReadSectionPath(topic.id, itemId, activeSection)}>Xem bản làm việc</Link></Button>}
+                {!publishedView && selectedItem.status === "DRAFT" && selectedItem.previousItemVersionId && <Button variant="outline" asChild><Link to={`${adminTopicReadSectionPath(topic.id, itemId, activeSection)}?view=published`}>Xem bản đã phát hành</Link></Button>}
+                {!publishedView && canOpenMajor && workingItemsState.data && !hasPendingMajor && <Button variant="outline" asChild><Link to={`${majorDraftPath}?mode=minor`}>Sửa nhỏ (MINOR)</Link></Button>}
+              </div>
+            </div>
+            {canOpenMajor && <p className="-mt-2 text-body-sm text-on-surface-variant">MAJOR lưu thay đổi vào bản làm việc riêng. Nội dung mới được phát hành cùng một đợt của toàn Topic.</p>}
             {majorMessage && <p role="alert" className="rounded-lg bg-error-container p-3 text-label-sm text-on-error-container">{majorMessage}</p>}
             <p className="text-body-md text-on-surface-variant"><ResourceValue value={selectedItem.description} /></p>
             <details className="rounded-lg bg-surface-container-low p-4"><summary className="cursor-pointer text-label-md font-semibold text-on-surface">Thông tin kỹ thuật</summary><dl className="mt-3 grid gap-3 sm:grid-cols-2">{([
@@ -317,7 +335,7 @@ function TopicManagementReadPage() {
               ["Previous Item Version ID", selectedItem.previousItemVersionId], ["Change Type", selectedItem.changeType],
               ["Ngày tạo", selectedItem.createdAt], ["Đã xuất bản lúc", selectedItem.publishedAt], ["Cập nhật lần cuối", selectedItem.updatedAt],
             ] as [string, unknown][]).map(([label, value]) => <div key={label}><dt className="text-label-sm text-on-surface-variant">{label}</dt><dd className="break-all text-body-sm text-on-surface"><ResourceValue value={value} field={label} /></dd></div>)}</dl></details>
-            <TopicItemSectionTabRail activeSection={activeSection} vocabNote="" expressionsNote="" quizNote="" quizEmpty={false} onSelect={(section) => navigate(adminTopicReadSectionPath(topic.id, itemId, section))} />
+            <TopicItemSectionTabRail activeSection={activeSection} vocabNote="" expressionsNote="" quizNote="" quizEmpty={false} onSelect={(section) => navigate(`${adminTopicReadSectionPath(topic.id, itemId, section)}${publishedView ? "?view=published" : ""}`)} />
           </section>
           <ResourceTab item={selectedItem} section={activeSection} allowMinor={Boolean(workingItemsState.data && !hasPendingMajor)} />
         </>}

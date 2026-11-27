@@ -23,7 +23,8 @@ Item nháp mở `/admin/topics/:topicId/edit/items/:itemId/context` qua nút “
 
 - `TopicContextFormCard` nhận `TopicContextResource | null`. Các trường sửa được gồm câu hỏi gợi mở, mô tả tình huống, thời lượng giây, mẹo và hội thoại mẫu.
 - `ContextDialogueTurnRow` cho chỉnh người nói, EN, VI và tham chiếu audio. Nút lên/xuống chỉnh thứ tự, xóa yêu cầu xác nhận. React key dùng cục bộ cho form.
-- Xóa toàn bộ bối cảnh chuẩn bị giá trị `null`. “Lưu nháp” mới ghi thay đổi xuống MongoDB.
+- Xóa toàn bộ bối cảnh chuẩn bị giá trị `null`. “Lưu nháp” ghi thay đổi xuống MongoDB tại chỗ; “Tiếp tục” cũng lưu Context trước khi mở Từ vựng.
+- Footer cố định dùng `TopicUpsertFooterBar`. “Quay lại” về danh sách Item. Tab section vẫn giữ xác nhận khi rời nội dung chưa lưu. Footer có “Hồ sơ Speaking”, không còn “Xem bản đã lưu”.
 - Service gửi PUT context với revision của Topic. Response cung cấp bản đã lưu và revision để chỉnh tiếp. Các section khác giữ dữ liệu đang lưu.
 - Nháp cho lưu nội dung đang làm dở. Khi chuyển tab hoặc quay về danh sách từ form có thay đổi, trình duyệt yêu cầu xác nhận. Nếu revision cũ, form giữ dữ liệu và hiển thị “Tải lại bản nháp”.
 

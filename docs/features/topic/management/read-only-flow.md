@@ -17,6 +17,8 @@ All routes require a Content Manager or Admin role. They use the existing manage
 
 The Item detail contract is returned as a single flattened record with nullable `context` and resource arrays. The screen renders API arrays in response order. Empty arrays and null resources remain empty states. Item status and version metadata are displayed directly from the response.
 
+An eligible published Item resource view offers “Sửa lớn (MAJOR)”. The editor opens after the API creates or reopens the working draft. The working-draft view offers “Tiếp tục sửa MAJOR” for the current tab. Published-view tabs keep `?view=published`.
+
 ## P04 Topic publication status
 
 The manager list shows Draft, Published and Unpublished, filters by the corresponding server status, and renders the three counters. The Topic Items workspace can unpublish a released Topic with the current revision, then reloads the Topic and Items. Its confirmation explains that release history, progress and pinned learning attempts remain stored; it makes no claim about downstream Learner visibility.

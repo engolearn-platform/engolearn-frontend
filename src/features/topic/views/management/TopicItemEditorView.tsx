@@ -7,10 +7,11 @@ import { useFetch } from "@shared/hooks";
 import { useTopicUnsavedChanges } from "@features/topic/hooks/useTopicUnsavedChanges";
 import { TopicApiError, topicManagementService } from "@features/topic/services/topic-management.service";
 import type { TopicItemResourceMutationResult } from "@features/topic/types/topic-management.types";
-import { isTopicItemSectionKey } from "@features/topic/types/topic-create.types";
+import { isTopicItemSectionKey, TOPIC_ITEM_SECTION_KEYS } from "@features/topic/types/topic-create.types";
 import type { TopicItemStepKey } from "@features/topic/types/topic-create.types";
 import TopicUpsertWizardHeader from "@features/topic/components/management/upsert/basic-info/TopicUpsertWizardHeader";
 import TopicUpsertStepper from "@features/topic/components/management/upsert/basic-info/TopicUpsertStepper";
+import TopicUpsertFooterBar from "@features/topic/components/management/upsert/basic-info/TopicUpsertFooterBar";
 import TopicItemSectionTabRail from "@features/topic/components/management/upsert/editor/TopicItemSectionTabRail";
 import TopicItemContextEditorView from "./TopicItemContextEditorView";
 import TopicItemVocabularyEditorView from "./TopicItemVocabularyEditorView";
@@ -45,6 +46,9 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
   const committed = { context: saved.item.context, vocabulary: saved.item.vocabularies, expressions: saved.item.expressions, quiz: saved.item.quizzes }[section];
   const savedQuizQuestionCount = toQuizPresentations(saved.item.quizzes).totalQuestions;
   const dirty = JSON.stringify(current) !== JSON.stringify(committed);
+  const sectionIndex = TOPIC_ITEM_SECTION_KEYS.indexOf(section);
+  const previousSection = TOPIC_ITEM_SECTION_KEYS[sectionIndex - 1];
+  const nextSection = TOPIC_ITEM_SECTION_KEYS[sectionIndex + 1];
   useTopicUnsavedChanges(dirty, pending);
 
   function leave(path: string) {
@@ -53,7 +57,11 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
   }
 
   function openSection(target: TopicItemStepKey) {
-    if (target !== section) leave(topicItemSectionPath(itemId, target, topicId));
+    if (target !== section) leave(sectionPath(target));
+  }
+
+  function sectionPath(target: TopicItemStepKey) {
+    return `${topicItemSectionPath(itemId, target, topicId)}${minor ? "?mode=minor" : ""}`;
   }
 
   function accept(result: TopicItemResourceMutationResult) {
@@ -67,15 +75,16 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
   }
 
   async function save() {
-    if (inFlight.current || conflict || !dirty) return;
+    if (inFlight.current || conflict) return false;
+    if (!dirty) return true;
     const minorChange = minor ? composeMinorChange(section, saved.item, current) : null;
     if (minorChange && "error" in minorChange) {
       setFeedback(minorChange.error);
-      return;
+      return false;
     }
     if (minor && !saved.item.versionId) {
       setFeedback("Không tìm thấy định danh phiên bản đã phát hành. Tải lại nội dung trước khi sửa MINOR.");
-      return;
+      return false;
     }
     inFlight.current = true;
     setPending(true);
@@ -93,6 +102,7 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
         }[section]();
       accept(result);
       setFeedback(minor ? "Đã áp dụng MINOR lên bản đã phát hành. Phiên bản hiện tại được giữ nguyên." : "Đã lưu nháp.");
+      return true;
     } catch (error) {
       if (error instanceof TopicApiError && error.status === 409 && error.code === "CONFLICT") {
         setConflict(true);
@@ -103,10 +113,21 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
         setFeedback(error instanceof TopicApiError ? error.message : "Không thể lưu nháp. Vui lòng thử lại.");
         if (error instanceof TopicApiError) setFieldErrors(error.fieldErrors);
       }
+      return false;
     } finally {
       inFlight.current = false;
       setPending(false);
     }
+  }
+
+  async function continueToNext() {
+    if (pending || conflict) return;
+    if (dirty && !await save()) return;
+    navigate(nextSection ? sectionPath(nextSection) : adminTopicItemsPath(topicId));
+  }
+
+  function goBack() {
+    leave(previousSection ? sectionPath(previousSection) : adminTopicItemsPath(topicId));
   }
 
   async function reload() {
@@ -150,16 +171,16 @@ function SectionEditor({ initial, section, minor }: { initial: TopicItemResource
       {section === "expressions" && <TopicItemExpressionsEditorView topicId={topicId} key={saved.revision} value={expressions} onChange={setExpressions}
         vocabulary={saved.item.vocabularies} itemTitle={saved.item.title ?? ""} disabled={pending} minor={minor} />}
       {section === "quiz" && <TopicItemQuizEditorView topicId={topicId} key={saved.revision} value={quizzes} onChange={setQuizzes} disabled={pending} minor={minor} />}
-      <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
-        <Button type="button" variant="outline" onClick={() => leave(adminTopicItemsPath(topicId))} disabled={pending}>Quay lại danh sách</Button>
-        <div className="flex flex-wrap items-center gap-3">
-          {!pending && !minor && <Link to={`/admin/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/speaking-profile`} className="text-label-sm text-primary underline-offset-4 hover:underline">Hồ sơ Speaking</Link>}
-          {!pending && (minor
-            ? <button type="button" onClick={() => leave(adminTopicReadSectionPath(topicId, itemId, section))} className="text-label-sm text-primary">Xem bản đã phát hành</button>
-            : <Link to={adminTopicReadSectionPath(topicId, itemId, section)} className="text-label-sm text-primary">Xem bản đã lưu</Link>)}
-          <Button type="button" disabled={pending || conflict || !dirty} onClick={save}>{minor ? "Áp dụng MINOR" : "Lưu nháp"}</Button>
-        </div>
-      </div>
+      <TopicUpsertFooterBar
+        onBack={goBack}
+        onContinue={() => void continueToNext()}
+        onSaveDraft={() => void save()}
+        saveLabel={minor ? "Áp dụng MINOR" : "Lưu nháp"}
+        disabled={pending}
+        saveDisabled={conflict || !dirty}
+        continueDisabled={conflict}
+        trailingAction={!pending && !minor ? <Link to={`/admin/topics/${encodeURIComponent(topicId)}/items/${encodeURIComponent(itemId)}/speaking-profile`} className="text-label-sm text-primary underline-offset-4 hover:underline">Hồ sơ Speaking</Link> : !pending && minor ? <button type="button" onClick={() => leave(adminTopicReadSectionPath(topicId, itemId, section))} className="text-label-sm text-primary">Xem bản đã phát hành</button> : undefined}
+      />
     </div>
   </div>;
 }
