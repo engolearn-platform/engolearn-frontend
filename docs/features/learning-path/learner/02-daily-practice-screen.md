@@ -14,6 +14,10 @@ The screen uses `LearningLayout` and a content container up to 1300px, matching 
 - The page calls the backend start API and restores server-saved choices. Selecting an option saves that question through the draft API; choices are shown after the server confirms them, and an error prompts the learner to retry. Answer controls are disabled while a save is pending. The server-provided deadline disables editing when reached; the server remains authoritative for closure.
 - Audio passages play their returned URL. Reading questions may have no passage.
 
+For local B1 Listening playback checks, `public/learning-path-audio/` contains generated MP3s for all five Listening passages (gist, specific information, detail and relationship, inference, and attitude/purpose). The frontend serves them at `/learning-path-audio/<filename>.mp3`. The Learning Path demo import JSON still contains placeholder URLs; a local database must reference these files in the pool passage and in any already-created path snapshot being tested.
+
+The B1 question-bank replacement has 30 additional Listening MP3s at `/learning-path-audio/b1-v2/listening-001.mp3` through `listening-030.mp3`. They correspond to the B1 v2 pool passages described in the backend [authoring package](../../../../../engolearn-backend/tools/learning-path-authoring/README.md). Files 001–002 and 005–012 use Cartesia voices; files 003–004 and 013–030 use the local Microsoft Zira voice. The content owner explicitly waived direct audio-listening review for local publication, so audible quality and transcript match remain unverified. Existing practice snapshots do not change when pool content is published.
+
 Start, draft and submit requests use the shared HTTP client with the authenticated cookie
 and bounded refresh. The frontend does not configure a user ID or send a `userId` override;
 the backend checks ownership against the authenticated account. Guests return through login

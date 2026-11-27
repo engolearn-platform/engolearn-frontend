@@ -18,6 +18,8 @@ The screen uses the same 1300px content container and learner shell as daily pra
 - The wrong-count tile uses a red fill and border when wrong answers are at least 50% of answered questions, green when below 50%, and neutral when none are answered. The correct-count tile uses the result green fill and border. Completion Rate and Practice Score each use their own value for a visual color cue: below 50% red, 50–74% yellow, and 75–100% green. **Không có dữ liệu** stays neutral. These colors do not define a pass/fail result or change either metric.
 - Review is read-only, paginated 3/3/3/1. All ten questions show the correct answer and explanation, including unanswered questions.
 - Audio questions include the saved transcript when present. User choices and answer keys are mapped from option IDs returned by the API.
+- Audio delivery metadata and the player-only renewal action follow the
+  [learner audio contract](04-audio-delivery.md); renewing does not reload results or reset pagination.
 - The navigator groups all ten questions by page, marks correct/wrong/unanswered status, and provides **Hoàn thành việc xem lại** back to the Learning Path detail.
 - Review options use the Figma result colors: correct `#E8F6EE` with a 2px `#1E8E5A` border, wrong selected `#FDECEC` with a 2px `#D64545` border. Their option letters and answer labels use the matching state color.
 - The review navigator shows each question number in a 32px circle with a 14px status badge overlapping its upper-right corner: green `✓`, red `✕`, or gray `–`. Unanswered circles have a dashed gray border.

@@ -7,11 +7,14 @@ function mapQuestions(source: PracticeQuestionDto[]): { questions: DailyQuestion
     const selectedIndex = question.options.findIndex((option) => option.optionId === question.selectedOptionId);
     if (selectedIndex >= 0) answers[question.order] = selectedIndex;
     const passage = question.passage;
-    const duration = passage?.audio?.durationSec ?? 0;
-    const stimulus: DailyQuestion["stimulus"] = passage?.audio
-      ? { type: "audio", label: passage.title || "Bài nghe", url: passage.audio.url, duration: `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}` }
+    const duration = passage?.audio?.durationSec;
+    const stimulus: DailyQuestion["stimulus"] = passage?.audio || question.skill === "LISTENING"
+      ? { type: "audio", label: passage?.title || "Bài nghe", url: passage?.audio?.url,
+        expiresAt: passage?.audio?.expiresAt, contentType: passage?.audio?.contentType,
+        duration: duration == null ? "" : `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, "0")}` }
       : passage?.text ? { type: "passage", label: passage.title || "Đọc đoạn văn", text: passage.text } : null;
     return {
+      questionId: question.questionId,
       number: question.order,
       microSkill: question.microSkill,
       skill: question.skill,

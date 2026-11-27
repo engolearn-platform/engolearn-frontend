@@ -1,6 +1,6 @@
 import { AudioLines, BookOpen, Check, Ear, Info, X } from "lucide-react";
 import { cn } from "@shared/utils";
-import type { DailyQuestion } from "@features/learning-path/types/learning-path-day.types";
+import type { DailyQuestion, LearningPathAudioContext } from "@features/learning-path/types/learning-path-day.types";
 import DailyAudioPlayer from "./DailyAudioPlayer";
 import styles from "./dailyResult.module.css";
 
@@ -10,6 +10,8 @@ interface DailyQuestionCardProps {
   selectedIndex?: number;
   onSelect?: (index: number) => void;
   disabled?: boolean;
+  audioContext?: Omit<LearningPathAudioContext, "questionId">;
+  audioDisabled?: boolean;
 }
 
 const optionLetters = ["A", "B", "C", "D"];
@@ -20,6 +22,8 @@ export default function DailyQuestionCard({
   selectedIndex,
   onSelect,
   disabled,
+  audioContext,
+  audioDisabled,
 }: DailyQuestionCardProps) {
   const review = mode === "review";
   const answered = selectedIndex !== undefined;
@@ -55,7 +59,9 @@ export default function DailyQuestionCard({
 
       {question.stimulus && <div className="mt-4">
         {question.stimulus.type === "audio" ? (
-          <DailyAudioPlayer label={question.stimulus.label} duration={question.stimulus.duration} url={question.stimulus.url} />
+          <DailyAudioPlayer key={`${audioContext?.pathId}:${audioContext?.weekNo}:${audioContext?.dayNo}:${question.questionId ?? question.number}`}
+            label={question.stimulus.label} url={question.stimulus.url} expiresAt={question.stimulus.expiresAt} contentType={question.stimulus.contentType}
+            context={audioContext && question.questionId ? { ...audioContext, questionId: question.questionId } : undefined} disabled={audioDisabled} />
         ) : (
           <div className="rounded-xl border border-outline-variant/50 bg-surface-container-low p-4">
             <p className="mb-2 text-xs text-on-surface-variant">{question.stimulus.label}</p>
