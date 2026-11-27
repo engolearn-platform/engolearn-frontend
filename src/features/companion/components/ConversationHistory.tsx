@@ -24,7 +24,7 @@ function displayTitle(conversation: CompanionConversation) {
 function formatUpdatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(date);
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 export function ConversationHistory({ compact = false, conversations }: ConversationHistoryProps) {
@@ -56,20 +56,22 @@ export function ConversationHistory({ compact = false, conversations }: Conversa
   return (
     <>
       <div className={compact ? "companion-history companion-history-compact" : "companion-history"}>
-        {items.map((conversation) => (
-          <div className="companion-history-row" key={conversation.id}>
+        {(compact ? items.slice(0, 3) : items).map((conversation) => (
+          <div className={`companion-history-row ${state.activeConversation?.id === conversation.id ? "companion-history-selected" : ""}`} key={conversation.id}>
             <button
               type="button"
               className="companion-history-open"
               disabled={state.isSending}
               onClick={() => void openConversation(conversation)}
               aria-label={`Mở ${displayTitle(conversation)}`}
+              aria-current={state.activeConversation?.id === conversation.id ? "true" : undefined}
+              title={displayTitle(conversation)}
             >
               <span className="companion-history-icon" aria-hidden="true"><MessageCircle size={18} /></span>
               <span className="companion-history-copy">
                 <span className="companion-history-title">{displayTitle(conversation)}</span>
                 <span className="companion-history-meta">
-                  <Clock3 size={13} aria-hidden="true" />
+                  {!compact ? <Clock3 size={13} aria-hidden="true" /> : null}
                   {formatUpdatedAt(conversation.updatedAt)}
                 </span>
               </span>

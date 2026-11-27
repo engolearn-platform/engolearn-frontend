@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { BookOpen, Plus, Send, Square, X } from "lucide-react";
+import { ArrowUp, BookOpen, Plus, Square, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { useCompanion } from "../state/CompanionProvider";
 
@@ -18,7 +18,6 @@ export function AdaptiveComposer() {
     submitTurn, stopTurn, createConversation, setMode } = useCompanion();
   const showContextAction = Boolean(availableContext && !state.attachedContext);
   const contextActionRef = useRef<HTMLButtonElement>(null);
-  const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const actionRef = useRef<HTMLButtonElement>(null);
@@ -118,7 +117,7 @@ export function AdaptiveComposer() {
             <BookOpen size={16} aria-hidden="true" />
             <span>{state.attachedContext.label}</span>
             <Button type="button" variant="ghost" size="icon" className="companion-context-remove"
-              aria-label="G? ng? c?nh" onClick={removeAttachedContext}><X size={14} aria-hidden="true" /></Button>
+              aria-label="Gỡ ngữ cảnh" onClick={removeAttachedContext}><X size={14} aria-hidden="true" /></Button>
           </div>
         </div>
       )}
@@ -134,30 +133,17 @@ export function AdaptiveComposer() {
         onKeyDown={handleKeyDown}
         onCompositionStart={() => setIsComposing(true)}
         onCompositionEnd={() => setIsComposing(false)}
-        placeholder="Nhắn tin với Engo…"
+        placeholder="Hỏi Engo điều gì đó…"
         aria-describedby="companion-composer-hint"
       />
       <span id="companion-composer-hint" className="sr-only">Enter để gửi, Shift+Enter để xuống dòng</span>
       {showContextAction && availableContext && (
-        <div className="companion-context-action" onBlur={event => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setContextMenuOpen(false);
-        }} onKeyDown={event => {
-          if (event.key === "Escape") { setContextMenuOpen(false); contextActionRef.current?.focus(); }
-        }}>
-          <Button ref={contextActionRef} type="button" variant="ghost" size="icon"
-            className="companion-context-add" aria-label="Th?m ng? c?nh" aria-expanded={contextMenuOpen}
-            onClick={() => setContextMenuOpen(open => !open)}><Plus aria-hidden="true" /></Button>
-          {contextMenuOpen && (
-            <div className="companion-context-menu">
-              <p className="text-xs text-on-surface-variant">Ng? c?nh kh? d?ng</p>
-              <Button type="button" variant="ghost" className="companion-context-choice" onClick={() => {
-                attachAvailableContext(); setContextMenuOpen(false); textareaRef.current?.focus();
-              }}>
-                <BookOpen size={16} aria-hidden="true" /><span>{availableContext.label}</span>
-              </Button>
-            </div>
-          )}
-        </div>
+        <Button ref={contextActionRef} type="button" variant="ghost"
+          className="companion-context-add" aria-label="Thêm ngữ cảnh"
+          title={availableContext.label} onClick={() => {
+            attachAvailableContext();
+            textareaRef.current?.focus();
+          }}><Plus aria-hidden="true" /> Ngữ cảnh</Button>
       )}
       <div className="companion-composer-actions">
         {state.isSending ? (
@@ -183,7 +169,7 @@ export function AdaptiveComposer() {
             title="Gửi tin nhắn"
             disabled={!state.canSubmit}
           >
-            <Send aria-hidden="true" />
+            <span className="companion-send-glyph"><ArrowUp aria-hidden="true" /></span>
           </Button>
         )}
       </div>

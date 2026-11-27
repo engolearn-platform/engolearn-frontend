@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
-import BrandImage from "@shared/components/BrandImage";
 import type { CompanionMessage } from "../types/companion.types";
 
 interface MessageItemProps {
@@ -141,15 +140,18 @@ function renderMarkdown(content: string) {
 
 export function MessageItem({ message, incomplete = false }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const isAssistant = message.role === "ASSISTANT";
 
   const copyMessage = async () => {
+    setCopyFailed(false);
     try {
       await navigator.clipboard.writeText(message.content);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
       setCopied(false);
+      setCopyFailed(true);
     }
   };
 
@@ -158,12 +160,13 @@ export function MessageItem({ message, incomplete = false }: MessageItemProps) {
       className={`companion-message ${isAssistant ? "companion-message-assistant" : "companion-message-user"}`}
       aria-label={isAssistant ? "Tin nhắn của Engo" : "Tin nhắn của bạn"}
     >
-      {isAssistant ? (
-        <span className="companion-message-avatar" aria-hidden="true">
-          <BrandImage variant="mark" />
-        </span>
-      ) : null}
       <div className="companion-message-body">
+        {isAssistant ? (
+          <div className="companion-message-byline">
+            <span className="companion-message-avatar" aria-hidden="true"><img src="/landing/penguin-hero.webp" alt="" /></span>
+            <span>Engo</span>
+          </div>
+        ) : null}
         <div className="companion-message-content">{renderMarkdown(message.content)}</div>
         {incomplete ? <p className="companion-incomplete-label">Phản hồi chưa hoàn tất</p> : null}
         <div className="companion-message-actions">
@@ -178,6 +181,8 @@ export function MessageItem({ message, incomplete = false }: MessageItemProps) {
           >
             {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
           </Button>
+          <span className="sr-only" role="status">{copied ? "Đã sao chép tin nhắn" : ""}</span>
+          {copyFailed ? <span className="companion-copy-feedback" role="status">Không thể sao chép.</span> : null}
         </div>
       </div>
     </article>

@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { MessageCircle } from "lucide-react";
-import BrandImage from "@shared/components/BrandImage";
+import { Button } from "@/core/components/shadcn/button";
 
 interface MascotButtonProps {
   onClick: () => void;
@@ -9,18 +9,18 @@ interface MascotButtonProps {
 export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
   function MascotButton({ onClick }, ref) {
     return (
-      <button
+      <Button
         ref={ref}
         type="button"
         className="companion-mascot"
-        aria-label="Open AI Companion"
+        aria-label="Mở Engo"
         onClick={onClick}
       >
-        <BrandImage variant="mark" className="companion-mascot-mark" />
+        <img src="/landing/penguin-hero.webp" alt="" className="companion-mascot-mark" />
         <span className="companion-mascot-bubble" aria-hidden="true">
           <MessageCircle size={18} strokeWidth={2} />
         </span>
-      </button>
+      </Button>
     );
   }
 );
