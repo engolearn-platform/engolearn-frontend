@@ -106,7 +106,10 @@ export const subscriptionService = {
       if (d.periodStartAt && d.periodEndAt && Date.parse(String(d.periodStartAt)) >= Date.parse(String(d.periodEndAt))) invalid();
       if (![null, "ALREADY_USED", "ACTIVE_PREMIUM"].includes(d.trialIneligibilityReason as null)) invalid();
       const b = record(d.currentBenefits);
-      if (b.planCode !== (d.currentPlanCode ?? d.tier) || !text(b.displayName) || !text(b.policySnapshotId)) invalid();
+      // A Trial is a distinct current entitlement with a Premium benefits snapshot.
+      const currentPlanCode = d.currentPlanCode ?? d.tier;
+      const benefitsPlanCode = d.status === "TRIAL" && currentPlanCode === "TRIAL" ? "PREMIUM" : currentPlanCode;
+      if (b.planCode !== benefitsPlanCode || !text(b.displayName) || !text(b.policySnapshotId)) invalid();
       if ((d.status === "TRIAL" || d.status === "ACTIVE") && (d.tier !== "PREMIUM" || !d.periodEndAt)) invalid();
       if (d.trialEligible ? d.trialIneligibilityReason !== null || d.tier !== "FREE" : d.trialIneligibilityReason === null) invalid();
       benefits(b.benefits);
