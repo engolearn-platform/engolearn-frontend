@@ -36,13 +36,13 @@ export function AssessmentLearningPathRecommendation({ assessmentAttemptId, data
     setConfirmation(null);
     if (result?.kind === "conflict") retry();
   };
-  if (data?.state === "NO_WEAK_SKILLS") return null;
 
   return <AssessmentCard>
     <h2 className="text-[22px] leading-7 font-semibold">Lộ trình học tập đề xuất</h2>
     {!data && (error
       ? <div className="mt-4"><AssessmentError message={error} retry={retry} /></div>
       : <p className="mt-4 text-muted-foreground" role="status">Đang tải đề xuất lộ trình…</p>)}
+    {data?.state === "NO_WEAK_SKILLS" && <p className="mt-4 text-muted-foreground" role="status">Các kỹ năng trong bài này đều đạt từ 50%, nên hệ thống chưa đề xuất lộ trình luyện tập.</p>}
     {data?.state === "NO_ELIGIBLE_SKILLS" && <p className="mt-4 text-muted-foreground" role="status">{data.message}</p>}
     {data?.state === "ALREADY_CREATED" && <div className="mt-4 space-y-4"><p className="text-muted-foreground" role="status">Bạn đã có lộ trình học tập từ bài đánh giá này.</p>{data.existingPathId && <Button asChild className="h-12"><Link to={`/learning-paths/${encodeURIComponent(data.existingPathId)}?week=1`}>Xem lộ trình học tập</Link></Button>}</div>}
     {creation.error && <div className="mt-4"><AssessmentError message={creation.error} /></div>}

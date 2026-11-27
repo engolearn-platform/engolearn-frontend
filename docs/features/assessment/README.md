@@ -80,8 +80,9 @@ guards. No ID mapping, identity override, or cross-feature import is kept in the
 Loading, errors and retry stay within the recommendation card and leave the result visible.
 `AVAILABLE` shows returned skills, scores, level, weeks, days/week and questions/day; the
 total question count is their product. Canonical micro-skill names remain unchanged.
-`NO_WEAK_SKILLS` hides the card and expands the skill column; `NO_ELIGIBLE_SKILLS` displays
-the backend message; `ALREADY_CREATED` tells the learner a path already exists.
+`NO_WEAK_SKILLS` explains why the result has no recommendation when all measured skills
+score at least 50%. `NO_ELIGIBLE_SKILLS` displays the backend message. `ALREADY_CREATED`
+tells the learner a path already exists.
 The “Tạo lộ trình học tập” button opens the existing confirmation Dialog for `AVAILABLE`.
 Opening, cancelling, Escape or dismissing the dialog sends no creation request. Only its
 “Xác nhận” action calls `POST /api/learning-paths/by-assessment`, sending the result's native
