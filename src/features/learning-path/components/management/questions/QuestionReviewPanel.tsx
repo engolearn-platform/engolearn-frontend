@@ -1,4 +1,5 @@
-import { isQuestionReviewCheck, QUESTION_REVIEW_LABELS, microSkillLabel } from "@features/learning-path/types/question-management.types";
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
+import { isQuestionReviewCheck, QUESTION_REVIEW_LABELS } from "@features/learning-path/types/question-management.types";
 import type { QuestionCoverageWarning, QuestionReadiness } from "@features/learning-path/types/question-management.types";
 
 export const questionFieldClass = "min-h-12 w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md focus-visible:outline-2 focus-visible:outline-primary";
@@ -32,6 +33,7 @@ export function QuestionReviewPanel({ result, revision, confirmed, setConfirmed,
   </div>;
 }
 export function QuestionCoverageWarnings({ warnings }: { warnings: QuestionCoverageWarning[] }) {
+  const { label: microSkillLabel } = useMicroSkillLabels();
   if (!warnings.length) return null;
   return <section aria-label="Cảnh báo số lượng câu hỏi" className="space-y-3 rounded-xl bg-learning-note p-4 text-learning-note-ink">
     <h3 className="font-semibold">Độ phủ câu hỏi</h3>

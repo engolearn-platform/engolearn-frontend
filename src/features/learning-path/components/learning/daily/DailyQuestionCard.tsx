@@ -1,3 +1,4 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { AudioLines, BookOpen, Check, Ear, Info, X } from "lucide-react";
 import { cn } from "@shared/utils";
 import type { DailyQuestion, LearningPathAudioContext } from "@features/learning-path/types/learning-path-day.types";
@@ -25,6 +26,7 @@ export default function DailyQuestionCard({
   audioContext,
   audioDisabled,
 }: DailyQuestionCardProps) {
+  const { label } = useMicroSkillLabels();
   const review = mode === "review";
   const answered = selectedIndex !== undefined;
   const correct = answered && selectedIndex === question.correctIndex;
@@ -39,7 +41,7 @@ export default function DailyQuestionCard({
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
             <SkillIcon className="size-3.5" aria-hidden="true" />
-            {question.microSkill}
+            {label(question.microSkill)}
           </span>
           {review && (
             <span className={cn(

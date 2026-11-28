@@ -168,8 +168,11 @@ a failed load. Taking preserves the current issue ID on a transport retry.
 
 
 Danh sách kỹ năng của editor lấy từ API `/api/v1/assessment/admin/drafts/skill-catalog`.
-ADMIN có mục Danh mục kỹ năng để thêm mã, đổi tên hiển thị và ngừng chọn cho đề
-mới. Mã chưa có mapping được xác nhận hiển thị ở trạng thái chờ.
+ADMIN có mục Danh mục kỹ năng dùng API của catalog chung
+`/api/management/micro-skills` để thêm định nghĩa, đổi tên tiếng Việt và ngừng sử dụng.
+Thay đổi tên hoặc trạng thái dùng revision hiện hành của định nghĩa. Studio chỉ liệt
+kê các mã PFC đã có mapping đang hoạt động. Kết quả, xem lại và đề xuất Lộ trình học
+hiển thị tên tiếng Việt tương ứng từ catalog, giữ mã và tên chuẩn dùng trong nghiệp vụ.
 
 Trong danh sách Studio, tải mẫu Excel, chọn workbook và 12 WAV của đề, rồi
 chọn Kiểm tra và xem thử. Có thể kèm WAV âm thử riêng nếu ghi tên trong workbook.

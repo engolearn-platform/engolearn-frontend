@@ -1,3 +1,4 @@
+import MicroSkillCatalogProvider from "@features/learning-path/components/shared/MicroSkillCatalogProvider";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
@@ -79,7 +80,7 @@ function DetailPage({ pathId }: { pathId: string }) {
     );
   }
 
-  return <LearningPathDetailContent key={`${path.id}:${path.currentWeekNo}:${path.status}`} path={path} />;
+  return <MicroSkillCatalogProvider catalog={path.microSkillCatalog}><LearningPathDetailContent key={`${path.id}:${path.currentWeekNo}:${path.status}`} path={path} /></MicroSkillCatalogProvider>;
 }
 
 export default function LearningPathDetailView() {

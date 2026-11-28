@@ -1,3 +1,4 @@
+import MicroSkillCatalogProvider from "@features/learning-path/components/shared/MicroSkillCatalogProvider";
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Clock3, Info, TriangleAlert } from "lucide-react";
@@ -372,13 +373,13 @@ function PracticeView({
     ? `Lộ trình ngày ${formatLearningPathDate(detail.createdDate)} · Tuần ${weekNo} · Level ${detail.level}`
     : `Tuần ${weekNo}`;
   return (
-    <PracticeSession
+    <MicroSkillCatalogProvider catalog={data.day.microSkillCatalog}><PracticeSession
       day={data.day}
       questions={data.questions}
       initialAnswers={data.answers}
       detailUrl={detailUrl}
       description={description}
-    />
+    /></MicroSkillCatalogProvider>
   );
 }
 

@@ -134,7 +134,7 @@ function LearningPathListContent() {
           ) : visibleActivePaths.length > 0 ? (
             <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
               {visibleActivePaths.map((path) => (
-                <LearningPathCard key={path.id} path={path} />
+                <LearningPathCard key={path.id} path={path} catalog={isSearching ? search.data?.data.microSkillCatalog : active.data?.data.microSkillCatalog} />
               ))}
             </div>
           ) : (
@@ -165,7 +165,7 @@ function LearningPathListContent() {
               ) : visibleCompletedPaths.length > 0 ? (
                 <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
                   {visibleCompletedPaths.map((path) => (
-                    <LearningPathCard key={path.id} path={path} />
+                    <LearningPathCard key={path.id} path={path} catalog={search.data?.data.microSkillCatalog} />
                   ))}
                 </div>
               ) : (
@@ -184,7 +184,7 @@ function LearningPathListContent() {
             ) : visibleCompletedPaths.length > 0 ? (
               <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
                 {visibleCompletedPaths.map((path) => (
-                  <LearningPathCard key={path.id} path={path} />
+                  <LearningPathCard key={path.id} path={path} catalog={completed.data?.data.microSkillCatalog} />
                 ))}
               </div>
             ) : (
@@ -214,7 +214,7 @@ function LearningPathListContent() {
             ) : cancelledPaths.length > 0 ? (
               <div className="grid gap-2.5 xl:grid-cols-2 xl:gap-6">
                 {cancelledPaths.map((path) => (
-                  <LearningPathCard key={path.id} path={path} />
+                  <LearningPathCard key={path.id} path={path} catalog={cancelled.data?.data.microSkillCatalog} />
                 ))}
               </div>
             ) : (

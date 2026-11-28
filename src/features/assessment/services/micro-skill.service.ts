@@ -1,29 +1,38 @@
 import { httpService, type ApiEnvelope } from "@shared/services/http.service";
 
 export type SkillSection = "READING" | "LISTENING";
+type SkillStatus = "ACTIVE" | "INACTIVE";
 
-export interface MicroSkill {
-  code: string;
-  label: string;
-  section: SkillSection;
-  active: boolean;
-  legacyName: string | null;
+interface CatalogFields {
+  displayNameVi: string;
+  descriptionVi: string;
+  status: SkillStatus;
+  displayOrder: number;
 }
 
-const base = "/api/v1/assessment/admin/micro-skills";
-const skillPath = (code: string) => base + "/" + encodeURIComponent(code);
+interface CreateCatalogSkill extends CatalogFields {
+  code: string;
+  canonicalName: string;
+  skill: SkillSection;
+}
+
+export interface MicroSkill extends CreateCatalogSkill {
+  id: string;
+  revision: number;
+}
+
+const base = "/api/management/micro-skills";
 
 export const microSkillService = {
   async list(signal: AbortSignal) {
-    return (await httpService.get<ApiEnvelope<MicroSkill[]>>(base, {signal})).data;
+    return (await httpService.get<ApiEnvelope<{items: MicroSkill[]}>>(base, {signal})).data.items;
   },
-  async create(code: string, label: string, section: SkillSection) {
-    return (await httpService.post<ApiEnvelope<MicroSkill>>(base, {code, label, section})).data;
+  async create(input: CreateCatalogSkill) {
+    return (await httpService.post<ApiEnvelope<MicroSkill>>(base, input)).data;
   },
-  async rename(code: string, label: string) {
-    return (await httpService.patch<ApiEnvelope<MicroSkill>>(skillPath(code), {label})).data;
-  },
-  async retire(code: string) {
-    return (await httpService.post<ApiEnvelope<MicroSkill>>(skillPath(code) + "/retire", {})).data;
+  async update(skill: MicroSkill, displayNameVi: string, status: SkillStatus) {
+    const {id, revision, descriptionVi, displayOrder} = skill;
+    return (await httpService.put<ApiEnvelope<MicroSkill>>(base + "/" + encodeURIComponent(id),
+      {revision, displayNameVi, descriptionVi, status, displayOrder})).data;
   },
 };
