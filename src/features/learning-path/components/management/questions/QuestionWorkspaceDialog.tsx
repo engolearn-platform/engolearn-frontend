@@ -1,3 +1,5 @@
+import { useMicroSkillCatalog } from "@features/learning-path/hooks/useMicroSkillCatalog";
+import { microSkillLabel } from "@features/learning-path/utils/microSkillCatalog";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Button } from "@/core/components/shadcn/button";
@@ -7,7 +9,7 @@ import { useFetch } from "@shared/hooks";
 import { questionManagementService } from "@features/learning-path/services/question-management.service";
 import { passageManagementService } from "@features/learning-path/services/passage-management.service";
 import { useQuestionManagementMutation, questionErrorMessage } from "@features/learning-path/hooks/useQuestionManagementMutation";
-import { OPTION_IDS, QUESTION_MICRO_SKILLS, validRevision } from "@features/learning-path/types/question-management.types";
+import { OPTION_IDS, validRevision } from "@features/learning-path/types/question-management.types";
 import type { OptionId, QuestionDetail, QuestionInput } from "@features/learning-path/types/question-management.types";
 import { PASSAGE_LEVELS, PASSAGE_SKILL_LABELS } from "@features/learning-path/types/passage-management.types";
 import type { PassageDetail, PassageLevel, PassageSkill } from "@features/learning-path/types/passage-management.types";
@@ -20,6 +22,7 @@ function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
   detail?: QuestionDetail; initialPassage?: PassageDetail; onSaved: (id: string) => void; onClose: () => void; onBusy: (busy: boolean) => void;
 }) {
   const mutation = useQuestionManagementMutation();
+  const catalog = useMicroSkillCatalog();
   const [skill, setSkill] = useState<PassageSkill | "">(detail ? detail.skill ?? "" : initialPassage?.skill ?? "READING");
   const [level, setLevel] = useState<PassageLevel | "">(detail ? detail.level ?? "" : initialPassage?.level ?? "A1");
   const [microSkill, setMicroSkill] = useState(detail?.microSkill ?? "");
@@ -31,9 +34,11 @@ function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
   const [explanation, setExplanation] = useState(detail?.explanation ?? "");
   const [validation, setValidation] = useState(""); const [blocked, setBlocked] = useState(false);
   useEffect(() => onBusy(mutation.busy), [mutation.busy, onBusy]);
+  const availableSkills = (catalog.data ?? []).filter(item => item.active && item.skill === skill);
   const save = (event: FormEvent) => {
     event.preventDefault(); if (mutation.locked() || blocked) return;
-    if (!skill || !level || !QUESTION_MICRO_SKILLS.some(item => item.skill === skill && item.value === microSkill)
+    if (catalog.loading || catalog.error || !catalog.data) { setValidation("Cần tải được danh mục kỹ năng trước khi lưu câu hỏi."); return; }
+    if (!skill || !level || !availableSkills.some(item => item.canonicalName === microSkill)
       || !prompt.trim() || options.some(option => !option.text.trim()) || !OPTION_IDS.includes(correct as OptionId) || !explanation.trim()
       || (skill === "LISTENING" && !passageId.trim())) { setValidation("Hãy chọn đúng phân loại, passage nếu là Listening, nhập nội dung, bốn lựa chọn, đáp án và giải thích."); return; }
     if (detail && !validRevision(detail.revision)) { setValidation("Câu hỏi chưa có phiên bản hợp lệ để lưu. Hãy tải lại dữ liệu."); return; }
@@ -54,10 +59,16 @@ function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
         <label className="space-y-2"><span className="block font-semibold">Trình độ CEFR *</span><select className={questionFieldClass} required value={level}
           onChange={event => { setLevel(event.target.value as PassageLevel); setPassageId(""); }}><option value="" disabled>Chọn trình độ</option>{PASSAGE_LEVELS.map(value => <option key={value}>{value}</option>)}</select></label>
       </div>
-      <label className="block space-y-2"><span className="block font-semibold">Kỹ năng nhỏ *</span><select className={questionFieldClass} required value={microSkill} onChange={event => setMicroSkill(event.target.value)}>
-        <option value="" disabled>Chọn kỹ năng nhỏ</option>{QUESTION_MICRO_SKILLS.filter(item => item.skill === skill).map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-        {microSkill && !QUESTION_MICRO_SKILLS.some(item => item.value === microSkill && item.skill === skill) && <option value={microSkill} disabled>Phân loại chưa hỗ trợ: {microSkill}</option>}
+      <label className="block space-y-2"><span className="block font-semibold">Kỹ năng nhỏ *</span><select className={questionFieldClass} required disabled={catalog.loading || !!catalog.error} value={microSkill} onChange={event => setMicroSkill(event.target.value)}>
+        <option value="" disabled>Chọn kỹ năng nhỏ</option>{availableSkills.map(item => <option key={item.id} value={item.canonicalName}>{microSkillLabel(item.canonicalName, catalog.data ?? [])}</option>)}
+        {microSkill && !availableSkills.some(item => item.canonicalName === microSkill) && <option value={microSkill} disabled>{microSkillLabel(microSkill, catalog.data ?? [])} · Không còn khả dụng</option>}
       </select></label>
+      {catalog.loading && <p role="status" className="text-body-md text-on-surface-variant">Đang tải danh mục kỹ năng...</p>}
+      {catalog.error && <p role="alert" className="text-error">{catalog.error.message}</p>}
+      <Button type="button" variant="outline" className="min-h-12" disabled={catalog.loading} onClick={catalog.refetch}>
+        {catalog.error ? "Thử tải lại danh mục kỹ năng" : "Tải lại danh mục kỹ năng"}
+      </Button>
+      {!catalog.loading && !catalog.error && availableSkills.length === 0 && <p role="status" className="text-on-surface-variant">Chưa có kỹ năng đang sử dụng thuộc nhóm này.</p>}
       {skill && level && <QuestionPassagePicker key={`${skill}-${level}`} skill={skill} level={level} value={passageId} onChange={setPassageId} onValidityChange={setPassageValid} disabled={mutation.busy} />}
       <label className="block space-y-2"><span className="block font-semibold">Nội dung câu hỏi *</span><textarea className={questionFieldClass} rows={4} required maxLength={50000} value={prompt} onChange={event => setPrompt(event.target.value)} /></label>
       <fieldset className="space-y-3 rounded-xl bg-surface-container-low p-4"><legend className="sr-only">Bốn lựa chọn và đáp án đúng</legend>
@@ -73,7 +84,7 @@ function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
     {(validation || mutation.error) && <p role="alert" className="text-error">{validation || (mutation.error ? questionErrorMessage(mutation.error) : "")}</p>}
     {blocked && <p className="text-on-surface-variant">Hãy đóng và tải lại trạng thái trước khi lưu tiếp. Nội dung trên form chưa được tự gửi lại.</p>}
     <DialogFooter><Button type="button" variant="outline" disabled={mutation.busy} onClick={onClose}>Hủy</Button>
-      <Button type="submit" disabled={mutation.busy || blocked || (!!detail && !validRevision(detail.revision))}>{mutation.busy ? "Đang lưu..." : detail ? "Lưu thay đổi" : "Tạo bản nháp"}</Button></DialogFooter>
+      <Button type="submit" disabled={mutation.busy || catalog.loading || !!catalog.error || !catalog.data || availableSkills.length === 0 || blocked || (!!detail && !validRevision(detail.revision))}>{mutation.busy ? "Đang lưu..." : detail ? "Lưu thay đổi" : "Tạo bản nháp"}</Button></DialogFooter>
   </form>;
 }
 export default function QuestionWorkspaceDialog({ workspace, onClose, onSaved }: { workspace: QuestionWorkspace; onClose: () => void; onSaved: (id: string) => void }) {

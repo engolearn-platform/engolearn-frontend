@@ -1,3 +1,4 @@
+import type { MicroSkillCatalogMetadata } from "@features/learning-path/types/micro-skill-catalog.types";
 import type { LearningPathStatus } from "./learning-path.types";
 
 export type LearningPathTab = number | "summary";
@@ -64,7 +65,7 @@ export interface LearningPathFinalMicroSkillResult {
   improvementPp?: number | null;
 }
 
-export interface LearningPathDetail {
+export interface LearningPathDetail extends MicroSkillCatalogMetadata {
   id: string;
   createdDate: string;
   completedDate: string | null;
@@ -82,7 +83,7 @@ export interface LearningPathDetail {
   finalResults: LearningPathFinalMicroSkillResult[];
 }
 
-export interface LearningPathDetailDto {
+export interface LearningPathDetailDto extends MicroSkillCatalogMetadata {
   id: string;
   createdDate: string;
   level: string;

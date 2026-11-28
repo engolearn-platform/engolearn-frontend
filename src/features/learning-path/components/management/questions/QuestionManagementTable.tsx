@@ -1,10 +1,11 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { PassageStatusBadge } from "@features/learning-path/components/management/passages/PassageManagementTable";
 import { PASSAGE_SKILL_LABELS } from "@features/learning-path/types/passage-management.types";
-import { microSkillLabel, validRevision } from "@features/learning-path/types/question-management.types";
+import { validRevision } from "@features/learning-path/types/question-management.types";
 import type { QuestionListItem } from "@features/learning-path/types/question-management.types";
 
 export type QuestionAction = "view" | "edit" | "delete" | "copy" | "publish" | "retire" | "replace";
@@ -55,6 +56,7 @@ function Actions({ item, onAction }: { item: QuestionListItem; onAction: Questio
 }
 const dateFormat = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" });
 export default function QuestionManagementTable({ items, onAction }: { items: QuestionListItem[]; onAction: QuestionActionHandler }) {
+  const { label: microSkillLabel } = useMicroSkillLabels();
   return <div className="overflow-x-auto"><table className="w-full text-left text-body-md">
     <caption className="sr-only">Kho câu hỏi Learning Path</caption>
     <thead className="bg-surface-container-low/50 text-label-sm text-on-surface-variant"><tr>
@@ -65,7 +67,7 @@ export default function QuestionManagementTable({ items, onAction }: { items: Qu
         onClick={() => onAction("view", item)}><span className="line-clamp-2 break-words">{item.prompt || "Câu hỏi chưa có nội dung"}</span></button>
       </td>
       <td className="px-4 py-3">{item.skill ? PASSAGE_SKILL_LABELS[item.skill] : "—"}</td>
-      <td className="min-w-48 px-4 py-3" title={item.microSkill ?? undefined}>{microSkillLabel(item.microSkill)}</td>
+      <td className="min-w-48 px-4 py-3" title={microSkillLabel(item.microSkill)}>{microSkillLabel(item.microSkill)}</td>
       <td className="px-4 py-3"><span className="rounded-full bg-surface-container-high px-3 py-1 text-label-sm">{item.level ?? "—"}</span></td>
       <td className="px-4 py-3">{item.status ? <PassageStatusBadge status={item.status} /> : "Chưa xác định"}</td>
       <td className="whitespace-nowrap px-4 py-3 text-label-sm text-on-surface-variant">{item.updatedAt && !Number.isNaN(Date.parse(item.updatedAt))

@@ -1,3 +1,6 @@
+import { useAuth } from "@shared/hooks/useAuth";
+import { useMicroSkillCatalog } from "@features/learning-path/hooks/useMicroSkillCatalog";
+import MicroSkillCatalogProvider from "@features/learning-path/components/shared/MicroSkillCatalogProvider";
 import { useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
 import { EmptyState, Loading } from "@shared/components";
@@ -13,7 +16,8 @@ import QuestionActionDialog from "@features/learning-path/components/management/
 import QuestionPublicationDialog from "@features/learning-path/components/management/questions/QuestionPublicationDialog";
 import { QuestionCoverageWarnings } from "@features/learning-path/components/management/questions/QuestionReviewPanel";
 
-export default function QuestionManagementListView() {
+function QuestionManagementListContent() {
+  const catalog = useMicroSkillCatalog();
   const { data, loading, error, params, filter, setFilter, clearFilters, setPage, setSize, refetch } = useQuestionManagementList();
   const [workspace, setWorkspace] = useState<QuestionWorkspace | null>(null);
   const [action, setAction] = useState<{ mode: Exclude<QuestionAction, "view" | "edit">; item: QuestionListItem } | null>(null);
@@ -27,10 +31,13 @@ export default function QuestionManagementListView() {
     if (mode === "view" || mode === "edit") setWorkspace({ mode, questionId: item.questionId });
     else setAction({ mode, item });
   };
-  return <div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
+  return <MicroSkillCatalogProvider catalog={data?.microSkillCatalog ?? catalog.data ?? undefined}><div className="mx-auto w-full max-w-7xl px-5 pb-16 lg:px-8">
     <ManagementPageHeader title="Quản lý câu hỏi Learning Path" badge="Content Studio"
       description="Biên soạn và duyệt câu hỏi đọc, nghe cho lộ trình học tập."
       createLabel="Tạo câu hỏi mới" onCreate={create} showExport={false} />
+    {catalog.loading && <p role="status" className="mt-4 text-body-md text-on-surface-variant">Đang tải danh mục kỹ năng...</p>}
+    {catalog.error && <div className="mt-4 space-y-2"><p role="alert" className="text-error">{catalog.error.message}</p>
+      <Button variant="outline" onClick={catalog.refetch}>Thử tải lại danh mục kỹ năng</Button></div>}
     <QuestionManagementFilters filter={filter} onChange={setFilter} onClear={clearFilters} />
     {notice && <p role="status" className="mt-4 rounded-xl bg-learning-mint p-4 text-primary">{notice}</p>}
     {warnings.length > 0 && <div className="mt-4"><QuestionCoverageWarnings warnings={warnings} /></div>}
@@ -52,5 +59,10 @@ export default function QuestionManagementListView() {
         done(action.mode === "copy" ? "Đã sao chép câu hỏi thành bản nháp." : action.mode === "delete" ? "Đã xóa câu hỏi bản nháp." : "Đã ngưng sử dụng câu hỏi.", coverageWarnings);
         if (copiedId) setWorkspace({ mode: "edit", questionId: copiedId });
       }} />)}
-  </div>;
+  </div></MicroSkillCatalogProvider>;
+}
+
+export default function QuestionManagementListView() {
+  const auth = useAuth();
+  return <QuestionManagementListContent key={auth.identityGeneration} />;
 }

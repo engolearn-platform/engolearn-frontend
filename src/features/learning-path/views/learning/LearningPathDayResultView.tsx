@@ -1,3 +1,4 @@
+import MicroSkillCatalogProvider from "@features/learning-path/components/shared/MicroSkillCatalogProvider";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useParams } from "react-router";
 import { Button } from "@/core/components/shadcn/button";
@@ -18,7 +19,7 @@ function ResultPage({ pathId, weekNo, dayNo }: { pathId: string; weekNo: string;
   const detailUrl = `${ROUTES.LEARNING_PATH_DETAIL.replace(":pathId", encodeURIComponent(pathId))}?week=${encodeURIComponent(weekNo)}`;
   const questions = data?.questions.slice((page - 1) * 3, page * 3) ?? [];
   return (
-    <div className="mx-auto w-full max-w-[1300px] px-5 py-5 pb-24 lg:px-8 lg:py-8 xl:px-10">
+    <MicroSkillCatalogProvider catalog={data?.result.microSkillCatalog}><div className="mx-auto w-full max-w-[1300px] px-5 py-5 pb-24 lg:px-8 lg:py-8 xl:px-10">
       <Link to={detailUrl} className="text-primary hover:underline">Trở về lộ trình</Link>
       {loading ? <div className="mt-5"><Loading size="lg" /></div> : error || !data ? (
         <div className="mt-5">
@@ -46,7 +47,7 @@ function ResultPage({ pathId, weekNo, dayNo }: { pathId: string; weekNo: string;
           </div>
         </div>
       )}
-    </div>
+    </div></MicroSkillCatalogProvider>
   );
 }
 

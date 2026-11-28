@@ -42,3 +42,7 @@ as the Learning Path detail screen.
   grid row stretch equally, keeping their progress and action areas aligned.
 - Status badges distinguish `IN_PROGRESS` with a light cyan color and
   `NOT_STARTED` with neutral gray; both retain their text labels.
+
+## Nhãn micro-skill từ catalog
+
+Dùng [catalog dùng chung trong Learning Path](../micro-skill-catalog.md) để hiển thị tên tiếng Việt. Canonical và các khóa ghép dữ liệu giữ nguyên; tên chưa có bản dịch hiển thị canonical.

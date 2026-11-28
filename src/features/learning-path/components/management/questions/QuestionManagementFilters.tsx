@@ -1,15 +1,16 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { FilterX, Search } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { CefrSelect } from "@shared/components/management";
 import { PASSAGE_LEVELS, PASSAGE_SKILL_LABELS, PASSAGE_STATUS_LABELS } from "@features/learning-path/types/passage-management.types";
-import { QUESTION_MICRO_SKILLS } from "@features/learning-path/types/question-management.types";
 import type { QuestionFilters } from "@features/learning-path/types/question-management.types";
 
 const selectClass = "min-h-12 max-w-full rounded-xl bg-surface-container-low px-3 text-label-sm text-on-surface focus-visible:outline-2 focus-visible:outline-primary";
 export default function QuestionManagementFilters({ filter, onChange, onClear }: {
   filter: QuestionFilters; onChange: (patch: Partial<QuestionFilters>) => void; onClear: () => void;
 }) {
-  const skills = QUESTION_MICRO_SKILLS.filter(item => filter.skill === "ALL" || item.skill === filter.skill);
+  const { catalog, label } = useMicroSkillLabels();
+  const skills = catalog.filter(item => filter.skill === "ALL" || item.skill === filter.skill);
   return <section aria-label="Bộ lọc câu hỏi" className="mt-4 space-y-4 rounded-xl bg-surface-container-lowest p-4 shadow-sm">
     <div className="flex flex-col gap-3 lg:flex-row">
       <label className="relative min-w-0 flex-1">
@@ -29,8 +30,8 @@ export default function QuestionManagementFilters({ filter, onChange, onClear }:
         <option value="ALL">Tất cả kỹ năng</option>{Object.entries(PASSAGE_SKILL_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>
       <label className="min-w-0"><span className="sr-only">Kỹ năng nhỏ</span><select className={selectClass} value={filter.microSkill} onChange={event => onChange({ microSkill: event.target.value })}>
-        <option value="">Tất cả kỹ năng nhỏ</option>{skills.map(skill => <option key={skill.value} value={skill.value}>{skill.label}</option>)}
-        {filter.microSkill && !skills.some(item => item.value === filter.microSkill) && <option value={filter.microSkill}>{filter.microSkill}</option>}
+        <option value="">Tất cả kỹ năng nhỏ</option>{skills.map(skill => <option key={skill.id} value={skill.canonicalName}>{label(skill.canonicalName)}{!skill.active ? " · Ngừng sử dụng" : ""}</option>)}
+        {filter.microSkill && !skills.some(item => item.canonicalName === filter.microSkill) && <option value={filter.microSkill}>{label(filter.microSkill)}</option>}
       </select></label>
       <CefrSelect value={filter.level} onChange={level => onChange({ level })} options={PASSAGE_LEVELS.map(value => ({ value, label: value }))} className={selectClass} />
       <label><span className="sr-only">Trạng thái</span><select className={selectClass} value={filter.status} onChange={event => onChange({ status: event.target.value as QuestionFilters["status"] })}>

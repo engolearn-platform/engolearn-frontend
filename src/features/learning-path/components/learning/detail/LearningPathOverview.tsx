@@ -1,3 +1,4 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { BookOpen, ChevronDown, ChevronUp, Ear, AudioLines } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
@@ -17,6 +18,7 @@ export default function LearningPathOverview({
   expanded,
   onToggle,
 }: LearningPathOverviewProps) {
+  const { label } = useMicroSkillLabels();
   const progress = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
   const durationWeeks = path.durationWeeks ?? path.weeks.length;
   const questionsPerWeek = path.questionsPerWeek ?? path.weeks[0]?.assigned ?? 0;
@@ -76,7 +78,7 @@ export default function LearningPathOverview({
                     className="min-w-0 rounded-xl border border-outline-variant/50 bg-surface-container-low p-3"
                   >
                     <div className="flex items-start justify-between gap-1">
-                      <span className="text-xs leading-4 text-on-surface">{microSkill.name}</span>
+                      <span className="text-xs leading-4 text-on-surface">{label(microSkill.name)}</span>
                       <Icon className="size-4 shrink-0 text-on-surface-variant" aria-hidden="true" />
                     </div>
                     <p className="mt-1 text-lg font-bold text-primary">{scoreLabel(microSkill.initialScore)}</p>

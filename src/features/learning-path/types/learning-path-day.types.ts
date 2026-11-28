@@ -1,3 +1,4 @@
+import type { MicroSkillCatalogMetadata } from "@features/learning-path/types/micro-skill-catalog.types";
 export interface LearningPathAudioDto {
   url: string;
   expiresAt?: string | null;
@@ -60,7 +61,7 @@ export interface PracticeQuestionDto {
   selectedOptionId: string | null;
 }
 
-export interface PracticeDayDto {
+export interface PracticeDayDto extends MicroSkillCatalogMetadata {
   pathId: string;
   weekNo: number;
   dayNo: number;
@@ -93,6 +94,6 @@ export interface DayResultQuestionDto extends PracticeQuestionDto {
   answerStatus: "CORRECT" | "WRONG" | "UNANSWERED";
 }
 
-export interface DayResultDto extends SubmitDayResult {
+export interface DayResultDto extends SubmitDayResult, MicroSkillCatalogMetadata {
   questions: DayResultQuestionDto[];
 }

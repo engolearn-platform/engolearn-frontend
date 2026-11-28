@@ -1,18 +1,6 @@
+import type { MicroSkillCatalogMetadata } from "@features/learning-path/types/micro-skill-catalog.types";
 import type { PassageDetail, PassageLevel, PassageSkill, PassageStatus } from "./passage-management.types";
 
-export const QUESTION_MICRO_SKILLS = [
-  { value: "Reading for Gist", label: "Đọc tìm ý chính", skill: "READING" },
-  { value: "Reading for Specific Information", label: "Đọc tìm thông tin cụ thể", skill: "READING" },
-  { value: "Reading for Detail & Relationship", label: "Đọc hiểu chi tiết và mối liên hệ", skill: "READING" },
-  { value: "Vocabulary in Context", label: "Hiểu từ vựng trong ngữ cảnh", skill: "READING" },
-  { value: "Inference & Author's View", label: "Đọc hiểu ý ngầm và quan điểm tác giả", skill: "READING" },
-  { value: "Listening for Gist", label: "Nghe ý chính", skill: "LISTENING" },
-  { value: "Listening for Specific Information", label: "Nghe tìm thông tin cụ thể", skill: "LISTENING" },
-  { value: "Listening for Detail & Relationship", label: "Nghe hiểu chi tiết và mối liên hệ", skill: "LISTENING" },
-  { value: "Listening for Inference", label: "Nghe hiểu ý ngầm", skill: "LISTENING" },
-  { value: "Listening for Attitude / Purpose", label: "Nghe nhận biết thái độ và mục đích", skill: "LISTENING" },
-] as const;
-export const microSkillLabel = (value: string | null) => QUESTION_MICRO_SKILLS.find(skill => skill.value === value)?.label ?? value ?? "Chưa phân loại";
 export const OPTION_IDS = ["A", "B", "C", "D"] as const;
 export type OptionId = typeof OPTION_IDS[number];
 export interface QuestionOption { optionId: string; text: string | null }
@@ -21,7 +9,7 @@ export interface QuestionListItem {
   passageId: string | null; prompt: string | null; status: PassageStatus | null; revision: number | null;
   createdAt: string | null; updatedAt: string | null;
 }
-export interface QuestionDetail extends QuestionListItem {
+export interface QuestionDetail extends QuestionListItem, MicroSkillCatalogMetadata {
   options: (QuestionOption | null)[] | null; correctOptionId: string | null; explanation: string | null;
   createdBy: string | null; updatedBy: string | null; passage: PassageDetail | null;
   publicationReview: { sourceRevision: number | null; passageId: string | null; passageRevision: number | null;
@@ -30,7 +18,7 @@ export interface QuestionDetail extends QuestionListItem {
 export interface QuestionFilters { keyword: string; skill: PassageSkill | "ALL"; microSkill: string;
   level: PassageLevel | "ALL"; status: PassageStatus | "ALL"; passageId: string }
 export interface QuestionListParams extends QuestionFilters { page: number; size: number }
-export interface QuestionListResponse { items: QuestionListItem[]; page: number; size: number; totalElements: number; totalPages: number }
+export interface QuestionListResponse extends MicroSkillCatalogMetadata { items: QuestionListItem[]; page: number; size: number; totalElements: number; totalPages: number }
 export interface QuestionInput { skill: PassageSkill; microSkill: string; level: PassageLevel; passageId: string;
   prompt: string; options: { optionId: OptionId; text: string }[]; correctOptionId: OptionId; explanation: string }
 export interface QuestionMutationReceipt { questionId: string; status: PassageStatus; revision: number;

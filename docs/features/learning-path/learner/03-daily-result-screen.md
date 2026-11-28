@@ -26,3 +26,7 @@ The screen uses the same 1300px content container and learner shell as daily pra
 - Both return links reopen the corresponding unlocked week via the detail page's `week` query parameter.
 
 Question copy and numbers are illustration data. Micro-skill names follow the confirmed catalog in `AGENTS_learning_path.md`.
+
+## Nhãn micro-skill từ catalog
+
+Dùng [catalog dùng chung trong Learning Path](../micro-skill-catalog.md) để hiển thị tên tiếng Việt. Canonical và các khóa ghép dữ liệu giữ nguyên; tên chưa có bản dịch hiển thị canonical.
