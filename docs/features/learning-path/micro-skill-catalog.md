@@ -51,8 +51,9 @@ Tìm kiếm lộ trình vẫn theo canonical/ngày ở backend; chưa thêm tìm
   không có định nghĩa INACTIVE; chưa thay đổi trạng thái dữ liệu dùng chung.
 - Tài khoản CONTENT_MANAGER có 0 lộ trình nên chưa kiểm chứng learner detail,
   thống kê, practice/review. Cần đăng nhập learner có dữ liệu để hoàn tất E2E.
-- Bản nháp kiểm thử LP-Q-9764ed08-d3f7-4b10-962c-1ff51aa1555b đang chờ
-  người dùng xác nhận xóa; các câu hỏi đã xuất bản và đáp án learner không đổi.
+- Đã xóa bản nháp kiểm thử LP-Q-9764ed08-d3f7-4b10-962c-1ff51aa1555b sau
+  khi người dùng xác nhận. UI báo xóa thành công và tìm kiếm không còn kết quả;
+  các câu hỏi đã xuất bản và đáp án learner không đổi.
 
 Backend sở hữu schema, seed và contract tại
 `engolearn-backend/docs/technical/microskill/README.md`. Cần import seed backend trước
