@@ -1,6 +1,7 @@
 import { useContentReadiness } from "@features/topic/hooks/useContentReadiness";
 import { useTopicQuizNavigation } from "@features/topic/hooks/useTopicQuizNavigation";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useScreenContext, type AvailableScreenContext } from "@features/companion/contract";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -36,6 +37,18 @@ export default function TopicLessonView({ topicId, attemptId, origin }: { topicI
   const viewing = quiz.feedback && quiz.quiz && !parameters.has("stage") ? { stage: quiz.quiz.type, itemIndex: quiz.quiz.index } : attempt && content ? viewingPosition(parameters, attempt, content, entries) : null;
   const atFrontier = attempt?.status === "IN_PROGRESS" && samePosition(viewing, attempt.position);
   const showContent = !!viewing && isContentPosition(viewing);
+  const viewedStage = viewing?.stage;
+  const viewedIndex = viewing?.itemIndex;
+  const screenContext = useMemo<AvailableScreenContext | null>(() => {
+    if (viewer.kind !== "LEARNER" || lesson.loading || lesson.error || !attempt || !content
+      || attempt.attemptId !== attemptId || attempt.status !== "IN_PROGRESS" || viewedIndex == null
+      || (viewedStage !== "CONTEXT" && viewedStage !== "VOCAB" && viewedStage !== "EXPRESSIONS")) return null;
+    const unit = contentPositions(content).find(candidate => candidate.stage === viewedStage && candidate.itemIndex === viewedIndex);
+    if (!unit) return null;
+    return { label: content.title + " ? " + unit.label,
+      reference: { type: "TOPIC_LEARNING_POSITION", attemptId, stage: viewedStage, itemIndex: viewedIndex } };
+  }, [viewer.kind, lesson.loading, lesson.error, attempt, content, attemptId, viewedStage, viewedIndex]);
+  useScreenContext(screenContext);
   const readiness = useContentReadiness(JSON.stringify([viewer.learnerId, attemptId, attempt?.topicItemVersionId, viewing]), showContent && atFrontier);
   const continueSource = useRef<PositionDto | null>(null);
   useLayoutEffect(() => {

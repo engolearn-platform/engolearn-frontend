@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useScreenContext, type AvailableScreenContext } from "@features/companion/contract";
 import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, CheckCheck, Clock3, ListChecks, MessagesSquare, Mic, Sparkles } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -24,6 +25,11 @@ export default function TopicDetailView() {
   const refresh = useCallback(() => { detail.refetch(); if (learner) progress.refetch(); }, [detail.refetch, progress.refetch, learner]);
   const launch = useTopicLaunch(detail.data, origin, refresh);
   const data = detail.data;
+  const screenContext = useMemo<AvailableScreenContext | null>(() =>
+    learner && !detail.loading && !detail.error && data?.topicId === topicId
+      ? { label: data.titleEn || data.titleVi, reference: { type: "TOPIC_OVERVIEW", topicId } }
+      : null, [learner, detail.loading, detail.error, data, topicId]);
+  useScreenContext(screenContext);
   const next = data ? primaryTopicItem(data.items) : null;
   const nextIndex = data?.items.findIndex(item => item.topicItemId === next?.topicItemId) ?? -1;
   return <div className="min-h-screen bg-surface pb-10 text-on-surface">
