@@ -3,6 +3,7 @@ import { cn } from "@shared/utils";
 import { NavLink } from "react-router";
 import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS, MANAGEMENT_PLACEMENT_NAV_ITEMS, MANAGEMENT_ADMIN_NAV_ITEMS } from "./managementNav";
 import BrandImage from "@shared/components/BrandImage";
+import { ROUTES } from "@shared/constants";
 
 export default function ManagementSidebar() {
   const { isAdmin } = useAuth();
@@ -47,7 +48,7 @@ export default function ManagementSidebar() {
           Hệ thống
         </p>
         <nav aria-label="Quản trị hệ thống" className="mt-2 flex flex-col gap-2 px-5">
-          {MANAGEMENT_SYSTEM_NAV_ITEMS.map((item) => (
+          {MANAGEMENT_SYSTEM_NAV_ITEMS.filter(item => isAdmin() || (item.to !== ROUTES.ADMIN_SUBSCRIPTION_PLANS && item.to !== ROUTES.ADMIN_SUBSCRIPTION_QUOTAS)).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
