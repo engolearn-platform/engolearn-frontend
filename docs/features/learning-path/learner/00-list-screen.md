@@ -9,9 +9,11 @@ as the Learning Path detail screen.
   entry. The response counts populate all three status sections.
 - Loads `COMPLETED` or `CANCELLED` paths only when the corresponding section is
   expanded. Search calls `GET /api/learning-paths/search?keyword=…`
-  and matches creation date (`DD/MM/YYYY`) or micro-skill across active and
+  and matches creation date (`DD/MM/YYYY`), canonical micro-skill names, or current
+  Vietnamese catalog labels (including inactive definitions) across active and
   ended paths; cancelled paths are excluded. The “Lộ trình đã kết thúc” section opens
-  while search results are shown.
+  while search results are shown. Label matching is partial and case-insensitive,
+  preserves Vietnamese accents, and uses the existing backend search endpoint.
 - Search requests are debounced by 300 ms and keep the same list response shape,
   including the unfiltered section counts. While searching, section badges show
   the number of matching items in each visible status section.

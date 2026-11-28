@@ -28,9 +28,18 @@ lựa chọn hợp lệ khi lưu. Thử lại không làm mất dữ liệu câu
 
 Request tiếp tục gửi canonical, không gửi nhãn tiếng Việt hoặc thay bằng ID.
 Điểm, baseline, key ghép thống kê, câu trả lời, thời gian và quyền truy cập giữ nguyên.
-Tìm kiếm lộ trình vẫn theo canonical/ngày ở backend; chưa thêm tìm kiếm bản dịch.
+Tìm kiếm lộ trình hỗ trợ canonical, ngày tạo và tên tiếng Việt hiện tại từ catalog,
+kể cả kỹ năng INACTIVE. So khớp một phần, không phân biệt hoa thường, có phân biệt
+dấu tiếng Việt; chưa hỗ trợ chuyển từ khóa không dấu. Backend ánh xạ nhãn sang
+canonical, giữ phạm vi chủ sở hữu và loại lộ trình đã hủy.
 
 ## Kiểm chứng
+
+- Tìm kiếm tiếng Việt: kiểm thử HTTP backend với MongoDB Testcontainers đạt cho
+  tên đầy đủ/một phần, hoa thường, khoảng trắng, INACTIVE, đổi nhãn catalog,
+  loại chủ sở hữu khác/lộ trình hủy, thứ tự và kết quả không trùng. Canonical cũ
+  thiếu catalog và tìm theo ngày vẫn hoạt động. Không thay đổi code frontend;
+  frontend tiếp tục gửi keyword qua HTTP client hiện có.
 
 - `npm run build`: đạt TypeScript và Vite; cảnh báo bundle trên 500 kB vẫn còn.
 - `npm run lint`: 0 lỗi, 73 cảnh báo; ESLint riêng tất cả file Learning Path đã
