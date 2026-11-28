@@ -15,3 +15,7 @@ export type {
   SpeakingSession,
   SpeakingTurn,
 } from "@features/speaking/types/speaking-v2.types";
+
+export { loadSpeakingHomeSummary } from "@features/speaking/services/home-summary.service";
+export type { SpeakingHomeSummary } from "@features/speaking/types/home-summary.types";
+export type { SpeakingHomeCriterion } from "@features/speaking/types/home-summary.types";
