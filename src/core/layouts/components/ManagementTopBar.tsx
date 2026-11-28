@@ -2,7 +2,7 @@ import { Bell, ChevronRight, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks";
-import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_PLACEMENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS } from "./managementNav";
+import { MANAGEMENT_ADMIN_NAV_ITEMS, MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_PLACEMENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS } from "./managementNav";
 
 interface ManagementTopBarProps {
   userName?: string;
@@ -20,7 +20,9 @@ export default function ManagementTopBar({
   const auth = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const sectionLabel = pathname.startsWith(ROUTES.ADMIN_LEARNING_PATH_QUESTIONS) ? "Quản lý câu hỏi Learning Path"
+  const sectionLabel = pathname === "/admin" ? "Tổng quan"
+    : pathname === "/admin/users" ? "Quản lý người dùng"
+    : pathname.startsWith(ROUTES.ADMIN_LEARNING_PATH_QUESTIONS) ? "Quản lý câu hỏi Learning Path"
     : pathname.startsWith(ROUTES.ADMIN_PASSAGES) ? "Quản lý kho passages"
     : pathname.startsWith(ROUTES.ADMIN_GRAMMAR) ? "Quản lý Ngữ pháp" : "Quản lý chủ đề";
   const navigation = [
@@ -28,6 +30,7 @@ export default function ManagementTopBar({
     ...(auth.isAdmin() ? [
       { label: "Placement Test", items: MANAGEMENT_PLACEMENT_NAV_ITEMS },
       { label: "Hệ thống", items: MANAGEMENT_SYSTEM_NAV_ITEMS },
+      { label: "Quản trị người dùng", items: MANAGEMENT_ADMIN_NAV_ITEMS },
     ] : []),
   ];
   const selected = navigation.flatMap(group => group.items)

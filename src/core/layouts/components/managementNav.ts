@@ -1,4 +1,4 @@
-import { BookOpenText, Images, LayoutDashboard, Settings, SpellCheck, ClipboardList, Library, ListChecks } from "lucide-react";
+import { BookOpenText, Images, LayoutDashboard, Settings, SpellCheck, ClipboardList, Library, ListChecks, UsersRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ROUTES } from "@shared/constants";
 
@@ -30,4 +30,8 @@ export const MANAGEMENT_PLACEMENT_NAV_ITEMS: ManagementNavItem[] = [
   { label: "Bộ đề", to: "/admin/placement/test-sets", icon: ClipboardList },
   { label: "Ngân hàng câu hỏi", to: "/admin/placement/questions", icon: Library },
   { label: "Kết quả", to: "/admin/placement/attempts", icon: ListChecks },
+];
+
+export const MANAGEMENT_ADMIN_NAV_ITEMS: ManagementNavItem[] = [
+  { label: "Quản lý người dùng", to: "/admin/users", icon: UsersRound },
 ];
