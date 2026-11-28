@@ -24,6 +24,7 @@ import { LandingPageRoutes } from "@features/landing-page/routes";
 import { PublicResourceLayout } from "@features/landing-page/views/PublicResourceLayout";
 import { ROUTES } from "@shared/constants";
 import LearnerHomeRoute from "./LearnerHomeRoute";
+import { UserManagementRoutes } from "@features/user-management/routes";
 
 export const appRoutes = [
   ...AuthRoutes,
@@ -60,6 +61,7 @@ export const appRoutes = [
   ...GrammarManagementRoutes,
   ...PlacementRoutes,
   ...PlacementManagementRoutes,
+  ...UserManagementRoutes,
 ];
 
 export const AppRouter = () => {
