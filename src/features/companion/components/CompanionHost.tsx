@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Button } from "@/core/components/shadcn/button";
 import { useEngoMotionPreference } from "@features/companion/hooks/useEngoMotionPreference";
 import { Dialog, DialogContent, DialogTitle } from "@/core/components/shadcn/dialog";
 import { CompanionScrollContext } from "@features/companion/hooks/useCompanionShellPresentation";
@@ -110,7 +111,10 @@ function EligibleCompanionHost() {
   const [workspacePreferred, setWorkspacePreferred] = useState(false);
   const [mobile, setMobile] = useState(() => window.matchMedia(narrowViewportQuery).matches);
   const isWorkspace = workspacePreferred && !mobile;
-  const visiblePanel = state.panelOpen && !state.panelMinimized;
+  const [sourcePeek, setSourcePeek] = useState(false);
+  const peeking = sourcePeek && mobile && state.panelOpen && !state.panelMinimized;
+  const visiblePanel = state.panelOpen && !state.panelMinimized && !peeking;
+  const sourceReturnRef = useRef<HTMLButtonElement>(null);
   const scrollAnchor = useRef<CompanionScrollAnchor | null>(null);
   const activeId = state.activeConversation?.id ?? null;
   const priorConversation = useRef<{ id: string | null } | null>(null);
@@ -145,7 +149,7 @@ function EligibleCompanionHost() {
       if (visiblePanel && (composing.current
         || panel?.querySelector(".companion-memory-view textarea")
         || document.querySelector(".companion-delete-dialog[data-state=open]"))) return;
-      focusSnapshot.current = capturePanelFocus(panel);
+      if (panel) focusSnapshot.current = capturePanelFocus(panel);
       setMobile(desired);
     };
     const startComposition = (event: CompositionEvent) => {
@@ -205,6 +209,11 @@ function EligibleCompanionHost() {
     openPanel();
   };
 
+  useLayoutEffect(() => {
+    if (peeking) sourceReturnRef.current?.focus({ preventScroll: true });
+    if (!mobile || !state.panelOpen || state.panelMinimized) setSourcePeek(false);
+  }, [peeking, mobile, state.panelOpen, state.panelMinimized]);
+
   const panel = (
     <QuickPanel
       ref={panelRef}
@@ -213,13 +222,23 @@ function EligibleCompanionHost() {
       onToggleWorkspace={() => setWorkspacePreferred((current) => !current)}
       onBack={goBack}
       motion={motion}
+      onSourcePeek={() => {
+        focusSnapshot.current = capturePanelFocus(panelRef.current);
+        const input = panelRef.current?.querySelector<HTMLTextAreaElement>("#companion-message-input");
+        if (input && !input.closest("[hidden]")) {
+          focusSnapshot.current = { selector: "#companion-message-input", index: 0, selection: [input.selectionStart, input.selectionEnd] };
+        }
+        setSourcePeek(true);
+      }}
     />
   );
 
   return (
     <CompanionScrollContext.Provider value={scrollAnchor}>
       <div className="companion-host">
-        {!visiblePanel ? (
+        {peeking ? (
+          <Button ref={sourceReturnRef} className="companion-source-return" onClick={() => setSourcePeek(false)}>Trở lại chat</Button>
+        ) : !visiblePanel ? (
           <MascotButton ref={mascotRef} onClick={handleOpen} motion={motion}
             processing={state.isSending && (state.stream === "connecting" || state.stream === "streaming")} routeKey={pathname} />
         ) : mobile ? (

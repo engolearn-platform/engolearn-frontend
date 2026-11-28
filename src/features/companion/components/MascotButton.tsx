@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
+import { useFloatingGeometry } from "@features/companion/hooks/useFloatingGeometry";
 import { Button } from "@/core/components/shadcn/button";
 import type { EngoMotionSettings } from "@features/companion/hooks/useEngoMotionPreference";
 
@@ -18,6 +19,15 @@ interface MascotButtonProps {
 
 export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
   function MascotButton({ onClick, motion, processing, routeKey }, ref) {
+    const geometry = useFloatingGeometry("mascot");
+    const [liftReady, setLiftReady] = useState(false);
+    useEffect(() => {
+      let active = true;
+      const image = new Image();
+      image.src = ROOT + "/engo-lifted.webp";
+      image.decode().then(() => { if (active) setLiftReady(true); }).catch(() => {});
+      return () => { active = false; };
+    }, []);
     const [ready, setReady] = useState(false);
     const [frame, setFrame] = useState(0);
     const [playing, setPlaying] = useState(false);
@@ -28,7 +38,7 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
     const mountedAt = useRef(performance.now());
     const lastTabAt = useRef(-Infinity);
     const attention = hover || focus;
-    const pose = processing ? "working" : attention ? "attention" : "reading";
+    const pose = geometry.dragging ? "lifted" : processing ? "working" : attention ? "attention" : "reading";
 
     useEffect(() => {
       let cancelled = false;
@@ -67,7 +77,7 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
       };
       setPlaying(false);
       setFrame(0);
-      if (!ready || !visible || !motion.enabled) return;
+      if (!ready || !visible || !motion.enabled || geometry.dragging) return;
       const play = (sequence: readonly Step[], done: () => void) => {
         let index = 0;
         setPlaying(true);
@@ -89,9 +99,9 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
       else if (attention) later(() => play(ATTENTION, () => setFrame(5)), 130);
       else schedule();
       return () => { cancelled = true; clearTimeout(timer); };
-    }, [ready, visible, motion.enabled, motion.preference, processing, attention, routeKey]);
+    }, [ready, visible, motion.enabled, motion.preference, processing, attention, routeKey, geometry.dragging]);
 
-    const renderedFrame = motion.enabled && ready && visible ? frame : 0;
+    const renderedFrame = !geometry.dragging && motion.enabled && ready && visible ? frame : 0;
     return (
       <Button
         ref={ref}
@@ -101,11 +111,32 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
         aria-label={processing ? "Mở Engo — đang xử lý câu hỏi" : "Mở Engo"}
         data-pose={pose}
         data-frame={renderedFrame}
-        data-playing={playing && motion.enabled && visible ? "true" : undefined}
+        data-playing={playing && !geometry.dragging && motion.enabled && visible ? "true" : undefined}
         data-frames-ready={ready}
         data-motion-preference={motion.preference}
         data-motion-enabled={motion.enabled}
-        onClick={onClick}
+        style={geometry.style}
+        data-dragging={geometry.dragging}
+        data-hint-below={geometry.rect.y < 40}
+        aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home"
+        onKeyDown={event => geometry.keyboard(event)}
+        onPointerDown={event => geometry.start(event)}
+        onPointerMove={geometry.move}
+        onPointerUp={event => {
+          const tap = geometry.end(event);
+          // Touch browsers can suppress the compatibility click after a drag.
+          // Activate a completed stationary touch once, not a drag or cancel.
+          if (tap && event.pointerType === "touch") {
+            geometry.suppressClick.current = true;
+            onClick();
+          }
+        }}
+        onPointerCancel={event => geometry.end(event, true)}
+        onLostPointerCapture={event => geometry.end(event, true)}
+        onClick={event => {
+          if (event.detail !== 0 && geometry.suppressClick.current) { geometry.suppressClick.current = false; return; }
+          onClick();
+        }}
         onPointerEnter={event => {
           if (event.pointerType === "mouse" && window.matchMedia(FINE).matches) setHover(true);
         }}
@@ -118,7 +149,7 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
         }}
         onBlur={() => setFocus(false)}
       >
-        <img src={ready ? FRAMES[renderedFrame] : ROOT + "/engo-master.webp"} alt="" className="companion-mascot-mark" draggable={false} />
+        <img src={geometry.dragging && liftReady ? ROOT + "/engo-lifted.webp" : ready ? FRAMES[renderedFrame] : ROOT + "/engo-master.webp"} alt="" className="companion-mascot-mark" draggable={false} />
         <span className="companion-mascot-hint" aria-hidden="true">{processing ? "Engo đang xử lý…" : "Hỏi Engo"}</span>
       </Button>
     );
