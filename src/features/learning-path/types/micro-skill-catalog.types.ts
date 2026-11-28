@@ -12,3 +12,10 @@ export interface MicroSkillDefinition {
 export interface MicroSkillCatalogMetadata {
   microSkillCatalog?: readonly MicroSkillDefinition[];
 }
+
+export interface MicroSkillCatalogState {
+  data: readonly MicroSkillDefinition[] | null;
+  loading: boolean;
+  error: { message: string } | null;
+  refetch: () => void;
+}

@@ -1,4 +1,4 @@
-import { useMicroSkillCatalog } from "@features/learning-path/hooks/useMicroSkillCatalog";
+import type { MicroSkillCatalogState } from "@features/learning-path/types/micro-skill-catalog.types";
 import { microSkillLabel } from "@features/learning-path/utils/microSkillCatalog";
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -18,11 +18,11 @@ import QuestionPreview from "./QuestionPreview";
 import { questionFieldClass } from "./QuestionReviewPanel";
 
 export type QuestionWorkspace = { mode: "create"; passageId?: string } | { mode: "edit" | "view"; questionId: string };
-function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
+function QuestionEditor({ detail, initialPassage, catalog, onSaved, onClose, onBusy }: {
+  catalog: MicroSkillCatalogState;
   detail?: QuestionDetail; initialPassage?: PassageDetail; onSaved: (id: string) => void; onClose: () => void; onBusy: (busy: boolean) => void;
 }) {
   const mutation = useQuestionManagementMutation();
-  const catalog = useMicroSkillCatalog();
   const [skill, setSkill] = useState<PassageSkill | "">(detail ? detail.skill ?? "" : initialPassage?.skill ?? "READING");
   const [level, setLevel] = useState<PassageLevel | "">(detail ? detail.level ?? "" : initialPassage?.level ?? "A1");
   const [microSkill, setMicroSkill] = useState(detail?.microSkill ?? "");
@@ -87,7 +87,7 @@ function QuestionEditor({ detail, initialPassage, onSaved, onClose, onBusy }: {
       <Button type="submit" disabled={mutation.busy || catalog.loading || !!catalog.error || !catalog.data || availableSkills.length === 0 || blocked || (!!detail && !validRevision(detail.revision))}>{mutation.busy ? "Đang lưu..." : detail ? "Lưu thay đổi" : "Tạo bản nháp"}</Button></DialogFooter>
   </form>;
 }
-export default function QuestionWorkspaceDialog({ workspace, onClose, onSaved }: { workspace: QuestionWorkspace; onClose: () => void; onSaved: (id: string) => void }) {
+export default function QuestionWorkspaceDialog({ workspace, catalog, onClose, onSaved }: { workspace: QuestionWorkspace; catalog: MicroSkillCatalogState; onClose: () => void; onSaved: (id: string) => void }) {
   const [busy, setBusy] = useState(false);
   const id = workspace.mode === "create" ? "" : workspace.questionId;
   const passageId = workspace.mode === "create" ? workspace.passageId ?? "" : "";
@@ -102,9 +102,9 @@ export default function QuestionWorkspaceDialog({ workspace, onClose, onSaved }:
         <DialogDescription>{workspace.mode === "view" ? "Xem nội dung, passage và thông tin duyệt dành cho quản trị." : "Biên soạn câu hỏi cho kho Learning Path. Nội dung đã giao cho người học được giữ nguyên."}</DialogDescription></DialogHeader>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
       {(id && result.loading) || (passageId && initial.loading) ? <Loading /> : error ? <div className="space-y-3"><p role="alert" className="text-error">{error.message}</p><Button variant="outline" onClick={() => { if (id) result.refetch(); if (passageId) initial.refetch(); }}>Thử lại</Button></div>
-        : workspace.mode === "create" ? <QuestionEditor initialPassage={initial.data ?? undefined} onSaved={onSaved} onClose={onClose} onBusy={setBusy} />
+        : workspace.mode === "create" ? <QuestionEditor catalog={catalog} initialPassage={initial.data ?? undefined} onSaved={onSaved} onClose={onClose} onBusy={setBusy} />
           : result.data?.questionId === id && (workspace.mode === "view" ? <QuestionPreview detail={result.data} onReload={result.refetch} />
-            : result.data.status === "DRAFT" ? <QuestionEditor detail={result.data} onSaved={onSaved} onClose={onClose} onBusy={setBusy} /> : <p role="alert">Câu hỏi đã không còn là bản nháp. Hãy đóng và tải lại danh sách.</p>)}
+            : result.data.status === "DRAFT" ? <QuestionEditor catalog={catalog} detail={result.data} onSaved={onSaved} onClose={onClose} onBusy={setBusy} /> : <p role="alert">Câu hỏi đã không còn là bản nháp. Hãy đóng và tải lại danh sách.</p>)}
       </div>
       {workspace.mode === "view" && <DialogFooter className="shrink-0 border-t border-outline-variant pt-4"><Button variant="outline" onClick={onClose}>Đóng</Button></DialogFooter>}
     </DialogContent>

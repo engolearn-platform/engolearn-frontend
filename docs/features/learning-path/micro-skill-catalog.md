@@ -15,7 +15,12 @@ canonical để đối chiếu/key và dùng `displayNameVi` để hiển thị,
 Thiếu bản dịch/bản ghi/metadata cũ thì hiển thị canonical; null hiển thị Chưa phân loại.
 Các định nghĩa inactive vẫn cung cấp nhãn cho dữ liệu lịch sử.
 
-Màn danh sách quản lý và form câu hỏi tải `GET /api/micro-skills` qua HTTP/session và `useFetch` với AbortSignal.
+Màn quản lý tải `GET /api/micro-skills` qua HTTP/session và `useFetch` với AbortSignal.
+Bảng, bộ lọc, preview/cảnh báo và form dùng chung state catalog do màn quản lý sở hữu.
+Khi mở/đóng thao tác hoặc tải lại catalog, GET mới cập nhật toàn bộ các nhãn; metadata
+của response danh sách/chi tiết cũ không ghi đè kết quả GET đã tải thành công. Tải lại
+catalog không remount form, không đổi canonical đã chọn hoặc xóa nội dung đang soạn.
+Các màn learner vẫn dùng metadata từ response tương ứng.
 Bộ lọc danh sách có cả inactive để tìm dữ liệu cũ; form chỉ cho chọn ACTIVE đúng nhóm.
 Loading/lỗi có thông báo và thử lại; tải lại trong form giữ nguyên nội dung đang soạn; không lưu khi chưa tải được catalog hợp lệ.
 Kỹ năng cũ inactive/không còn trong danh mục vẫn thấy nhãn nhưng không được giữ làm
@@ -45,3 +50,15 @@ request vẫn gửi canonical. Cần xử lý phiên xác thực trước khi x�
 Backend sở hữu schema, seed và contract tại
 `engolearn-backend/docs/technical/microskill/README.md`. Cần import seed backend trước
 khi soạn câu hỏi hoặc tạo recommendation mới. Assessment được tích hợp bởi thành viên khác.
+
+## Kiểm tra sau sửa việc làm mới catalog
+
+Bảng, bộ lọc, form và preview trong màn quản lý dùng chung kết quả GET catalog;
+form không tạo một loader riêng. Nút tải lại có ở cả màn danh sách và form, cập nhật
+chung dữ liệu mà không đổi key hay remount form. GET thành công, kể cả trả danh sách
+rỗng, được ưu tiên hơn metadata trong response câu hỏi đã tải trước đó.
+
+Build và lint đã chạy lại sau thay đổi. E2E với phiên Edge hiện có chưa thực hiện
+được: công cụ Computer Use dừng vì không xác định chắc chắn URL cửa sổ browser trên
+Windows. Chưa thao tác tạo/sửa câu hỏi, đổi trạng thái/nhãn catalog, lưu đáp án hoặc
+nộp bài qua browser trong lượt kiểm tra này; không coi phần E2E là đã đạt.
