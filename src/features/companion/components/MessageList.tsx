@@ -1,6 +1,7 @@
 import { useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@/core/components/shadcn/button";
-import { RotateCw } from "lucide-react";
+import { ArrowDown, RotateCw } from "lucide-react";
+import { getEngoActivity } from "@features/companion/utils/engoActivity";
 import { useCompanion } from "../state/CompanionProvider";
 import { CompanionScrollContext } from "@features/companion/hooks/useCompanionShellPresentation";
 import type { CompanionScrollAnchor } from "@features/companion/hooks/useCompanionShellPresentation";
@@ -32,6 +33,7 @@ export function MessageList() {
   const pending = state.pendingQuestion;
   const lastSubmittedTurn = useRef(pending?.turnId ?? null);
   const busy = state.stream !== "idle";
+  const activity = getEngoActivity(state);
   const activeReply = !pending && (lastMessage?.role === "USER" || hasPartial);
   const isStopped = state.stream === "idle" && state.statusCode === "STOPPED";
   const isInterrupted = state.stream === "idle" && state.statusCode === "INTERRUPTED";
@@ -41,10 +43,7 @@ export function MessageList() {
       : isStopped ? "Đã dừng phản hồi · Chưa hoàn tất"
       : isInterrupted ? "Kết nối bị gián đoạn · Chưa xác nhận kết quả"
       : state.error && !busy ? "Chưa thể hoàn tất phản hồi. Hãy kiểm tra lại cuộc trò chuyện."
-      : state.stream === "reconciling" ? "Đang đồng bộ tin nhắn…"
-      : state.stream === "streaming" && state.statusCode === "ASSESSMENT_LOOKUP" ? "Đang xem kết quả học tập…"
-      : busy && !hasPartial ? "Engo đang suy nghĩ…"
-      : undefined
+      : activity?.label
     : undefined;
   const previousFirst = useRef<{ conversationId: string; messageId: string } | null>(null);
   const loadingOlder = useRef<{ conversationId: string } | null>(null);
@@ -115,7 +114,7 @@ export function MessageList() {
 
   return (
     <>
-      <div className="companion-message-list" ref={listRef} aria-label="Lịch sử tin nhắn" onScroll={capture}>
+      <div className="companion-message-list" ref={listRef} tabIndex={-1} aria-label="Lịch sử tin nhắn" onScroll={capture}>
         {state.hasOlderMessages ? (
           <Button type="button" variant="ghost" className="companion-load-older" disabled={state.isMessagesLoading} onClick={() => void loadOlder()}>
             {state.isMessagesLoading ? "Đang tải…" : "Tải tin nhắn trước"}
@@ -138,7 +137,7 @@ export function MessageList() {
         {hasPartial || replyStatus ? (
           <div className="companion-message-entry" data-companion-message-id="companion-partial">
             <MessageItem message={{ id: "companion-partial", role: "ASSISTANT", content: state.partialText }}
-              incomplete={state.incomplete} streaming={busy} status={replyStatus}
+              incomplete={state.incomplete} streaming={busy} status={replyStatus} thinking={activity?.thinking}
               statusBusy={busy} statusError={Boolean(state.retryAvailable || (state.error && !busy))} />
           </div>
         ) : null}
@@ -149,12 +148,14 @@ export function MessageList() {
         ) : null}
       </div>
       {awayFromBottom && (state.messages.length > 0 || state.partialText) ? (
-        <Button type="button" variant="outline" className="companion-return-latest" onClick={() => {
+        <Button type="button" variant="outline" size="icon" className="companion-return-latest"
+          aria-label="Về tin nhắn mới nhất" title="Về tin nhắn mới nhất" onClick={() => {
           const list = listRef.current;
           if (!list) return;
           list.scrollTop = list.scrollHeight;
+          list.focus({ preventScroll: true });
           capture();
-        }}>Về tin nhắn mới nhất</Button>
+        }}><ArrowDown aria-hidden="true" /></Button>
       ) : null}
     </>
   );

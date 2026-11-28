@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { useFloatingGeometry } from "@features/companion/hooks/useFloatingGeometry";
 import { Button } from "@/core/components/shadcn/button";
+import type { EngoActivity } from "@features/companion/utils/engoActivity";
 import type { EngoMotionSettings } from "@features/companion/hooks/useEngoMotionPreference";
 
 const ROOT = "/assets/engo";
@@ -13,12 +14,13 @@ const ATTENTION: readonly Step[] = [[2, 320], [4, 320], [5, 300]];
 interface MascotButtonProps {
   onClick: () => void;
   motion: EngoMotionSettings;
-  processing: boolean;
+  activity: EngoActivity | null;
   routeKey: string;
 }
 
 export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
-  function MascotButton({ onClick, motion, processing, routeKey }, ref) {
+  function MascotButton({ onClick, motion, activity, routeKey }, ref) {
+    const processing = activity !== null;
     const geometry = useFloatingGeometry("mascot");
     const [liftReady, setLiftReady] = useState(false);
     useEffect(() => {
@@ -108,7 +110,7 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
         type="button"
         variant="ghost"
         className="companion-mascot"
-        aria-label={processing ? "Mở Engo — đang xử lý câu hỏi" : "Mở Engo"}
+        aria-label={activity ? `Mở Engo — ${activity.label}` : "Mở Engo"}
         data-pose={pose}
         data-frame={renderedFrame}
         data-playing={playing && !geometry.dragging && motion.enabled && visible ? "true" : undefined}
@@ -149,8 +151,8 @@ export const MascotButton = forwardRef<HTMLButtonElement, MascotButtonProps>(
         }}
         onBlur={() => setFocus(false)}
       >
-        <img src={geometry.dragging && liftReady ? ROOT + "/engo-lifted.webp" : ready ? FRAMES[renderedFrame] : ROOT + "/engo-master.webp"} alt="" className="companion-mascot-mark" draggable={false} />
-        <span className="companion-mascot-hint" aria-hidden="true">{processing ? "Engo đang xử lý…" : "Hỏi Engo"}</span>
+        <img src={geometry.dragging ? ROOT + (liftReady ? "/engo-lifted.webp" : "/engo-master.webp") : activity?.thinking ? ROOT + "/engo-thinking.webp" : ready ? FRAMES[renderedFrame] : ROOT + "/engo-master.webp"} alt="" className="companion-mascot-mark" draggable={false} />
+        <span className="companion-mascot-hint" aria-hidden="true">{activity?.label ?? "Hỏi Engo"}</span>
       </Button>
     );
   }

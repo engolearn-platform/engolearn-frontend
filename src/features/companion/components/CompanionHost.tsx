@@ -10,6 +10,7 @@ import { ROUTES } from "@shared/constants";
 import { useAuth } from "@shared/hooks/useAuth";
 import { useCompanion } from "../state/CompanionProvider";
 import { MascotButton } from "./MascotButton";
+import { getEngoActivity } from "@features/companion/utils/engoActivity";
 import { QuickPanel } from "./QuickPanel";
 import "./companion.css";
 
@@ -240,7 +241,7 @@ function EligibleCompanionHost() {
           <Button ref={sourceReturnRef} className="companion-source-return" onClick={() => setSourcePeek(false)}>Trở lại chat</Button>
         ) : !visiblePanel ? (
           <MascotButton ref={mascotRef} onClick={handleOpen} motion={motion}
-            processing={state.isSending && (state.stream === "connecting" || state.stream === "streaming")} routeKey={pathname} />
+            activity={getEngoActivity(state)} routeKey={pathname} />
         ) : mobile ? (
           <Dialog open onOpenChange={(open) => { if (!open) closePanel(); }}>
             <DialogContent

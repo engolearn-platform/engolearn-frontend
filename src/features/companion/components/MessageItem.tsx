@@ -13,6 +13,7 @@ interface MessageItemProps {
   status?: ReactNode;
   statusError?: boolean;
   statusBusy?: boolean;
+  thinking?: boolean;
 }
 
 function renderInline(text: string, keyPrefix: string) {
@@ -144,7 +145,7 @@ function renderMarkdown(content: string) {
   return blocks;
 }
 
-export function MessageItem({ message, incomplete = false, pending = false, streaming = false, contextLabel, status, statusError = false, statusBusy = false }: MessageItemProps) {
+export function MessageItem({ message, incomplete = false, pending = false, streaming = false, contextLabel, status, statusError = false, statusBusy = false, thinking = false }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const isAssistant = message.role === "ASSISTANT";
@@ -169,7 +170,7 @@ export function MessageItem({ message, incomplete = false, pending = false, stre
       <div className="companion-message-body">
         {isAssistant ? (
           <div className="companion-message-byline">
-            <span className="companion-message-avatar" aria-hidden="true"><img src="/assets/engo/engo-avatar.webp" alt="" /></span>
+            <span className="companion-message-avatar" aria-hidden="true"><img src={thinking ? "/assets/engo/engo-thinking.webp" : "/assets/engo/engo-avatar.webp"} alt="" /></span>
             <span>Engo</span>
           </div>
         ) : null}

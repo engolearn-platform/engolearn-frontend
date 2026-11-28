@@ -5,6 +5,7 @@ import { ArrowLeft, Clock3, Expand, GripVertical, MoreHorizontal, Minus, Minimiz
 import { Button } from "@/core/components/shadcn/button";
 import { useCompanion } from "../state/CompanionProvider";
 import { AdaptiveComposer } from "./AdaptiveComposer";
+import { getEngoActivity } from "@features/companion/utils/engoActivity";
 import { CompanionHome } from "./CompanionHome";
 import { ConversationHistory } from "./ConversationHistory";
 import { ConversationView } from "./ConversationView";
@@ -24,6 +25,7 @@ interface QuickPanelProps {
 export const QuickPanel = forwardRef<HTMLDivElement, QuickPanelProps>(function QuickPanel({ isWorkspace, mobile, onToggleWorkspace, onBack, motion, onSourcePeek }, ref) {
   const { state, closePanel, minimizePanel, setMode, startNewConversation } = useCompanion();
 
+  const activity = getEngoActivity(state);
   const geometry = useFloatingGeometry(isWorkspace ? "expanded" : "compact", !mobile);
   const [toolsOpen, setToolsOpen] = useState(false);
   const gripRef = useRef<HTMLButtonElement>(null);
@@ -119,10 +121,10 @@ export const QuickPanel = forwardRef<HTMLDivElement, QuickPanelProps>(function Q
               <ArrowLeft aria-hidden="true" />
             </Button>
           ) : null}
-          <img src="/assets/engo/engo-avatar.webp" alt="" className="companion-title-mark" />
+          <img src={activity?.thinking ? "/assets/engo/engo-thinking.webp" : "/assets/engo/engo-avatar.webp"} alt="" className="companion-title-mark" />
           <div className="companion-title-copy">
             <h2>Engo</h2>
-            <span title={subtitle}>{subtitle}</span>
+            <span className={activity ? "companion-active-subtitle" : undefined} title={activity ? `${activity.label} · ${subtitle}` : subtitle}>{activity?.label ?? subtitle}</span>
           </div>
         </div>
         <div className="companion-header-actions">
@@ -219,7 +221,7 @@ export const QuickPanel = forwardRef<HTMLDivElement, QuickPanelProps>(function Q
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 19L19 7M13 19l6-6" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
       </Button>}
       <span className="sr-only" aria-live="polite">
-        {state.isSending ? (state.statusCode === "ASSESSMENT_LOOKUP" ? "Đang xem kết quả học tập…" : "Engo đang xử lý…") : ""}
+        {state.mode !== "conversation" ? activity?.label ?? "" : ""}
       </span>
     </section>
   );
