@@ -14,6 +14,7 @@ import type {
   CompanionQuotaItem,
   CompanionState,
   CompanionTurnEvent,
+  FirstTurnStatus,
   AvailableScreenContext,
   ScreenContextReference,
 } from "../types/companion.types";
@@ -44,6 +45,8 @@ const INITIAL_STATE: CompanionState = {
   isMessagesLoading: false,
   isQuotaLoading: false,
   isSending: false,
+  firstAdmissionPending: false,
+  pendingQuestion: null,
   isAtCapacity: false,
   canSubmit: false,
   memories: [],
@@ -57,6 +60,17 @@ const INITIAL_STATE: CompanionState = {
   memoryMutationLoading: false,
 };
 
+interface FirstRequest {
+  identity: string;
+  turnId: string;
+  content: string;
+  context?: ScreenContextReference;
+  draftVersion: number;
+  attachmentVersion: number;
+  retryable: boolean;
+  admitted: boolean;
+}
+
 interface SessionTurn {
   conversationId: string;
   turnId: string;
@@ -69,12 +83,12 @@ interface SessionTurn {
 const CompanionContext = React.createContext<CompanionContextValue | null>(null);
 
 function derive(state: CompanionState, pending: SessionTurn | null): CompanionState {
-  const active = state.activeConversation;
+  const active = state.mode === "home" ? null : state.activeConversation;
   const isRetry = Boolean(pending?.retryAvailable && active?.id === pending.conversationId && state.retryAvailable);
   const remaining = active ? active.maxMessages - active.messageCount : Number.POSITIVE_INFINITY;
   const isAtCapacity = Boolean(active && remaining < (isRetry ? 1 : 2));
   const canSubmit = Boolean(
-    state.draft.trim() && !state.isSending && state.stream !== "reconciling" &&
+    state.draft.trim() && !state.isMessagesLoading && !state.isSending && !state.firstAdmissionPending && state.stream !== "reconciling" &&
       !isAtCapacity && !isRetry && (state.quota === null || state.quota.remaining > 0),
   );
   return { ...state, isAtCapacity, canSubmit };
@@ -98,8 +112,8 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const pendingTurnRef = React.useRef<SessionTurn | null>(null);
   const turnControllerRef = React.useRef<AbortController | null>(null);
   const turnIdentityRef = React.useRef<string | null>(null);
-  const createInFlightRef = React.useRef(false);
-  const createIdentityRef = React.useRef<string | null>(null);
+  const firstRequestRef = React.useRef<FirstRequest | null>(null);
+  const draftOriginRef = React.useRef<string | null>(null);
   const draftVersionRef = React.useRef(0);
   const attachmentVersionRef = React.useRef(0);
   const [registeredContext, setRegisteredContext] = React.useState<{
@@ -118,8 +132,10 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const memorySettingsRequestRef = React.useRef(0);
   const memoryMutationInFlightRef = React.useRef(false);
   const [state, setReactState] = React.useState(() => derive(INITIAL_STATE, null));
-  const stateRef = React.useRef(state);
-  stateRef.current = state;
+  const stateIdentityRef = React.useRef(identityKey);
+  const renderState = stateIdentityRef.current === identityKey ? state : INITIAL_STATE;
+  const stateRef = React.useRef(renderState);
+  stateRef.current = renderState;
 
   const patch = React.useCallback((updates: Partial<CompanionState> | ((current: CompanionState) => Partial<CompanionState>)) => {
     const current = stateRef.current;
@@ -131,6 +147,11 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
 
   const attachAvailableContext = React.useCallback(() => {
     if (!authorizedRef.current || !availableContext || stateRef.current.attachedContext) return;
+    if (!stateRef.current.draft) {
+      draftOriginRef.current = stateRef.current.mode === "conversation"
+        ? stateRef.current.activeConversation?.id ?? (firstRequestRef.current ? "first:" + firstRequestRef.current.turnId : null)
+        : null;
+    }
     attachmentVersionRef.current += 1;
     patch({ attachedContext: { label: availableContext.label, reference: { ...availableContext.reference } } });
   }, [availableContext, patch]);
@@ -149,14 +170,15 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     return controller;
   }, []);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     for (const controller of operationControllers.current.values()) controller.abort();
     operationControllers.current.clear();
     turnControllerRef.current?.abort();
     turnControllerRef.current = null;
     turnIdentityRef.current = null;
-    createInFlightRef.current = false;
-    createIdentityRef.current = null;
+    firstRequestRef.current = null;
+    draftOriginRef.current = null;
+    stateIdentityRef.current = identityKey;
     inFlightTurnRef.current = false;
     pendingTurnRef.current = null;
     memoryOperationIdsRef.current.clear();
@@ -247,10 +269,23 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [beginOperation, isCurrent, patch]);
 
+  const discardDraftForSwitch = React.useCallback(() => {
+    if ((stateRef.current.draft || stateRef.current.attachedContext)
+      && !window.confirm("Bạn có muốn bỏ bản nháp và ngữ cảnh hiện tại để chuyển cuộc trò chuyện? Chọn Hủy để giữ lại.")) return false;
+    draftVersionRef.current += 1;
+    attachmentVersionRef.current += 1;
+    draftOriginRef.current = null;
+    patch({ draft: "", attachedContext: null });
+    return true;
+  }, [patch]);
+
   const openConversation = React.useCallback(async (item: CompanionConversation | string) => {
     const identity = identityRef.current;
-    if (!isCurrent(identity) || inFlightTurnRef.current) return;
+    if (!isCurrent(identity) || inFlightTurnRef.current || firstRequestRef.current) return;
     const conversationId = typeof item === "string" ? item : item.id;
+    if ((stateRef.current.draft || stateRef.current.attachedContext)
+      && draftOriginRef.current !== conversationId && !discardDraftForSwitch()) return;
+    operationControllers.current.get("messages-older")?.abort();
     const controller = beginOperation("messages");
     const known = typeof item === "string" ? null : item;
     if (stateRef.current.activeConversation?.id !== conversationId) {
@@ -259,7 +294,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     }
     patch({
       mode: "conversation", activeConversation: known, messages: [], messagesBeforeSequence: null,
-      hasOlderMessages: false, isMessagesLoading: true, error: null, retryAvailable: false, incomplete: false, statusCode: null,
+      hasOlderMessages: false, isMessagesLoading: true, error: null, retryAvailable: false, partialText: "", incomplete: false, statusCode: null,
     });
     try {
       const conversationTask = known ? Promise.resolve(known) : companionService.getConversation(conversationId, controller.signal);
@@ -283,7 +318,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       if (operationControllers.current.get("messages") === controller) operationControllers.current.delete("messages");
       if (!controller.signal.aborted && isCurrent(identity)) patch({ isMessagesLoading: false });
     }
-  }, [beginOperation, isCurrent, patch]);
+  }, [beginOperation, discardDraftForSwitch, isCurrent, patch]);
 
   const loadOlderMessages = React.useCallback(async () => {
     const { activeConversation, messagesBeforeSequence, hasOlderMessages, isMessagesLoading } = stateRef.current;
@@ -308,45 +343,20 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [beginOperation, isCurrent, patch]);
 
-  const createConversationInternal = React.useCallback(async (fromTurn: boolean) => {
-    const identity = identityRef.current;
-    if (!isCurrent(identity) || createInFlightRef.current || (inFlightTurnRef.current && !fromTurn)) return null;
-    createInFlightRef.current = true;
-    createIdentityRef.current = identity;
-    const controller = beginOperation("create");
-    patch({ error: null });
-    try {
-      const conversation = await companionService.createConversation(controller.signal);
-      if (!controller.signal.aborted && isCurrent(identity)) {
-        pendingTurnRef.current = null;
-        if (!fromTurn) {
-          attachmentVersionRef.current += 1;
-          patch({ attachedContext: null });
-        }
-        patch({
-          activeConversation: conversation, messages: [], messagesBeforeSequence: null, hasOlderMessages: false,
-          retryAvailable: false, incomplete: false, partialText: "", mode: "conversation", statusCode: null,
-        });
-        void loadHome();
-        return conversation;
-      }
-    } catch (error) {
-      if (!controller.signal.aborted && isCurrent(identity)) patch({ error: toCompanionApiError(error).message });
-    } finally {
-      if (operationControllers.current.get("create") === controller) operationControllers.current.delete("create");
-      if (createIdentityRef.current === identity) {
-        createInFlightRef.current = false;
-        createIdentityRef.current = null;
-      }
-    }
-    return null;
-  }, [beginOperation, isCurrent, loadHome, patch]);
-
-  const createConversation = React.useCallback(() => createConversationInternal(false), [createConversationInternal]);
-
+  const startNewConversation = React.useCallback(() => {
+    if (!authorizedRef.current || inFlightTurnRef.current || firstRequestRef.current) return;
+    if (stateRef.current.mode === "conversation" && !stateRef.current.activeConversation) return;
+    if (!discardDraftForSwitch()) return;
+    operationControllers.current.get("messages")?.abort();
+    operationControllers.current.get("messages-older")?.abort();
+    pendingTurnRef.current = null;
+    patch({ mode: "conversation", activeConversation: null, messages: [], messagesBeforeSequence: null,
+      hasOlderMessages: false, isMessagesLoading: false, retryAvailable: false, partialText: "",
+      incomplete: false, statusCode: null, error: null });
+  }, [discardDraftForSwitch, patch]);
   const deleteConversation = React.useCallback(async (conversationId: string) => {
     const identity = identityRef.current;
-    if (!isCurrent(identity) || inFlightTurnRef.current) return;
+    if (!isCurrent(identity) || inFlightTurnRef.current || firstRequestRef.current) return;
     const controller = beginOperation("delete");
     patch({ error: null });
     try {
@@ -413,9 +423,178 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isCurrent, patch]);
 
+  const acceptFirst = React.useCallback((request: FirstRequest, status: FirstTurnStatus) => {
+    if (!isCurrent(request.identity) || firstRequestRef.current !== request || status.turnId !== request.turnId
+      || !status.conversation || !status.userMessage || status.userMessage.content !== request.content) return false;
+    const updates: Partial<CompanionState> = {};
+    if (!request.admitted) {
+      request.admitted = true;
+      if (draftVersionRef.current === request.draftVersion && stateRef.current.draft === request.content) updates.draft = "";
+      if (attachmentVersionRef.current === request.attachmentVersion && request.context) updates.attachedContext = null;
+      if (draftOriginRef.current === "first:" + request.turnId) draftOriginRef.current = status.conversation.id;
+      void loadHome();
+    }
+    pendingTurnRef.current = {
+      conversationId: status.conversation.id, turnId: request.turnId, content: request.content,
+      screenContext: request.context, baselineMessageCount: 0, retryAvailable: false,
+    };
+    patch({ ...updates, pendingQuestion: null, activeConversation: status.conversation,
+      messages: status.assistantMessage ? [status.userMessage, status.assistantMessage] : [status.userMessage],
+      messagesBeforeSequence: null, hasOlderMessages: false });
+    return true;
+  }, [isCurrent, loadHome, patch]);
+
+  const resolveFirst = React.useCallback(async (request: FirstRequest, cancel: boolean) => {
+    if (!isCurrent(request.identity) || firstRequestRef.current !== request) return;
+    const controller = beginOperation("first-status");
+    patch({ stream: "reconciling", isSending: false });
+    try {
+      const status = await companionService.getFirstTurn(request.turnId, cancel, controller.signal);
+      if (controller.signal.aborted || !isCurrent(request.identity) || firstRequestRef.current !== request) return;
+      if (status.state === "CANCELLED" || status.state === "DELETED") {
+        firstRequestRef.current = null;
+        pendingTurnRef.current = null;
+        if (draftOriginRef.current === "first:" + request.turnId) draftOriginRef.current = null;
+        patch({ firstAdmissionPending: false, pendingQuestion: null, activeConversation: null, messages: [],
+          stream: "idle", isSending: false, partialText: "", incomplete: false, retryAvailable: false,
+          statusCode: null, error: status.state === "CANCELLED"
+            ? "Đã hủy trước khi gửi. Bạn có thể tiếp tục chỉnh sửa bản nháp."
+            : "Cuộc trò chuyện đã được tạo trước đó nhưng không còn tồn tại." });
+        return;
+      }
+      if (!acceptFirst(request, status)) {
+        patch({ stream: "idle", isSending: false, error: "Không thể xác nhận đúng yêu cầu đầu tiên. Hãy kiểm tra lại." });
+        return;
+      }
+      if (status.state === "ACTIVE") {
+        patch({ stream: "idle", isSending: false, error: "Tin nhắn đã được nhận; chưa xác nhận được kết quả. Hãy kiểm tra lại." });
+        return;
+      }
+      if (status.conversation && status.conversation.messageCount > (status.assistantMessage ? 2 : 1)) {
+        const page = await companionService.listMessages(status.conversation.id, 20, undefined, controller.signal);
+        if (controller.signal.aborted || !isCurrent(request.identity) || firstRequestRef.current !== request) return;
+        patch({ messages: page.items, messagesBeforeSequence: page.nextBeforeSequence, hasOlderMessages: page.nextBeforeSequence !== null });
+      }
+      const canRetry = status.state === "INCOMPLETE" && status.retryEligible && request.retryable;
+      pendingTurnRef.current = canRetry && pendingTurnRef.current ? { ...pendingTurnRef.current, retryAvailable: true } : null;
+      firstRequestRef.current = null;
+      patch({ firstAdmissionPending: false, stream: "idle", isSending: false,
+        retryAvailable: canRetry, partialText: status.state === "COMPLETED" ? "" : stateRef.current.partialText, incomplete: status.state === "INCOMPLETE" && !!stateRef.current.partialText, statusCode: null,
+        error: status.state === "COMPLETED" ? null : "Tin nhắn đã được ghi nhận nhưng phản hồi chưa hoàn tất." });
+      void loadHome();
+    } catch {
+      if (!controller.signal.aborted && isCurrent(request.identity) && firstRequestRef.current === request) {
+        patch({ firstAdmissionPending: true, stream: "idle", isSending: false,
+          error: "Chưa xác nhận được yêu cầu. Kiểm tra lại hoặc hủy nếu chưa được nhận." });
+      }
+    } finally {
+      if (operationControllers.current.get("first-status") === controller) operationControllers.current.delete("first-status");
+    }
+  }, [acceptFirst, beginOperation, isCurrent, loadHome, patch]);
+
+  const checkFirstAdmission = React.useCallback(async (cancel: boolean) => {
+    const request = firstRequestRef.current;
+    if (!request || inFlightTurnRef.current || !isCurrent(request.identity)) return;
+    inFlightTurnRef.current = true;
+    try {
+      await resolveFirst(request, cancel);
+    } finally {
+      if (isCurrent(request.identity)) inFlightTurnRef.current = false;
+    }
+  }, [isCurrent, resolveFirst]);
+
+  const startFirstTurn = React.useCallback(async () => {
+    if (inFlightTurnRef.current || firstRequestRef.current || !authorizedRef.current) return;
+    const current = stateRef.current;
+    if (!current.canSubmit || !current.draft.trim()) return;
+    if (current.mode === "home" && draftOriginRef.current && (current.draft || current.attachedContext)
+      && !window.confirm("Bản nháp thuộc cuộc trò chuyện trước. Gửi bản nháp và ngữ cảnh này trong một cuộc trò chuyện mới độc lập?")) return;
+    if (!globalThis.crypto?.randomUUID) {
+      patch({ error: "Không thể tạo mã yêu cầu an toàn." });
+      return;
+    }
+    const request: FirstRequest = {
+      identity: identityRef.current, turnId: globalThis.crypto.randomUUID(), content: current.draft,
+      context: current.attachedContext ? { ...current.attachedContext.reference } : undefined,
+      draftVersion: draftVersionRef.current, attachmentVersion: attachmentVersionRef.current,
+      retryable: false, admitted: false,
+    };
+    firstRequestRef.current = request;
+    draftOriginRef.current = "first:" + request.turnId;
+    inFlightTurnRef.current = true;
+    pendingTurnRef.current = null;
+    operationControllers.current.get("messages")?.abort();
+    operationControllers.current.get("messages-older")?.abort();
+    const controller = new AbortController();
+    turnControllerRef.current = controller;
+    patch({ mode: "conversation", activeConversation: null, messages: [], messagesBeforeSequence: null,
+      hasOlderMessages: false, isMessagesLoading: false, firstAdmissionPending: true, isSending: true,
+      pendingQuestion: { turnId: request.turnId, content: request.content, contextLabel: current.attachedContext?.label },
+      stream: "connecting", error: null, statusCode: null, partialText: "", incomplete: false, retryAvailable: false });
+    try {
+      await streamCompanionTurn(null, { turnId: request.turnId, content: request.content, retry: false,
+        ...(request.context ? { screenContext: request.context } : {}) }, controller.signal, (event) => {
+        if (!isCurrent(request.identity) || firstRequestRef.current !== request || controller.signal.aborted) return;
+        if (event.event === "admitted") {
+          if (!request.admitted && acceptFirst(request, event.data)) patch({ stream: "streaming" });
+          return;
+        }
+        if (!request.admitted) return;
+        if (event.event === "delta") {
+          patch(value => ({ stream: "streaming", statusCode: null, partialText: value.partialText + event.data.text }));
+        } else if (event.event === "status" && event.data.code === "ASSESSMENT_LOOKUP") {
+          patch({ statusCode: "ASSESSMENT_LOOKUP" });
+        } else if (event.event === "memory_operation" && !memoryOperationIdsRef.current.has(event.data.operationId)) {
+          memoryOperationIdsRef.current.add(event.data.operationId);
+          const conversationId = pendingTurnRef.current?.conversationId;
+          if (conversationId) {
+            const operation: CompanionMemoryOperationReceipt = { ...event.data, conversationId };
+            patch(value => ({ memoryOperations: [...value.memoryOperations, operation].slice(-20) }));
+          }
+        } else if (event.event === "error" && event.data.turnId === request.turnId) {
+          request.retryable = event.data.retryable;
+          patch({ error: event.data.detail, statusCode: null });
+        } else if (event.event === "completed" && event.data.turnId === request.turnId) {
+          const assistant = event.data.assistantMessage;
+          patch(value => ({
+            messages: value.messages.some(message => message.id === assistant.id) ? value.messages : [...value.messages, assistant],
+            activeConversation: value.activeConversation ? { ...value.activeConversation,
+              messageCount: event.data.messageCount, maxMessages: event.data.maxMessages } : null,
+            partialText: "", statusCode: null, stream: "idle", isSending: false,
+          }));
+        }
+      });
+    } catch (error) {
+      if (isCurrent(request.identity) && !controller.signal.aborted) {
+        const problem = toCompanionApiError(error);
+        request.retryable = problem.code === "STREAM_CAPACITY_EXCEEDED";
+        const knownRejected = !request.admitted && ([400, 401, 403, 429].includes(problem.status ?? 0)
+          || problem.code === "MESSAGE_LIMIT_REACHED" || problem.code === "FIRST_TURN_PAYLOAD_CONFLICT");
+        if (knownRejected) {
+          firstRequestRef.current = null;
+          pendingTurnRef.current = null;
+          if (draftOriginRef.current === "first:" + request.turnId) draftOriginRef.current = null;
+          patch({ firstAdmissionPending: false, pendingQuestion: null, stream: "idle", isSending: false, error: problem.message });
+        }
+      }
+    } finally {
+      if (isCurrent(request.identity) && firstRequestRef.current === request) {
+        await resolveFirst(request, controller.signal.aborted);
+      }
+      if (turnControllerRef.current === controller) turnControllerRef.current = null;
+      if (isCurrent(request.identity)) {
+        inFlightTurnRef.current = false;
+        void loadQuota(request.identity);
+      }
+    }
+  }, [acceptFirst, isCurrent, loadQuota, patch, resolveFirst]);
+
   const startTurn = React.useCallback(async (retry: boolean) => {
-    if (inFlightTurnRef.current || !authorizedRef.current) return;
-    if (!retry && !stateRef.current.activeConversation && createInFlightRef.current) return;
+    if (inFlightTurnRef.current || firstRequestRef.current || !authorizedRef.current) return;
+    if (!retry && (stateRef.current.mode === "home" || !stateRef.current.activeConversation)) {
+      await startFirstTurn();
+      return;
+    }
     const identity = identityRef.current;
     let turn = retry ? pendingTurnRef.current : null;
     const originalDraft = stateRef.current.draft;
@@ -434,18 +613,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     inFlightTurnRef.current = true;
     turnIdentityRef.current = identity;
     patch({ isSending: true, stream: "connecting", error: null, statusCode: null, partialText: "", incomplete: false, retryAvailable: false });
-    let conversation = stateRef.current.activeConversation;
-    if (!retry && !conversation) {
-      conversation = await createConversationInternal(true);
-      if (!conversation || !isCurrent(identity)) {
-        if (turnIdentityRef.current === identity) {
-          inFlightTurnRef.current = false;
-          turnIdentityRef.current = null;
-          patch({ isSending: false, stream: "idle" });
-        }
-        return;
-      }
-    }
+    const conversation = stateRef.current.activeConversation;
     if (!conversation) {
       if (turnIdentityRef.current === identity) {
         inFlightTurnRef.current = false;
@@ -482,6 +650,9 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
       pendingTurnRef.current = turn;
     }
 
+    if (!retry) {
+      patch({ pendingQuestion: { turnId: turn.turnId, content: originalDraft, contextLabel: originalAttachment?.label } });
+    }
     const controller = new AbortController();
     turnControllerRef.current = controller;
     let accepted = false;
@@ -525,7 +696,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
         }
       }, () => {
         accepted = true;
-        if (isCurrent(identity)) {
+        if (isCurrent(identity) && !controller.signal.aborted) {
           clearSubmittedDraft();
           const lastMessage = stateRef.current.messages[stateRef.current.messages.length - 1];
           if (!retry) {
@@ -537,7 +708,8 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
               createdAt: new Date().toISOString(),
             };
             patch((current) => ({
-              messages: current.messages.some((message) => message.id.startsWith("pending-") && message.content === userMessage.content)
+              pendingQuestion: null,
+              messages: current.messages.some((message) => message.id === userMessage.id)
                 ? current.messages
                 : [...current.messages, userMessage],
             }));
@@ -560,7 +732,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
         pendingTurnRef.current = { ...currentTurn, retryAvailable: false };
         await reconcile(pendingTurnRef.current, identity, controller, false, "INTERRUPTED");
       }
-      if (isCurrent(identity)) patch({ stream: "idle", isSending: false, incomplete: !terminal && Boolean(stateRef.current.partialText) });
+      if (isCurrent(identity)) patch({ pendingQuestion: null, stream: "idle", isSending: false, incomplete: !terminal && Boolean(stateRef.current.partialText) });
     } catch (error) {
       if (!controller.signal.aborted && isCurrent(identity)) {
         const apiError = toCompanionApiError(error);
@@ -580,7 +752,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
           pendingTurnRef.current = null;
           patch({ error: apiError.message, retryAvailable: false });
         }
-        if (isCurrent(identity)) patch({ stream: "idle", isSending: false, incomplete: Boolean(stateRef.current.partialText) });
+        if (isCurrent(identity)) patch({ pendingQuestion: null, stream: "idle", isSending: false, incomplete: Boolean(stateRef.current.partialText) });
       }
     } finally {
       if (turnControllerRef.current === controller) turnControllerRef.current = null;
@@ -589,7 +761,7 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
         turnIdentityRef.current = null;
       }
     }
-  }, [createConversationInternal, isCurrent, loadHome, loadQuota, patch, reconcile]);
+  }, [isCurrent, loadHome, loadQuota, patch, reconcile, startFirstTurn]);
 
   const loadMemories = React.useCallback(async (category: CompanionMemoryCategory | "ALL" = "ALL", before?: string) => {
     const identity = identityRef.current;
@@ -709,6 +881,12 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const closePanel = React.useCallback(() => patch({ panelOpen: false }), [patch]);
   const minimizePanel = React.useCallback(() => patch({ panelMinimized: true }), [patch]);
   const setDraft = React.useCallback((draft: string) => {
+    if (!stateRef.current.draft && !stateRef.current.attachedContext && draft) {
+      draftOriginRef.current = stateRef.current.mode === "conversation"
+        ? stateRef.current.activeConversation?.id ?? (firstRequestRef.current ? "first:" + firstRequestRef.current.turnId : null)
+        : null;
+    }
+    if (!draft && !stateRef.current.attachedContext) draftOriginRef.current = null;
     draftVersionRef.current += 1;
     patch({ draft });
   }, [patch]);
@@ -716,6 +894,11 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
   const retryTurn = React.useCallback(() => startTurn(true), [startTurn]);
   const stopTurn = React.useCallback(() => {
     const controller = turnControllerRef.current;
+    if (controller && firstRequestRef.current) {
+      controller.abort();
+      patch({ isSending: false, stream: "reconciling", statusCode: null });
+      return;
+    }
     const turn = pendingTurnRef.current;
     if (!controller || !turn) return;
     controller.abort();
@@ -724,12 +907,12 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     const identity = identityRef.current;
     const reconciliationController = new AbortController();
     void reconcile(pendingTurnRef.current, identity, reconciliationController, false, "STOPPED").then(() => {
-      if (isCurrent(identity)) patch({ stream: "idle", isSending: false });
+      if (isCurrent(identity)) patch({ pendingQuestion: null, stream: "idle", isSending: false });
     });
   }, [isCurrent, patch, reconcile]);
 
   const contextValue = React.useMemo<CompanionContextValue>(() => ({
-    state,
+    state: renderState,
     availableContext,
     registerScreenContext,
     attachAvailableContext,
@@ -744,7 +927,8 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     loadMoreHistory,
     openConversation,
     loadOlderMessages,
-    createConversation,
+    startNewConversation,
+    checkFirstAdmission,
     deleteConversation,
     submitTurn,
     retryTurn,
@@ -754,8 +938,8 @@ export function CompanionProvider({ children }: { children: React.ReactNode }) {
     updateMemory,
     forgetMemory,
     setAutomaticMemoryEnabled,
-  }), [state, availableContext, registerScreenContext, attachAvailableContext, removeAttachedContext, openPanel, closePanel, minimizePanel, setMode, setDraft, loadHome, loadHistory, loadMoreHistory,
-    openConversation, loadOlderMessages, createConversation, deleteConversation, submitTurn, retryTurn, stopTurn, loadQuota,
+  }), [renderState, availableContext, registerScreenContext, attachAvailableContext, removeAttachedContext, openPanel, closePanel, minimizePanel, setMode, setDraft, loadHome, loadHistory, loadMoreHistory,
+    openConversation, loadOlderMessages, startNewConversation, checkFirstAdmission, deleteConversation, submitTurn, retryTurn, stopTurn, loadQuota,
     loadMemories, updateMemory, forgetMemory, setAutomaticMemoryEnabled]);
 
   return <CompanionContext.Provider value={contextValue}>{children}</CompanionContext.Provider>;

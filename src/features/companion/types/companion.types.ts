@@ -85,7 +85,17 @@ export interface CompanionTurnRequest {
   screenContext?: ScreenContextReference;
 }
 
+export interface FirstTurnStatus {
+  turnId: string;
+  state: "ACTIVE" | "COMPLETED" | "INCOMPLETE" | "CANCELLED" | "DELETED";
+  conversation: CompanionConversation | null;
+  userMessage: CompanionMessage | null;
+  assistantMessage: CompanionMessage | null;
+  retryEligible: boolean;
+}
+
 export type CompanionTurnEvent =
+  | { event: "admitted"; data: FirstTurnStatus }
   | { event: "delta"; data: { text: string } }
   | {
       event: "completed";
@@ -155,6 +165,9 @@ export interface CompanionState {
   isMessagesLoading: boolean;
   isQuotaLoading: boolean;
   isSending: boolean;
+  firstAdmissionPending: boolean;
+  /** Local, unacknowledged submission preview, never a persisted message. */
+  pendingQuestion: { turnId: string; content: string; contextLabel?: string } | null;
   isAtCapacity: boolean;
   canSubmit: boolean;
   memories: CompanionMemory[];
@@ -184,7 +197,8 @@ export interface CompanionContextValue {
   loadMoreHistory: () => Promise<void>;
   openConversation: (conversation: CompanionConversation | string) => Promise<void>;
   loadOlderMessages: () => Promise<void>;
-  createConversation: () => Promise<CompanionConversation | null>;
+  startNewConversation: () => void;
+  checkFirstAdmission: (cancel: boolean) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   submitTurn: () => Promise<void>;
   retryTurn: () => Promise<void>;

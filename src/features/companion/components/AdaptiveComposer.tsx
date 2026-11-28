@@ -15,7 +15,10 @@ function formatResetTime(value: string) {
 
 export function AdaptiveComposer() {
   const { state, availableContext, attachAvailableContext, removeAttachedContext, setDraft,
-    submitTurn, stopTurn, createConversation, setMode } = useCompanion();
+    submitTurn, stopTurn, startNewConversation, checkFirstAdmission } = useCompanion();
+  // Keep the actual draft until admission, but render it as a pending transcript entry.
+  const showingPendingDraft = Boolean(state.pendingQuestion && state.pendingQuestion.content === state.draft);
+  const composerDraft = showingPendingDraft ? "" : state.draft;
   const showContextAction = Boolean(availableContext && !state.attachedContext);
   const contextActionRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -45,18 +48,18 @@ export function AdaptiveComposer() {
     sizer.style.font = inputStyle.font;
     sizer.style.letterSpacing = inputStyle.letterSpacing;
     sizer.style.lineHeight = inputStyle.lineHeight;
-    sizer.textContent = state.draft || " ";
+    sizer.textContent = composerDraft || " ";
 
     const measuredHeight = sizer.scrollHeight;
     const lineHeight = Number.parseFloat(inputStyle.lineHeight) || COMPACT_LINE_HEIGHT;
-    const multiline = state.draft.includes("\n") || measuredHeight > lineHeight + sizerVerticalPadding + 1;
+    const multiline = composerDraft.includes("\n") || measuredHeight > lineHeight + sizerVerticalPadding + 1;
     setIsExpanded((current) => current === multiline ? current : multiline);
 
     textarea.style.height = "auto";
     const nextHeight = Math.min(MAX_TEXTAREA_HEIGHT, Math.max(textarea.scrollHeight, measuredHeight));
     textarea.style.height = `${Math.max(COMPACT_LINE_HEIGHT, nextHeight)}px`;
     textarea.style.overflowY = textarea.scrollHeight > MAX_TEXTAREA_HEIGHT || measuredHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
-  }, [state.draft, showContextAction]);
+  }, [composerDraft, showContextAction]);
 
   useLayoutEffect(() => {
     const form = formRef.current;
@@ -71,6 +74,7 @@ export function AdaptiveComposer() {
     event?.preventDefault();
     if (!state.canSubmit || isComposing) return;
     void submitTurn();
+    textareaRef.current?.focus();
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -86,10 +90,7 @@ export function AdaptiveComposer() {
     }
   };
 
-  const startNewChat = async () => {
-    const conversation = await createConversation();
-    if (conversation) setMode("conversation");
-  };
+
 
   const resetAt = state.quota?.remaining === 0 ? formatResetTime(state.quota.windowEndsAt) : "";
 
@@ -99,10 +100,17 @@ export function AdaptiveComposer() {
       className={`companion-composer ${isExpanded ? "companion-composer-expanded" : ""} ${showContextAction ? "companion-composer-has-context" : ""}`}
       onSubmit={handleSubmit}
     >
+      {state.firstAdmissionPending && !state.isSending ? (
+        <div className="companion-composer-feedback" role="status">
+          <span>Đang xác minh yêu cầu đầu tiên.</span>
+          <Button type="button" variant="ghost" disabled={state.stream === "reconciling"} onClick={() => void checkFirstAdmission(false)}>Kiểm tra lại</Button>
+          <Button type="button" variant="ghost" disabled={state.stream === "reconciling"} onClick={() => void checkFirstAdmission(true)}>Hủy nếu chưa nhận</Button>
+        </div>
+      ) : null}
       {state.isAtCapacity ? (
         <div className="companion-composer-feedback" role="status">
           <span>Cuộc trò chuyện đã đạt giới hạn tin nhắn.</span>
-          <Button type="button" variant="ghost" className="companion-feedback-action" onClick={() => void startNewChat()}>
+          <Button type="button" variant="ghost" className="companion-feedback-action" disabled={state.isSending || state.firstAdmissionPending} onClick={startNewConversation}>
             Trò chuyện mới
           </Button>
         </div>
@@ -128,7 +136,8 @@ export function AdaptiveComposer() {
         id="companion-message-input"
         className="companion-composer-input"
         rows={1}
-        value={state.draft}
+        value={composerDraft}
+        readOnly={showingPendingDraft}
         onChange={(event) => setDraft(event.currentTarget.value)}
         onKeyDown={handleKeyDown}
         onCompositionStart={() => setIsComposing(true)}
@@ -150,14 +159,14 @@ export function AdaptiveComposer() {
           <Button
             ref={actionRef}
             type="button"
-            variant="outline"
+            variant="ghost"
             size="icon"
             className="companion-stop-button"
             aria-label="Dừng phản hồi"
             title="Dừng phản hồi"
-            onClick={stopTurn}
+            onClick={() => { stopTurn(); textareaRef.current?.focus(); }}
           >
-            <Square aria-hidden="true" />
+            <span className="companion-send-glyph"><Square aria-hidden="true" fill="currentColor" /></span>
           </Button>
         ) : (
           <Button

@@ -7,6 +7,12 @@ import type { CompanionMessage } from "../types/companion.types";
 interface MessageItemProps {
   message: Pick<CompanionMessage, "id" | "role" | "content">;
   incomplete?: boolean;
+  pending?: boolean;
+  streaming?: boolean;
+  contextLabel?: string;
+  status?: ReactNode;
+  statusError?: boolean;
+  statusBusy?: boolean;
 }
 
 function renderInline(text: string, keyPrefix: string) {
@@ -138,7 +144,7 @@ function renderMarkdown(content: string) {
   return blocks;
 }
 
-export function MessageItem({ message, incomplete = false }: MessageItemProps) {
+export function MessageItem({ message, incomplete = false, pending = false, streaming = false, contextLabel, status, statusError = false, statusBusy = false }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const isAssistant = message.role === "ASSISTANT";
@@ -158,17 +164,23 @@ export function MessageItem({ message, incomplete = false }: MessageItemProps) {
   return (
     <article
       className={`companion-message ${isAssistant ? "companion-message-assistant" : "companion-message-user"}`}
-      aria-label={isAssistant ? "Tin nhắn của Engo" : "Tin nhắn của bạn"}
+      aria-label={isAssistant ? "Tin nhắn của Engo" : pending ? "Câu hỏi đang chờ xác nhận gửi" : "Tin nhắn của bạn"}
     >
       <div className="companion-message-body">
         {isAssistant ? (
           <div className="companion-message-byline">
-            <span className="companion-message-avatar" aria-hidden="true"><img src="/landing/penguin-hero.webp" alt="" /></span>
+            <span className="companion-message-avatar" aria-hidden="true"><img src="/assets/engo/engo-avatar.webp" alt="" /></span>
             <span>Engo</span>
           </div>
         ) : null}
-        <div className="companion-message-content">{renderMarkdown(message.content)}</div>
-        {incomplete ? <p className="companion-incomplete-label">Phản hồi chưa hoàn tất</p> : null}
+        {contextLabel ? <span className="companion-message-context">{contextLabel}</span> : null}
+        {message.content ? <div className="companion-message-content">{isAssistant ? renderMarkdown(message.content) : message.content}</div> : null}
+        {incomplete && !status ? <p className="companion-incomplete-label">Phản hồi chưa hoàn tất</p> : null}
+        {status ? <div className={"companion-turn-status" + (statusError ? " companion-turn-status-error" : "")} role="status">
+          {statusBusy ? <span className="companion-thinking-dot" aria-hidden="true" /> : null}{status}
+        </div> : null}
+      </div>
+      {!pending && !streaming && !incomplete && !status && message.content ? (
         <div className="companion-message-actions">
           <Button
             type="button"
@@ -184,7 +196,7 @@ export function MessageItem({ message, incomplete = false }: MessageItemProps) {
           <span className="sr-only" role="status">{copied ? "Đã sao chép tin nhắn" : ""}</span>
           {copyFailed ? <span className="companion-copy-feedback" role="status">Không thể sao chép.</span> : null}
         </div>
-      </div>
+      ) : null}
     </article>
   );
 }

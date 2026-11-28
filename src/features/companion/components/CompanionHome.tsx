@@ -14,7 +14,7 @@ export function CompanionHome() {
   return (
     <div className="companion-home">
       <div className="companion-welcome">
-        <img src="/landing/penguin-hero.webp" alt="" className="companion-welcome-mascot" />
+        <img src="/assets/engo/engo-welcome.webp" alt="" className="companion-welcome-mascot" />
         <div>
           <h3>Hôm nay mình học gì?</h3>
           <p>Hỏi Engo bất cứ điều gì về tiếng Anh nhé.</p>

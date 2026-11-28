@@ -3,7 +3,9 @@ import {
   CompanionApiError,
   type CompanionConversation,
   type CompanionConversationPage,
+  type CompanionMessage,
   type CompanionMessagePage,
+  type FirstTurnStatus,
   type CompanionProblem,
   type CompanionMemory,
   type CompanionMemoryCategory,
@@ -13,6 +15,7 @@ import {
 
 const conversationsPath = "/api/v1/companion/conversations";
 const quotaPath = "/api/v1/quota/me/usage";
+const firstTurnsPath = "/api/v1/companion/first-turns";
 const memoryPath = "/api/v1/companion/memory";
 
 function safeError(error: unknown): CompanionApiError {
@@ -48,6 +51,20 @@ export const companionService = {
 
   createConversation(signal?: AbortSignal): Promise<CompanionConversation> {
     return data(httpService.post<ApiEnvelope<CompanionConversation>>(conversationsPath, undefined, { signal }));
+  },
+
+  async getFirstTurn(turnId: string, cancel: boolean, signal?: AbortSignal): Promise<FirstTurnStatus> {
+    const path = firstTurnsPath + "/" + encodeURIComponent(turnId);
+    // Do not replay an admission/cancel operation through a session-refresh boundary.
+    const response = await globalThis.fetch(cancel ? path + "/cancel" : path, {
+      method: cancel ? "POST" : "GET", credentials: "same-origin", cache: "no-store", signal,
+      headers: { Accept: "application/json", "ngrok-skip-browser-warning": "1" },
+    });
+    if (!response.ok) throw new CompanionApiError("First request status is unavailable", { status: response.status });
+    const body = await response.json() as { data?: unknown };
+    const status = parseFirstTurnStatus(body.data);
+    if (!status || status.turnId !== turnId) throw new Error("Invalid first-turn status");
+    return status;
   },
 
   getConversation(conversationId: string, signal?: AbortSignal): Promise<CompanionConversation> {
@@ -110,3 +127,31 @@ export const companionService = {
 
 export { safeError as toCompanionApiError };
 export type { CompanionProblem };
+
+export function parseFirstTurnStatus(value: unknown): FirstTurnStatus | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Partial<FirstTurnStatus>;
+  if (typeof v.turnId !== "string" || typeof v.retryEligible !== "boolean") return null;
+  if (v.state === "CANCELLED" || v.state === "DELETED") {
+    return v.conversation == null && v.userMessage == null && v.assistantMessage == null && !v.retryEligible
+      ? { turnId: v.turnId, state: v.state, conversation: null, userMessage: null, assistantMessage: null, retryEligible: false }
+      : null;
+  }
+  if (v.state !== "ACTIVE" && v.state !== "COMPLETED" && v.state !== "INCOMPLETE") return null;
+  const c = v.conversation;
+  const user = v.userMessage;
+  const assistant = v.assistantMessage;
+  const validMessage = (m: unknown, role: "USER" | "ASSISTANT") => {
+    if (!m || typeof m !== "object") return false;
+    const x = m as Partial<CompanionMessage>;
+    return typeof x.id === "string" && x.role === role && Number.isInteger(x.sequence)
+      && Number(x.sequence) > 0 && typeof x.content === "string" && typeof x.createdAt === "string";
+  };
+  if (!c || typeof c.id !== "string" || typeof c.title !== "string" || typeof c.createdAt !== "string"
+    || typeof c.updatedAt !== "string" || !Number.isInteger(c.messageCount) || c.messageCount < 1
+    || !Number.isInteger(c.maxMessages) || !Number.isInteger(c.warningThreshold)
+    || !validMessage(user, "USER") || user?.sequence !== 1
+    || (v.state === "COMPLETED" ? !validMessage(assistant, "ASSISTANT") : assistant != null)
+    || (v.retryEligible && v.state !== "INCOMPLETE")) return null;
+  return { turnId: v.turnId, state: v.state, conversation: c, userMessage: user!, assistantMessage: assistant ?? null, retryEligible: v.retryEligible };
+}

@@ -1,5 +1,5 @@
 import { httpService } from "@shared/services";
-import { toCompanionApiError } from "./companion.service";
+import { parseFirstTurnStatus, toCompanionApiError } from "./companion.service";
 import type { CompanionMessage, CompanionProblem, CompanionTurnEvent, CompanionTurnRequest } from "../types/companion.types";
 
 export interface SseFrame {
@@ -39,11 +39,15 @@ function isMessage(value: unknown): value is CompanionMessage {
 }
 
 function parseEvent(frame: SseFrame): CompanionTurnEvent | null {
-  if (!["delta", "completed", "error", "status", "memory_operation"].includes(frame.event)) return null;
+  if (!["admitted", "delta", "completed", "error", "status", "memory_operation"].includes(frame.event)) return null;
   try {
     const data = JSON.parse(frame.data) as unknown;
     if (!data || typeof data !== "object") return null;
     const value = data as Record<string, unknown>;
+    if (frame.event === "admitted") {
+      const status = parseFirstTurnStatus(value);
+      return status?.state === "ACTIVE" ? { event: "admitted", data: status } : null;
+    }
     if (frame.event === "delta" && typeof value.text === "string") return { event: "delta", data: { text: value.text } };
     if (frame.event === "status" && typeof value.code === "string") return { event: "status", data: { code: value.code } };
     if (frame.event === "memory_operation" && typeof value.operationId === "string" &&
@@ -104,8 +108,8 @@ async function problemFrom(response: Response): Promise<CompanionProblem> {
   }
 }
 
-async function postTurn(conversationId: string, request: CompanionTurnRequest, signal: AbortSignal): Promise<Response> {
-  return globalThis.fetch(`/api/v1/companion/conversations/${encodeURIComponent(conversationId)}/turns`, {
+async function postTurn(conversationId: string | null, request: CompanionTurnRequest, signal: AbortSignal): Promise<Response> {
+  return globalThis.fetch(conversationId === null ? "/api/v1/companion/first-turns" : `/api/v1/companion/conversations/${encodeURIComponent(conversationId)}/turns`, {
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
@@ -125,14 +129,14 @@ export interface StreamResult {
 }
 
 export async function streamCompanionTurn(
-  conversationId: string,
+  conversationId: string | null,
   request: CompanionTurnRequest,
   signal: AbortSignal,
   onEvent: (event: CompanionTurnEvent) => void,
   onAccepted: () => void = () => undefined,
 ): Promise<StreamResult> {
   let response = await postTurn(conversationId, request, signal);
-  if (response.status === 401 && !signal.aborted) {
+  if (conversationId !== null && response.status === 401 && !signal.aborted) {
     // Let HttpService perform its existing shared single-flight cookie refresh.
     try {
       await httpService.get("/api/v1/auth/me", { signal });
@@ -152,7 +156,7 @@ export async function streamCompanionTurn(
       code: "COMPANION_INVALID_STREAM_RESPONSE",
     }));
   }
-  onAccepted();
+  if (conversationId !== null) onAccepted();
   if (!response.body) return { terminal: null, errorRetryable: false };
 
   const reader = response.body.getReader();

@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useRef } from "react";
 import type { KeyboardEvent } from "react";
 import { ArrowLeft, Clock3, Expand, MoreHorizontal, Minus, Minimize, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/core/components/shadcn/button";
@@ -8,10 +8,20 @@ import { CompanionHome } from "./CompanionHome";
 import { ConversationHistory } from "./ConversationHistory";
 import { ConversationView } from "./ConversationView";
 import { CompanionMemorySettings, MemoryManagement } from "./MemoryManagement";
+import { EngoMotionSettings } from "./EngoMotionSettings";
+import type { EngoMotionSettings as MotionSettings } from "@features/companion/hooks/useEngoMotionPreference";
 
-export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props, ref) {
-  const { state, closePanel, minimizePanel, setMode, createConversation } = useCompanion();
-  const [isWorkspace, setIsWorkspace] = useState(false);
+interface QuickPanelProps {
+  isWorkspace: boolean;
+  mobile: boolean;
+  onToggleWorkspace: () => void;
+  onBack: () => void;
+  motion: MotionSettings;
+}
+
+export const QuickPanel = forwardRef<HTMLDivElement, QuickPanelProps>(function QuickPanel({ isWorkspace, mobile, onToggleWorkspace, onBack, motion }, ref) {
+  const { state, closePanel, minimizePanel, setMode, startNewConversation } = useCompanion();
+
   const overflowRef = useRef<HTMLDetailsElement>(null);
   const closeDisclosure = () => {
     const disclosure = overflowRef.current;
@@ -23,7 +33,7 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
     ? state.activeConversation?.title?.trim() || "Cuộc trò chuyện mới"
     : state.mode === "history" ? "Lịch sử trò chuyện"
     : state.mode === "memory" ? "Bộ nhớ"
-    : state.mode === "settings" ? "Cài đặt bộ nhớ" : "Bạn đồng hành học tiếng Anh";
+    : state.mode === "settings" ? "Cài đặt Engo" : "Bạn đồng hành học tiếng Anh";
 
   const goHome = () => {
     setMode("home");
@@ -33,15 +43,12 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
     setMode("history");
   };
 
-  const startNewChat = async () => {
-    const conversation = await createConversation();
-    if (conversation) setMode("conversation");
-  };
+
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const target = event.target;
     if (
-      event.key === "Escape"
+      !mobile && event.key === "Escape"
       && !(target instanceof HTMLElement && target.closest('[role="dialog"]'))
     ) {
       event.preventDefault();
@@ -58,19 +65,19 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
     <section
       ref={ref}
       className={`companion-panel ${isWorkspace ? "companion-panel-expanded" : ""}`}
-      role="region"
-      aria-label="AI Companion"
+      role={mobile ? undefined : "region"}
+      aria-label={mobile ? undefined : "AI Companion"}
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
       <header className="companion-header">
         <div className="companion-header-title">
           {state.mode !== "home" ? (
-            <Button type="button" variant="ghost" size="icon" className="companion-icon-button" aria-label="Về trang chủ" onClick={goHome}>
+            <Button type="button" variant="ghost" size="icon" className="companion-icon-button" aria-label={state.mode === "conversation" ? "Về trang chủ" : "Quay lại"} onClick={onBack}>
               <ArrowLeft aria-hidden="true" />
             </Button>
           ) : null}
-          <img src="/landing/penguin-hero.webp" alt="" className="companion-title-mark" />
+          <img src="/assets/engo/engo-avatar.webp" alt="" className="companion-title-mark" />
           <div className="companion-title-copy">
             <h2>Engo</h2>
             <span title={subtitle}>{subtitle}</span>
@@ -95,17 +102,17 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
             className="companion-icon-button companion-expand-control"
             aria-label={isWorkspace ? "Thu gọn Companion" : "Mở Full Workspace"}
             title={isWorkspace ? "Thu gọn" : "Mở Full Workspace"}
-            onClick={() => setIsWorkspace((current) => !current)}
+            onClick={onToggleWorkspace}
           >
             {isWorkspace ? <Minimize aria-hidden="true" /> : <Expand aria-hidden="true" />}
           </Button>
           <details ref={overflowRef} className="companion-overflow">
             <summary className="companion-icon-button" aria-label="Thêm thao tác" title="Thêm thao tác"><MoreHorizontal aria-hidden="true" /></summary>
             <div className="companion-overflow-actions" onClick={(event) => { if (event.target instanceof Element && event.target.closest("button")) closeDisclosure(); }}>
-              <Button type="button" variant="ghost" onClick={() => void startNewChat()}>Trò chuyện mới</Button>
+              <Button type="button" variant="ghost" disabled={state.isSending || state.firstAdmissionPending} onClick={startNewConversation}>Trò chuyện mới</Button>
               <Button type="button" variant="ghost" onClick={goHome}>Trang chủ</Button>
               <Button type="button" variant="ghost" onClick={() => setMode("memory")}>Bộ nhớ</Button>
-              <Button type="button" variant="ghost" onClick={() => setMode("settings")}>Cài đặt bộ nhớ</Button>
+              <Button type="button" variant="ghost" onClick={() => setMode("settings")}>Cài đặt Engo</Button>
               <Button type="button" variant="ghost" onClick={minimizePanel}><Minus aria-hidden="true" /> Thu nhỏ</Button>
             </div>
           </details>
@@ -118,7 +125,7 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
       <div className={`companion-workspace ${isWorkspace ? "companion-workspace-expanded" : ""}`}>
         {isWorkspace ? (
           <aside className="companion-workspace-sidebar" aria-label="Điều hướng cuộc trò chuyện">
-              <Button type="button" className="companion-sidebar-new-chat" onClick={() => void startNewChat()}>
+              <Button type="button" className="companion-sidebar-new-chat" disabled={state.isSending || state.firstAdmissionPending} onClick={startNewConversation}>
                 <span aria-hidden="true">+</span>
                 Trò chuyện mới
               </Button>
@@ -138,7 +145,7 @@ export const QuickPanel = forwardRef<HTMLDivElement>(function QuickPanel(_props,
           {state.mode === "history" ? <ConversationHistory /> : null}
           {state.mode === "conversation" ? <ConversationView /> : null}
           {state.mode === "memory" ? <MemoryManagement /> : null}
-          {state.mode === "settings" ? <CompanionMemorySettings /> : null}
+          {state.mode === "settings" ? <div className="companion-settings-view"><EngoMotionSettings key={motion.preference} motion={motion} /><CompanionMemorySettings /></div> : null}
         </div>
       <div className="companion-composer-slot" hidden={state.mode === "history" || state.mode === "memory" || state.mode === "settings"}>
         <AdaptiveComposer />
