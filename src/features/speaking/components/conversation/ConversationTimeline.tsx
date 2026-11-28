@@ -11,6 +11,7 @@ interface ConversationTimelineProps {
   onPlayOpening?: () => void;
   onPlayLearner?: (turn: SpeakingTurn) => void;
   onPlayAssistant?: (turn: SpeakingTurn) => void;
+  playbackDisabled?: boolean;
   liveContent?: React.ReactNode;
   className?: string;
   scrollable?: boolean;
@@ -38,13 +39,13 @@ function Correction({ turn }: { turn: SpeakingTurn }) {
   </details>;
 }
 
-function Playback({ label, onClick }: { label: string; onClick?: () => void }) {
+function Playback({ label, onClick, disabled = false }: { label: string; onClick?: () => void; disabled?: boolean }) {
   if (!onClick) return null;
-  return <Button variant="outline" className="mt-3 min-h-11 rounded-full bg-white/80" aria-label={label} onClick={onClick}><Volume2 className="size-4" />{label}</Button>;
+  return <Button variant="outline" className="mt-3 min-h-11 rounded-full bg-white/80" aria-label={label} onClick={onClick} disabled={disabled}><Volume2 className="size-4" />{label}</Button>;
 }
 
-function AiMessage({ role, children, hint, playLabel, onPlay }: {
-  role: string; children: React.ReactNode; hint: SpeakingHint | null; playLabel: string; onPlay?: () => void;
+function AiMessage({ role, children, hint, playLabel, onPlay, playDisabled }: {
+  role: string; children: React.ReactNode; hint: SpeakingHint | null; playLabel: string; onPlay?: () => void; playDisabled?: boolean;
 }) {
   return <article className="flex max-w-[82%] items-start gap-3 self-start justify-self-start sm:max-w-[76%]">
     <span aria-hidden="true" className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-learning-mint text-primary"><Sparkles className="size-4" /></span>
@@ -52,20 +53,20 @@ function AiMessage({ role, children, hint, playLabel, onPlay }: {
       <p className="mb-1 text-xs font-semibold text-on-surface-variant">{role}</p>
       <div className="rounded-2xl rounded-tl-md bg-learning-mint px-4 py-3">
         <p className="whitespace-pre-wrap break-words text-base leading-7">{children}</p>
-        <Playback label={playLabel} onClick={onPlay} />
+        <Playback label={playLabel} onClick={onPlay} disabled={playDisabled} />
         {hint && <Hint hint={hint} />}
       </div>
     </div>
   </article>;
 }
 
-function LearnerMessage({ role, turn, onPlay }: { role: string; turn: SpeakingTurn; onPlay?: () => void }) {
+function LearnerMessage({ role, turn, onPlay, playDisabled }: { role: string; turn: SpeakingTurn; onPlay?: () => void; playDisabled?: boolean }) {
   return <article className="flex max-w-[82%] items-start gap-3 self-end justify-self-end sm:max-w-[76%]">
     <div className="min-w-0 text-right">
       <p className="mb-1 text-xs font-semibold text-on-surface-variant">{role} · {turn.sequence}</p>
       <div className="rounded-2xl rounded-tr-md border border-sky-100 bg-sky-50 px-4 py-3 text-left">
         <p className="whitespace-pre-wrap break-words text-base leading-7">{turn.transcript ?? (turn.reason ? "Không nhận diện được lời nói." : "Bản ghi lời nói chưa khả dụng.")}</p>
-        <div className="flex justify-end"><Playback label="Nghe bản ghi" onClick={onPlay} /></div>
+        <div className="flex justify-end"><Playback label="Nghe bản ghi" onClick={onPlay} disabled={playDisabled} /></div>
         <Correction turn={turn} />
       </div>
     </div>
@@ -74,7 +75,7 @@ function LearnerMessage({ role, turn, onPlay }: { role: string; turn: SpeakingTu
 }
 
 export default function ConversationTimeline({
-  aiRole, learnerRole, opening, turns, onPlayOpening, onPlayLearner, onPlayAssistant,
+  aiRole, learnerRole, opening, turns, onPlayOpening, onPlayLearner, onPlayAssistant, playbackDisabled = false,
   liveContent, className = "",
   scrollable = true, activityKey,
 }: ConversationTimelineProps) {
@@ -119,10 +120,10 @@ export default function ConversationTimeline({
   return <section aria-label="Hội thoại" className={`relative flex min-h-0 flex-col ${className}`}>
     <div ref={scrollRef} onScroll={updateScrollPosition} className={scrollable ? "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6" : "px-4 py-5 sm:px-6"}>
       <div className="mx-auto grid max-w-4xl gap-6">
-        {opening && <AiMessage role={aiRole} hint={opening.hint} playLabel="Nghe phản hồi AI" onPlay={onPlayOpening}>{opening.reply}</AiMessage>}
+        {opening && <AiMessage role={aiRole} hint={opening.hint} playLabel="Nghe phản hồi AI" onPlay={onPlayOpening && opening.audioAvailable ? onPlayOpening : undefined} playDisabled={playbackDisabled}>{opening.reply}</AiMessage>}
         {turns.map(turn => <div key={turn.turnId} className="grid gap-5">
-          <LearnerMessage role={learnerRole} turn={turn} onPlay={onPlayLearner ? () => onPlayLearner(turn) : undefined} />
-          {(turn.reply || turn.hint) && <AiMessage role={aiRole} hint={turn.hint} playLabel="Nghe phản hồi AI" onPlay={onPlayAssistant ? () => onPlayAssistant(turn) : undefined}>{turn.reply ?? ""}</AiMessage>}
+          <LearnerMessage role={learnerRole} turn={turn} onPlay={onPlayLearner && turn.learnerAudioAvailable ? () => onPlayLearner(turn) : undefined} playDisabled={playbackDisabled} />
+          {(turn.reply || turn.hint) && <AiMessage role={aiRole} hint={turn.hint} playLabel="Nghe phản hồi AI" onPlay={onPlayAssistant && turn.assistantAudioAvailable ? () => onPlayAssistant(turn) : undefined} playDisabled={playbackDisabled}>{turn.reply ?? ""}</AiMessage>}
         </div>)}
         {liveContent}
       </div>

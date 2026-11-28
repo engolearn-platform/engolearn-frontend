@@ -8,6 +8,7 @@ import { speakingV2Service } from "@features/speaking/services/speaking-v2.servi
 import { useSpeakingV2Stream } from "@features/speaking/hooks/useSpeakingV2Stream";
 import type { SpeakingSession, SpeakingTurn } from "@features/speaking/types/speaking-v2.types";
 import { speakingEntryPath, speakingHistoryUrl } from "@features/speaking/utils/speaking-history-navigation";
+import { speakingLiveTurn } from "@features/speaking/utils/speaking-live-turn";
 
 function backPath(session: SpeakingSession | null, locationState: unknown) {
   const state = locationState as { returnTo?: unknown } | null;
@@ -46,17 +47,18 @@ export default function SpeakingSessionView() {
     if (audio) { audio.pause(); audio.onended = null; audio.onerror = null; }
   }, []);
   const playSavedAudio = useCallback(async (load: () => Promise<{ url: string }>) => {
+    if (!mounted.current || stream.recording !== "idle" || stream.playing) return;
     stopReplay();
     const request = replayRequest.current;
     try {
       const { url } = await load();
-      if (!mounted.current || stream.playing || request !== replayRequest.current) return;
+      if (!mounted.current || stream.recording !== "idle" || stream.playing || request !== replayRequest.current) return;
       const audio = new Audio(url); replayAudio.current = audio;
       audio.onended = () => { if (replayAudio.current === audio) replayAudio.current = null; };
       audio.onerror = () => { if (replayAudio.current === audio) replayAudio.current = null; setError("Không phát được audio. Nội dung chữ vẫn khả dụng."); };
       await audio.play();
     } catch (cause) { if (mounted.current && request === replayRequest.current) setError(cause instanceof Error ? cause.message : "Audio không còn khả dụng."); }
-  }, [stopReplay, stream.playing]);
+  }, [stopReplay, stream.playing, stream.recording]);
   useEffect(() => { if (stream.playing) stopReplay(); }, [stream.playing, stopReplay]);
   useEffect(() => () => stopReplay(), [sessionId, stopReplay]);
   const completedSessionId = session?.status === "ENDED" ? session.sessionId : null;
@@ -103,7 +105,8 @@ export default function SpeakingSessionView() {
   if (loading) return <div className="grid h-full min-h-0 place-items-center p-5"><p role="status">Đang mở phiên luyện nói…</p></div>;
   if (!session) return <div className="mx-auto max-w-4xl p-5"><div role="alert" className="rounded-xl border border-error/30 p-4">{error || "Không tìm thấy phiên Speaking."}</div><Button variant="outline" className="mt-4 min-h-12" onClick={() => void refresh().catch(cause => setError(String(cause)))}>Tải lại</Button></div>;
   const recordingAllowed = stream.connection === "connected" && session.status === "ACTIVE" && stream.recording === "idle" && !stream.playing && !stream.recoverableTurn;
-  const replayAllowed = stream.connection === "connected" && stream.recording === "idle" && !stream.playing;
+  const replayEnabled = stream.connection === "connected" && stream.recording === "idle" && !stream.playing;
+  const { turns: visibleTurns, liveText } = speakingLiveTurn(turns, stream.interim, stream.recording);
   const connectionLabel = stream.connection === "connected" ? "Đã kết nối" : stream.connection === "connecting" ? "Đang kết nối" : stream.connection === "reconnecting" ? "Đang nối lại" : "Mất kết nối";
   const activeTurnStatus = session.activeTurn?.status.toUpperCase();
   const controlStatus = session.status === "CLOSING" ? ["Đang kết thúc phiên", "Đang hoàn tất hội thoại và chuẩn bị kết quả."]
@@ -141,12 +144,13 @@ export default function SpeakingSessionView() {
     </header>
     {error && <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-error/30 bg-error/5 px-5 py-2 text-sm"><p>{error}</p><Button variant="outline" className="min-h-10" onClick={() => { setError(""); void stream.sync(); void refresh().catch(cause => setError(String(cause))); }}>Đồng bộ phiên</Button></div>}
     <ConversationTimeline className="min-h-0 flex-1" aiRole={session.context.aiRole} learnerRole="Bạn"
-      opening={session.opening} turns={turns} activityKey={`${stream.interim}:${stream.recording}:${turns.map(turn => `${turn.turnId}-${Boolean(turn.reply)}`).join(",")}`}
-      onPlayOpening={replayAllowed && session.opening?.audioAvailable ? () => void playSavedAudio(() => speakingV2Service.openingAudio(session.sessionId)) : undefined}
-      onPlayLearner={replayAllowed ? turn => turn.learnerAudioAvailable ? void playSavedAudio(() => speakingV2Service.audio(session.sessionId, turn.turnId, "LEARNER_RECORDING")) : undefined : undefined}
-      onPlayAssistant={replayAllowed ? turn => turn.assistantAudioAvailable ? void playSavedAudio(() => speakingV2Service.audio(session.sessionId, turn.turnId, "AI_REPLY")) : undefined : undefined}
+      opening={session.opening} turns={visibleTurns} activityKey={`${stream.interim}:${stream.recording}:${visibleTurns.map(turn => `${turn.turnId}-${Boolean(turn.reply)}`).join(",")}`}
+      onPlayOpening={() => void playSavedAudio(() => speakingV2Service.openingAudio(session.sessionId))}
+      onPlayLearner={turn => void playSavedAudio(() => speakingV2Service.audio(session.sessionId, turn.turnId, "LEARNER_RECORDING"))}
+      onPlayAssistant={turn => void playSavedAudio(() => speakingV2Service.audio(session.sessionId, turn.turnId, "AI_REPLY"))}
+      playbackDisabled={!replayEnabled}
       liveContent={<>
-        {stream.interim && <p aria-live="polite" className="justify-self-end rounded-2xl bg-sky-50 px-4 py-3 text-sm text-on-surface-variant">Đang nhận diện: {stream.interim}</p>}
+        {liveText && <p aria-live="polite" className="justify-self-end rounded-2xl bg-sky-50 px-4 py-3 text-sm text-on-surface-variant">{liveText}</p>}
         {stream.recoverableTurn && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-learning-note p-3 text-sm">
           <p>Lượt nói trước chưa được gửi hết.</p><Button variant="outline" className="min-h-11" disabled={stream.connection !== "connected"} onClick={stream.discardRecoveredTurn}>Bỏ bản ghi chưa hoàn tất</Button>
         </div>}
