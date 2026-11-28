@@ -2,6 +2,7 @@ export interface DraftSkillOption {
   code: string;
   label: string;
   section: "LISTENING" | "READING";
+  canonicalName: string;
 }
 export interface DraftSkill {
   code: string | null;

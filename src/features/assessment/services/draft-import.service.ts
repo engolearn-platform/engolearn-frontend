@@ -25,10 +25,10 @@ function formFor(workbook: File, manifest: CheckedWav[]) {
 
 export const draftImportService = {
   async template() {
-    const response = await httpService.get<ApiEnvelope<{base64: string}>>(base + "/template");
+    const response = await httpService.get<ApiEnvelope<{base64: string; exampleSeries?: string}>>(base + "/template");
     const bytes = Uint8Array.from(atob(response.data.base64), char => char.charCodeAt(0));
     const type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    return new Blob([bytes], {type});
+    return {blob: new Blob([bytes], {type}), exampleSeries: response.data.exampleSeries};
   },
   async inspect(file: File) {
     const form = new FormData();

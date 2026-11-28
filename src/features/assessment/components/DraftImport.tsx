@@ -5,6 +5,9 @@ import { draftImportService, type CheckedWav, type DraftImportPreview } from "@f
 import { draftService } from "@features/assessment/services/draft.service";
 import type { AssessmentDraft } from "@features/assessment/types/draft";
 
+import { StudioFilePicker } from "@features/assessment/components/StudioFilePicker";
+import { studioAudioError } from "@features/assessment/utils/studio-audio-errors";
+
 interface ReadyImport {
   workbook: File;
   manifest: CheckedWav[];
@@ -18,6 +21,7 @@ export function DraftImport({ onCreated }: { onCreated: (draft: AssessmentDraft)
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
+  const [templateMessage, setTemplateMessage] = useState("");
   const filesByName = useMemo(() => new Map(files.map(file => [file.name.toLowerCase(), file])), [files]);
   const filesByUnit = useMemo(() => new Map(Object.entries(ready?.result.audioFiles ?? {}).flatMap(([index, name]) => {
     const file = filesByName.get(name.toLowerCase());
@@ -27,10 +31,13 @@ export function DraftImport({ onCreated }: { onCreated: (draft: AssessmentDraft)
   async function download() {
     setError("");
     try {
-      const url = URL.createObjectURL(await draftImportService.template());
+      setTemplateMessage("");
+      const {blob, exampleSeries} = await draftImportService.template();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "Mau_De_Danh_Gia_Dinh_Ky.xlsx";
+      link.download = exampleSeries ? `Mau_${exampleSeries}.xlsx` : "Mau_De_Danh_Gia_Dinh_Ky.xlsx";
+      if (!exampleSeries) setTemplateMessage("Đã tải khung Excel. Môi trường này chưa cấu hình đề demo đã xuất bản.");
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (failure) { setError((failure as Error).message); }
@@ -52,7 +59,11 @@ export function DraftImport({ onCreated }: { onCreated: (draft: AssessmentDraft)
       const manifest = [];
       for (const file of files) {
         setProgress("Đang kiểm " + file.name);
-        manifest.push(await draftImportService.inspect(file));
+        try {
+          manifest.push(await draftImportService.inspect(file));
+        } catch (failure) {
+          throw new Error(studioAudioError(failure, "Kiểm tra " + file.name));
+        }
       }
       setProgress("Đang kiểm ma trận và dữ liệu Excel");
       const result = await draftImportService.preview(workbook, manifest);
@@ -73,7 +84,7 @@ export function DraftImport({ onCreated }: { onCreated: (draft: AssessmentDraft)
         try {
           await draftService.upload(file, checked.sha256);
         } catch (failure) {
-          throw new Error(checked.name + " · " + (failure as Error).message);
+          throw new Error(studioAudioError(failure, "Lưu " + checked.name + " khi nhập đề"));
         }
       }
       setProgress("Đang tạo bản nháp");
@@ -85,21 +96,14 @@ export function DraftImport({ onCreated }: { onCreated: (draft: AssessmentDraft)
   return <section className="space-y-4 rounded-2xl border p-5">
     <h2 className="text-xl font-semibold">Nhập đề bằng Excel và WAV</h2>
     <Button type="button" variant="outline" onClick={() => void download()}>Tải mẫu Excel</Button>
+    {templateMessage && <p role="status" className="text-sm text-muted-foreground">{templateMessage}</p>}
     <div className="grid gap-3 md:grid-cols-2">
-      <label className="grid gap-2 text-sm font-medium">Workbook .xlsx
-        <input type="file" disabled={busy} accept=".xlsx" onChange={event => {
-          setWorkbook(event.target.files?.[0] ?? null);
-          clearPreview();
-        }} />
-      </label>
-      <label className="grid gap-2 text-sm font-medium">Các tệp WAV của đề
-        <input type="file" disabled={busy} accept=".wav,audio/wav" multiple onChange={event => {
-          setFiles(Array.from(event.target.files ?? []));
-          clearPreview();
-        }} />
-      </label>
+      <StudioFilePicker label="Chọn tệp Excel (.xlsx)" selection={workbook?.name} accept=".xlsx"
+        disabled={busy} onSelect={selected => { setWorkbook(selected[0]); clearPreview(); }} />
+      <StudioFilePicker label="Chọn các tệp WAV" selection={`${files.length} tệp đã chọn`}
+        accept=".wav,audio/wav" multiple disabled={busy} onSelect={selected => { setFiles(selected); clearPreview(); }} />
     </div>
-    <p className="text-sm text-muted-foreground">{files.length} WAV đã chọn · 12 WAV của đề, tối đa một WAV âm thử riêng</p>
+    <p className="text-sm text-muted-foreground">Chọn 12 WAV của đề. Nếu ô AmThuWav trong Excel có tên tệp, chọn thêm WAV đó cùng bộ đề.</p>
     <Button type="button" disabled={busy || !workbook || !files.length} onClick={() => void preview()}>Kiểm tra và xem thử</Button>
     {progress && <p role="status">{progress}</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}

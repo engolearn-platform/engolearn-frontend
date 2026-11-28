@@ -4,8 +4,11 @@ import { useFetch } from "@shared/hooks";
 import { DraftSelect, DraftText } from "@features/assessment/components/DraftFields";
 import { microSkillService, type SkillSection, type MicroSkill } from "@features/assessment/services/micro-skill.service";
 
+import { draftService } from "@features/assessment/services/draft.service";
+
 export function MicroSkillAdmin() {
   const catalog = useFetch(microSkillService.list);
+  const mappings = useFetch(draftService.skillMappings);
   const [code, setCode] = useState("");
   const [label, setLabel] = useState("");
   const [canonicalName, setCanonicalName] = useState("");
@@ -13,28 +16,35 @@ export function MicroSkillAdmin() {
   const [section, setSection] = useState<SkillSection | "">("");
   const [editing, setEditing] = useState<{skill: MicroSkill; label: string} | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{target: string; message: string} | null>(null);
 
-  async function mutate(action: () => Promise<unknown>) {
+  async function mutate(target: string, action: () => Promise<unknown>) {
     setBusy(true);
-    setError("");
-    try { await action(); catalog.refetch(); }
-    catch (failure) { setError((failure as Error).message); }
+    setError(null);
+    try { await action(); catalog.refetch(); mappings.refetch(); }
+    catch (failure) { setError({target, message: (failure as Error).message}); }
     finally { setBusy(false); }
   }
 
   return <section className="space-y-4 rounded-2xl border p-5">
     <h2 className="text-xl font-semibold">Danh mục kỹ năng</h2>
     <p className="text-sm text-muted-foreground">Danh mục dùng chung với Lộ trình học. Studio chỉ dùng các kỹ năng đang hoạt động đã có mã tương ứng trong đề.</p>
-    {error && <p role="alert" className="text-destructive">{error}</p>}
+    {mappings.error && <div role="alert">Chưa kiểm tra được kỹ năng dùng trong đề.
+      <Button type="button" variant="outline" onClick={mappings.refetch}>Thử lại</Button>
+    </div>}
     {catalog.loading && <p role="status">Đang tải danh mục…</p>}
     {catalog.error && <div role="alert">{catalog.error.message} <Button variant="outline" onClick={catalog.refetch}>Tải lại danh mục</Button></div>}
     <ul className="divide-y">
-      {catalog.data?.map(skill => <li key={skill.id} className="space-y-2 py-3">
+      {catalog.data?.map(skill => {
+        const supported = mappings.data?.some(mapping =>
+          mapping.canonicalName === skill.canonicalName && mapping.section === skill.skill);
+        return <li key={skill.id} className="space-y-2 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><strong>{skill.code} · {skill.displayNameVi}</strong>
             <p className="text-sm">{skill.skill === "READING" ? "Đọc" : "Nghe"} · {
-              skill.status === "ACTIVE" ? "Đang dùng" : "Không hoạt động"
+              supported === false ? "Chưa dùng được trong đề đánh giá định kỳ" :
+                skill.status === "INACTIVE" ? "Đã ngừng sử dụng" :
+                  supported ? "Đang dùng trong đề" : "Đang hoạt động"
             }</p></div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" disabled={busy} aria-label={"Đổi tên " + skill.code}
@@ -42,14 +52,14 @@ export function MicroSkillAdmin() {
             {skill.status === "ACTIVE" && <Button type="button" variant="outline" disabled={busy} aria-label={"Ngừng sử dụng " + skill.code}
               onClick={() => {
                 if (window.confirm("Ngừng dùng " + skill.code + " cho đề và lộ trình mới?")) {
-                  void mutate(() => microSkillService.update(skill, skill.displayNameVi, "INACTIVE"));
+                  void mutate(skill.id, () => microSkillService.update(skill, skill.displayNameVi, "INACTIVE"));
                 }
               }}>Ngừng sử dụng</Button>}
           </div>
         </div>
         {editing?.skill.id === skill.id && <form className="space-y-2" onSubmit={event => {
           event.preventDefault();
-          void mutate(async () => {
+          void mutate(skill.id, async () => {
             await microSkillService.update(editing.skill, editing.label.trim(), editing.skill.status);
             setEditing(null);
           });
@@ -60,12 +70,14 @@ export function MicroSkillAdmin() {
             <Button type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button>
           </div>
         </form>}
-      </li>)}
+        {error?.target === skill.id && <p role="alert" className="text-destructive">{error.message}</p>}
+        </li>;
+      })}
     </ul>
     <form className="space-y-3" onSubmit={event => {
       event.preventDefault();
       if (!section) return;
-      void mutate(async () => {
+      void mutate("create", async () => {
         await microSkillService.create({
           code: code.trim().toUpperCase(), canonicalName: canonicalName.trim(), displayNameVi: label.trim(),
           descriptionVi: descriptionVi.trim(), skill: section, status: "INACTIVE",
@@ -89,6 +101,7 @@ export function MicroSkillAdmin() {
       <DraftText label="Mô tả tiếng Việt" value={descriptionVi} max={4000} long onChange={setDescriptionVi} />
       <Button disabled={busy || !/^[A-Z][A-Z0-9_-]{1,49}$/i.test(code.trim())
         || !label.trim() || !canonicalName.trim() || !descriptionVi.trim() || !section}>Thêm kỹ năng</Button>
+      {error?.target === "create" && <p role="alert" className="text-destructive">{error.message}</p>}
     </form>
   </section>;
 }

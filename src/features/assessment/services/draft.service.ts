@@ -10,6 +10,10 @@ export const draftService = {
   async skillCatalog(signal: AbortSignal) {
     return (await httpService.get<ApiEnvelope<DraftSkillOption[]>>(endpoint + "/skill-catalog", { signal })).data;
   },
+  async skillMappings(signal: AbortSignal) {
+    return (await httpService.get<ApiEnvelope<DraftSkillOption[]>>(endpoint + "/skill-catalog",
+      {signal, params: {includeInactive: "true"}})).data;
+  },
   async list(page: number, signal: AbortSignal) {
     return (await httpService.get<ApiEnvelope<DraftSummary[]>>(endpoint, { params: { page: String(page) }, signal })).data;
   },

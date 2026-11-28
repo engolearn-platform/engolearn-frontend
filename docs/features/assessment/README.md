@@ -175,12 +175,12 @@ kê các mã PFC đã có mapping đang hoạt động. Kết quả, xem lại v
 hiển thị tên tiếng Việt tương ứng từ catalog, giữ mã và tên chuẩn dùng trong nghiệp vụ.
 
 Trong danh sách Studio, tải mẫu Excel, chọn workbook và 12 WAV của đề, rồi
-chọn Kiểm tra và xem thử. Có thể kèm WAV âm thử riêng nếu ghi tên trong workbook.
+chọn Kiểm tra và xem thử. Nếu AmThuWav có tên tệp, chọn thêm tệp đó trong bộ WAV của lần nhập. Khi cấu hình đề demo đã phát hành, workbook lấy đúng nội dung phiên bản hiện hành.
 Khi xác nhận tạo nháp, Studio lưu từng WAV qua Media và mở đúng bản nháp đã tạo.
 Nếu lỗi giữa chừng, giữ tệp và thử lại từ màn xem thử. Mục Âm thử dùng chung
 là thao tác riêng có xác nhận khi muốn đổi âm thử trước bài của học viên.
 Trong xem thử, người soạn có thể chọn đáp án và mở lời giải; đáp án thử nằm trong bộ
-nhớ của giao diện. Nút xác nhận mở khi đã xem qua cả 26 phần. Backend chỉ nhận xác
+nhớ của giao diện. Trình soạn và xem thử hiển thị tám nhóm câu. Nút xác nhận vẫn yêu cầu mở đủ 50 câu qua 26 đơn vị. Backend chỉ nhận xác
 nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.
 
 Khi xem lại và phải tải URL phát mới, player giữ vị trí nghe trước đó nếu còn trong tệp.

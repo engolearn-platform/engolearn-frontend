@@ -7,6 +7,9 @@ import type { HttpError } from "@shared/services/http.service";
 import { DraftSelect, DraftText } from "./DraftFields";
 import DraftQuestionEditor from "./DraftQuestionEditor";
 import { DraftPreview } from "./DraftPreview";
+import { StudioFilePicker } from "./StudioFilePicker";
+import { studioGroups } from "@features/assessment/utils/studio-groups";
+import { studioAudioError } from "@features/assessment/utils/studio-audio-errors";
 
 function replacing<T>(items: T[], at: number, value: T) { return items.map((old,i) => i === at ? value : old); }
 function newQuestion(): DraftQuestion {
@@ -22,6 +25,7 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
   const [conflict, setConflict] = useState(false);
   const [preview, setPreview] = useState<AssessmentDraft | null>(null);
   const [reviewed, setReviewed] = useState(false);
+  const [audioNames, setAudioNames] = useState<Record<string, string>>({});
   const dirty = draft !== saved;
   const catalog = useFetch(draftService.skillCatalog);
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
     } finally { setBusy(false); }
   }
 
-  async function handle(action: () => Promise<void>) {
+  async function handle(action: () => Promise<void>, audioStep?: string) {
     setBusy(true); setError(""); setMessage("");
     try {
       await action();
@@ -57,16 +61,22 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
       if (failure.code === "STALE_DRAFT") {
         setConflict(true); setPreview(null); setReviewed(false);
       }
-      setError(failure.message);
+      setError(audioStep && failure.code === "MEDIA_UNAVAILABLE" ? studioAudioError(failure, audioStep) : failure.message);
     } finally { setBusy(false); }
   }
 
   function upload(index: number, unit: DraftUnit, file?: File) {
     if (!file) return;
     void handle(async () => {
-      const audioSha256 = await draftService.upload(file);
+      let audioSha256: string;
+      try {
+        audioSha256 = await draftService.upload(file);
+      } catch (failure) {
+        throw new Error(studioAudioError(failure, "Tải " + file.name + " cho phần " + (index + 1)));
+      }
+      setAudioNames(names => ({...names, [audioSha256]: file.name}));
       changeUnit(index, { ...unit, sourceAudioUnit: null, audioSha256 });
-      setMessage("Đã tải WAV. Lưu nháp để gắn vào phần này.");
+      setMessage("Đã tải " + file.name + ". Lưu nháp để gắn vào phần này.");
     });
   }
 
@@ -99,34 +109,42 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
         onClick={() => change({skills: [...draft.skills,{code:"",name:"",example:"",section:null}]})}>Thêm kỹ năng</Button>
     </section>
     <section className="space-y-3"><h2 className="text-xl font-semibold">Nội dung đề</h2>
-      {draft.units.map((u,i) => <details key={i} className="space-y-3 rounded-xl border p-4">
-        <summary className="cursor-pointer font-semibold">Phần {i+1} · {u.kind ? unitLabels[u.kind] : "Chưa chọn loại"} · {u.questions.length} câu</summary>
-        <DraftSelect label="Loại nội dung" value={u.kind} onChange={v => changeUnit(i,{...u,kind: v as DraftUnit["kind"] || null})}>
-          {Object.entries(unitLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</DraftSelect>
-        <DraftText label="Đoạn dùng chung" long max={12000} value={u.passage} onChange={passage => changeUnit(i,{...u,passage})}/>
-        {u.sourceAudioUnit != null && <p>Giữ audio từ phần {u.sourceAudioUnit+1} của đề nguồn.</p>}
-        {u.kind?.startsWith("LISTENING") && <div className="space-y-2">
-          <label className="block">Tải WAV cho phần {i + 1}
-            <input className="block max-w-full" type="file" accept=".wav,audio/wav"
-              onChange={e => { upload(i, u, e.currentTarget.files?.[0]); e.currentTarget.value = ""; }} />
-          </label>
-          {u.audioSha256 && <p className="text-sm">Đã chọn audio tải lên.</p>}
-          {(u.audioSha256 || u.sourceAudioUnit != null) && <Button variant="outline"
-            onClick={() => changeUnit(i, { ...u, sourceAudioUnit: null, audioSha256: null })}>Bỏ audio khỏi phần này</Button>}
-        </div>}
-        {u.questions.map((q,j) => <fieldset key={j} className="space-y-2 border-t py-3">
-          <legend className="font-semibold">Câu {j+1} trong phần {i+1}</legend>
-          <DraftQuestionEditor question={q} skills={draft.skills} listening={!!u.kind?.startsWith("LISTENING")}
-            change={value => changeUnit(i,{...u,questions: replacing(u.questions,j,value)})}/>
-          <Button variant="outline" onClick={() => { if (window.confirm("Bỏ câu này khỏi bản nháp?"))
-            changeUnit(i,{...u,questions:u.questions.filter((_,n) => n !== j)}); }}>Bỏ câu {j+1}</Button>
-        </fieldset>)}
-        <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={u.questions.length >= 8}
-          onClick={() => changeUnit(i,{...u,questions:[...u.questions, newQuestion()]})}>Thêm câu</Button>
-          <Button variant="outline" onClick={() => {
-            if (!u.questions.length || window.confirm("Xóa phần " + (i+1) + " và toàn bộ " + u.questions.length + " câu trong phần này?"))
-              change({units: draft.units.filter((_,n) => n !== i)});
-          }}>Bỏ phần {i+1}</Button></div>
+      {studioGroups(draft.units).map(group => <details key={group.entries[0].index} className="rounded-xl border p-4">
+        <summary className="cursor-pointer font-semibold">{group.label}</summary>
+        <div className="mt-3 space-y-4">
+          {group.entries.map(({unit: u, index: i, firstQuestion}) => {
+            const fields = <div className="space-y-3">
+              <DraftSelect label="Loại nội dung" value={u.kind} onChange={v => changeUnit(i,{...u,kind: v as DraftUnit["kind"] || null})}>
+                {Object.entries(unitLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</DraftSelect>
+              <DraftText label="Đoạn dùng chung" long max={12000} value={u.passage} onChange={passage => changeUnit(i,{...u,passage})}/>
+              {u.sourceAudioUnit != null && <p>Giữ audio từ phần {u.sourceAudioUnit+1} của đề nguồn.</p>}
+              {u.kind?.startsWith("LISTENING") && <div className="space-y-2">
+                <StudioFilePicker label={u.audioSha256 || u.sourceAudioUnit != null ? "Thay tệp WAV" : "Chọn tệp WAV"}
+                  selection={u.audioSha256 ? audioNames[u.audioSha256] ?? "Đã có WAV tải lên" : undefined}
+                  accept=".wav,audio/wav" onSelect={files => upload(i, u, files[0])} />
+                {(u.audioSha256 || u.sourceAudioUnit != null) && <Button variant="outline"
+                  onClick={() => changeUnit(i, { ...u, sourceAudioUnit: null, audioSha256: null })}>Bỏ audio khỏi phần này</Button>}
+              </div>}
+              {u.questions.map((q,j) => <fieldset key={j} className="space-y-2 border-t py-3">
+                <legend className="font-semibold">Câu {firstQuestion + j}</legend>
+                <DraftQuestionEditor question={q} skills={draft.skills} listening={!!u.kind?.startsWith("LISTENING")}
+                  change={value => changeUnit(i,{...u,questions: replacing(u.questions,j,value)})}/>
+                <Button variant="outline" onClick={() => { if (window.confirm("Bỏ câu này khỏi bản nháp?"))
+                  changeUnit(i,{...u,questions:u.questions.filter((_,n) => n !== j)}); }}>Bỏ câu {j+1}</Button>
+              </fieldset>)}
+              <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={u.questions.length >= 8}
+                onClick={() => changeUnit(i,{...u,questions:[...u.questions, newQuestion()]})}>Thêm câu</Button>
+                <Button variant="outline" onClick={() => {
+                  if (!u.questions.length || window.confirm("Xóa phần " + (i+1) + " và toàn bộ " + u.questions.length + " câu trong phần này?"))
+                    change({units: draft.units.filter((_,n) => n !== i)});
+                }}>Bỏ phần {i+1}</Button></div>
+            </div>;
+            return group.entries.length > 1 ? <details key={i} className="rounded-md border p-3">
+              <summary className="cursor-pointer font-medium">Câu {firstQuestion}</summary>
+              <div className="mt-3">{fields}</div>
+            </details> : <div key={i}>{fields}</div>;
+          })}
+        </div>
       </details>)}
       <Button variant="outline" disabled={draft.units.length >= 30} onClick={() => change({units:[...draft.units,
         {kind:null,passage:"",sourceAudioUnit:null,questions:[]}]})}>Thêm phần</Button>
@@ -144,10 +162,10 @@ export default function DraftEditor({initial, close}: {initial: AssessmentDraft;
       <div className="flex flex-wrap gap-3">
         <Button disabled={!dirty || conflict} onClick={() => void persist(false)}>Lưu nháp</Button>
         <Button variant="outline" disabled={dirty || conflict}
-          onClick={() => void handle(async () => setPreview(await draftService.preview(saved)))}>Kiểm tra và xem thử</Button>
+          onClick={() => void handle(async () => setPreview(await draftService.preview(saved)), "Kiểm tra WAV trước khi xem thử")}>Kiểm tra và xem thử</Button>
         <Button disabled={dirty || conflict || !reviewed} onClick={() => {
           if (window.confirm("Xuất bản phiên bản này cho lượt mới?"))
-            void handle(async () => { await draftService.publish(saved); close(); });
+            void handle(async () => { await draftService.publish(saved); close(); }, "Kiểm tra WAV trước khi xuất bản");
         }}>Xuất bản</Button>
         <Button variant="outline" disabled={dirty || conflict} onClick={() => {
           if (window.confirm("Xóa bản nháp? Các lượt đã cấp sẽ được giữ nguyên."))
