@@ -27,7 +27,13 @@ export function abandonOnLeave(id: string, identityHeaders: Record<string, strin
   void httpService.post(base + `/attempts/${id}/abandon`, {confirmed: true}, {headers: identityHeaders, keepalive: true}).catch(() => undefined);
 }
 export function mediaUrl(media: Media) {
+  if (media.url) return media.url;
+  if (!media.base64) throw new Error("Máy chủ chưa trả âm thanh.");
   const raw = atob(media.base64);
   const bytes = Uint8Array.from(raw, c => c.charCodeAt(0));
   return URL.createObjectURL(new Blob([bytes], {type: media.mimeType}));
+}
+
+export function revokeAudioUrl(url: string) {
+  if (url.startsWith("blob:")) URL.revokeObjectURL(url);
 }

@@ -30,8 +30,14 @@ function OfficialAudio({state, binding}: {state: AssessmentState; binding: strin
   return <AssessmentAudio load={load} onFailure={onFailure} startAt={startAt} />;
 }
 
+function focusQuestion(number: number) {
+  const panel = document.getElementById(`taking-question-${number}`);
+  panel?.focus({preventScroll: true});
+  panel?.scrollIntoView({block: "start"});
+}
+
 function QuestionPanel({question, disabled, onChoice}: {question: Question; disabled: boolean; onChoice: (choice: number) => void}) {
-  return <section id={`taking-question-${question.number}`} className="scroll-mt-32">
+  return <section id={`taking-question-${question.number}`} tabIndex={-1} aria-label={`Câu ${question.number}`} className="scroll-mt-32">
     <AssessmentCard>
       {question.passage && <div className="mb-5 whitespace-pre-line rounded-xl bg-background p-4 leading-7">{question.passage}</div>}
       <fieldset disabled={disabled}>
@@ -72,11 +78,14 @@ export function AssessmentTakingV2({live}: {live: ReturnType<typeof useLiveAsses
         {live.error && <AssessmentError message={live.error} />}
         {state.audioAvailable && <AssessmentCard><OfficialAudio key={state.unitIndex} state={state} binding={live.session!.binding} /></AssessmentCard>}
         {waiting && <p role="status" className="rounded-xl bg-learning-note p-4 text-learning-note-ink">Chuẩn bị nghe. Đồng hồ đã bắt đầu tính 2 giây đệm trước khi phát audio.</p>}
-        {shown.map(q => <QuestionPanel key={q.number} question={q} disabled={live.busy || waiting} onChoice={choice => live.save(q.number, choice)} />)}
+        {shown.map((q, index) => <div key={q.number} className="space-y-3">
+          <QuestionPanel question={q} disabled={live.busy || waiting} onChoice={choice => live.save(q.number, choice)} />
+          {group && index < shown.length - 1 && <Button variant="outline" className="h-12" onClick={() => focusQuestion(q.number + 1)}>Tiếp đến câu {q.number + 1}</Button>}
+        </div>)}
         <div className="flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-sm">{live.saving}</p>
           {reading ? <div className="flex gap-3"><Button variant="outline" className="h-12" disabled={!current || current.number === 21} onClick={() => setSelected(current.number - 1)}>Câu trước</Button><Button variant="outline" className="h-12" disabled={!current || current.number === 50} onClick={() => setSelected(current.number + 1)}>Câu tiếp</Button></div>
-            : group ? <Button className="h-12" disabled={waiting || live.busy || saving} onClick={() => setConfirm({action: "finishStage", unitIndex: state.unitIndex})}>{state.unitIndex === 11 ? "Chuyển sang Reading" : "Chuyển nhóm tiếp theo"}</Button>
-              : <Button className="h-12" disabled={waiting || live.busy || saving} onClick={() => void live.perform("next", questions[0]?.selected ?? null)}>Câu tiếp →</Button>}
+            : group ? <Button className="h-12" disabled={live.busy || saving} onClick={() => setConfirm({action: "finishStage", unitIndex: state.unitIndex})}>{state.unitIndex === 11 ? "Chuyển sang Reading" : "Chuyển nhóm tiếp theo"}</Button>
+              : <Button className="h-12" disabled={live.busy || saving} onClick={() => void live.perform("next", questions[0]?.selected ?? null)}>Câu tiếp →</Button>}
         </div>
       </div>
       {!collapsed && <aside className="order-first lg:order-last"><AssessmentCard className="lg:sticky lg:top-32">

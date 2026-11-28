@@ -11,6 +11,7 @@ export interface ManagementNavItem {
 
 export const MANAGEMENT_CONTENT_NAV_ITEMS: ManagementNavItem[] = [
   { label: "Tổng quan", to: "/admin", end: true, icon: LayoutDashboard },
+  { label: "Đề đánh giá", to: ROUTES.ADMIN_ASSESSMENT, icon: BookOpenText },
   { label: "Quản lý Chủ đề", to: ROUTES.ADMIN_TOPICS, icon: BookOpenText },
   { label: "Quản lý Passages", to: ROUTES.ADMIN_PASSAGES, icon: Library },
   { label: "Câu hỏi Learning Path", to: ROUTES.ADMIN_LEARNING_PATH_QUESTIONS, icon: ListChecks },

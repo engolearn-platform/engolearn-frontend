@@ -27,7 +27,9 @@ existing Button/Card/Dialog and the Hanken Grotesk/primary/learning design token
 The start button accepts clicks when preparation data is ready. It lists unmet conditions
 near the button, including rules acknowledgement, sample playback and confirmation,
 and ineligible account or exam states. Missing conditions prevent a start API request.
-The server validates eligibility when a request is sent.
+The server validates eligibility when a request is sent. The preparation page links to
+Placement when the account has no qualifying result. A missing published Periodic
+Assessment paper appears separately and offers a refresh action.
 
 ## Taking rules
 
@@ -78,8 +80,9 @@ guards. No ID mapping, identity override, or cross-feature import is kept in the
 Loading, errors and retry stay within the recommendation card and leave the result visible.
 `AVAILABLE` shows returned skills, scores, level, weeks, days/week and questions/day; the
 total question count is their product. Canonical micro-skill names remain unchanged.
-`NO_WEAK_SKILLS` hides the card and expands the skill column; `NO_ELIGIBLE_SKILLS` displays
-the backend message; `ALREADY_CREATED` tells the learner a path already exists.
+`NO_WEAK_SKILLS` explains why the result has no recommendation when all measured skills
+score at least 50%. `NO_ELIGIBLE_SKILLS` displays the backend message. `ALREADY_CREATED`
+tells the learner a path already exists.
 The “Tạo lộ trình học tập” button opens the existing confirmation Dialog for `AVAILABLE`.
 Opening, cancelling, Escape or dismissing the dialog sends no creation request. Only its
 “Xác nhận” action calls `POST /api/learning-paths/by-assessment`, sending the result's native
@@ -103,6 +106,8 @@ The backend reads native READY Assessment results through AssessmentResults; no 
 Learning Path projection or background synchronization is required. Missing/foreign or
 non-READY sources return 404; unsupported/inconsistent source data returns 409. The
 frontend does not fabricate recommendations or convert native source IDs to ObjectIds.
+
+Recommendation is available immediately when the required Learning Path pools are available.
 
 Review defaults to all fifty original questions with selected wrong/correct/blank text,
 correct option, explanation and available transcript/audio. Filters are buttons: Đọc/Nghe
@@ -149,3 +154,44 @@ inferred from the page header or the source Assessment.
   and sufficient ACTIVE questions at both practice levels for the identical-skills case.
 
 Homepage read capability: the module exports its new `loadAssessmentHomeSummary` client and summary types through its public contract. Existing APIs and feature flows are unchanged. See [homepage integration](../topic/learner/15-homepage.md).
+
+## Paper management (F03)
+
+`/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units.
+
+Content Managers and Admins enter `/admin/assessment` through the shared
+`ProtectedRoute`. Editors upload validated WAV files through Assessment, save
+the draft, open the validated preview, confirm review of that revision and
+publish it. A successful save requires review of the new revision. Archive is
+scoped to one published version and does not remove media needed by existing
+attempts. Learner media responses can contain a temporary URL in prod or a WAV
+payload for local development. Review playback can request a fresh URL after
+a failed load. Taking preserves the current issue ID on a transport retry.
+
+
+Danh sách kỹ năng của editor lấy từ API `/api/v1/assessment/admin/drafts/skill-catalog`.
+ADMIN có mục Danh mục kỹ năng dùng API của catalog chung
+`/api/management/micro-skills` để thêm định nghĩa, đổi tên tiếng Việt và ngừng sử dụng.
+Thay đổi tên hoặc trạng thái dùng revision hiện hành của định nghĩa. Studio chỉ liệt
+kê các mã PFC đã có mapping đang hoạt động. Kết quả, xem lại và đề xuất Lộ trình học
+hiển thị tên tiếng Việt tương ứng từ catalog, giữ mã và tên chuẩn dùng trong nghiệp vụ.
+
+Trong danh sách Studio, tải mẫu Excel, chọn workbook và 12 WAV của đề, rồi
+chọn Kiểm tra và xem thử. Nếu AmThuWav có tên tệp, chọn thêm tệp đó trong bộ WAV của lần nhập. Khi cấu hình đề demo đã phát hành, workbook lấy đúng nội dung phiên bản hiện hành.
+Khi xác nhận tạo nháp, Studio lưu từng WAV qua Media và mở đúng bản nháp đã tạo.
+Nếu lỗi giữa chừng, giữ tệp và thử lại từ màn xem thử. Mục Âm thử dùng chung
+là thao tác riêng có xác nhận khi muốn đổi âm thử trước bài của học viên.
+Trong xem thử, người soạn có thể chọn đáp án và mở lời giải; đáp án thử nằm trong bộ
+nhớ của giao diện. Trình soạn và xem thử hiển thị tám nhóm câu. Nút xác nhận vẫn yêu cầu mở đủ 50 câu qua 26 đơn vị. Backend chỉ nhận xác
+nhận từ tài khoản đã mở preview đúng revision. Lưu chỉnh sửa yêu cầu kiểm lại bản mới.
+
+Khi xem lại và phải tải URL phát mới, player giữ vị trí nghe trước đó nếu còn trong tệp.
+
+## Version 2 listening navigation
+
+During the two-second preparation, Next on an unanswered single sends the current question
+with a null choice. The server locks that single and opens the next unit. Choices become
+editable when preparation ends. Inside a five-question group Next moves focus locally,
+retaining the same audio, editable scope and deadline. Confirming the end of the current
+group may close it during preparation. A confirmation crossing the audio-start boundary
+remains valid for the same unit. Old-unit and duplicate commands cannot close a later group.

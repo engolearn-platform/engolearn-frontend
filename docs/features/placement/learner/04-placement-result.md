@@ -74,6 +74,9 @@ P05 tự tải review; P04 không chứa dữ liệu đáp án.
 
 ## 10. CTA Bắt đầu học
 
+Người học có thể mở Đánh giá định kỳ ngay từ kết quả đã thuộc tài khoản. Trang định
+kỳ kiểm tiếp bộ đề, hạn mức và thời gian chờ.
+
 Hiển thị đúng business/Stitch nhưng disabled + `title="Sắp ra mắt"` đến khi
 chức năng học có contract nhận `placementLevel`. Không link `/topics` hay tạo
 route/query mới.

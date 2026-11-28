@@ -107,7 +107,10 @@ async function mount(t, {
       { path: "/optional", element: roleContent() },
       {
         element: legacy ? h(AuthGuard) : h(ProtectedRoute, required === null ? {} : { allowedRoles: required }),
-        children: [{ path: "/restricted/lesson", element: h("h1", null, "Restricted lesson") }],
+        children: [
+          { path: "/restricted/lesson", element: h("h1", null, "Restricted lesson") },
+          { path: "/admin/assessment", element: h("h1", null, "Manage assessment") },
+        ],
       },
       {
         Component: GuestOnlyGuard,
@@ -198,6 +201,15 @@ test("management login retains a safe Topic management return-to", async t => {
   await app.settle();
   await app.login();
   assert.equal(app.router.state.location.pathname + app.router.state.location.search, "/admin/topics?tab=drafts");
+});
+
+test("content staff return to the Assessment editor after sign-in", async t => {
+  const app = await mount(t, { initial: "/admin/assessment?view=drafts", loginRole: "CONTENT_MANAGER" });
+  await app.settle();
+  assert.equal(app.router.state.location.pathname, "/login");
+  await app.login();
+  assert.equal(app.router.state.location.pathname + app.router.state.location.search, "/admin/assessment?view=drafts");
+  assert.match(app.container.textContent, /Manage assessment/);
 });
 
 test("guest admin user entry returns to the exact filtered URL after ADMIN login", async t => {
