@@ -47,10 +47,20 @@ Tìm kiếm lộ trình vẫn theo canonical/ngày ở backend; chưa thêm tìm
   chọn. Danh sách và preview hiển thị nhãn tiếng Việt sau khi lưu.
 - Kiểm tra preview ở viewport 390 x 844: dialog nằm trong chiều rộng màn hình,
   nội dung có thể cuộn; đã khôi phục viewport sau kiểm tra.
-- Chưa kiểm chứng INACTIVE hoặc lỗi mạng/retry trên hệ thống thật. Catalog hiện
-  không có định nghĩa INACTIVE; chưa thay đổi trạng thái dữ liệu dùng chung.
-- Tài khoản CONTENT_MANAGER có 0 lộ trình nên chưa kiểm chứng learner detail,
-  thống kê, practice/review. Cần đăng nhập learner có dữ liệu để hoàn tất E2E.
+- Đã kiểm chứng INACTIVE trên DB local thật: tạm đổi riêng MS-R-GIST từ ACTIVE
+  sang INACTIVE, tải lại catalog trên form đang soạn. Lựa chọn hiện Đọc tìm ý chính
+  · Không còn khả dụng và bị vô hiệu hóa; thao tác lưu bị chặn ở form. Toàn bộ
+  câu hỏi, bốn lựa chọn, đáp án đúng, giải thích và canonical vẫn nguyên vẹn.
+  Dữ liệu câu hỏi đã có vẫn hiện nhãn tiếng Việt; bộ lọc có Ngừng sử dụng và
+  vẫn tìm được câu hỏi. Đã khôi phục status ACTIVE, giữ nguyên revision và metadata.
+- Đã kiểm chứng API lỗi và thử lại: tạm dừng MongoDB local, GET catalog thật trả
+  HTTP 503. Form hiện lỗi và nút Thử tải lại danh mục kỹ năng, nút lưu bị khóa.
+  Khởi động lại MongoDB rồi thử lại: lỗi API biến mất, lựa chọn ACTIVE và nút lưu
+  hoạt động lại. So sánh toàn bộ giá trị form trước/sau xác nhận không mất dữ liệu.
+  Không lưu câu hỏi thử; đã đóng form bằng Hủy và xác nhận MongoDB healthy.
+- Tài khoản CONTENT_MANAGER có 0 lộ trình nên agent chưa tự kiểm chứng learner
+  detail, thống kê, practice/review. Người dùng đã xác nhận luồng user chạy đúng
+  ngày 28/11/2026; đây là kết quả kiểm tra của người dùng.
 - Đã xóa bản nháp kiểm thử LP-Q-9764ed08-d3f7-4b10-962c-1ff51aa1555b sau
   khi người dùng xác nhận. UI báo xóa thành công và tìm kiếm không còn kết quả;
   các câu hỏi đã xuất bản và đáp án learner không đổi.
