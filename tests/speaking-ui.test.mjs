@@ -6,7 +6,7 @@ import { act, createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { createServer } from "vite";
 
-let dom; let vite; let router; let hookModule; let resultView; let speakingEntry; let historyView; let AuthProvider; let quotaPresentation;
+let dom; let vite; let router; let hookModule; let resultView; let speakingEntry; let historyView; let AuthProvider; let quotaPresentation; let conversationTimeline; let liveTurn;
 const session = {
   sessionId: "42f14305-3cae-4523-8b68-59a48e728be1", scope: { type: "TOPIC_ITEM", topicId: "t", topicItemId: "i" },
   context: { title: "Ordering a drink", topicTitle: "At a cafe", topicItemTitle: "Ordering a drink", level: "A2", description: "Order a drink.", aiRole: "Barista", learnerRole: "Customer" },
@@ -25,7 +25,7 @@ before(async () => {
     name: "speaking-test-router", resolveId: id => id === routerId ? id : undefined,
     load: id => id === routerId ? 'export { createMemoryRouter, RouterProvider } from "react-router";' : undefined,
   }] });
-  [router, hookModule, resultView, speakingEntry, historyView, AuthProvider, quotaPresentation] = await Promise.all([
+  [router, hookModule, resultView, speakingEntry, historyView, AuthProvider, quotaPresentation, conversationTimeline, liveTurn] = await Promise.all([
     vite.ssrLoadModule(routerId),
     vite.ssrLoadModule("/src/features/speaking/hooks/useSpeakingV2Stream.ts"),
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingResultView.tsx"),
@@ -33,6 +33,8 @@ before(async () => {
     vite.ssrLoadModule("/src/features/speaking/views/SpeakingHistoryView.tsx"),
     vite.ssrLoadModule("/src/shared/hooks/useAuth.tsx"),
     vite.ssrLoadModule("/src/features/speaking/utils/speaking-quota-presentation.ts"),
+    vite.ssrLoadModule("/src/features/speaking/components/conversation/ConversationTimeline.tsx"),
+    vite.ssrLoadModule("/src/features/speaking/utils/speaking-live-turn.ts"),
   ]);
 });
 after(async () => {
@@ -433,6 +435,45 @@ test("mounted result stops its current audio before replay and when leaving the 
   assert.equal(audios[0].paused, true, "starting another clip stops the active one");
   await act(async () => { await appRouter.navigate("/other"); await wait(10); });
   assert.equal(audios[1].paused, true, "leaving the result route stops its owned audio");
+});
+
+test("timeline keeps replay controls mounted but disabled while playback is locked", async () => {
+  const turn = { turnId: "turn-audio", clientTurnId: "client-audio", sequence: 1, status: "COMPLETED", transcript: "Hello", reply: "Hi there", hint: null,
+    correction: null, learnerAudioAvailable: true, assistantAudioAvailable: true, audioStatus: "AUDIO_READY", replyDeliveredAt: null, speechDurationMs: 1000, reason: null };
+  const opening = { reply: "Welcome", hint: null, audioStatus: "AUDIO_READY", audioAvailable: true };
+  const container = document.body.appendChild(document.createElement("div")); const root = createRoot(container);
+  const replayButtons = () => [...container.querySelectorAll('button[aria-label="Nghe bản ghi"], button[aria-label="Nghe phản hồi AI"]')];
+  const timeline = (props) => h(conversationTimeline.default, {
+    aiRole: "Barista", learnerRole: "Bạn", opening, turns: [turn],
+    onPlayOpening: () => {}, onPlayLearner: () => {}, onPlayAssistant: () => {}, ...props,
+  });
+  await act(async () => { root.render(timeline({})); });
+  assert.equal(replayButtons().length, 3, "opening, learner recording and AI reply controls render while idle");
+  assert.ok(replayButtons().every(button => !button.disabled), "replay controls are clickable while idle");
+  await act(async () => { root.render(timeline({ playbackDisabled: true })); });
+  assert.equal(replayButtons().length, 3, "replay controls stay mounted while playback is locked");
+  assert.ok(replayButtons().every(button => button.disabled), "replay controls are disabled instead of removed");
+  await act(async () => { root.render(timeline({ turns: [{ ...turn, learnerAudioAvailable: false, assistantAudioAvailable: false }], opening: { ...opening, audioAvailable: false } })); });
+  assert.equal(replayButtons().length, 0, "replay controls stay hidden when the audio is unavailable");
+  await act(async () => { root.unmount(); }); container.remove();
+});
+
+test("the recording turn renders once as a live transcript instead of duplicating the placeholder", () => {
+  const settled = { turnId: "turn-1", clientTurnId: "client-1", sequence: 1, status: "COMMITTED", transcript: "Hello", reply: "Hi there", hint: null,
+    correction: null, learnerAudioAvailable: true, assistantAudioAvailable: true, audioStatus: "AUDIO_READY", replyDeliveredAt: null, speechDurationMs: 1000, reason: null };
+  const receiving = { ...settled, turnId: "turn-2", clientTurnId: "client-2", sequence: 2, status: "RECEIVING", transcript: null, reply: null };
+  const ids = result => result.turns.map(turn => turn.turnId);
+  const recording = liveTurn.speakingLiveTurn([settled, receiving], "I would like", "recording");
+  assert.deepEqual(ids(recording), ["turn-1"], "the empty in-progress turn is hidden while recording");
+  assert.equal(recording.liveText, "Đang nhận diện: I would like", "the live bubble carries the interim transcript");
+  assert.equal(liveTurn.speakingLiveTurn([settled, receiving], "", "recording").liveText, "Đang ghi âm…",
+    "a single live bubble still represents the turn before any transcript arrives");
+  const transcribed = { ...receiving, status: "TRANSCRIBING", transcript: "I would like a tea" };
+  const persisted = liveTurn.speakingLiveTurn([settled, transcribed], "I would like a tea", "processing");
+  assert.deepEqual(ids(persisted), ["turn-1", "turn-2"], "an in-progress turn with a transcript renders in the timeline");
+  assert.equal(persisted.liveText, null, "the interim bubble is suppressed once the turn itself renders");
+  const skipped = { ...settled, turnId: "turn-3", status: "SKIPPED", transcript: null, reason: "TURN_CANCELLED" };
+  assert.deepEqual(ids(liveTurn.speakingLiveTurn([skipped], "", "idle")), ["turn-3"], "terminal turns always render");
 });
 
 test("mounted hook reconciles sealed and receiving turns and retries the same failed turn once", async t => {

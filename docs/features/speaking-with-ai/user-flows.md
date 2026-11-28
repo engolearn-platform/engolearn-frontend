@@ -4,8 +4,8 @@
 | --- | --- |
 | Open from a Topic or Item | Check availability for that exact scope; show an actionable reason when unavailable. |
 | Start a session | Request microphone permission, stop probe tracks, create a session and open its standalone workspace. |
-| Speak | Use the sticky workspace control bar to send `START_TURN`, capture only after `TURN_ACCEPTED`, and stream PCM16. Finalize on silence, learner action, or when transmitted PCM reaches the session's per-turn audio limit. |
-| Review a reply | Read the two-sided conversation timeline. Expand hints on their AI reply and corrections on the original learner transcript. Replay persisted audio only when the matching availability flag is true. |
+| Speak | Use the sticky workspace control bar to send `START_TURN`, capture only after `TURN_ACCEPTED`, and stream PCM16. Finalize on silence, learner action, or when transmitted PCM reaches the session's per-turn audio limit. The turn being recorded renders once: its persisted in-progress row stays hidden until it has a transcript, and the interim bubble shows the spoken text. |
+| Review a reply | Read the two-sided conversation timeline. Expand hints on their AI reply and corrections on the original learner transcript. Replay persisted audio only when the matching availability flag is true; the replay controls stay visible but disabled while recording, while streamed reply audio is playing, or while the socket is disconnected. |
 | Reconnect | Stop capture, reconnect with a fresh ticket, sync REST state and deduplicate saved turns. |
 | Finish while recording | Let the learner choose to finalize the turn or discard it before ending. |
 | View a result | Poll pending assessment, show four aligned criteria cards with separate score scales, localize unavailable states, and preserve null/partial/unavailable results. Review only feedback groups with actual content and the saved conversation timeline. |

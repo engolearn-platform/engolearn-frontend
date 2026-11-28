@@ -75,7 +75,7 @@ Trial POST /api/v1/subscription/me/trial sends an empty object plus Idempotency-
 
 ## Contract dependencies and deferred work
 
-Three real GETs are /api/v1/subscription/plans, /api/v1/subscription/me and /api/v1/quota/me/usage. Successful responses use data/timestamp; protected reads require server identity. Keep currentBenefits/trialIneligibilityReason and quota allowanceStartAt aligned with OpenAPI. Trial is PREMIUM tier plus TRIAL status.
+Three real GETs are /api/v1/subscription/plans, /api/v1/subscription/me and /api/v1/quota/me/usage. Successful responses use data/timestamp; protected reads require server identity. Keep currentBenefits/trialIneligibilityReason and quota allowanceStartAt aligned with OpenAPI. Trial is PREMIUM tier plus TRIAL status. The current entitlement code is TRIAL while the immutable benefits snapshot retains planCode PREMIUM; response validation must distinguish those two fields.
 
 No payment provider, purchase action, pending-intent read, reconciliation/refund action or real Speaking/Proficiency implementation was added. M5 Admin screens are documented separately. M4 mock-caller tests prove real Quota interfaces and transaction behavior, not real learning actions. Production sign-in and historical account migration remain separate readiness gates.
 
