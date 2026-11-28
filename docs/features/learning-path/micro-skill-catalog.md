@@ -88,3 +88,5 @@ rỗng, được ưu tiên hơn metadata trong response câu hỏi đã tải tr
 Build và lint đã chạy lại sau thay đổi và đạt kết quả nêu trên. Kiểm thử
 trình duyệt quản trị đã thực hiện theo mục Kiểm chứng; các trường hợp còn thiếu
 được ghi rõ, chưa coi toàn bộ E2E là đã đạt.
+
+The homepage consumes `loadLearningPathHomeSummary` and the existing catalog reader through `@features/learning-path/contract`. Catalog failure retains canonical path skill names; it does not turn an existing path into empty state. See [homepage integration](../topic/learner/15-homepage.md).

@@ -153,6 +153,8 @@ inferred from the page header or the source Assessment.
   and no replacement POST is sent automatically. Validate with a real account
   and sufficient ACTIVE questions at both practice levels for the identical-skills case.
 
+Homepage read capability: the module exports its new `loadAssessmentHomeSummary` client and summary types through its public contract. Existing APIs and feature flows are unchanged. See [homepage integration](../topic/learner/15-homepage.md).
+
 ## Paper management (F03)
 
 `/admin/assessment` opens the content management layout for ADMIN and CONTENT_MANAGER. The draft list supports pagination, creation by series, and opening a saved draft. A new draft of an existing series copies the latest version. The editor supports skills, units, questions, four options, an optional correct answer, passages and transcripts. Removing a unit containing questions requires confirmation. The editor submits the last saved revision, retains local input on conflict and offers an explicit reload. Existing audio references stay attached to copied units.

@@ -2,39 +2,91 @@
 
 ## Design reference
 
-Use the supplied Phase 2 dashboard and discovery reference for signed-in learners. After the welcome banner, the page renders Progress Overview, Continue Learning, and Feature Discovery in that order.
+Use the approved single-column progress dashboard from this chat: four compact overview
+cards, then Assessment, Learning Path, Topic, Grammar and Speaking sections in that order.
+Section headings are outside their cards. Each main card uses a content/action header
+and a separate progress/results area. Preserve LearningLayout, sidebar, top bar and companion.
+Use existing design tokens, Card/Button and the Topic progress bar. No welcome hero,
+feature-discovery grid or sample Grammar data remains on the signed-in page.
 
-## Route and components
+## Route, ownership and data
 
-- `src/router.tsx` composes `/` through `LandingEntryView`. Guests see the public landing page. Signed-in learners see `LearnerHomeRoute` inside `LearningLayout`.
-- `LearnerHomeRoute` supplies the Learning Path and Assessment readers to `TopicHomeView`. The signed-in dashboard and its three sections live under Topic Learning.
-- The My Topics request (`GET /api/v1/topics/mine?status=IN_PROGRESS&limit=1`) supplies both the overview counts and the most recent unfinished Topic. Topic Viewer supplies the current profile learning level.
-- `Mở chủ đề` links to Topic Detail and uses My Topics as its return destination. Topic Detail owns start and resume eligibility.
-- Learning Path uses the cookie-authenticated active list and the most recently created path's detail. An open week shows its returned day states. The card links to path detail or the list and leaves day-start eligibility to the owning screen.
-- Assessment counts valid (`READY`) results for the current calendar month in Vietnam time. It reads the existing history in descending completion order until it reaches the previous month or the end of history. The card links to Assessment History.
-- Grammar continuation uses explicitly labeled sample data from `home-dashboard.mock.ts`. Its action opens the existing Grammar preview. Feature Discovery has Topic, Grammar preview, Assessment and Dictionary tiles. The Dictionary tile communicates unavailability and has no link.
+`/` still composes LandingEntryView -> LearnerHomeRoute -> TopicHomeView. Guest landing
+and session restoration behavior are unchanged. Fetch only inside the authenticated
+identity-keyed dashboard; identity change unmounts it and aborts all requests.
 
-## States
+Each module owns a new home-summary client/type. Cross-feature readers are exported through their public contracts; Topic keeps its own reader private.
+The dashboard consumes these contracts with the shared useFetch hook. Existing API
+clients and routes remain unchanged. Profile and micro-skill catalog readers are reused.
 
-| State | Homepage action |
-|---|---|
-| Guest | See the public landing page with topic, grammar, sign-in, and placement links |
-| Authenticated with an in-progress Topic | Show its title, cover if available and completed/visible situations. Open its detail |
-| Authenticated with no in-progress Topic | Continue Learning keeps its Topic and Grammar slots. The Topic slot offers browsing |
-| Session restoration pending | Show a neutral accessible state before choosing the public or learner homepage |
-| Session restoration fails | Keep the public landing page visible and offer retry |
-| Dashboard request pending or fails | Show loading or retry in the affected card. Feature Discovery remains available |
+| Request | Content |
+| --- | --- |
+| GET /api/v1/topics/home-summary | Topic statistics and current/next situation |
+| GET /api/v1/grammar/home-summary | Grammar statistics, current topic/lesson, scoped scores |
+| GET /api/learning-paths/home-summary | Path statistics, current path, availability and empty actions |
+| GET /api/v1/assessment/home-summary | Latest valid result, frozen section totals, permitted weak skills |
+| GET /api/v1/speaking/home-summary | Non-deleted V2 sessions, measured learner speech and optional criteria |
+| GET /api/v1/profile/me | Profile level |
+| GET /api/micro-skills | Vietnamese labels; canonical names remain the fallback |
 
-The signed-in request is scoped to the current auth identity. A change of identity discards the previous learner's card.
+Backend source of truth: `engolearn-backend/docs/technical/learner-home-summary.md` and
+its owner-specific links. Return counts are current-state counts, not lifetime totals.
+Profile level, test level and path level are independent. No default A1, fake scores,
+calendar streak, time tracking or hardcoded Reading/Listening denominators.
 
-## UI scope and responsive behavior
+## States and actions
 
-The guest landing is owned by `src/features/landing-page/` and provides the public `/placement` placeholder.
+Every source has independent skeleton/error/retry. Errors never become empty or zero;
+overview tiles show an unavailable marker and share the source retry with their card.
+Empty cards are compact, each with one explanation and an existing navigation destination.
 
-Use the existing auth and shell contracts. Overview and continuation cards stack on mobile and use two columns on larger screens. Discovery uses two columns on mobile and four on wide screens. Overview displays actual values, empty states, or a localized error and retry for each data source.
+- Assessment empty opens /assessment; populated opens its existing result screen.
+  Preview shows only returned skills and explains limited analysis. Demo is marked.
+- Path empty maps ASSESSMENT_REQUIRED to /assessment, RECOMMENDATION_AVAILABLE to
+  the source Assessment result/recommendation, PAST_PATHS_ONLY to the path list,
+  NO_WEAK_SKILLS/NO_ELIGIBLE_SKILLS to learning discovery. An active path opens its
+  detail; canPractice=false uses viewing wording. No day is auto-started.
+- Topic empty offers discovery, with completed-count-aware copy. The card opens
+  Topic Detail with My Topics as return origin; normal current/eligible next items
+  are labeled separately, never a guessed resume frontier.
+  Use the Vietnamese topic title as the heading, matching the Topic catalog; fall
+  back to English when Vietnamese is absent and show distinct English as secondary text.
+- Grammar empty offers roadmap. Populated opens the returned lesson; scores belong
+  only to that lesson, and missing scores stay absent. No roadmap call on homepage.
+- Speaking empty offers Topic discovery to choose a scope (no global unscoped start
+  API exists). With sessions show counts, actual speech time, latest title/status and
+  criteria in their original 100/5 scales; pending/missing criteria have no score.
+  Ended sessions open result, unfinished sessions open their existing session screen.
+- New learners get a short optional orientation message; no mandatory onboarding order.
 
-## Verification checklist
+All homepage effects are GETs except the shared auth transport's existing cookie refresh.
+Never start sessions/practice, request microphone, create paths or grant unlocks on mount.
 
-- Check overview, continuation and discovery layout plus Topic and Assessment links. Verify the Grammar sample label and the unavailable Dictionary tile.
-- Use the frontend proxy with the local backend for signed-in reads when a local account is available.
-- Run frontend build and lint once.
+## Responsive and verification
+
+Content uses a centered max-w-6xl container and 20px mobile margins. Overview is two
+columns on mobile and four on wide screens. Main modules always stack; card actions
+move below the header on mobile. Long titles/chips wrap and no horizontal scrolling.
+Use headings, text labels, accessible progress bars and 48px touch actions.
+
+Verify build and lint plus real frontend proxy/backend reads and actual browser views
+with available authenticated accounts. Do not use mocked HTTP/fixtures to verify this
+integration. Report absent data, unavailable backend and unverified variants honestly.
+
+### Live verification command
+
+With the real backend and frontend proxy running, set ENGOLEARN_TEST_EMAIL and
+ENGOLEARN_TEST_PASSWORD to an existing test account, then run `npm run test:home-live`.
+Optional ENGOLEARN_TEST_ORIGIN defaults to http://localhost:3000 and must remain local.
+This checks seven real responses, empty/available contracts, counters, no-store and
+five anonymous 401s. It signs out only its own test session and never seeds progress.
+Do not commit credentials or replace the backend with a fixture server.
+
+Observed locally: build passes; lint has no errors; both public demo management
+accounts return valid empty summaries through the proxy. The signed-in browser shows
+all five empty sections and the first-step hint. Desktop 1440px and mobile 390px
+layout bounds have no document overflow; no browser console errors were observed.
+Populated cards, limited/full Assessment analysis, all Learning Path suggestion
+variants and per-card network error/retry still need accounts/data exhibiting those
+states for live visual acceptance. They are implemented from the backend contract,
+not claimed as verified using mock responses. Existing sidebar/topbar files are unchanged.
