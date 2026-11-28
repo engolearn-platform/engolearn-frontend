@@ -35,17 +35,24 @@ Tìm kiếm lộ trình vẫn theo canonical/ngày ở backend; chưa thêm tìm
 - `npm run build`: đạt TypeScript và Vite; cảnh báo bundle trên 500 kB vẫn còn.
 - `npm run lint`: 0 lỗi, 73 cảnh báo; ESLint riêng tất cả file Learning Path đã
   thay đổi/thêm mới với `--max-warnings 0` đạt, không có lỗi/cảnh báo.
-- Request thật `/api/micro-skills` qua Vite proxy trả 401 cho client chưa đăng nhập.
-  Đây là kiểm tra kết nối và ranh giới xác thực, chưa chứng minh danh sách đã tải đủ.
-- Trình duyệt tích hợp mở được `/learning-paths` khi Vite chạy ngoài sandbox;
-  trang hiện Không xác minh được tài khoản / HTTP 403. Chưa kiểm chứng màn có dữ
-  liệu và nhãn dài trên desktop/mobile, bộ chọn ACTIVE/INACTIVE, lưu nháp và retry
-  khi đã đăng nhập. Không dùng mock/fixture thay kết quả tích hợp.
-
-Bước kiểm tra thủ công còn lại: chạy backend có catalog đã import, đăng nhập learner
-và CONTENT_MANAGER/ADMIN, kiểm tra các màn danh sách/chi tiết/thống kê/practice/review;
-ở form câu hỏi kiểm tra kỹ năng ngừng dùng, lỗi/tải lại mà không mất nội dung, và
-request vẫn gửi canonical. Cần xử lý phiên xác thực trước khi xác nhận E2E.
+- Kiểm thử trình duyệt ngày 28/11/2026 với frontend proxy và backend thật,
+  tài khoản CONTENT_MANAGER đã đăng nhập; không dùng mock/fixture.
+- API catalog trả đủ 10 định nghĩa, tất cả ACTIVE. Bộ lọc và form hiển thị tên
+  tiếng Việt; giá trị lựa chọn vẫn là canonical. Đổi nhóm Reading/Listening lọc
+  đúng 5 kỹ năng của từng nhóm.
+- Tạo bản nháp Reading for Gist, mở lại, sửa giải thích và lưu thành revision 2
+  thành công. API chi tiết xác nhận microSkill vẫn là Reading for Gist và nhãn
+  Đọc tìm ý chính. Chưa xuất bản bản nháp kiểm thử.
+- Tải lại catalog trong form giữ nguyên câu hỏi, giải thích và canonical đang
+  chọn. Danh sách và preview hiển thị nhãn tiếng Việt sau khi lưu.
+- Kiểm tra preview ở viewport 390 x 844: dialog nằm trong chiều rộng màn hình,
+  nội dung có thể cuộn; đã khôi phục viewport sau kiểm tra.
+- Chưa kiểm chứng INACTIVE hoặc lỗi mạng/retry trên hệ thống thật. Catalog hiện
+  không có định nghĩa INACTIVE; chưa thay đổi trạng thái dữ liệu dùng chung.
+- Tài khoản CONTENT_MANAGER có 0 lộ trình nên chưa kiểm chứng learner detail,
+  thống kê, practice/review. Cần đăng nhập learner có dữ liệu để hoàn tất E2E.
+- Bản nháp kiểm thử LP-Q-9764ed08-d3f7-4b10-962c-1ff51aa1555b đang chờ
+  người dùng xác nhận xóa; các câu hỏi đã xuất bản và đáp án learner không đổi.
 
 Backend sở hữu schema, seed và contract tại
 `engolearn-backend/docs/technical/microskill/README.md`. Cần import seed backend trước
@@ -58,7 +65,6 @@ form không tạo một loader riêng. Nút tải lại có ở cả màn danh s
 chung dữ liệu mà không đổi key hay remount form. GET thành công, kể cả trả danh sách
 rỗng, được ưu tiên hơn metadata trong response câu hỏi đã tải trước đó.
 
-Build và lint đã chạy lại sau thay đổi. E2E với phiên Edge hiện có chưa thực hiện
-được: công cụ Computer Use dừng vì không xác định chắc chắn URL cửa sổ browser trên
-Windows. Chưa thao tác tạo/sửa câu hỏi, đổi trạng thái/nhãn catalog, lưu đáp án hoặc
-nộp bài qua browser trong lượt kiểm tra này; không coi phần E2E là đã đạt.
+Build và lint đã chạy lại sau thay đổi và đạt kết quả nêu trên. Kiểm thử
+trình duyệt quản trị đã thực hiện theo mục Kiểm chứng; các trường hợp còn thiếu
+được ghi rõ, chưa coi toàn bộ E2E là đã đạt.
