@@ -147,3 +147,5 @@ inferred from the page header or the source Assessment.
   the dialog closes, a refreshed recommendation must be explicitly confirmed,
   and no replacement POST is sent automatically. Validate with a real account
   and sufficient ACTIVE questions at both practice levels for the identical-skills case.
+
+Homepage read capability: the module exports its new `loadAssessmentHomeSummary` client and summary types through its public contract. Existing APIs and feature flows are unchanged. See [homepage integration](../topic/learner/15-homepage.md).

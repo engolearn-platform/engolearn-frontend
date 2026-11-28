@@ -5,3 +5,6 @@ export { ProtectedRoute } from "@features/auth/components/ProtectedRoute";
 export type { ProtectedRouteProps } from "@features/auth/components/ProtectedRoute";
 export type { AuthUserRole } from "@shared/types/auth.types";
 export { hasRequiredRole } from "@features/auth/utils/role-policy";
+
+export { profileService } from "@features/auth/services/profile.service";
+export type { UserProfile } from "@features/auth/services/profile.service";
