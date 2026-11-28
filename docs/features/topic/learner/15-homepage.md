@@ -49,6 +49,8 @@ Empty cards are compact, each with one explanation and an existing navigation de
 - Topic empty offers discovery, with completed-count-aware copy. The card opens
   Topic Detail with My Topics as return origin; normal current/eligible next items
   are labeled separately, never a guessed resume frontier.
+  Use the Vietnamese topic title as the heading, matching the Topic catalog; fall
+  back to English when Vietnamese is absent and show distinct English as secondary text.
 - Grammar empty offers roadmap. Populated opens the returned lesson; scores belong
   only to that lesson, and missing scores stay absent. No roadmap call on homepage.
 - Speaking empty offers Topic discovery to choose a scope (no global unscoped start

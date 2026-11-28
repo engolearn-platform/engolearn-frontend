@@ -18,8 +18,8 @@ export function HomeTopicCard({ query }: { query: HomeDashboard["topics"] }) {
             <span aria-hidden="true" className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-learning-mint text-primary">
               <BookOpenText className="size-5" />{topic.coverUrl && <img src={topic.coverUrl} alt="" className="absolute inset-0 size-full object-cover" onError={event => { event.currentTarget.hidden = true; }} />}
             </span>
-            <div className="min-w-0 space-y-1"><h3 lang={topic.titleEn ? "en" : "vi"} className="break-words text-headline-sm font-semibold">{topic.titleEn || topic.titleVi}</h3>
-              {topic.titleVi && topic.titleVi !== topic.titleEn && <p className="text-label-lg text-on-surface-variant">{topic.titleVi}</p>}
+            <div className="min-w-0 space-y-1"><h3 lang={topic.titleVi ? "vi" : "en"} className="break-words text-headline-sm font-semibold">{topic.titleVi || topic.titleEn}</h3>
+              {topic.titleVi && topic.titleEn && topic.titleEn !== topic.titleVi && <p lang="en" className="text-label-lg text-on-surface-variant">{topic.titleEn}</p>}
               {topic.cefrLevel && <HomeBadge>{topic.cefrLevel}</HomeBadge>}
             </div>
           </div>
