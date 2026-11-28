@@ -100,6 +100,10 @@ async function mount(t, {
     children: [
       { path: "/", element: h("h1", null, "Home") },
       { path: "/admin/topics", element: h("h1", null, "Manage Topics") },
+      {
+        element: h(ProtectedRoute, { allowedRoles: ["ADMIN"] }),
+        children: [{ path: "/admin/users", element: h("h1", null, "Manage Users") }],
+      },
       { path: "/optional", element: roleContent() },
       {
         element: legacy ? h(AuthGuard) : h(ProtectedRoute, required === null ? {} : { allowedRoles: required }),
@@ -194,6 +198,28 @@ test("management login retains a safe Topic management return-to", async t => {
   await app.settle();
   await app.login();
   assert.equal(app.router.state.location.pathname + app.router.state.location.search, "/admin/topics?tab=drafts");
+});
+
+test("guest admin user entry returns to the exact filtered URL after ADMIN login", async t => {
+  const destination = "/admin/users?search=mai&page=2&size=10&role=USER&status=ACTIVE&sort=name%2Casc";
+  const app = await mount(t, { initial: destination, loginRole: "ADMIN", required: ["ADMIN"] });
+  await app.settle();
+  assert.equal(app.router.state.location.pathname, "/login");
+  assert.deepEqual(
+    { pathname: app.router.state.location.state.from.pathname, search: app.router.state.location.state.from.search },
+    { pathname: "/admin/users", search: "?search=mai&page=2&size=10&role=USER&status=ACTIVE&sort=name%2Casc" },
+  );
+  await app.login();
+  assert.equal(app.router.state.location.pathname + app.router.state.location.search, destination);
+  assert.match(app.container.textContent, /Manage Users/);
+});
+
+test("CONTENT_MANAGER cannot enter the ADMIN-only user management route", async t => {
+  const app = await mount(t, { initial: "/admin/users?search=mai", role: "CONTENT_MANAGER", required: ["ADMIN"] });
+  await app.settle();
+  assert.equal(app.router.state.location.pathname, "/admin/users");
+  assert.match(app.container.textContent, /403/);
+  assert.doesNotMatch(app.container.textContent, /Manage Users/);
 });
 
 test("content manager login does not land in the separate subscription workspace", async t => {

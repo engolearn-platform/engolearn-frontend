@@ -1,7 +1,7 @@
 import { useAuth } from "@shared/hooks";
 import { cn } from "@shared/utils";
 import { NavLink } from "react-router";
-import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS, MANAGEMENT_PLACEMENT_NAV_ITEMS } from "./managementNav";
+import { MANAGEMENT_CONTENT_NAV_ITEMS, MANAGEMENT_SYSTEM_NAV_ITEMS, MANAGEMENT_PLACEMENT_NAV_ITEMS, MANAGEMENT_ADMIN_NAV_ITEMS } from "./managementNav";
 import BrandImage from "@shared/components/BrandImage";
 
 export default function ManagementSidebar() {
@@ -42,6 +42,7 @@ export default function ManagementSidebar() {
           ))}
         </nav>
         {isAdmin() && <><p className="mt-6 px-5 text-label-sm tracking-wider text-on-surface-variant uppercase">Placement Test</p><nav aria-label="Quản trị Placement Test" className="mt-2 flex flex-col gap-2 px-5">{MANAGEMENT_PLACEMENT_NAV_ITEMS.map(item => <NavLink key={item.to} to={item.to} className={({isActive}) => cn("flex items-center gap-4 rounded-xl px-5 py-2 text-label-lg transition-colors",isActive?"bg-primary-container font-semibold text-on-primary shadow-sm":"text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface")}><item.icon className="size-5 shrink-0" aria-hidden="true" /><span>{item.label}</span></NavLink>)}</nav></>}
+        {isAdmin() && <><p className="mt-6 px-5 text-label-sm tracking-wider text-on-surface-variant uppercase">Quản trị người dùng</p><nav aria-label="Quản trị người dùng" className="mt-2 flex flex-col gap-2 px-5">{MANAGEMENT_ADMIN_NAV_ITEMS.map(item => <NavLink key={item.to} to={item.to} className={({isActive}) => cn("flex items-center gap-4 rounded-xl px-5 py-2 text-label-lg transition-colors",isActive?"bg-primary-container font-semibold text-on-primary shadow-sm":"text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface")}><item.icon className="size-5 shrink-0" aria-hidden="true" /><span>{item.label}</span></NavLink>)}</nav></>}
         <p className="mt-6 px-5 text-label-sm tracking-wider text-on-surface-variant uppercase">
           Hệ thống
         </p>
