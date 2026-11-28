@@ -1,13 +1,16 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
+import { microSkillLabel } from "@features/learning-path/utils/microSkillCatalog";
 import { PassagePreview } from "@features/learning-path/components/management/passages/PassageWorkspaceDialog";
 import { PassageStatusBadge } from "@features/learning-path/components/management/passages/PassageManagementTable";
-import { microSkillLabel, QUESTION_REVIEW_LABELS, isQuestionReviewCheck } from "@features/learning-path/types/question-management.types";
+import { QUESTION_REVIEW_LABELS, isQuestionReviewCheck } from "@features/learning-path/types/question-management.types";
 import type { QuestionDetail } from "@features/learning-path/types/question-management.types";
 
 export default function QuestionPreview({ detail, onReload }: { detail: QuestionDetail; onReload: () => void }) {
+  const { catalog } = useMicroSkillLabels();
   return <div className="space-y-5">
     <div className="flex flex-wrap items-center gap-3 text-label-sm"><span>{detail.skill ?? "Chưa phân loại"}</span><span>{detail.level ?? "—"}</span>
       {detail.status && <PassageStatusBadge status={detail.status} />}<span>Phiên bản {detail.revision ?? "chưa xác định"}</span></div>
-    <p className="break-all text-label-sm text-on-surface-variant">{detail.questionId} · {microSkillLabel(detail.microSkill)}</p>
+    <p className="break-all text-label-sm text-on-surface-variant">{detail.questionId} · {microSkillLabel(detail.microSkill, catalog)}</p>
     {detail.passageId && <section className="space-y-3 rounded-xl border border-outline-variant p-4">
       <h3 className="font-semibold">Passage liên quan</h3>{detail.passage ? <PassagePreview key={detail.passage.audio?.url ?? detail.passage.updatedAt} detail={detail.passage} onReload={onReload} />
         : <p role="alert" className="text-error">Không tìm thấy passage {detail.passageId}. Cần chọn lại trước khi xuất bản.</p>}

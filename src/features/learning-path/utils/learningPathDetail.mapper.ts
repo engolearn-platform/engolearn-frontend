@@ -71,6 +71,7 @@ export function mapLearningPathDetail(dto: LearningPathDetailDto): LearningPathD
   const durationWeeks = dto.config?.durationWeeks ?? dto.weeks.length;
   return {
     id: dto.id,
+    microSkillCatalog: dto.microSkillCatalog,
     createdDate: dto.createdDate,
     completedDate: dto.summary?.computedAt
       ? formatDate(dto.summary.computedAt).split("/").reverse().join("-")

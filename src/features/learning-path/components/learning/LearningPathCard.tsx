@@ -1,3 +1,5 @@
+import type { MicroSkillDefinition } from "@features/learning-path/types/micro-skill-catalog.types";
+import { microSkillLabel } from "@features/learning-path/utils/microSkillCatalog";
 import { Button } from "@/core/components/shadcn/button";
 import { cn } from "@shared/utils";
 import { formatLearningPathDate } from "@features/learning-path/utils/formatLearningPathDate";
@@ -9,6 +11,7 @@ import type { LearningPathListItem } from "@features/learning-path/types/learnin
 
 interface LearningPathCardProps {
   path: LearningPathListItem;
+  catalog?: readonly MicroSkillDefinition[];
 }
 
 function getProgress(path: LearningPathListItem): number {
@@ -19,7 +22,7 @@ function getProgress(path: LearningPathListItem): number {
   return Math.round((path.progress.answered / path.progress.assigned) * 100);
 }
 
-export default function LearningPathCard({ path }: LearningPathCardProps) {
+export default function LearningPathCard({ path, catalog }: LearningPathCardProps) {
   const progress = getProgress(path);
   const isActive =
     path.status === "IN_PROGRESS" || path.status === "NOT_STARTED";
@@ -84,7 +87,7 @@ export default function LearningPathCard({ path }: LearningPathCardProps) {
             key={microSkill}
             className="rounded-md border border-outline-variant/50 bg-surface px-1.5 py-0.5 text-xs text-on-surface-variant transition-colors duration-150 hover:border-primary/50 hover:bg-primary/10 hover:text-primary lg:rounded-[8px] lg:px-[11px] lg:py-[4px] lg:text-[12.5px] lg:leading-[18.75px]"
           >
-            {microSkill}
+            {microSkillLabel(microSkill, catalog)}
           </span>
         ))}
       </div>

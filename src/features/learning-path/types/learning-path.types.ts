@@ -1,3 +1,4 @@
+import type { MicroSkillCatalogMetadata } from "@features/learning-path/types/micro-skill-catalog.types";
 export type LearningPathStatus =
   | "NOT_STARTED"
   | "IN_PROGRESS"
@@ -29,7 +30,7 @@ export interface LearningPathListCounts {
   cancelled: number;
 }
 
-export interface LearningPathListData {
+export interface LearningPathListData extends MicroSkillCatalogMetadata {
   items: LearningPathListItem[];
   counts: LearningPathListCounts;
 }

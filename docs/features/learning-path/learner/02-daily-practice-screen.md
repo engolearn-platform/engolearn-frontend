@@ -29,3 +29,7 @@ reloads saved choices from the backend. The existing submit confirmation remains
 Questions and saved choices come from the backend. The API does not expose correct answers or explanations during practice.
 After a successful submit, the daily result route loads the server-calculated metrics and question review from the result API. An unsuccessful or uncertain submission keeps the learner on the practice screen with an error and guidance to check the path if it has closed.
 Submitting with unanswered questions produces a terminal `SUBMITTED` day; submitting all answers produces `COMPLETED`.
+
+## Nhãn micro-skill từ catalog
+
+Dùng [catalog dùng chung trong Learning Path](../micro-skill-catalog.md) để hiển thị tên tiếng Việt. Canonical và các khóa ghép dữ liệu giữ nguyên; tên chưa có bản dịch hiển thị canonical.

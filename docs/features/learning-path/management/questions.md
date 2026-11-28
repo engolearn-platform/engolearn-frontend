@@ -36,7 +36,7 @@ thay thế. RETIRED: xem/sao chép. Các nút chính cùng kích thước như p
 chữ retire trung tính. Mutation dùng revision server và khóa chống gửi trùng.
 
 Publish luôn tải readiness mới, không tự đánh dấu checklist; unknown check, blocker,
-revision lệch hoặc chưa xác nhận đủ đều khóa submit. Media audio còn bị backend chặn.
+revision lệch hoặc chưa xác nhận đủ đều khóa submit. Các kiểm tra media/audio tiếp tục theo readiness của backend.
 Replace chọn DRAFT hiện có, xem trước, kiểm tra/xác nhận checklist rồi gửi một request
 atomic với revision câu cũ và câu mới. Không ghép hai request publish/retire.
 
@@ -77,3 +77,7 @@ quan; kiểm chứng qua FE proxy/backend thật khi môi trường cho phép. G
   server local; trình duyệt native đang có người dùng thao tác nên dừng tự động hóa.
   Cần chạy backend, đăng nhập CONTENT_MANAGER/ADMIN rồi kiểm tra các luồng trên,
   đặc biệt cảnh báo độ phủ, revision thay đổi và giữ form khi tạo passage.
+
+## Nhãn micro-skill từ catalog
+
+Dùng [catalog dùng chung trong Learning Path](../micro-skill-catalog.md) để hiển thị tên tiếng Việt. Canonical và các khóa ghép dữ liệu giữ nguyên; tên chưa có bản dịch hiển thị canonical.

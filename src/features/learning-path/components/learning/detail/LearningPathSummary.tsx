@@ -1,3 +1,4 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { AudioLines, BookOpen, Ear, Info } from "lucide-react";
 import { cn } from "@shared/utils";
 import { changeLabel, isLearningPathFullyAnswered, percentage, scoreLabel } from "@features/learning-path/utils/learningPathMetrics";
@@ -10,6 +11,7 @@ interface LearningPathSummaryProps {
 }
 
 export default function LearningPathSummary({ path }: LearningPathSummaryProps) {
+  const { label } = useMicroSkillLabels();
   const completion = path.completionRate ?? percentage(path.answered, path.assigned) ?? 0;
   const durationWeeks = path.durationWeeks ?? path.weeks.length;
   const fullyAnswered = isLearningPathFullyAnswered(path.answered, path.assigned);
@@ -86,18 +88,18 @@ export default function LearningPathSummary({ path }: LearningPathSummaryProps) 
               <article key={result.name} className="rounded-xl border border-outline-variant/50 bg-surface-container-low p-4">
                 <div className="flex items-start gap-2 text-sm font-semibold text-on-surface">
                   <span className="rounded-full bg-primary/10 p-1.5 text-primary"><Icon className="size-4" aria-hidden="true" /></span>
-                  <h3 className="pt-1">{result.name}</h3>
+                  <h3 className="pt-1">{label(result.name)}</h3>
                 </div>
                 <p className={finalScore === null ? "mt-4 text-base font-semibold text-on-surface-variant" : "mt-4 text-3xl font-bold text-primary"}>{scoreLabel(finalScore)}</p>
                 <p className="text-xs text-on-surface-variant">Final Practice Score</p>
                 <div className="mt-5 space-y-3 text-xs">
                   <div>
                     <div className="flex justify-between gap-2 text-on-surface-variant"><span>Điểm ban đầu</span><span>{scoreLabel(initialScore)}</span></div>
-                    {initialScore !== null && <LearningPathProgress value={initialScore} label={`Điểm ban đầu ${result.name}: ${scoreLabel(initialScore)}`} className="mt-1 h-1" fillClassName="bg-on-surface-variant" />}
+                    {initialScore !== null && <LearningPathProgress value={initialScore} label={`Điểm ban đầu ${label(result.name)}: ${scoreLabel(initialScore)}`} className="mt-1 h-1" fillClassName="bg-on-surface-variant" />}
                   </div>
                   <div>
                     <div className="flex justify-between gap-2 text-on-surface"><span>Kết thúc lộ trình</span><span className="font-semibold text-primary">{scoreLabel(finalScore)}</span></div>
-                    {finalScore !== null && <LearningPathProgress value={finalScore} label={`Kết thúc lộ trình ${result.name}: ${scoreLabel(finalScore)}`} className="mt-1 h-1" />}
+                    {finalScore !== null && <LearningPathProgress value={finalScore} label={`Kết thúc lộ trình ${label(result.name)}: ${scoreLabel(finalScore)}`} className="mt-1 h-1" />}
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between gap-2 border-t border-outline-variant/40 pt-3 text-xs">

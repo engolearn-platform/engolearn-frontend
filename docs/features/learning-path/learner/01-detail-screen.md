@@ -53,3 +53,7 @@ Day cards open the practice or daily result screens described in `02-daily-pract
 
 The layout stacks cards on narrow screens, allows the tab row and weekly table to scroll horizontally, and uses the existing learner shell.
 The detail content fills the learner workspace up to 1300px, with responsive side padding that balances card width and surrounding space.
+
+## Nhãn micro-skill từ catalog
+
+Dùng [catalog dùng chung trong Learning Path](../micro-skill-catalog.md) để hiển thị tên tiếng Việt. Canonical và các khóa ghép dữ liệu giữ nguyên; tên chưa có bản dịch hiển thị canonical.

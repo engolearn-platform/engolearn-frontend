@@ -1,3 +1,4 @@
+import { useMicroSkillLabels } from "@features/learning-path/hooks/useMicroSkillLabels";
 import { percentage, scoreLabel, changeLabel } from "@features/learning-path/utils/learningPathMetrics";
 import PracticeResultMetrics from "@features/learning-path/components/learning/daily/PracticeResultMetrics";
 import type { LearningPathWeek } from "@features/learning-path/types/learning-path-detail.types";
@@ -8,6 +9,7 @@ interface LearningPathClosedWeekProps {
 }
 
 export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekProps) {
+  const { label } = useMicroSkillLabels();
   const completion = week.completionRate !== undefined ? week.completionRate : percentage(week.answered, week.assigned);
   const practice = week.practiceScore !== undefined ? week.practiceScore : percentage(week.correct, week.answered);
 
@@ -64,7 +66,7 @@ export default function LearningPathClosedWeek({ week }: LearningPathClosedWeekP
                     <tr key={result.name} className="border-t border-outline-variant/40">
                       <th scope="row" className="px-3 py-3 font-medium text-on-surface">
                         <span className="mr-2 inline-block size-1.5 rounded-full bg-primary align-middle" />
-                        {result.name}
+                        {label(result.name)}
                       </th>
                       <td className="px-3 py-3 text-center">{result.answered}/{result.assigned}</td>
                       <td className="px-3 py-3 text-center">{scoreLabel(completionRate)}</td>
